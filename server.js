@@ -3,12 +3,19 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { Resend } from 'resend';
+import rateLimit from 'express-rate-limit';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '64kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+const apiLimiter = rateLimit({ windowMs: 60_000, max: 30, standardHeaders: true, legacyHeaders: false });
+const signupLimiter = rateLimit({ windowMs: 60 * 60_000, max: 5, standardHeaders: true, legacyHeaders: false, message: { error: 'Too many requests, try again later' } });
+app.use('/api/generate', apiLimiter);
+app.use('/api/recalc', apiLimiter);
+app.use('/api/signup', signupLimiter);
 
 function _erf(x){
   const s = x < 0 ? -1 : 1;
@@ -393,22 +400,28 @@ app.post('/api/generate', (req,res) => {
   }
 });
 
+const ESC = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
 app.post('/api/signup', async (req, res) => {
   const { name, email, role } = req.body || {};
-  if (!email) return res.status(400).json({ error: 'email required' });
+
+  if (!email || !EMAIL_RE.test(String(email))) return res.status(400).json({ error: 'valid email required' });
+  if (name  && String(name).length  > 200) return res.status(400).json({ error: 'name too long' });
+  if (role  && String(role).length  > 100) return res.status(400).json({ error: 'role too long' });
 
   const resend = new Resend(process.env.RESEND_API_KEY);
   try {
     await resend.emails.send({
       from: 'BonusEngine <onboarding@resend.dev>',
       to: process.env.NOTIFY_EMAIL || 'victor.gorinov@gmail.com',
-      subject: `New signup: ${name || 'Anonymous'} — BonusEngine`,
+      subject: `New signup: ${ESC(name || 'Anonymous')} — BonusEngine`,
       html: `
         <h2>New Early Access Request</h2>
         <table cellpadding="6" style="border-collapse:collapse">
-          <tr><td><b>Name</b></td><td>${name || '—'}</td></tr>
-          <tr><td><b>Email</b></td><td>${email}</td></tr>
-          <tr><td><b>Role</b></td><td>${role || '—'}</td></tr>
+          <tr><td><b>Name</b></td><td>${ESC(name  || '—')}</td></tr>
+          <tr><td><b>Email</b></td><td>${ESC(email)}</td></tr>
+          <tr><td><b>Role</b></td><td>${ESC(role  || '—')}</td></tr>
         </table>
       `,
     });
