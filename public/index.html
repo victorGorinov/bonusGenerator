@@ -918,6 +918,7 @@ let currentLang = 'en';
 
 function setLang(lang) {
   currentLang = lang;
+  try { localStorage.setItem('bonusLang', lang); } catch(e) {}
   const L = LANG[lang];
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');

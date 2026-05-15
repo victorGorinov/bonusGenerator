@@ -307,6 +307,80 @@ function buildConfig(params){
   };
 }
 
+function recalcCosts(cfg, overrides) {
+  const { econ: E, dep, pl, ndb, fsSpec, wager, reload, dep2, dep3, welcome } = cfg;
+  const ov = overrides || {};
+  const gv = (key, def) => { const v = parseFloat(ov[key]); return (isNaN(v) || v <= 0) ? def : v; };
+  const spinV = fsSpec ? fsSpec.val : 0.10;
+
+  function svCost(bonusSize, wagerX, conv, dWCR, dRTP) {
+    if (bonusSize <= 0 || wagerX <= 0) return 0;
+    const adjWCR = Math.max(0.01, E.mixedWCR + (dWCR || 0));
+    const adjRTP = Math.min(0.999, Math.max(0.5, E.mixedRTP + (dRTP || 0)));
+    return Math.round(truncNormalPayout(bonusSize, wagerX, adjWCR, adjRTP) * conv * pl);
+  }
+
+  const w_pct   = gv('w_pct',   welcome.pct  || 100);
+  const w_wager = gv('w_wager', E.wagerX);
+  const w_maxB  = gv('w_maxB',  welcome.maxB);
+  const w_fs    = gv('w_fs',    welcome.fs   || 0);
+  const w_bonus = Math.min(dep * w_pct / 100, w_maxB) + w_fs * spinV;
+  const c_w_p10 = svCost(w_bonus, w_wager, 0.10, -0.02, -0.005);
+  const c_w_p50 = svCost(w_bonus, w_wager, 0.20,  0,     0);
+  const c_w_p90 = svCost(w_bonus, w_wager, 0.40, +0.02, +0.003);
+
+  const ndb_wager = gv('ndb_wager', ndb.wager || 50);
+  let ndb_size = 0;
+  if      (ndb.type === 'fs_restricted') ndb_size = gv('ndb_fs',  ndb.fs  || 10) * spinV;
+  else if (ndb.type === 'crypto')        ndb_size = gv('ndb_amt', ndb.amt || 0);
+  else if (ndb.type === 'combined')      ndb_size = gv('ndb_amt', ndb.amt || 0) + gv('ndb_fs', ndb.fs || 0) * spinV;
+  else if (ndb.amt)                      ndb_size = ndb.type === 'fs' ? gv('ndb_fs', ndb.amt || 0) * spinV : gv('ndb_amt', ndb.amt || 0);
+  const c_ndb = svCost(ndb_size, ndb_wager, 0.20, 0, 0);
+
+  const rl_pct   = gv('rl_pct',   reload.pct  || 50);
+  const rl_wager = gv('rl_wager', wager.wR    || 35);
+  const rl_maxB  = gv('rl_maxB',  reload.maxB || 0);
+  const rl_fs    = gv('rl_fs',    reload.fs   || 0);
+  const rl_bonus = Math.min(dep * rl_pct / 100, rl_maxB) + rl_fs * spinV;
+  const c_rl = svCost(rl_bonus, rl_wager, 0.20, 0, 0);
+
+  const d2_pct   = gv('d2_pct',   dep2.pct   || 75);
+  const d2_wager = gv('d2_wager', dep2.wager  || E.wagerX);
+  const d2_maxB  = gv('d2_maxB',  dep2.maxB  || 0);
+  const d2_fs    = gv('d2_fs',    dep2.fs    || 0);
+  const d2_bonus = Math.min(dep * d2_pct / 100, d2_maxB) + d2_fs * spinV;
+  const c_d2 = svCost(d2_bonus, d2_wager, 0.20, 0, 0);
+
+  const d3_pct   = gv('d3_pct',   dep3.pct   || 50);
+  const d3_wager = gv('d3_wager', dep3.wager  || E.wagerX);
+  const d3_maxB  = gv('d3_maxB',  dep3.maxB  || 0);
+  const d3_fs    = gv('d3_fs',    dep3.fs    || 0);
+  const d3_bonus = Math.min(dep * d3_pct / 100, d3_maxB) + d3_fs * spinV;
+  const c_d3 = svCost(d3_bonus, d3_wager, 0.20, 0, 0);
+
+  const fs_wager = gv('fs_wager', fsSpec ? fsSpec.wager : 30);
+  const fs_count = gv('fs_count', fsSpec ? fsSpec.count : 0);
+  const fs_bonus = fsSpec ? fs_count * fsSpec.val : 0;
+  const c_fs = svCost(fs_bonus, fs_wager, 0.20, 0, 0);
+
+  const total = c_w_p50 + c_ndb + c_rl + c_d2 + c_d3 + c_fs;
+  return {
+    costs: { w_p10: c_w_p10, w_p50: c_w_p50, w_p90: c_w_p90, ndb: c_ndb, rl: c_rl, d2: c_d2, d3: c_d3, fs: c_fs, total },
+    ratio: (pl * dep) > 0 ? c_w_p50 / (pl * dep) : 0,
+    maxRisk: Math.round(pl * w_bonus),
+  };
+}
+
+app.post('/api/recalc', (req, res) => {
+  try {
+    const { cfg, overrides } = req.body || {};
+    res.json(recalcCosts(cfg, overrides));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Recalc failed' });
+  }
+});
+
 app.post('/api/generate', (req,res) => {
   try {
     const cfg = buildConfig(req.body || {});

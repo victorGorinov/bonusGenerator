@@ -716,375 +716,6 @@ function preTxt(k,id,val){return `<div class="pr"><span class="pk">${k}</span><s
 function pre(k,id,val,unit,tip='',step=1,min=1,max=9999){const inp=`<input class="ov-inp" id="${id}" type="number" value="${val}" min="${min}" max="${max}" step="${step}" onchange="recalcEcon()"><span style="font-size:11px;color:var(--muted)">${unit}</span>`;const lbl=tip?`<span class="tip-wrap" style="max-width:none">${k}<span class="tip-btn" onclick="toggleTip(this)">?</span><div class="tip-box" style="width:230px">${tip}</div></span>`:k;return `<div class="pr"><span class="pk">${lbl}</span><span class="pv" style="display:flex;align-items:center;gap:4px">${inp}</span></div>`;}
 
 // ═════════════════════════════════════════════════════════════════════════════
-// MATH HELPERS — Truncated Normal model
-// E[max(0,X)] for X~Normal(mu,sigma): operator's expected payout per player
-// ─────────────────────────────────────────────────────────────────────────────
-function _erf(x){const s=x<0?-1:1;x=Math.abs(x);const t=1/(1+0.3275911*x);const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);return s*y;}
-function _phi(z){return Math.exp(-0.5*z*z)/Math.sqrt(2*Math.PI);}  // standard normal PDF
-function _Phi(z){return 0.5*(1+_erf(z/Math.SQRT2));}               // standard normal CDF
-// truncNormalPayout(B, W, WCR, RTP) → expected operator payout per player
-// mu = B×(1−W/BE) — expected bankroll mean; sigma = √(W×B/WCR) — CLT bankroll volatility
-function truncNormalPayout(B, W, adjWCR, adjRTP){
-  if(B<=0||W<=0) return 0;
-  const be = adjWCR/(1-adjRTP);
-  const mu    = B*(1 - W/be);
-  const sigma = Math.sqrt(W*B/adjWCR);
-  const z     = mu/sigma;
-  return Math.max(0, mu*_Phi(z) + sigma*_phi(z));
-}
-// solveWager(B, targetRatio, WCR, RTP, dep, conv) → wager× that hits targetRatio
-// Binary search: higher wager ↓ payout ↓ costRatio. Monotone above W≈1.
-function solveWager(B, targetRatio, WCR, RTP, dep, conv){
-  if(B<=0 || dep<=0 || WCR<=0) return 20;
-  conv = conv || 0.20;
-  const targetPayout = targetRatio * dep / conv;   // e.g. 0.15×dep / 0.20 = 0.75×dep
-  if(targetPayout <= 0) return 200;  // zero-cost target → very high wager
-  if(targetPayout >= B) return 1;    // full payout needed → lowest wager
-  // Check if even wager=1 gives payout below target → bonus too small, return 1
-  if(truncNormalPayout(B, 1, WCR, RTP) < targetPayout) return 1;
-  // Binary search over W ∈ [1, 500]
-  let lo = 1, hi = 500;
-  for(let i = 0; i < 60; i++){
-    const mid = (lo + hi) / 2;
-    if(truncNormalPayout(B, mid, WCR, RTP) > targetPayout) lo = mid;
-    else                                                    hi = mid;
-  }
-  return (lo + hi) / 2;
-}
-// ═════════════════════════════════════════════════════════════════════════════
-// CORE CONFIG BUILDER
-// ═════════════════════════════════════════════════════════════════════════════
-function buildCfg(){
-  const r   = S.region;
-  const cur = document.getElementById('depcur').value;
-  const dep = parseFloat(document.getElementById('avgdep').value)||S.avgdep;
-  const pl  = parseInt(document.getElementById('pnum').value)||S.players;
-  const lic = S.lic;
-  const rtp = parseInt(document.getElementById('rtprange').value)||96;
-  const sc  = document.getElementById('sitecur').value;
-
-  // ── WELCOME ────────────────────────────────────────────────────────────────
-  let welcome;
-  if(r==='sweep'){
-    welcome={ type:'sweep', sc:10, gc:1000, trigger:t('v_sweep_trigger'), validity:30 };
-  } else if(r==='mn'){
-    welcome={ type:'match', pct:100, maxB:100000, minD:3000, cur:'MNT', fs:50, days:60, code:'WELCOME100' };
-  } else if(r==='latam'){
-    const maxB = Math.max(300, Math.min(500, Math.round(dep*8)));
-    const minD = Math.max(10, Math.round(dep*0.25));
-    welcome={ type:'match', pct:100, maxB, minD, cur:'USD', fs:100, days:30, code:'WELCOME100' };
-  } else {
-    const pct   = 100;
-    const multi = r==='cis'?5 : r==='eu'?6 : 4;
-    // UKGC: cap £200 (regulatory), floor £100
-    // MGA/other EU: market range €1000–€5000 (industry standard: 100% up to €1000–€3000)
-    // CIS: dep×5, no hard cap
-    // Crypto: market $1000–$5000 USDT (dep×15, floored at $1000, capped at $5000)
-    const maxB  = r==='eu' && lic==='ukgc' ? Math.max(100,  Math.min(200,  Math.round(dep*multi)))
-                : r==='eu'                  ? Math.max(1000, Math.min(5000, Math.round(dep*multi)))
-                : r==='crypto'              ? Math.max(1000, Math.min(5000, Math.round(dep*15)))
-                :                             Math.round(dep*multi);
-    const minD  = r==='cis' ? Math.round(dep*0.3) : r==='eu' ? Math.max(10,Math.round(dep*0.15)) : r==='crypto' ? Math.max(10, Math.round(dep*0.05)) : Math.round(dep*0.05);
-    const fs    = r==='cis'?100 : r==='eu'?200 : 200;
-    const days  = r==='crypto'?90:30;
-    const finalPct = r==='crypto'?150 : pct;  // Crypto: 150% first deposit
-    welcome={ type:'match', pct:finalPct, maxB, minD, cur, fs, days, code:r==='crypto'?'WELCOME150':'WELCOME100' };
-  }
-
-  // ── NO DEPOSIT ─────────────────────────────────────────────────────────────
-  let ndb;
-  if(r==='sweep'){
-    ndb={ type:'daily', sc:1, gc:100, trigger:t('v_daily_trigger'), days:1, limit:t('v_daily_sc_type') };
-  } else if(r==='eu' && lic==='ukgc'){
-    ndb={ type:'fs_restricted', fs:20, maxW_x:3, wager:10, days:7, note:t('ukgc_note') };  // UKGC 10× cap, 20 FS standard
-  } else if(r==='mn'){
-    ndb={ type:'combined', amt:5000, fs:30, ndCur:'MNT', wager:50, maxW_x:5, days:7, limit:t('v_1_per_account') };
-  } else if(r==='latam'){
-    ndb={ type:'combined', amt:5, fs:15, ndCur:'USD', wager:45, maxW_x:5, days:7, limit:t('v_1_per_account') };
-  } else {
-    const amt   = r==='cis'?30 : r==='eu'?10 : parseFloat((dep*0.02).toFixed(4));  // crypto NDB ~2% of avg dep
-    const ndCur = r==='crypto'?cur:'FS';
-    const wag   = r==='cis'?55 : r==='eu'?45 : 50;
-    const maxW  = r==='cis'?5  : r==='eu'?3  : 3;
-    const ndb_fs = r==='crypto'?50 : r==='cis'?50 : 50;  // 50 FS across all markets
-    ndb={ type:r==='crypto'?'crypto':'combined', amt, fs:ndb_fs, ndCur, wager:wag, maxW_x:maxW, days:r==='crypto'?14:7, limit:t('v_1_per_account') };
-  }
-
-  // ── RELOAD ─────────────────────────────────────────────────────────────────
-  let reload;
-  if(r==='sweep'){
-    reload={ type:'packages', pkgs:[
-      {price:'$4.99',sc:100}, {price:'$9.99',sc:250},
-      {price:'$19.99',sc:500}, {price:'$49.99',sc:1500},
-    ]};
-  } else if(r==='mn'){
-    reload={ type:'match', pct:50, maxB:5000, minD:5000, cur:'MNT', fs:10,
-      freq:t('v_weekly'), day:t('v_day_sat'), limit:t('v_1per_period'), code:'RELOAD50' };
-  } else if(r==='latam'){
-    const maxB = Math.min(75, Math.round(dep*2.5));
-    reload={ type:'match', pct:50, maxB, minD:welcome.minD, cur:'USD', fs:20,
-      freq:t('v_weekly'), day:t('v_day_wed')||'Wednesday', limit:t('v_1per_period'), code:'RELOAD50' };
-  } else {
-    const pct  = 50;
-    const maxB = r==='cis'                   ? Math.min(200, Math.round(dep*1.5))
-               : r==='eu' && lic==='ukgc'    ? Math.min(100, Math.round(dep*1.5))
-               : r==='eu'                    ? Math.max(100, Math.min(500, Math.round(dep*1.5)))
-               :                               Math.min(300, Math.round(dep*1.5));
-    const minD = welcome.minD;
-    const day  = r==='cis'?t('v_day_fri') : r==='eu'?t('v_day_tue') : t('v_day_mon');
-    const rl_fs = r==='cis'?50 : r==='eu'&&lic==='ukgc'?0 : r==='eu'?50 : r==='crypto'?100 : 30;
-    reload={ type:'match', pct, maxB, minD, cur, fs:rl_fs, freq:t('v_weekly'), day, limit:t('v_1per_period'), code:'RELOAD50' };
-  }
-
-  // ── WAGERING ── market-standard values per region ────────────────────────────
-  // UKGC: 10× regulatory cap (Jan 2026). All others: industry-standard ranges.
-  let wager;
-  if(r==='sweep'){
-    wager={ model:'none' };
-  } else if(r==='mn'){
-    wager={ model:'standard', wW:40, wN:50, wR:35, wF:30,
-      mb:t('v_no_limit'), days:60,
-      basis:t('v_bonus_only'),
-      games:t('v_slots_only')+rtp+'%)' };
-  } else if(r==='latam'){
-    wager={ model:'standard', wW:40, wN:45, wR:35, wF:30,
-      mb:t('v_no_limit'), days:30,
-      basis:t('v_bonus_only'),
-      games:t('v_slots_only')+rtp+'%)' };
-  } else {
-    const wW = r==='cis'?40 : r==='eu'?(lic==='ukgc'?10:35) : 40;  // UKGC capped at 10× (Jan 2026)
-    const wN = r==='cis'?55 : r==='eu'?(lic==='ukgc'?10:50) : 50;
-    const wR = r==='cis'?35 : r==='eu'?25 : 35;
-    const wF = r==='cis'?35 : r==='eu'?(lic==='ukgc'?10:25) : 30;
-    const mb = r==='eu'&&lic==='ukgc'?'£2 / spin' : r==='eu'?'€5 / spin' : t('v_no_limit');
-    const days= r==='crypto'?90 : r==='cis'?60 : 30;
-    const basis= r==='crypto'?t('v_dep_bonus'):t('v_bonus_only');
-    const games= r==='crypto'?t('v_all_games'):(t('v_slots_only')+rtp+'%)');
-    wager={ model:'standard', wW, wN, wR, wF, mb, days, basis, games };
-  }
-
-  // ── CASHBACK ───────────────────────────────────────────────────────────────
-  let cashback;
-  if(r==='sweep'){
-    cashback={ model:'flat', pct:5, cur:'SC', period:t('v_weekly'),
-      minLoss:'10 SC', maxAmt:'500 SC', wager:0 };
-  } else if(r==='mn'){
-    cashback={ model:'flat', pct:8, cur:'MNT', period:t('v_weekly'),
-      minLoss:fmtC(3000,'MNT'), maxAmt:fmtC(200000,'MNT'),
-      wager:0, basis:t('v_net_losses') };
-  } else if(r==='latam'){
-    const minL = Math.max(10, Math.round(dep*0.33));
-    const maxA = Math.min(500, Math.round(dep*17));
-    cashback={ model:'flat', pct:10, cur:'USD', period:t('v_weekly'),
-      minLoss:fmtC(minL,'USD'), maxAmt:fmtC(maxA,'USD'),
-      wager:0, basis:t('v_net_losses') };
-  } else if(r==='eu'){
-    cashback={ model:'tier', period:t('v_monthly'), basis:t('v_net_losses_monthly'),
-      maxAmt:fmtC(5000,cur), wager:0,
-      tiers:[
-        {name:t('ct_bronze'),  color:'#CD7F32', from:fmtC(0,cur),    to:fmtC(100,cur),  pct:'5%'},
-        {name:t('ct_silver'),  color:'#94A3B8', from:fmtC(100,cur),  to:fmtC(500,cur),  pct:'10%'},
-        {name:t('ct_gold'),    color:'#D97706', from:fmtC(500,cur),  to:fmtC(2000,cur), pct:'15%'},
-        {name:t('ct_platinum'),color:'#7C3AED', from:fmtC(2000,cur), to:'∞',            pct:'20%'},
-      ]};
-  } else {
-    const pct  = r==='crypto'?15:10;
-    
-    const minL = Math.round(dep*0.3);
-    const maxA = Math.round(dep*50);
-    cashback={ model:'flat', pct, cur, period:t('v_weekly'),
-      minLoss:fmtC(minL,cur), maxAmt:fmtC(maxA,cur), wager:0, basis:t('v_net_losses') };
-  }
-
-  // ── 2ND & 3RD DEPOSIT BONUSES ─────────────────────────────────────────────
-  let dep2, dep3;
-  const wagerVal = (wager.model === 'none') ? 0 : wager.wW;
-  if(r === 'sweep'){
-    dep2 = { type:'sc_purchase', pct:25, trigger:t('v_2nd_purchase'), note:'Bonus SC credited automatically' };
-    dep3 = { type:'sc_purchase', pct:50, trigger:t('v_3rd_purchase'), note:'One-time offer, opt-in required' };
-  } else if(r === 'mn'){
-    dep2 = { type:'match', pct:75, maxB:30000, minD:5000, cur:'MNT', fs:15, days:30, wager:wagerVal, code:'DEP2' };
-    dep3 = { type:'match', pct:50, maxB:20000, minD:5000, cur:'MNT', fs:10, days:30, wager:Math.max(30,wagerVal-5), code:'DEP3' };
-  } else if(r === 'eu'){
-    const maxB2 = r==='eu'&&lic==='ukgc' ? Math.min(100, Math.round(dep*2)) : Math.max(1000, Math.min(2000, Math.round(dep*8)));
-    const maxB3 = r==='eu'&&lic==='ukgc' ? Math.min(75,  Math.round(dep*1.5)) : Math.max(500,  Math.min(1000, Math.round(dep*5)));
-    const d2fs  = lic==='ukgc'?0:75;
-    const d3fs  = lic==='ukgc'?0:50;
-    dep2 = { type:'match', pct:75, maxB:maxB2, minD:welcome.minD, cur, fs:d2fs, days:30, wager:wagerVal, code:'DEP2' };
-    dep3 = { type:'match', pct:50, maxB:maxB3, minD:welcome.minD, cur, fs:d3fs, days:30, wager:Math.max(25,wagerVal-5), code:'DEP3' };
-  } else if(r === 'latam'){
-    const maxB2 = Math.max(150, Math.min(300, Math.round(dep*5)));
-    const maxB3 = Math.max(100, Math.min(200, Math.round(dep*3)));
-    dep2 = { type:'match', pct:75, maxB:maxB2, minD:welcome.minD, cur:'USD', fs:50, days:30, wager:wagerVal, code:'DEP2' };
-    dep3 = { type:'match', pct:50, maxB:maxB3, minD:welcome.minD, cur:'USD', fs:30, days:30, wager:Math.max(30,wagerVal-5), code:'DEP3' };
-  } else if(r === 'crypto'){
-    const maxB2 = Math.round(dep*3);
-    const maxB3 = Math.round(dep*2);
-    dep2 = { type:'match', pct:100, maxB:maxB2, minD:welcome.minD, cur, fs:150, days:60, wager:wagerVal, code:'DEP2' };
-    dep3 = { type:'match', pct:75,  maxB:maxB3, minD:welcome.minD, cur, fs:100, days:60, wager:wagerVal, code:'DEP3' };
-  } else { // cis
-    const maxB2 = Math.round(dep*3);
-    const maxB3 = Math.round(dep*2);
-    dep2 = { type:'match', pct:75, maxB:maxB2, minD:welcome.minD, cur, fs:75, days:30, wager:wagerVal, code:'DEP2' };
-    dep3 = { type:'match', pct:50, maxB:maxB3, minD:welcome.minD, cur, fs:50, days:30, wager:Math.max(30,wagerVal-5), code:'DEP3' };
-  }
-
-  // ── GAME CONTRIBUTIONS ─────────────────────────────────────────────────────
-  const contrib = r==='crypto' ?
-    [{game:'Slots',pct:100},{game:'Live Casino',pct:10},{game:'Roulette',pct:10},{game:'Blackjack',pct:5},{game:'Video Poker',pct:20},{game:'Crash Games',pct:50},{game:'Keno/Lottery',pct:50}] :
-    r==='eu' ?
-    [{game:'Slots (avg. '+rtp+'%)',pct:100},{game:'Slots (RTP < avg.)',pct:0},{game:'Live Casino',pct:0},{game:'Roulette',pct:0},{game:'Blackjack',pct:0},{game:'Crash Games',pct:0},{game:'Scratch Cards',pct:50}] :
-    [{game:'Slots (avg. '+rtp+'%)',pct:100},{game:'Slots (RTP < avg.)',pct:0},{game:'Live Casino',pct:0},{game:'Roulette',pct:0},{game:'Blackjack',pct:0},{game:'Crash Games',pct:50},{game:'Scratch Cards',pct:50}];
-
-  // ── FREE SPINS spec ────────────────────────────────────────────────────────
-  const fsSpec = r==='sweep' ? null : {
-    count: r==='mn'?50 : r==='latam'?100 : r==='crypto'?200 : 200,  // EU 200 FS = market standard
-    val:   r==='cis'?0.10 : r==='eu'?0.10 : r==='mn'?0.05 : r==='latam'?0.10 : 0.20,
-    cur:   r==='crypto'?'USDT' : r==='mn'?'EUR' : r==='latam'?'USD' : 'EUR',
-    wager: wager.wF,
-    games: r==='eu'?'Book of Dead, Starburst, Gates of Olympus':(t('v_slots_only')+rtp+'%)'),
-    days:  r==='crypto'?14 : r==='mn'?7 : 7,
-    maxW:  '5× '+t('p_spin_val').toLowerCase(),
-  };
-
-  // ── UNIT ECONOMICS ─────────────────────────────────────────────────────────
-  // Portfolio-level regional benchmarks
-  const arpu  = r==='cis'?22 : r==='eu'?65 : r==='crypto'?95 : r==='mn'?12 : r==='latam'?18 : 14;
-  const bpct  = r==='cis'?.25: r==='eu'?.18: r==='crypto'?.28: r==='mn'?.22: r==='latam'?.30: .45;
-  const cac   = r==='cis'?8  : r==='eu'?25 : r==='crypto'?40 : r==='mn'?5  : r==='latam'?7  : 4;
-  const ltv3  = arpu*3;
-  const mBudget= Math.round(pl*cac);
-  const totLTV = Math.round(pl*ltv3);
-  const roi3  = Math.round((totLTV - mBudget*3)/(mBudget*3)*100);
-  const be    = Math.ceil(cac/arpu);
-
-  // ── Bonus Cost Model (per-bonus, P10/P50/P90 scenarios) ───────────────────
-  // Game mix shares [slots, live, crash, other] per region
-  const gmix = {
-    cis:    [0.85, 0.10, 0.05, 0.00],
-    eu:     [0.60, 0.30, 0.05, 0.05],
-    crypto: [0.50, 0.20, 0.25, 0.05],
-    sweep:  [0.80, 0.15, 0.05, 0.00],
-    mn:     [0.80, 0.15, 0.05, 0.00],
-    latam:  [0.75, 0.15, 0.10, 0.00],
-  };
-  const mix = gmix[r] || gmix.cis;
-
-  // WCR per game type (contribution to wagering, from contrib table)
-  // [slots, live, crash, other]
-  const wcrMap = {
-    eu:     [1.0, 0.0, 0.0, 0.5],
-    crypto: [1.0, 0.1, 0.5, 0.5],
-    default:[1.0, 0.0, 0.5, 0.5],
-  };
-  const wcrs = wcrMap[r] || wcrMap.default;
-
-  // RTP per game type [slots use configured rtp, live ~99%, crash ~98%, other ~97%]
-  const rtps = [rtp/100, 0.99, 0.98, 0.97];
-
-  // Weighted mixed RTP and WCR
-  const mixedWCR = mix.reduce((s,sh,i) => s + sh*wcrs[i], 0);
-  const mixedRTP = mix.reduce((s,sh,i) => s + sh*rtps[i], 0);
-
-  // Effective bonus size for 1 player (welcome bonus)
-  let bonusSize;
-  if(r==='sweep'){
-    bonusSize = welcome.sc || 50; // SC units
-  } else {
-    bonusSize = Math.min(dep * (welcome.pct||100)/100, welcome.maxB||dep);
-  }
-
-  // Use market-standard regional wager (already set in wager object above)
-  // solveWager was removed: it produced unrealistically low wagers (~6–10×) for EU
-  // because it optimises for cost ratio 10–20%, while market norms are 25–40×.
-  const wagerX = (r==='sweep' || wager.model==='none') ? 0 : (wager.wW || 35);
-
-  // Breakeven wager = максимальный вейджер, при котором игрок ещё может выиграть
-  // При wager > breakeven => payout=0 (вейджер "съедает" весь бонус)
-  const breakeven_wager = +(mixedWCR / (1 - mixedRTP)).toFixed(1);
-  const over_breakeven  = wagerX > breakeven_wager;
-
-  // Scenarios P10 (cheap for operator), P50 (base), P90 (expensive)
-  // Truncated Normal: E[max(0,X)] — единая непрерывная модель для любого вейджера.
-  // Ниже breakeven ≈ линейная модель; выше — убывает к нулю без скачка.
-  function calcScenario(conv, dWCR, dRTP){
-    const adjWCR = Math.max(0.01, mixedWCR + dWCR);
-    const adjRTP = Math.min(0.999, Math.max(0.5, mixedRTP + dRTP));
-    const turnover = bonusSize * wagerX / adjWCR;
-    const payout   = truncNormalPayout(bonusSize, wagerX, adjWCR, adjRTP);
-    const cost     = Math.round(payout * conv * pl);
-    return { conv, wcr:adjWCR, rtp:adjRTP, turnover:Math.round(turnover), payout:+payout.toFixed(2), cost };
-  }
-  const sP10 = calcScenario(0.10, -0.02, -0.005);
-  const sP50 = calcScenario(0.20,  0.00,  0.000);
-  const sP90 = calcScenario(0.40, +0.02, +0.003);
-
-  const maxRisk     = Math.round(pl * bonusSize);
-  const stressTest  = Math.round(sP50.cost * 1.20);
-
-  // ── Total package costRatio (BE-efficiency linear model) ─────────────────────
-  // costRatio = total bonus package cost over 2-week horizon / total deposits
-  // Uses linear BE-efficiency: eff(W) = min(1, BE/W)
-  // This is more practical than Truncated Normal for budget planning at market wagers.
-  // P10/P50/P90 scenario cards still use TruncNormal (above) for detailed analysis.
-  //
-  // Package components:
-  //   Welcome  — P50 conv (20%) × bonus × eff(wW)
-  //   NDB      — 40% completion × ndbSize × eff(wN)
-  //   Reload   — 2 weeks × 5%/week × rlBase × eff(wR)
-
-  const _sv  = 0.10; // standard free spin value in currency units
-  const _be  = breakeven_wager;
-
-  // BE-efficiency: what fraction of bonus amount operators expect to actually pay out
-  const _effW = wagerX > 0 ? Math.min(1, _be / Math.max(_be, wagerX)) : 1;
-  const _effN = (wager.wN||50) > 0 ? Math.min(1, _be / Math.max(_be, wager.wN||50)) : 1;
-  const _effR = (wager.wR||30) > 0 ? Math.min(1, _be / Math.max(_be, wager.wR||30)) : 1;
-
-  // NDB size
-  const _ndbSize = !ndb || ndb.type==='daily' ? 0
-    : ndb.type==='combined'      ? (ndb.amt||0) + (ndb.fs||0)*_sv
-    : ndb.type==='fs_restricted' ? (ndb.fs||0)*_sv
-    : ndb.type==='crypto'        ? (ndb.amt||0) + (ndb.fs||0)*_sv
-    : 0;
-
-  // Reload base value (weekly)
-  const _rlBase = reload && reload.pct
-    ? Math.min(dep*(reload.pct/100), reload.maxB||dep) + (reload.fs||0)*_sv
-    : 0;
-
-  const _welcomeCost = bonusSize  * _effW * sP50.conv;        // 20% P50 take rate
-  const _ndbCost     = _ndbSize   * _effN * 0.40;             // 40% NDB completion
-  const _reloadCost  = _rlBase    * _effR * 0.05 * 2;         // 2 weeks × 5%/week
-
-  const totalBonusCost = (_welcomeCost + _ndbCost + _reloadCost) * pl;
-  const costRatio = (pl * dep) > 0 ? totalBonusCost / (pl * dep) : 0;
-
-  // Verdict thresholds
-  let verdictKey, verdictCls;
-  if(costRatio < 0.10)       { verdictKey='verdict_cheap'; verdictCls='gd'; }
-  else if(costRatio < 0.25)  { verdictKey='verdict_ok';    verdictCls='gn'; }
-  else if(costRatio < 0.40)  { verdictKey='verdict_warn';  verdictCls='yw'; }
-  else                        { verdictKey='verdict_high';  verdictCls='rd'; }
-
-  const econ={ arpu, bpct:Math.round(bpct*100), cac, ltv3, mBudget, totLTV, roi3, be, pl,
-               bonusSize, mixedWCR:+mixedWCR.toFixed(3), mixedRTP:+mixedRTP.toFixed(4),
-               breakeven_wager, over_breakeven, wagerX,
-               sP10, sP50, sP90, maxRisk, stressTest, costRatio:+costRatio.toFixed(3),
-               verdictKey, verdictCls };
-
-  // ── REGULATORY ─────────────────────────────────────────────────────────────
-  let reg = null;
-  if(r==='eu' && lic==='ukgc') reg=[t('reg_ukgc_1'),t('reg_ukgc_2'),t('reg_ukgc_3'),t('reg_ukgc_4'),t('reg_ukgc_5'),t('reg_ukgc_6')];
-  else if(r==='eu' && lic==='mga') reg=[t('reg_mga_1'),t('reg_mga_2'),t('reg_mga_3'),t('reg_mga_4'),t('reg_mga_5')];
-  else if(r==='sweep') reg=[t('reg_sweep_1'),t('reg_sweep_2'),t('reg_sweep_3'),t('reg_sweep_4'),t('reg_sweep_5')];
-
-  return { welcome, dep2, dep3, ndb, reload, wager, cashback, contrib, fsSpec, econ, reg,
-           r, cur, depcur:document.getElementById('depcur').value,
-           dep, pl, lic, rtp, sc };
-}
-
-// ═════════════════════════════════════════════════════════════════════════════
 // GENERATE & RENDER
 // ═════════════════════════════════════════════════════════════════════════════
 async function generate(){
@@ -1130,107 +761,70 @@ async function generate(){
   }
 }
 
-// ── Live economics recalculation ──────────────────────────────────────────────
+// ── Live economics recalculation (debounced, delegates to /api/recalc) ────────
+let _recalcTimer = null;
 function recalcEcon(){
   const cfg = window._lastCfg;
   if(!cfg || cfg.r==='sweep') return;
-  const E=cfg.econ, cur=cfg.cur, r=cfg.r, pl=cfg.pl, dep=cfg.dep;
-  const fBC = v => r==='sweep' ? v+' SC' : fmtC(v, cur);
+  clearTimeout(_recalcTimer);
+  _recalcTimer = setTimeout(async () => {
+    const E = cfg.econ;
+    const gv = (id, def) => {
+      const el = document.getElementById(id);
+      const v = el ? parseFloat(el.value) : NaN;
+      return (isNaN(v) || v <= 0) ? def : v;
+    };
+    const overrides = {
+      w_pct:     gv('ov_w_pct',    cfg.welcome.pct || 100),
+      w_wager:   gv('ov_w_wager',  E.wagerX),
+      w_maxB:    gv('ov_w_maxB',   cfg.welcome.maxB),
+      w_fs:      gv('ov_w_fs',     cfg.welcome.fs || 0),
+      ndb_wager: gv('ov_ndb_wager',cfg.ndb.wager || 50),
+      ndb_fs:    gv('ov_ndb_fs',   cfg.ndb.fs || 0),
+      ndb_amt:   gv('ov_ndb_amt',  cfg.ndb.amt || 0),
+      rl_pct:    gv('ov_rl_pct',   cfg.reload.pct || 50),
+      rl_wager:  gv('ov_rl_wager', cfg.wager.wR || 35),
+      rl_maxB:   gv('ov_rl_maxB',  cfg.reload.maxB || 0),
+      rl_fs:     gv('ov_rl_fs',    cfg.reload.fs || 0),
+      d2_pct:    gv('ov_d2_pct',   cfg.dep2.pct || 75),
+      d2_wager:  gv('ov_d2_wager', cfg.dep2.wager || E.wagerX),
+      d2_maxB:   gv('ov_d2_maxB',  cfg.dep2.maxB || 0),
+      d2_fs:     gv('ov_d2_fs',    cfg.dep2.fs || 0),
+      d3_pct:    gv('ov_d3_pct',   cfg.dep3.pct || 50),
+      d3_wager:  gv('ov_d3_wager', cfg.dep3.wager || E.wagerX),
+      d3_maxB:   gv('ov_d3_maxB',  cfg.dep3.maxB || 0),
+      d3_fs:     gv('ov_d3_fs',    cfg.dep3.fs || 0),
+      fs_wager:  gv('ov_fs_wager', cfg.fsSpec ? cfg.fsSpec.wager : 30),
+      fs_count:  gv('ov_fs_count', cfg.fsSpec ? cfg.fsSpec.count : 0),
+    };
+    let data;
+    try {
+      const res = await fetch('/api/recalc', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ cfg, overrides }),
+      });
+      if(!res.ok) return;
+      data = await res.json();
+    } catch(e) { return; }
 
-  // Read an override input value (fallback to default if absent or zero)
-  const gv = (id, def) => {
-    const el = document.getElementById(id);
-    const v = el ? parseFloat(el.value) : NaN;
-    return (isNaN(v) || v <= 0) ? def : v;
-  };
-
-  // Truncated Normal: единая модель без скачков на breakeven
-  function svCost(bonusSize, wagerX, conv, dWCR, dRTP){
-    if(bonusSize<=0 || wagerX<=0) return 0;
-    const adjWCR = Math.max(0.01, E.mixedWCR + (dWCR||0));
-    const adjRTP = Math.min(0.999, Math.max(0.5, E.mixedRTP + (dRTP||0)));
-    return Math.round(truncNormalPayout(bonusSize, wagerX, adjWCR, adjRTP) * conv * pl);
-  }
-
-  // ── Welcome
-  const w_pct   = gv('ov_w_pct',   cfg.welcome.pct  || 100);
-  const w_wager = gv('ov_w_wager', E.wagerX);
-  const w_maxB  = gv('ov_w_maxB',  cfg.welcome.maxB);
-  const w_fs    = gv('ov_w_fs',    cfg.welcome.fs   || 0);
-  const w_spinV = cfg.fsSpec ? cfg.fsSpec.val : 0.10;  // стоимость одного спина
-  const w_bonus = Math.min(dep * w_pct/100, w_maxB) + w_fs * w_spinV;
-  const c_w_p10 = svCost(w_bonus, w_wager, 0.10, -0.02, -0.005);
-  const c_w_p50 = svCost(w_bonus, w_wager, 0.20,  0,     0);
-  const c_w_p90 = svCost(w_bonus, w_wager, 0.40, +0.02, +0.003);
-
-  // ── NDB (wager + amount/fs-count editable)
-  const ndb_wager = gv('ov_ndb_wager', cfg.ndb.wager || 50);
-  let ndb_size = 0;
-  if(cfg.ndb.type==='fs_restricted') ndb_size = gv('ov_ndb_fs',  cfg.ndb.fs  || 10) * w_spinV;
-  else if(cfg.ndb.type==='crypto')   ndb_size = gv('ov_ndb_amt', cfg.ndb.amt || 0);
-  else if(cfg.ndb.type==='combined') ndb_size = gv('ov_ndb_amt', cfg.ndb.amt || 0)
-                                              + gv('ov_ndb_fs',  cfg.ndb.fs  || 0) * w_spinV;
-  else if(cfg.ndb.amt)               ndb_size = cfg.ndb.type==='fs'
-    ? gv('ov_ndb_fs',  cfg.ndb.amt || 0) * w_spinV
-    : gv('ov_ndb_amt', cfg.ndb.amt || 0);
-  const c_ndb = svCost(ndb_size, ndb_wager, 0.20, 0, 0);
-
-  // ── Reload
-  const rl_pct   = gv('ov_rl_pct',   cfg.reload.pct  || 50);
-  const rl_wager = gv('ov_rl_wager', cfg.wager.wR    || 35);
-  const rl_maxB  = gv('ov_rl_maxB',  cfg.reload.maxB || 0);
-  const rl_fs    = gv('ov_rl_fs',    cfg.reload.fs   || 0);
-  const rl_bonus = Math.min(dep * rl_pct/100, rl_maxB) + rl_fs * w_spinV;
-  const c_rl = svCost(rl_bonus, rl_wager, 0.20, 0, 0);
-
-  // ── Dep2
-  const d2_pct   = gv('ov_d2_pct',   cfg.dep2.pct    || 75);
-  const d2_wager = gv('ov_d2_wager', cfg.dep2.wager  || E.wagerX);
-  const d2_maxB  = gv('ov_d2_maxB',  cfg.dep2.maxB   || 0);
-  const d2_fs    = gv('ov_d2_fs',    cfg.dep2.fs     || 0);
-  const d2_bonus = Math.min(dep * d2_pct/100, d2_maxB) + d2_fs * w_spinV;
-  const c_d2 = svCost(d2_bonus, d2_wager, 0.20, 0, 0);
-
-  // ── Dep3
-  const d3_pct   = gv('ov_d3_pct',   cfg.dep3.pct    || 50);
-  const d3_wager = gv('ov_d3_wager', cfg.dep3.wager  || E.wagerX);
-  const d3_maxB  = gv('ov_d3_maxB',  cfg.dep3.maxB   || 0);
-  const d3_fs    = gv('ov_d3_fs',    cfg.dep3.fs     || 0);
-  const d3_bonus = Math.min(dep * d3_pct/100, d3_maxB) + d3_fs * w_spinV;
-  const c_d3 = svCost(d3_bonus, d3_wager, 0.20, 0, 0);
-
-  // ── Free Spins (count + wager editable)
-  const fs_wager = gv('ov_fs_wager', cfg.fsSpec ? cfg.fsSpec.wager : 30);
-  const fs_count = gv('ov_fs_count', cfg.fsSpec ? cfg.fsSpec.count : 0);
-  const fs_bonus = cfg.fsSpec ? fs_count * cfg.fsSpec.val : 0;
-  const c_fs = svCost(fs_bonus, fs_wager, 0.20, 0, 0);
-
-  // ── Grand total (P50 base across all bonus types)
-  const total = c_w_p50 + c_ndb + c_rl + c_d2 + c_d3 + c_fs;
-
-  // ── DOM updates
-  const upd = (id, v) => { const el=document.getElementById(id); if(el) el.textContent=fBC(v); };
-  upd('cost_w',    c_w_p50);
-  upd('cost_ndb',  c_ndb);
-  upd('cost_rl',   c_rl);
-  upd('cost_d2',   c_d2);
-  upd('cost_d3',   c_d3);
-  upd('cost_fs',   c_fs);
-  upd('cost_total_all', total);
-
-  // ── Update P10 / P50 / P90 scenario cost values (welcome bonus model)
-  upd('econ_cost_p10', c_w_p10);
-  upd('econ_cost_p50', c_w_p50);
-  upd('econ_cost_p90', c_w_p90);
-
-  // ── Update cost ratio
-  const newRatio = (pl*dep)>0 ? c_w_p50/(pl*dep) : 0;
-  const elCR = document.getElementById('econ_cost_ratio');
-  if(elCR) elCR.textContent = (newRatio*100).toFixed(1)+'% ('+newRatio.toFixed(3)+')';
-
-  // ── Update max risk
-  const elMR = document.getElementById('econ_max_risk');
-  if(elMR) elMR.textContent = fBC(Math.round(pl * w_bonus));
+    const fBC = v => fmtC(v, cfg.cur);
+    const upd = (id, v) => { const el=document.getElementById(id); if(el) el.textContent=fBC(v); };
+    upd('cost_w',         data.costs.w_p50);
+    upd('cost_ndb',       data.costs.ndb);
+    upd('cost_rl',        data.costs.rl);
+    upd('cost_d2',        data.costs.d2);
+    upd('cost_d3',        data.costs.d3);
+    upd('cost_fs',        data.costs.fs);
+    upd('cost_total_all', data.costs.total);
+    upd('econ_cost_p10',  data.costs.w_p10);
+    upd('econ_cost_p50',  data.costs.w_p50);
+    upd('econ_cost_p90',  data.costs.w_p90);
+    const elCR = document.getElementById('econ_cost_ratio');
+    if(elCR) elCR.textContent = (data.ratio*100).toFixed(1)+'% ('+data.ratio.toFixed(3)+')';
+    const elMR = document.getElementById('econ_max_risk');
+    if(elMR) elMR.textContent = fBC(data.maxRisk);
+  }, 300);
 }
 
 function render(c){
@@ -1886,4 +1480,10 @@ document.addEventListener('click', function(e){
     document.querySelectorAll('.tip-box.open').forEach(b => b.classList.remove('open'));
   }
 });
-document.addEventListener('DOMContentLoaded', relabel);
+document.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(location.search);
+  const saved = params.get('lang') || (() => { try { return localStorage.getItem('bonusLang'); } catch(e) { return null; } })();
+  const valid = ['ru','en','mn','es'];
+  if (saved && valid.includes(saved) && saved !== L) setLang(saved);
+  else relabel();
+});
