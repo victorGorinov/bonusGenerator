@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bonus Engine — Configurator</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="hdr">
+  <a href="/" style="position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:13px;color:#94A3B8;text-decoration:none;display:flex;align-items:center;gap:4px;opacity:.8" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.8">← Back</a>
+  <div class="hdr-logo">Bonus<span>Engine</span></div>
+  <div class="hdr-tag">CONFIGURATOR</div>
+  <div class="hdr-sub" data-i18n="hdr_sub">v2.0 · Casino Bonus Admin Spec Generator</div>
+  <div class="lang-sel">
+    <div class="lchip on" data-l="ru" onclick="setLang('ru')">RU</div>
+    <div class="lchip"    data-l="en" onclick="setLang('en')">EN</div>
+    <div class="lchip"    data-l="mn" onclick="setLang('mn')">MN</div>
+    <div class="lchip"    data-l="es" onclick="setLang('es')">ES</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ═══════════════════════════ LEFT PANEL ═══════════════════════════ -->
+<div class="left">
+  <div class="pnl-title" data-i18n="pnl_title">Параметры конфигурации</div>
+
+  <!-- Region -->
+  <div class="fg">
+    <div class="fl"><div class="tip-wrap"><span data-i18n="lbl_region">Регион и бизнес-модель</span><span class="tip-btn" onclick="toggleTip(this)">?</span><div class="tip-box" data-i18n="tip_region"></div></div></div>
+    <div class="rgrid">
+      <div class="rcard" id="rc-cis" onclick="pickRegion('cis')">
+        <span class="flag">🇷🇺</span>
+        <div class="rn" data-i18n="reg_cis">СНГ</div>
+        <div class="rs" data-i18n="reg_cis_sub">RU · UA · KZ / Фиат</div>
+      </div>
+      <div class="rcard" id="rc-eu" onclick="pickRegion('eu')">
+        <span class="flag">🇪🇺</span>
+        <div class="rn" data-i18n="reg_eu">EU / UK</div>
+        <div class="rs" data-i18n="reg_eu_sub">EUR · GBP / Фиат</div>
+      </div>
+      <div class="rcard" id="rc-crypto" onclick="pickRegion('crypto')">
+        <span class="flag">🌐</span>
+        <div class="rn" data-i18n="reg_crypto">Global Crypto</div>
+        <div class="rs" data-i18n="reg_crypto_sub">BTC · ETH · USDT</div>
+      </div>
+      <div class="rcard" id="rc-sweep" onclick="pickRegion('sweep')">
+        <span class="flag">🇺🇸</span>
+        <div class="rn" data-i18n="reg_sweep">USA / Sweep</div>
+        <div class="rs" data-i18n="reg_sweep_sub">SC · GC / Sweepcoins</div>
+      </div>
+      <div class="rcard" id="rc-mn" onclick="pickRegion('mn')">
+        <span class="flag">🇲🇳</span>
+        <div class="rn" data-i18n="reg_mn">Монголия</div>
+        <div class="rs" data-i18n="reg_mn_sub">MNT / Фиат</div>
+      </div>
+      <div class="rcard" id="rc-latam" onclick="pickRegion('latam')">
+        <span class="flag">🌎</span>
+        <div class="rn" data-i18n="reg_latam">LatAm</div>
+        <div class="rs" data-i18n="reg_latam_sub">USD / Фиат</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Players -->
+  <div class="fg">
+    <div class="fl"><div class="tip-wrap"><span data-i18n="lbl_players">Новых игроков / месяц</span><span class="tip-btn" onclick="toggleTip(this)">?</span><div class="tip-box" data-i18n="tip_players"></div></div><em id="plbl"></em></div>
+    <div class="sv" id="pdsp">5 000</div>
+    <input type="range" id="prange" min="100" max="50000" step="100" value="5000" oninput="syncR('p')">
+    <input type="number" id="pnum" value="5000" min="100" max="200000" oninput="syncN('p')" style="margin-top:6px">
+    <div class="sl"><span data-i18n="sl_min">100</span><span data-i18n="sl_max">50 000+</span></div>
+  </div>
+
+  <hr class="dv">
+
+  <!-- Currency -->
+  <div class="fg">
+    <div class="fl"><div class="tip-wrap"><span data-i18n="lbl_sitecur">Основная валюта сайта</span><span class="tip-btn" onclick="toggleTip(this)">?</span><div class="tip-box" data-i18n="tip_sitecur"></div></div></div>
+    <select id="sitecur">
+      <option value="USD" selected>USD — Доллар США</option>
+      <option value="EUR">EUR — Евро</option>
+      <option value="GBP">GBP — Фунт стерлингов</option>
+      <option value="RUB">RUB — Российский рубль</option>
+      <option value="UAH">UAH — Украинская гривна</option>
+      <option value="KZT">KZT — Казахстанский тенге</option>
+      <option value="MNT">MNT — Монгол төгрөг</option>
+      <option value="BTC">BTC — Bitcoin</option>
+      <option value="ETH">ETH — Ethereum</option>
+      <option value="USDT">USDT — Tether</option>
+    </select>
+  </div>
+
+  <!-- Avg deposit -->
+  <div class="fg">
+    <div class="fl"><div class="tip-wrap"><span data-i18n="lbl_avgdep">Средний первый депозит</span><span class="tip-btn" onclick="toggleTip(this)">?</span><div class="tip-box" data-i18n="tip_avgdep"></div></div><em id="dephint"></em></div>
+    <div class="irow">
+      <input type="number" id="avgdep" value="100">
+      <select id="depcur">
+        <option value="USD" selected>USD</option>
+        <option value="EUR">EUR</option>
+        <option value="GBP">GBP</option>
+        <option value="RUB">RUB</option>
+        <option value="UAH">UAH</option>
+        <option value="KZT">KZT</option>
+        <option value="MNT">MNT</option>
+        <option value="BTC">BTC</option>
+        <option value="ETH">ETH</option>
+        <option value="USDT">USDT</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Platform -->
+  <div class="fg">
+    <div class="fl"><div class="tip-wrap"><span data-i18n="lbl_platform">Платформа</span><span class="tip-btn" onclick="toggleTip(this)">?</span><div class="tip-box" data-i18n="tip_platform"></div></div></div>
+    <div class="chips">
+      <div class="chip on" data-g="plat" data-v="both"   onclick="pickChip(this)" data-i18n="plat_both">Desktop + Mobile</div>
+      <div class="chip"    data-g="plat" data-v="mobile" onclick="pickChip(this)" data-i18n="plat_mobile">Mobile Only</div>
+      <div class="chip"    data-g="plat" data-v="desk"   onclick="pickChip(this)" data-i18n="plat_desk">Desktop Only</div>
+    </div>
+  </div>
+
+  <!-- License -->
+  <div class="fg" id="lic-wrap">
+    <div class="fl"><div class="tip-wrap"><span data-i18n="lbl_license">Лицензия / юрисдикция</span><span class="tip-btn" onclick="toggleTip(this)">?</span><div class="tip-box" data-i18n="tip_license"></div></div></div>
+    <div class="chips">
+      <div class="chip on"  data-g="lic" data-v="mga"     onclick="pickChip(this)" data-i18n="lic_mga">MGA</div>
+      <div class="chip"     data-g="lic" data-v="ukgc"    onclick="pickChip(this)" data-i18n="lic_ukgc">UKGC</div>
+      <div class="chip"     data-g="lic" data-v="curacao" onclick="pickChip(this)" data-i18n="lic_curacao">Curaçao</div>
+      <div class="chip"     data-g="lic" data-v="none"    onclick="pickChip(this)" data-i18n="lic_none">Нет / Офшор</div>
+    </div>
+  </div>
+
+  <!-- RTP threshold -->
+  <div class="fg">
+    <div class="fl"><div class="tip-wrap"><span data-i18n="lbl_rtp">Средний RTP слотов</span><span class="tip-btn" onclick="toggleTip(this)">?</span><div class="tip-box" data-i18n="tip_rtp"></div></div><em id="rtplbl">96%</em></div>
+    <input type="range" id="rtprange" min="90" max="99" step="1" value="96" oninput="document.getElementById('rtplbl').textContent=this.value+'%'">
+    <div class="sl"><span>90%</span><span>99%</span></div>
+  </div>
+
+  <button class="btn-gen" onclick="generate()" data-i18n="btn_gen">⚡ Сгенерировать конфигурацию</button>
+</div>
+
+<!-- ═══════════════════════════ RIGHT PANEL ══════════════════════════ -->
+<div class="right" id="right">
+  <div class="ph" id="ph">
+    <div class="ph-ico">⚙️</div>
+    <div class="ph-t" data-i18n="ph_t">Выберите регион и заполните параметры</div>
+    <div class="ph-s" data-i18n="ph_s">Нажмите «Сгенерировать конфигурацию» — получите полный набор настроек для вашей админки</div>
+  </div>
+  <div id="out" style="display:none"></div>
+</div>
+
+</div><!-- end .wrap -->
+
+<script defer src="app.js"></script>
+</body>
+</html>
