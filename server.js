@@ -1,6 +1,8 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { Resend } from 'resend';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -388,6 +390,32 @@ app.post('/api/generate', (req,res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({error:'Could not generate configuration'});
+  }
+});
+
+app.post('/api/signup', async (req, res) => {
+  const { name, email, role } = req.body || {};
+  if (!email) return res.status(400).json({ error: 'email required' });
+
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  try {
+    await resend.emails.send({
+      from: 'BonusEngine <onboarding@resend.dev>',
+      to: process.env.NOTIFY_EMAIL || 'victor.gorinov@gmail.com',
+      subject: `New signup: ${name || 'Anonymous'} — BonusEngine`,
+      html: `
+        <h2>New Early Access Request</h2>
+        <table cellpadding="6" style="border-collapse:collapse">
+          <tr><td><b>Name</b></td><td>${name || '—'}</td></tr>
+          <tr><td><b>Email</b></td><td>${email}</td></tr>
+          <tr><td><b>Role</b></td><td>${role || '—'}</td></tr>
+        </table>
+      `,
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Resend error:', err);
+    res.status(500).json({ error: 'Failed to send email' });
   }
 });
 

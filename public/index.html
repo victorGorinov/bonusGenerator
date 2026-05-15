@@ -945,12 +945,41 @@ function buildMarquee(lang) {
 }
 
 // ════ SIGNUP ════
-function handleSignup(e) {
+async function handleSignup(e) {
   e.preventDefault();
   const btn = e.target;
-  btn.textContent = currentLang === 'ru' ? '✓ Заявка отправлена!' : '✓ You\'re on the list!';
-  btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+  const form = btn.closest('.signup-form');
+  const name  = form.querySelector('input[type="text"]').value.trim();
+  const email = form.querySelector('input[type="email"]').value.trim();
+  const role  = form.querySelector('select').value;
+
+  if (!email) {
+    form.querySelector('input[type="email"]').focus();
+    return;
+  }
+
   btn.disabled = true;
+  btn.textContent = currentLang === 'ru' ? 'Отправка...' : 'Sending...';
+
+  try {
+    const res = await fetch('/api/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, role }),
+    });
+    if (res.ok) {
+      btn.textContent = currentLang === 'ru' ? '✓ Заявка отправлена!' : '✓ You\'re on the list!';
+      btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+    } else {
+      btn.textContent = currentLang === 'ru' ? 'Ошибка, попробуйте снова' : 'Error, try again';
+      btn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+      btn.disabled = false;
+    }
+  } catch {
+    btn.textContent = currentLang === 'ru' ? 'Ошибка, попробуйте снова' : 'Error, try again';
+    btn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+    btn.disabled = false;
+  }
 }
 
 // ════ INIT ════
