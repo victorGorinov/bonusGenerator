@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Campaign Generator — BonusEngine</title>
+<style>
+:root {
+  --bg:#0a0d14; --bg2:#0f1420; --bg3:#141926; --card:#161c2d;
+  --border:#1e2740; --accent:#4f6ef7; --accent2:#7c3aed;
+  --text:#e8eaf0; --muted:#8892a4; --success:#10b981; --warn:#f59e0b;
+  --sidebar-w:220px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);font-size:14px;display:flex;min-height:100vh}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar-w);min-height:100vh;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50}
+.sb-logo{padding:18px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.sb-logo-icon{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.sb-logo-text{font-weight:700;font-size:.9rem}.sb-logo-text span{color:var(--accent)}
+.sb-nav{flex:1;padding:10px 0;overflow-y:auto}
+.nav-lbl{padding:8px 16px 3px;font-size:.65rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;color:var(--muted);font-size:.83rem;font-weight:500;position:relative;transition:background .15s,color .15s;text-decoration:none;border:none;background:none;width:100%;font-family:inherit}
+.nav-item:hover{background:rgba(79,110,247,.08);color:var(--text)}
+.nav-item.active{background:rgba(79,110,247,.12);color:var(--accent)}
+.nav-item.active::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
+.nav-item.off{opacity:.4;cursor:not-allowed;pointer-events:none}
+.nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.nav-badge{margin-left:auto;background:rgba(79,110,247,.15);color:#a0b0ff;font-size:.6rem;padding:1px 5px;border-radius:100px;font-weight:700}
+.sb-foot{padding:12px 16px;border-top:1px solid var(--border)}
+.sb-back{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:.78rem;text-decoration:none;transition:color .15s}
+.sb-back:hover{color:var(--text)}
+
+/* MAIN */
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{height:54px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:10px;position:sticky;top:0;z-index:40}
+.topbar-title{font-weight:600;font-size:.92rem}
+.topbar-sep,.topbar-sub{color:var(--muted);font-size:.8rem}
+.topbar-right{margin-left:auto}
+.content{flex:1;padding:26px 30px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:8px;font-size:.83rem;font-weight:600;cursor:pointer;border:none;transition:all .2s;font-family:inherit;text-decoration:none}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 2px 12px rgba(79,110,247,.3)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(79,110,247,.45)}
+.btn-outline{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+.btn-ghost{background:transparent;color:var(--muted);border:none}
+.btn-ghost:hover{color:var(--text)}
+.btn-sm{padding:5px 11px;font-size:.76rem}
+.btn-lg{padding:11px 26px;font-size:.92rem;border-radius:10px}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+
+/* DASHBOARD */
+.dash-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:26px}
+.dash-title{font-size:1.35rem;font-weight:700;margin-bottom:3px}
+.dash-sub{color:var(--muted);font-size:.83rem}
+.section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.section-title{font-weight:600;font-size:.9rem}
+
+.quick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px;margin-bottom:28px}
+.qcard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.qcard:hover{border-color:rgba(79,110,247,.4);transform:translateY(-2px)}
+.qcard-icon{font-size:1.7rem;margin-bottom:8px}
+.qcard-name{font-weight:600;font-size:.85rem;margin-bottom:3px}
+.qcard-desc{font-size:.73rem;color:var(--muted);line-height:1.5}
+.qcard-arr{position:absolute;top:13px;right:13px;color:var(--muted);font-size:11px;opacity:0;transition:opacity .2s}
+.qcard:hover .qcard-arr{opacity:1}
+
+.ctable{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.ct-hd,.ct-row{display:grid;grid-template-columns:1fr 130px 100px 90px 60px;padding:10px 16px;align-items:center}
+.ct-hd{border-bottom:1px solid var(--border);font-size:.68rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.ct-row{border-bottom:1px solid var(--border);transition:background .15s;cursor:pointer}
+.ct-row:last-child{border-bottom:none}
+.ct-row:hover{background:rgba(255,255,255,.02)}
+.ct-name{font-weight:500;font-size:.83rem}
+.ct-meta{font-size:.72rem;color:var(--muted);margin-top:1px}
+.ct-cell{font-size:.8rem;color:var(--muted)}
+.badge{display:inline-block;padding:2px 8px;border-radius:100px;font-size:.65rem;font-weight:700}
+.badge-draft{background:rgba(139,152,168,.15);color:#8b98a8}
+.badge-active{background:rgba(16,185,129,.15);color:#10b981}
+.badge-done{background:rgba(79,110,247,.15);color:#a0b0ff}
+
+/* WIZARD */
+.wiz-progress{display:flex;align-items:center;justify-content:center;margin-bottom:28px;flex-wrap:wrap;gap:0}
+.wp-step{display:flex;align-items:center;gap:7px}
+.wp-circle{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.76rem;font-weight:700;border:2px solid var(--border);color:var(--muted);background:var(--bg2);transition:all .3s;flex-shrink:0}
+.wp-circle.active{border-color:var(--accent);background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 0 14px rgba(79,110,247,.4)}
+.wp-circle.done{border-color:var(--success);background:var(--success);color:#fff}
+.wp-lbl{font-size:.72rem;color:var(--muted);font-weight:500;white-space:nowrap}
+.wp-lbl.active{color:var(--text);font-weight:600}
+.wp-conn{flex:1;height:1px;background:var(--border);min-width:16px;max-width:50px;margin:0 6px}
+.wp-conn.done{background:var(--success)}
+
+.step-panel{display:none}
+.step-panel.active{display:block}
+.step-title{font-size:1.15rem;font-weight:700;margin-bottom:5px}
+.step-sub{color:var(--muted);font-size:.83rem;margin-bottom:22px;line-height:1.6}
+
+/* Step 1 */
+.sc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.sc-cat{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.sc-cat-hd{padding:12px 14px 9px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;font-weight:600;font-size:.85rem}
+.sc-items{padding:6px}
+.sc-item{padding:8px 11px;border-radius:7px;cursor:pointer;font-size:.81rem;transition:all .15s;color:var(--muted);display:block;border:none;background:none;width:100%;text-align:left;font-family:inherit}
+.sc-item:hover{background:rgba(79,110,247,.08);color:var(--text)}
+.sc-item.sel{background:rgba(79,110,247,.15);color:var(--accent);font-weight:600}
+
+/* Step 2 */
+.params-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fg{display:flex;flex-direction:column;gap:6px}
+.fg.full{grid-column:1/-1}
+.fl{font-size:.74rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.form-input,.form-select{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:9px 13px;color:var(--text);font-size:.85rem;font-family:inherit;outline:none;transition:border-color .2s;width:100%}
+.form-input:focus,.form-select:focus{border-color:var(--accent)}
+.chip-group{display:flex;gap:5px;flex-wrap:wrap}
+.chip{padding:5px 13px;border-radius:100px;font-size:.76rem;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--bg2);color:var(--muted);transition:all .15s;user-select:none}
+.chip:hover{border-color:var(--accent);color:var(--text)}
+.chip.active{background:rgba(79,110,247,.15);border-color:var(--accent);color:var(--accent)}
+.toggle3{display:flex;background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.t3-btn{flex:1;padding:8px 4px;text-align:center;font-size:.76rem;font-weight:600;cursor:pointer;color:var(--muted);transition:all .15s;border:none;background:none;font-family:inherit}
+.t3-btn.active{background:rgba(79,110,247,.2);color:var(--accent)}
+
+/* Step 3 progress */
+.prog-wrap{max-width:440px;margin:0 auto;padding:20px 0}
+.prog-title{font-size:1.05rem;font-weight:700;text-align:center;margin-bottom:5px}
+.prog-sub{text-align:center;color:var(--muted);font-size:.82rem;margin-bottom:26px}
+.prog-list{list-style:none;display:flex;flex-direction:column;gap:10px}
+.pl-item{display:flex;align-items:center;gap:12px;padding:11px 15px;background:var(--card);border:1px solid var(--border);border-radius:9px;font-size:.85rem;color:var(--muted);transition:all .3s}
+.pl-item.done{border-color:rgba(16,185,129,.3);color:var(--text)}
+.pl-item.running{border-color:rgba(79,110,247,.3);color:var(--text)}
+.pl-icon{font-size:15px;flex-shrink:0;width:18px;text-align:center}
+.spinner{width:15px;height:15px;border:2px solid rgba(79,110,247,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Step 3 results */
+.res-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+.res-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px}
+.rc-title{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.mech-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:.83rem}
+.mech-row:last-child{border-bottom:none}
+.mr-l{color:var(--muted)}.mr-v{font-weight:600}
+.ai-bullets{list-style:none;display:flex;flex-direction:column;gap:8px}
+.ai-bullet{display:flex;gap:8px;font-size:.81rem;line-height:1.55;color:var(--muted)}
+.ai-bullet::before{content:'✓';color:var(--success);flex-shrink:0;font-weight:700}
+.alt-chips{display:flex;flex-direction:column;gap:7px;margin-top:6px}
+.alt-chip{padding:10px 13px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;font-size:.78rem;cursor:pointer;transition:all .15s}
+.alt-chip:hover{border-color:var(--accent)}
+.alt-chip-name{font-weight:600;color:var(--text);margin-bottom:2px}
+.alt-chip-desc{color:var(--muted);font-size:.71rem}
+
+/* Step 4 */
+.ch-tabs{display:flex;gap:2px;margin-bottom:14px;border-bottom:1px solid var(--border)}
+.ch-tab{padding:7px 13px;font-size:.8rem;font-weight:600;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;margin-bottom:-1px;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit}
+.ch-tab:hover{color:var(--text)}
+.ch-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.ch-content{display:none}
+.ch-content.active{display:block}
+.var-cards{display:flex;flex-direction:column;gap:10px}
+.var-card{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:13px 15px}
+.var-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.var-lbl{font-size:.68rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em}
+.var-meta{font-size:.7rem;color:var(--muted)}
+.var-text{font-size:.83rem;line-height:1.6;white-space:pre-line}
+.var-acts{display:flex;gap:6px;margin-top:9px}
+
+/* Audit */
+.audit-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.audit-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px}
+.audit-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.audit-item:last-child{border-bottom:none}
+.audit-ico{font-size:15px;flex-shrink:0;margin-top:1px}
+.audit-lbl{font-size:.83rem;font-weight:600;margin-bottom:2px}
+.audit-note{font-size:.73rem;color:var(--muted)}
+.rec-item{padding:9px 0;border-bottom:1px solid var(--border)}
+.rec-item:last-child{border-bottom:none}
+.rec-text{font-size:.81rem;line-height:1.5;margin-bottom:7px}
+
+/* Step 5 */
+.exp-layout{display:grid;grid-template-columns:1fr 300px;gap:18px}
+.exp-formats{display:flex;flex-direction:column;gap:9px}
+.exp-btn{display:flex;align-items:center;gap:13px;padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:11px;cursor:pointer;transition:all .15s;width:100%;text-align:left;font-family:inherit;color:var(--text)}
+.exp-btn:hover{border-color:var(--accent)}
+.exp-btn-ico{font-size:19px;flex-shrink:0}
+.exp-btn-name{font-weight:600;font-size:.85rem}
+.exp-btn-desc{font-size:.72rem;color:var(--muted);margin-top:2px}
+.sum-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;position:sticky;top:74px}
+.sum-title{font-weight:700;font-size:.9rem;margin-bottom:12px}
+.sum-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:.8rem}
+.sum-row:last-of-type{border-bottom:none}
+.sr-l{color:var(--muted)}.sr-v{font-weight:600}
+.done-screen{text-align:center;padding:48px 20px;max-width:460px;margin:0 auto}
+.done-emoji{font-size:3.2rem;margin-bottom:14px}
+.done-title{font-size:1.4rem;font-weight:700;margin-bottom:7px}
+.done-sub{color:var(--muted);margin-bottom:26px;font-size:.88rem;line-height:1.65}
+.done-acts{display:flex;gap:11px;justify-content:center}
+
+/* Wizard footer */
+.wiz-foot{display:flex;align-items:center;justify-content:space-between;padding-top:20px;margin-top:22px;border-top:1px solid var(--border)}
+.wiz-foot-l,.wiz-foot-r{display:flex;align-items:center;gap:9px}
+.step-ctr{font-size:.75rem;color:var(--muted)}
+
+@media(max-width:900px){.params-grid,.res-grid,.audit-grid,.exp-layout{grid-template-columns:1fr}}
+@media(max-width:680px){.sidebar{display:none}.main{margin-left:0}.ct-hd,.ct-row{grid-template-columns:1fr 80px 70px}}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-icon">🎰</div>
+    <div class="sb-logo-text">Bonus<span>Engine</span></div>
+  </div>
+  <nav class="sb-nav">
+    <div class="nav-lbl">Главное</div>
+    <button class="nav-item active" onclick="showView('dashboard')"><span class="nav-icon">📊</span>Дашборд</button>
+    <button class="nav-item" onclick="showView('campaigns')"><span class="nav-icon">📋</span>Кампании<span class="nav-badge">3</span></button>
+    <div class="nav-lbl" style="margin-top:6px">Инструменты</div>
+    <button class="nav-item off"><span class="nav-icon">📚</span>Шаблоны<span class="nav-badge">Soon</span></button>
+    <button class="nav-item off"><span class="nav-icon">🎯</span>Сценарии<span class="nav-badge">Soon</span></button>
+    <button class="nav-item off"><span class="nav-icon">📅</span>Календарь<span class="nav-badge">Soon</span></button>
+    <button class="nav-item off"><span class="nav-icon">🤖</span>AI Ассистент<span class="nav-badge">Soon</span></button>
+    <div class="nav-lbl" style="margin-top:6px">Скоро</div>
+    <button class="nav-item off"><span class="nav-icon">📈</span>Аналитика</button>
+    <button class="nav-item off"><span class="nav-icon">⚙️</span>Настройки</button>
+  </nav>
+  <div class="sb-foot">
+    <a href="/generator.html" class="sb-back">← Бонус-конфигуратор</a>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <span class="topbar-title" id="tb-title">Дашборд</span>
+    <span class="topbar-sep">·</span>
+    <span class="topbar-sub" id="tb-sub">AI Campaign Generator</span>
+    <div class="topbar-right">
+      <button class="btn btn-primary btn-sm" onclick="startWizard()">+ Новая кампания</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div id="view-dashboard">
+      <div class="dash-header">
+        <div>
+          <div class="dash-title">Добро пожаловать! 👋</div>
+          <div class="dash-sub">Создайте CRM-кампанию за 5 шагов с помощью AI</div>
+        </div>
+        <button class="btn btn-primary btn-lg" onclick="startWizard()">⚡ Создать кампанию</button>
+      </div>
+
+      <div class="section-hd"><div class="section-title">Быстрый старт</div></div>
+      <div class="quick-grid">
+        <div class="qcard" onclick="startWizardWith('inactive_7')"><div class="qcard-icon">🔄</div><div class="qcard-name">Реактивация</div><div class="qcard-desc">Вернуть неактивных 7+ дней</div><div class="qcard-arr">→</div></div>
+        <div class="qcard" onclick="startWizardWith('second_dep')"><div class="qcard-icon">💰</div><div class="qcard-name">Reload кампания</div><div class="qcard-desc">Бонус на повторный депозит</div><div class="qcard-arr">→</div></div>
+        <div class="qcard" onclick="startWizardWith('cashback')"><div class="qcard-icon">💳</div><div class="qcard-name">Cashback</div><div class="qcard-desc">Возврат % от проигрышей</div><div class="qcard-arr">→</div></div>
+        <div class="qcard" onclick="startWizardWith('vip_retention')"><div class="qcard-icon">👑</div><div class="qcard-name">VIP удержание</div><div class="qcard-desc">Персональные офферы для VIP</div><div class="qcard-arr">→</div></div>
+        <div class="qcard" onclick="startWizardWith('sport_event')"><div class="qcard-icon">⚽</div><div class="qcard-name">Спортивное событие</div><div class="qcard-desc">Фрибет или бонус к матчу</div><div class="qcard-arr">→</div></div>
+        <div class="qcard" onclick="startWizardWith('tournament')"><div class="qcard-icon">🏆</div><div class="qcard-name">Турнир / Ивент</div><div class="qcard-desc">Механика слот-турнира</div><div class="qcard-arr">→</div></div>
+      </div>
+
+      <div class="section-hd">
+        <div class="section-title">Последние кампании</div>
+        <button class="btn btn-ghost btn-sm" onclick="showView('campaigns')">Все →</button>
+      </div>
+      <div class="ctable">
+        <div class="ct-hd"><span>Название</span><span>Тип</span><span>Статус</span><span>Дата</span><span></span></div>
+        <div class="ct-row">
+          <div><div class="ct-name">Weekend Reload DE</div><div class="ct-meta">Reload · 50% · €100 maxB · ×35</div></div>
+          <div class="ct-cell">Депозиты</div><div><span class="badge badge-active">Активна</span></div>
+          <div class="ct-cell">14 мая</div><div style="text-align:right"><button class="btn btn-ghost btn-sm">···</button></div>
+        </div>
+        <div class="ct-row">
+          <div><div class="ct-name">VIP May Reactivation</div><div class="ct-meta">VIP · 30 дней · EUR</div></div>
+          <div class="ct-cell">VIP</div><div><span class="badge badge-draft">Черновик</span></div>
+          <div class="ct-cell">12 мая</div><div style="text-align:right"><button class="btn btn-ghost btn-sm">···</button></div>
+        </div>
+        <div class="ct-row">
+          <div><div class="ct-name">Champions League Push</div><div class="ct-meta">Спорт · Фрибет · Push+Email</div></div>
+          <div class="ct-cell">Спорт</div><div><span class="badge badge-done">Завершена</span></div>
+          <div class="ct-cell">7 мая</div><div style="text-align:right"><button class="btn btn-ghost btn-sm">···</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CAMPAIGNS -->
+    <div id="view-campaigns" style="display:none">
+      <div class="dash-header">
+        <div><div class="dash-title">Кампании</div><div class="dash-sub">Все созданные кампании</div></div>
+        <button class="btn btn-primary" onclick="startWizard()">+ Новая кампания</button>
+      </div>
+      <div class="ctable">
+        <div class="ct-hd"><span>Название</span><span>Тип</span><span>Статус</span><span>Дата</span><span></span></div>
+        <div class="ct-row"><div><div class="ct-name">Weekend Reload DE</div><div class="ct-meta">Reload · 50% · €100 · ×35</div></div><div class="ct-cell">Депозиты</div><div><span class="badge badge-active">Активна</span></div><div class="ct-cell">14 мая</div><div style="text-align:right"><button class="btn btn-ghost btn-sm">···</button></div></div>
+        <div class="ct-row"><div><div class="ct-name">VIP May Reactivation</div><div class="ct-meta">VIP · 30 дней · EUR</div></div><div class="ct-cell">VIP</div><div><span class="badge badge-draft">Черновик</span></div><div class="ct-cell">12 мая</div><div style="text-align:right"><button class="btn btn-ghost btn-sm">···</button></div></div>
+        <div class="ct-row"><div><div class="ct-name">Champions League Push</div><div class="ct-meta">Спорт · Фрибет · Push+Email</div></div><div class="ct-cell">Спорт</div><div><span class="badge badge-done">Завершена</span></div><div class="ct-cell">7 мая</div><div style="text-align:right"><button class="btn btn-ghost btn-sm">···</button></div></div>
+      </div>
+    </div>
+
+    <!-- WIZARD -->
+    <div id="view-wizard" style="display:none">
+
+      <!-- Progress -->
+      <div class="wiz-progress" id="wizProg">
+        <div class="wp-step"><div class="wp-circle active" id="wpc-1">1</div><div class="wp-lbl active" id="wpl-1">Сценарий</div></div>
+        <div class="wp-conn" id="wpcon-1"></div>
+        <div class="wp-step"><div class="wp-circle" id="wpc-2">2</div><div class="wp-lbl" id="wpl-2">Параметры</div></div>
+        <div class="wp-conn" id="wpcon-2"></div>
+        <div class="wp-step"><div class="wp-circle" id="wpc-3">3</div><div class="wp-lbl" id="wpl-3">Генерация</div></div>
+        <div class="wp-conn" id="wpcon-3"></div>
+        <div class="wp-step"><div class="wp-circle" id="wpc-4">4</div><div class="wp-lbl" id="wpl-4">Тексты</div></div>
+        <div class="wp-conn" id="wpcon-4"></div>
+        <div class="wp-step"><div class="wp-circle" id="wpc-5">5</div><div class="wp-lbl" id="wpl-5">Экспорт</div></div>
+      </div>
+
+      <!-- STEP 1 -->
+      <div class="step-panel active" id="step-1">
+        <div class="step-title">Выберите сценарий кампании</div>
+        <div class="step-sub">Сценарий определяет тип аудитории и логику бонусного предложения</div>
+        <div class="sc-grid" id="scGrid"></div>
+        <div class="wiz-foot">
+          <div class="wiz-foot-l">
+            <button class="btn btn-outline" onclick="showView('dashboard')">← Отмена</button>
+            <span class="step-ctr">Шаг 1 из 5</span>
+          </div>
+          <div class="wiz-foot-r">
+            <button class="btn btn-primary" id="s1next" onclick="goStep(2)" disabled>Далее →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="step-panel" id="step-2">
+        <div class="step-title">Параметры кампании</div>
+        <div class="step-sub">Настройте аудиторию, бюджет и тон коммуникации</div>
+        <div class="params-grid">
+          <div class="fg">
+            <div class="fl">Гео / Страна</div>
+            <select class="form-select" id="p-geo">
+              <option value="de">🇩🇪 Germany (DE)</option>
+              <option value="uk">🇬🇧 United Kingdom (UK)</option>
+              <option value="ru">🇷🇺 Russia (RU)</option>
+              <option value="kz">🇰🇿 Kazakhstan (KZ)</option>
+              <option value="mx">🇲🇽 Mexico (MX)</option>
+              <option value="br">🇧🇷 Brazil (BR)</option>
+              <option value="mn">🇲🇳 Mongolia (MN)</option>
+              <option value="us">🇺🇸 USA (Sweepstakes)</option>
+            </select>
+          </div>
+          <div class="fg">
+            <div class="fl">Вертикаль</div>
+            <div class="chip-group">
+              <div class="chip active" data-g="vertical" data-v="casino" onclick="pickChip(this)">🎰 Casino</div>
+              <div class="chip" data-g="vertical" data-v="sports" onclick="pickChip(this)">⚽ Sports</div>
+              <div class="chip" data-g="vertical" data-v="both" onclick="pickChip(this)">🎯 Mixed</div>
+            </div>
+          </div>
+          <div class="fg">
+            <div class="fl">Сегмент игроков</div>
+            <div class="chip-group">
+              <div class="chip" data-g="segment" data-v="new" onclick="pickChip(this)">🆕 Новые</div>
+              <div class="chip active" data-g="segment" data-v="mid" onclick="pickChip(this)">👤 Средние</div>
+              <div class="chip" data-g="segment" data-v="vip" onclick="pickChip(this)">👑 VIP</div>
+            </div>
+          </div>
+          <div class="fg">
+            <div class="fl">Предпочтительные игры</div>
+            <div class="chip-group">
+              <div class="chip active" data-g="games" data-v="slots" onclick="pickChip(this)">🎰 Слоты</div>
+              <div class="chip" data-g="games" data-v="table" onclick="pickChip(this)">🃏 Настольные</div>
+              <div class="chip" data-g="games" data-v="live" onclick="pickChip(this)">📺 Live</div>
+            </div>
+          </div>
+          <div class="fg">
+            <div class="fl">Бюджет кампании (€)</div>
+            <input class="form-input" type="number" id="p-budget" value="5000" min="100">
+          </div>
+          <div class="fg">
+            <div class="fl">Язык коммуникации</div>
+            <select class="form-select" id="p-lang">
+              <option value="de">Deutsch</option>
+              <option value="en">English</option>
+              <option value="ru">Русский</option>
+              <option value="es">Español</option>
+              <option value="mn">Монгол</option>
+            </select>
+          </div>
+          <div class="fg">
+            <div class="fl">Тон коммуникации</div>
+            <div class="chip-group">
+              <div class="chip active" data-g="tone" data-v="friendly" onclick="pickChip(this)">😊 Дружелюбный</div>
+              <div class="chip" data-g="tone" data-v="pro" onclick="pickChip(this)">🤝 Профессиональный</div>
+              <div class="chip" data-g="tone" data-v="aggressive" onclick="pickChip(this)">⚡ Агрессивный</div>
+            </div>
+          </div>
+          <div class="fg">
+            <div class="fl">Агрессивность предложения</div>
+            <div class="toggle3">
+              <button class="t3-btn active" data-g="agg" data-v="low" onclick="pickT3(this)">Низкая</button>
+              <button class="t3-btn" data-g="agg" data-v="mid" onclick="pickT3(this)">Средняя</button>
+              <button class="t3-btn" data-g="agg" data-v="high" onclick="pickT3(this)">Высокая</button>
+            </div>
+          </div>
+          <div class="fg full">
+            <div class="fl">Риск-уровень</div>
+            <div class="toggle3" style="max-width:340px">
+              <button class="t3-btn active" data-g="risk" data-v="low" onclick="pickT3(this)">🟢 Низкий</button>
+              <button class="t3-btn" data-g="risk" data-v="mid" onclick="pickT3(this)">🟡 Средний</button>
+              <button class="t3-btn" data-g="risk" data-v="high" onclick="pickT3(this)">🔴 Высокий</button>
+            </div>
+          </div>
+        </div>
+        <div class="wiz-foot">
+          <div class="wiz-foot-l"><button class="btn btn-outline" onclick="goStep(1)">← Назад</button><span class="step-ctr">Шаг 2 из 5</span></div>
+          <div class="wiz-foot-r"><button class="btn btn-primary" onclick="goStep(3)">Сгенерировать ⚡</button></div>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="step-panel" id="step-3">
+        <div id="s3-prog">
+          <div class="prog-wrap">
+            <div class="prog-title">AI генерирует кампанию...</div>
+            <div class="prog-sub">Анализируем сценарий и подбираем оптимальную механику</div>
+            <ul class="prog-list" id="progList"></ul>
+          </div>
+        </div>
+        <div id="s3-res" style="display:none">
+          <div class="step-title">Механика подобрана ✓</div>
+          <div class="step-sub">AI выбрал оптимальный бонусный оффер для вашего сценария и аудитории</div>
+          <div class="res-grid">
+            <div>
+              <div class="res-card" style="margin-bottom:14px">
+                <div class="rc-title">Рекомендованная механика</div>
+                <div class="mech-row"><span class="mr-l">Тип</span><span class="mr-v">Reload Bonus (50% match)</span></div>
+                <div class="mech-row"><span class="mr-l">Макс. бонус</span><span class="mr-v">€100</span></div>
+                <div class="mech-row"><span class="mr-l">Мин. депозит</span><span class="mr-v">€20</span></div>
+                <div class="mech-row"><span class="mr-l">Вейджер</span><span class="mr-v">×35</span></div>
+                <div class="mech-row"><span class="mr-l">Фриспины</span><span class="mr-v">50 FS × €0.10</span></div>
+                <div class="mech-row"><span class="mr-l">Срок</span><span class="mr-v">7 дней</span></div>
+              </div>
+              <div class="res-card">
+                <div class="rc-title">Почему эта механика</div>
+                <ul class="ai-bullets">
+                  <li class="ai-bullet">Reload идеален для игроков 7–14 дней без активности — низкий порог входа</li>
+                  <li class="ai-bullet">50% match балансирует привлекательность и cost ratio (≈17% — норма)</li>
+                  <li class="ai-bullet">Фриспины увеличивают вовлечённость без роста денежного риска</li>
+                  <li class="ai-bullet">Вейджер ×35 оптимален для EU/MGA: выше breakeven, ниже UKGC лимита</li>
+                </ul>
+              </div>
+            </div>
+            <div class="res-card">
+              <div class="rc-title">Альтернативы</div>
+              <div class="alt-chips">
+                <div class="alt-chip"><div class="alt-chip-name">🎰 Фриспины +30</div><div class="alt-chip-desc">80 FS без депозита — меньше риск</div></div>
+                <div class="alt-chip"><div class="alt-chip-name">💰 Депозитный буст</div><div class="alt-chip-desc">75% match, €150 maxB — агрессивнее</div></div>
+                <div class="alt-chip"><div class="alt-chip-name">💳 Cashback</div><div class="alt-chip-desc">10% без вейджера — для риск-осторожных</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="wiz-foot">
+            <div class="wiz-foot-l"><button class="btn btn-outline" onclick="goStep(2)">← Назад</button><span class="step-ctr">Шаг 3 из 5</span></div>
+            <div class="wiz-foot-r">
+              <button class="btn btn-outline btn-sm" onclick="runProgress()">↻ Перегенерировать</button>
+              <button class="btn btn-primary" onclick="goStep(4)">Тексты и аудит →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4 -->
+      <div class="step-panel" id="step-4">
+        <div class="step-title">Тексты и аудит кампании</div>
+        <div class="step-sub">AI-тексты для каждого канала + проверка рисков</div>
+        <div class="ch-tabs" id="s4tabs">
+          <button class="ch-tab active" onclick="switchS4('texts',this)">📝 Тексты</button>
+          <button class="ch-tab" onclick="switchS4('audit',this)">🔍 Аудит</button>
+        </div>
+
+        <!-- Texts -->
+        <div id="s4-texts" class="ch-content active">
+          <div class="ch-tabs" id="chTabs">
+            <button class="ch-tab active" onclick="switchCh('push',this)">📲 Push</button>
+            <button class="ch-tab" onclick="switchCh('email',this)">✉️ Email</button>
+            <button class="ch-tab" onclick="switchCh('sms',this)">💬 SMS</button>
+            <button class="ch-tab" onclick="switchCh('telegram',this)">✈️ Telegram</button>
+            <button class="ch-tab" onclick="switchCh('popup',this)">💡 Popup</button>
+          </div>
+          <div id="ch-push" class="ch-content active">
+            <div class="var-cards">
+              <div class="var-card"><div class="var-hd"><span class="var-lbl">Вариант A</span><span class="var-meta">87 симв.</span></div><div class="var-text">🎰 Привет! Скучаем по тебе. Вернись — и получи 50% бонус до €100 + 50 фриспинов. Только 7 дней!</div><div class="var-acts"><button class="btn btn-outline btn-sm" onclick="copyText(this)">📋 Копировать</button></div></div>
+              <div class="var-card"><div class="var-hd"><span class="var-lbl">Вариант B</span><span class="var-meta">94 симв.</span></div><div class="var-text">💰 Специально для тебя: Reload 50% + 50 FS. Депозит от €20 — бонус мгновенно. Вейджер ×35.</div><div class="var-acts"><button class="btn btn-outline btn-sm" onclick="copyText(this)">📋 Копировать</button></div></div>
+              <div class="var-card"><div class="var-hd"><span class="var-lbl">Вариант C</span><span class="var-meta">72 симв.</span></div><div class="var-text">⚡ Твой бонус ждёт! +50% на депозит до €100. Активируй за 7 дней: код RELOAD50</div><div class="var-acts"><button class="btn btn-outline btn-sm" onclick="copyText(this)">📋 Копировать</button></div></div>
+            </div>
+            <div style="margin-top:12px"><button class="btn btn-outline btn-sm">↻ Сгенерировать ещё</button></div>
+          </div>
+          <div id="ch-email" class="ch-content">
+            <div class="var-cards">
+              <div class="var-card">
+                <div class="var-hd"><span class="var-lbl">Вариант A — Тема</span><span class="var-meta">48 симв.</span></div>
+                <div class="var-text" style="color:var(--accent);font-weight:600;margin-bottom:10px">Мы скучаем по тебе — вот твой личный бонус 🎁</div>
+                <div class="var-text">Привет!
+
+Мы заметили, что ты давно не заходил. Специально для тебя:
+— 50% Reload Bonus до €100
+— 50 бесплатных спинов
+
+Активируй код RELOAD50 при депозите от €20.
+
+✅ Действует 7 дней  ✅ Вейджер ×35  ✅ Только слоты</div>
+                <div class="var-acts"><button class="btn btn-outline btn-sm" onclick="copyText(this)">📋 Копировать</button></div>
+              </div>
+            </div>
+            <div style="margin-top:12px"><button class="btn btn-outline btn-sm">↻ Сгенерировать ещё</button></div>
+          </div>
+          <div id="ch-sms" class="ch-content">
+            <div class="var-cards">
+              <div class="var-card"><div class="var-hd"><span class="var-lbl">Вариант A</span><span class="var-meta" style="color:var(--success)">96/160</span></div><div class="var-text">BonusEngine: +50% до €100 + 50FS! Деп от €20, код RELOAD50. 7 дней. Откл: STOP</div><div class="var-acts"><button class="btn btn-outline btn-sm" onclick="copyText(this)">📋 Копировать</button></div></div>
+              <div class="var-card"><div class="var-hd"><span class="var-lbl">Вариант B</span><span class="var-meta" style="color:var(--warn)">148/160</span></div><div class="var-text">Только для тебя: Reload 50% до €100 + 50 фриспинов. Мин. деп €20, вейджер ×35. Код: RELOAD50. 7д. Откл: STOP</div><div class="var-acts"><button class="btn btn-outline btn-sm" onclick="copyText(this)">📋 Копировать</button></div></div>
+            </div>
+          </div>
+          <div id="ch-telegram" class="ch-content">
+            <div class="var-cards">
+              <div class="var-card"><div class="var-hd"><span class="var-lbl">Вариант A</span><span class="var-meta">Markdown</span></div><div class="var-text">🎰 *Привет! Мы скучаем по тебе* 🎰
+
+Специально для тебя — персональный оффер:
+
+💰 *Reload Bonus 50%* — до €100
+🎡 *50 фриспинов* на популярных слотах
+
+📌 Мин. депозит: €20
+⏱ Срок: 7 дней  🎯 Код: `RELOAD50`
+
+_Вейджер ×35. Только слоты. T&C apply._</div><div class="var-acts"><button class="btn btn-outline btn-sm" onclick="copyText(this)">📋 Копировать</button></div></div>
+            </div>
+            <div style="margin-top:12px"><button class="btn btn-outline btn-sm">↻ Сгенерировать ещё</button></div>
+          </div>
+          <div id="ch-popup" class="ch-content">
+            <div class="var-cards">
+              <div class="var-card">
+                <div class="var-hd"><span class="var-lbl">On-site Popup</span><span class="var-meta">Hero + CTA</span></div>
+                <div style="background:var(--bg);border-radius:10px;padding:18px;margin-bottom:10px;text-align:center">
+                  <div style="font-size:1.7rem;margin-bottom:7px">🎁</div>
+                  <div style="font-weight:700;font-size:.95rem;margin-bottom:4px">Твой персональный бонус!</div>
+                  <div style="color:var(--accent);font-size:1.2rem;font-weight:800;margin-bottom:5px">+50% до €100</div>
+                  <div style="color:var(--muted);font-size:.75rem;margin-bottom:13px">+ 50 фриспинов · Код: RELOAD50</div>
+                  <div style="background:linear-gradient(135deg,#4f6ef7,#7c3aed);color:#fff;padding:9px 20px;border-radius:8px;font-weight:700;display:inline-block;font-size:.85rem">Забрать бонус →</div>
+                </div>
+                <div class="var-acts"><button class="btn btn-outline btn-sm" onclick="copyText(this)">📋 Копировать HTML</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Audit -->
+        <div id="s4-audit" class="ch-content">
+          <div class="audit-grid">
+            <div class="audit-card">
+              <div class="rc-title" style="margin-bottom:12px">Чеклист аудита</div>
+              <div class="audit-item"><div class="audit-ico">✅</div><div><div class="audit-lbl">Условия бонуса</div><div class="audit-note">Все параметры указаны. Вейджер ×35 — в рамках MGA.</div></div></div>
+              <div class="audit-item"><div class="audit-ico">⚠️</div><div><div class="audit-lbl">Риски злоупотреблений</div><div class="audit-note">Мин. депозит €20 низкий — возможен бонус-хантинг. Рекомендуем €25+.</div></div></div>
+              <div class="audit-item"><div class="audit-ico">✅</div><div><div class="audit-lbl">Соответствие правилам</div><div class="audit-note">EU/MGA: вейджер, срок, max bet — в норме.</div></div></div>
+              <div class="audit-item"><div class="audit-ico">✅</div><div><div class="audit-lbl">Локализация</div><div class="audit-note">Гео DE: тексты на немецком рекомендованы.</div></div></div>
+              <div class="audit-item"><div class="audit-ico">⚠️</div><div><div class="audit-lbl">UX и дизайн</div><div class="audit-note">Popup перегружен — упростить до 1 CTA.</div></div></div>
+            </div>
+            <div class="audit-card">
+              <div class="rc-title" style="margin-bottom:12px">Рекомендации AI</div>
+              <div class="rec-item"><div class="rec-text">🔺 Поднять мин. депозит до €25 — снизит бонус-хантинг на ~30%</div><button class="btn btn-outline btn-sm">Применить</button></div>
+              <div class="rec-item"><div class="rec-text">🌍 Сгенерировать тексты на немецком (DE) — повысит CTR до 15%</div><button class="btn btn-outline btn-sm">Применить</button></div>
+              <div class="rec-item"><div class="rec-text">📱 Сократить popup до заголовка + 1 кнопки — мобильный UX</div><button class="btn btn-outline btn-sm">Применить</button></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wiz-foot">
+          <div class="wiz-foot-l"><button class="btn btn-outline" onclick="goStep(3)">← Назад</button><span class="step-ctr">Шаг 4 из 5</span></div>
+          <div class="wiz-foot-r"><button class="btn btn-primary" onclick="goStep(5)">Экспорт →</button></div>
+        </div>
+      </div>
+
+      <!-- STEP 5 -->
+      <div class="step-panel" id="step-5">
+        <div id="s5-export">
+          <div class="step-title">Экспорт кампании</div>
+          <div class="step-sub">Скачайте или скопируйте конфигурацию в нужном формате</div>
+          <div class="exp-layout">
+            <div class="exp-formats">
+              <button class="exp-btn" onclick="doExport('json')"><span class="exp-btn-ico">📄</span><div><div class="exp-btn-name">JSON</div><div class="exp-btn-desc">Полная конфигурация для разработчиков</div></div><span style="margin-left:auto;color:var(--muted);font-size:12px">↓</span></button>
+              <button class="exp-btn" onclick="doExport('csv')"><span class="exp-btn-ico">📊</span><div><div class="exp-btn-name">CSV / Excel</div><div class="exp-btn-desc">Для импорта в CRM-систему</div></div><span style="margin-left:auto;color:var(--muted);font-size:12px">↓</span></button>
+              <button class="exp-btn" onclick="doExport('copy')"><span class="exp-btn-ico">📋</span><div><div class="exp-btn-name">Копировать в буфер</div><div class="exp-btn-desc">Все параметры и тексты одним блоком</div></div><span style="margin-left:auto;color:var(--muted);font-size:12px">⎘</span></button>
+              <button class="exp-btn" onclick="doExport('email')"><span class="exp-btn-ico">📧</span><div><div class="exp-btn-name">Email в CRM</div><div class="exp-btn-desc">Отправить спецификацию команде</div></div><span style="margin-left:auto;color:var(--muted);font-size:12px">→</span></button>
+              <button class="exp-btn" onclick="doExport('api')"><span class="exp-btn-ico">⚙️</span><div><div class="exp-btn-name">API / curl</div><div class="exp-btn-desc">Интеграция через REST API</div></div><span style="margin-left:auto;color:var(--muted);font-size:12px">{ }</span></button>
+            </div>
+            <div>
+              <div class="sum-card">
+                <div class="sum-title">📋 Сводка кампании</div>
+                <div class="sum-row"><span class="sr-l">Сценарий</span><span class="sr-v" id="sum-sc">—</span></div>
+                <div class="sum-row"><span class="sr-l">Гео</span><span class="sr-v" id="sum-geo">—</span></div>
+                <div class="sum-row"><span class="sr-l">Сегмент</span><span class="sr-v" id="sum-seg">—</span></div>
+                <div class="sum-row"><span class="sr-l">Механика</span><span class="sr-v">Reload 50%</span></div>
+                <div class="sum-row"><span class="sr-l">Макс. бонус</span><span class="sr-v">€100</span></div>
+                <div class="sum-row"><span class="sr-l">Вейджер</span><span class="sr-v">×35</span></div>
+                <div class="sum-row"><span class="sr-l">Бюджет</span><span class="sr-v" id="sum-bud">—</span></div>
+                <div class="sum-row"><span class="sr-l">Каналы</span><span class="sr-v">Push · Email · SMS</span></div>
+                <div style="margin-top:13px">
+                  <button class="btn btn-primary" style="width:100%" onclick="finishCampaign()">✓ Создать кампанию</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="wiz-foot">
+            <div class="wiz-foot-l"><button class="btn btn-outline" onclick="goStep(4)">← Назад</button><span class="step-ctr">Шаг 5 из 5</span></div>
+          </div>
+        </div>
+
+        <!-- Done -->
+        <div id="s5-done" style="display:none">
+          <div class="done-screen">
+            <div class="done-emoji">🎉</div>
+            <div class="done-title">Кампания создана!</div>
+            <div class="done-sub" id="done-sub">Кампания успешно сохранена. Найдите её в разделе «Кампании».</div>
+            <div class="done-acts">
+              <button class="btn btn-primary btn-lg" onclick="showView('campaigns')">Перейти к кампании →</button>
+              <button class="btn btn-outline btn-lg" onclick="startWizard()">+ Создать ещё</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /view-wizard -->
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const SCENARIOS = [
+  { cat:'Реактивация', icon:'🔄', items:[
+    {id:'inactive_3',  lbl:'Неактивен 3 дня'},
+    {id:'inactive_7',  lbl:'Неактивен 7 дней'},
+    {id:'inactive_30', lbl:'Неактивен 30+ дней'},
+    {id:'churn_risk',  lbl:'Риск оттока'},
+    {id:'return_win',  lbl:'Вернуть после выигрыша'},
+    {id:'return_loss', lbl:'Вернуть после проигрыша'},
+  ]},
+  { cat:'Депозиты', icon:'💰', items:[
+    {id:'first_dep',  lbl:'Первый депозит'},
+    {id:'second_dep', lbl:'Второй депозит'},
+    {id:'big_dep',    lbl:'Крупный депозит'},
+  ]},
+  { cat:'VIP', icon:'👑', items:[
+    {id:'vip_retention',    lbl:'VIP удержание'},
+    {id:'vip_reactivation', lbl:'VIP реактивация'},
+  ]},
+  { cat:'Спорт', icon:'⚽', items:[
+    {id:'sport_event', lbl:'Спортивное событие'},
+  ]},
+  { cat:'Турниры', icon:'🏆', items:[
+    {id:'tournament', lbl:'Турнир / Ивент'},
+  ]},
+  { cat:'Другое', icon:'📌', items:[
+    {id:'cashback', lbl:'Cashback кампания'},
+    {id:'custom',   lbl:'Кастомный сценарий'},
+  ]},
+];
+
+const PROG_STEPS = ['Анализ сценария','Подбор механики бонуса','Генерация условий','Создание текстов','Проверка на риски'];
+const GEO_LBL   = {de:'🇩🇪 Germany',uk:'🇬🇧 UK',ru:'🇷🇺 Russia',kz:'🇰🇿 Kazakhstan',mx:'🇲🇽 Mexico',br:'🇧🇷 Brazil',mn:'🇲🇳 Mongolia',us:'🇺🇸 USA'};
+const SEG_LBL   = {new:'Новые',mid:'Средние',vip:'VIP'};
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let draft = { scenario: null, params: { vertical:'casino', segment:'mid', games:'slots', tone:'friendly', agg:'low', risk:'low' } };
+
+// ── VIEWS ─────────────────────────────────────────────────────────────────────
+function showView(name) {
+  ['dashboard','campaigns','wizard'].forEach(v => {
+    const el = document.getElementById('view-'+v);
+    if (el) el.style.display = v === name ? '' : 'none';
+  });
+  const titles = { dashboard:['Дашборд','AI Campaign Generator'], campaigns:['Кампании','AI Campaign Generator'], wizard:['Новая кампания','Wizard — шаг '+draft._step] };
+  const t = titles[name] || [name,''];
+  document.getElementById('tb-title').textContent = t[0];
+  document.getElementById('tb-sub').textContent   = t[1];
+  document.querySelectorAll('.nav-item:not(.off)').forEach((el,i) => {
+    el.classList.toggle('active', (name==='dashboard'&&i===0)||(name==='campaigns'&&i===1));
+  });
+}
+
+// ── WIZARD ────────────────────────────────────────────────────────────────────
+function startWizard() {
+  draft = { scenario:null, _step:1, params:{vertical:'casino',segment:'mid',games:'slots',tone:'friendly',agg:'low',risk:'low'} };
+  renderScenarios();
+  goStep(1);
+  showView('wizard');
+}
+
+function startWizardWith(id) {
+  startWizard();
+  setTimeout(() => {
+    const el = document.querySelector(`.sc-item[data-id="${id}"]`);
+    if (el) el.click();
+  }, 50);
+}
+
+function goStep(n) {
+  draft._step = n;
+  updateProg(n);
+  document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('step-'+n).classList.add('active');
+  if (n === 3) { document.getElementById('s3-prog').style.display=''; document.getElementById('s3-res').style.display='none'; runProgress(); }
+  if (n === 5) { document.getElementById('s5-export').style.display=''; document.getElementById('s5-done').style.display='none'; fillSummary(); }
+}
+
+function updateProg(active) {
+  for (let i=1; i<=5; i++) {
+    const c = document.getElementById('wpc-'+i);
+    const l = document.getElementById('wpl-'+i);
+    c.className = 'wp-circle' + (i<active?' done':i===active?' active':'');
+    c.textContent = i < active ? '✓' : i;
+    l.className = 'wp-lbl' + (i===active?' active':'');
+    if (i<5) document.getElementById('wpcon-'+i).className = 'wp-conn'+(i<active?' done':'');
+  }
+}
+
+// ── STEP 1 ────────────────────────────────────────────────────────────────────
+function renderScenarios() {
+  document.getElementById('scGrid').innerHTML = SCENARIOS.map(cat => `
+    <div class="sc-cat">
+      <div class="sc-cat-hd"><span>${cat.icon}</span>${cat.cat}</div>
+      <div class="sc-items">${cat.items.map(it =>
+        `<button class="sc-item" data-id="${it.id}" data-cat="${cat.cat}" data-lbl="${it.lbl}"
+           onclick="selScenario('${it.id}','${cat.cat}','${it.lbl}',this)">${it.lbl}</button>`
+      ).join('')}</div>
+    </div>`).join('');
+}
+
+function selScenario(id, cat, lbl, el) {
+  document.querySelectorAll('.sc-item').forEach(e => e.classList.remove('sel'));
+  el.classList.add('sel');
+  draft.scenario = {id, cat, lbl};
+  document.getElementById('s1next').disabled = false;
+}
+
+// ── STEP 2 ────────────────────────────────────────────────────────────────────
+function pickChip(el) {
+  const g = el.dataset.g;
+  document.querySelectorAll(`.chip[data-g="${g}"]`).forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  draft.params[g] = el.dataset.v;
+}
+function pickT3(el) {
+  el.closest('.toggle3').querySelectorAll('.t3-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  draft.params[el.dataset.g] = el.dataset.v;
+}
+
+// ── STEP 3 PROGRESS ───────────────────────────────────────────────────────────
+function runProgress() {
+  document.getElementById('progList').innerHTML = PROG_STEPS.map((lbl,i) =>
+    `<li class="pl-item" id="pl-${i+1}"><span class="pl-icon">⏳</span>${lbl}</li>`).join('');
+  let i = 0;
+  (function tick() {
+    if (i > 0) { const p = document.getElementById('pl-'+i); p.className='pl-item done'; p.querySelector('.pl-icon').textContent='✅'; }
+    if (i < PROG_STEPS.length) {
+      const cur = document.getElementById('pl-'+(i+1));
+      cur.className = 'pl-item running';
+      cur.innerHTML = `<div class="spinner"></div>${PROG_STEPS[i]}`;
+      i++; setTimeout(tick, 750);
+    } else {
+      setTimeout(() => { document.getElementById('s3-prog').style.display='none'; document.getElementById('s3-res').style.display=''; }, 400);
+    }
+  })();
+}
+
+// ── STEP 4 ────────────────────────────────────────────────────────────────────
+function switchS4(panel, el) {
+  document.querySelectorAll('#s4tabs .ch-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('s4-texts').classList.toggle('active', panel==='texts');
+  document.getElementById('s4-audit').classList.toggle('active', panel==='audit');
+}
+function switchCh(ch, el) {
+  document.querySelectorAll('#chTabs .ch-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  ['push','email','sms','telegram','popup'].forEach(c => {
+    document.getElementById('ch-'+c).classList.toggle('active', c===ch);
+  });
+}
+function copyText(btn) {
+  const text = btn.closest('.var-card').querySelector('.var-text').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✓ Скопировано';
+    btn.style.borderColor = 'var(--success)';
+    setTimeout(() => { btn.textContent = orig; btn.style.borderColor = ''; }, 1600);
+  });
+}
+
+// ── STEP 5 ────────────────────────────────────────────────────────────────────
+function fillSummary() {
+  document.getElementById('sum-sc').textContent  = draft.scenario?.lbl || '—';
+  document.getElementById('sum-geo').textContent = GEO_LBL[document.getElementById('p-geo')?.value] || '—';
+  document.getElementById('sum-seg').textContent = SEG_LBL[draft.params.segment] || '—';
+  const b = document.getElementById('p-budget')?.value;
+  document.getElementById('sum-bud').textContent = b ? '€'+Number(b).toLocaleString() : '—';
+}
+function doExport(type) {
+  if (type==='json') {
+    const blob = new Blob([JSON.stringify(draft,null,2)],{type:'application/json'});
+    const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='campaign.json'; a.click();
+  } else if (type==='copy') {
+    navigator.clipboard.writeText(JSON.stringify(draft,null,2)).then(() => {
+      const btn = event.target.closest('.exp-btn');
+      btn.style.borderColor='var(--success)';
+      setTimeout(()=>btn.style.borderColor='',1500);
+    });
+  } else if (type==='email') {
+    window.location.href=`mailto:?subject=Campaign: ${draft.scenario?.lbl||'New'}&body=${encodeURIComponent(JSON.stringify(draft,null,2))}`;
+  } else if (type==='api') {
+    alert('curl -X POST /api/campaign/generate \\\n  -H "Content-Type: application/json" \\\n  -d \''+JSON.stringify({scenario:draft.scenario,params:draft.params})+'\'');
+  } else {
+    alert('Будет доступно в Phase 4');
+  }
+}
+function finishCampaign() {
+  document.getElementById('s5-export').style.display='none';
+  document.getElementById('s5-done').style.display='';
+  document.getElementById('done-sub').textContent = `«${draft.scenario?.lbl||'Кампания'}» успешно сохранена. Найдите её в разделе «Кампании».`;
+  updateProg(6);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+showView('dashboard');
+renderScenarios();
+</script>
+</body>
+</html>
