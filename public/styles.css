@@ -23,7 +23,11 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--off);color:var
 .hdr-logo span{color:var(--gold)}
 .hdr-tag{font-size:10px;font-weight:700;color:var(--dark);background:var(--gold);padding:2px 8px;border-radius:10px;letter-spacing:.5px;white-space:nowrap}
 .hdr-sub{font-size:12px;color:#8B9EC3;margin-right:auto}
-.lang-sel{display:flex;gap:4px;margin-left:auto}
+.hdr-back{font-size:12px;color:#8B9EC3;text-decoration:none;white-space:nowrap;flex-shrink:0;opacity:.8;transition:opacity .15s}
+.hdr-back:hover{opacity:1}
+.hdr-campaigns{font-size:12px;color:#8B9EC3;text-decoration:none;white-space:nowrap;flex-shrink:0;background:rgba(79,110,247,.12);border:1px solid rgba(79,110,247,.25);padding:4px 10px;border-radius:7px;transition:opacity .15s;opacity:.85}
+.hdr-campaigns:hover{opacity:1;color:#a0b0ff}
+.lang-sel{display:flex;gap:4px}
 .lchip{padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;color:#8B9EC3;border:1.5px solid rgba(255,255,255,.15);transition:all .15s;user-select:none;letter-spacing:.5px}
 .lchip:hover{border-color:var(--gold);color:var(--gold)}
 .lchip.on{background:var(--gold);border-color:var(--gold);color:var(--dark)}
@@ -201,6 +205,7 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:16px 0}
   /* Header */
   .hdr{padding:0 16px;height:48px;gap:8px}
   .hdr-sub{display:none}
+  .hdr-campaigns{display:none}
   .lchip{padding:3px 8px;font-size:10px}
   /* Right panel */
   .right{padding:16px}
