@@ -408,6 +408,12 @@ function syncRtp(v) {
       save_modal_ok: 'Сохранить',
       btn_save_camp: '💾 Сохранить кампанию',
       camp_saved_toast: 'Кампания сохранена ✓',
+      edit_bar_label: 'Редактирование:',
+      edit_bar_reset: '↺ Сбросить параметры',
+      edit_bar_exit: '✕ Выйти',
+      btn_update_camp: '💾 Обновить кампанию',
+      btn_updated: '✓ Обновлено',
+      audit_saved: 'Кампания обновлена ✓',
     },
     en: {
       camps_btn: 'Campaigns',
@@ -423,6 +429,12 @@ function syncRtp(v) {
       save_modal_ok: 'Save',
       btn_save_camp: '💾 Save Campaign',
       camp_saved_toast: 'Campaign saved ✓',
+      edit_bar_label: 'Editing:',
+      edit_bar_reset: '↺ Reset parameters',
+      edit_bar_exit: '✕ Exit',
+      btn_update_camp: '💾 Update Campaign',
+      btn_updated: '✓ Updated',
+      audit_saved: 'Campaign updated ✓',
     },
     mn: {
       camps_btn: 'Кампани',
@@ -438,6 +450,12 @@ function syncRtp(v) {
       save_modal_ok: 'Хадгалах',
       btn_save_camp: '💾 Кампани хадгалах',
       camp_saved_toast: 'Кампани хадгалагдлаа ✓',
+      edit_bar_label: 'Засах:',
+      edit_bar_reset: '↺ Параметр шинэчлэх',
+      edit_bar_exit: '✕ Гарах',
+      btn_update_camp: '💾 Кампани шинэчлэх',
+      btn_updated: '✓ Шинэчлэгдлээ',
+      audit_saved: 'Кампани шинэчлэгдлээ ✓',
     },
     es: {
       camps_btn: 'Campañas',
@@ -453,6 +471,12 @@ function syncRtp(v) {
       save_modal_ok: 'Guardar',
       btn_save_camp: '💾 Guardar campaña',
       camp_saved_toast: 'Campaña guardada ✓',
+      edit_bar_label: 'Editando:',
+      edit_bar_reset: '↺ Restablecer parámetros',
+      edit_bar_exit: '✕ Salir',
+      btn_update_camp: '💾 Actualizar campaña',
+      btn_updated: '✓ Actualizado',
+      audit_saved: 'Campaña actualizada ✓',
     },
   };
   ['ru','en','mn','es'].forEach(lang => {
@@ -508,20 +532,77 @@ function _captureEconomics() {
   if (!cfg || !cfg.econ) return null;
   const E  = cfg.econ;
   const pl = cfg.pl || S.players;
+  // Use live recalc costs if available (reflects override edits)
+  const rc = cfg._recalcCosts;
+  const ratio = rc ? (cfg._recalcRatio || E.costRatio || 0) : (E.costRatio || 0);
+  // wagerX: prefer live override input value if present
+  const ovWager = parseFloat(document.getElementById('ov_w_wager')?.value);
+  const wagerX  = (!isNaN(ovWager) && ovWager > 0) ? ovWager : (E.wagerX || 0);
   return {
-    costRatio: E.costRatio   || 0,
-    verdict:   _ratioVerdict(E.costRatio || 0),
-    p10Cost:   Math.round((E.sP10?.cost || 0) * pl),
-    p50Cost:   Math.round((E.sP50?.cost || 0) * pl),
-    p90Cost:   Math.round((E.sP90?.cost || 0) * pl),
+    costRatio: ratio,
+    verdict:   _ratioVerdict(ratio),
+    p10Cost:   rc ? rc.w_p10 : Math.round((E.sP10?.cost || 0) * pl),
+    p50Cost:   rc ? rc.w_p50 : Math.round((E.sP50?.cost || 0) * pl),
+    p90Cost:   rc ? rc.w_p90 : Math.round((E.sP90?.cost || 0) * pl),
     p50Conv:   E.sP50?.conv  || 0,
     arpu:      E.arpu        || S.avgdep,
     ltv3:      E.ltv3        || 0,
     roi:       E.roi         || 0,
-    wagerX:    E.wagerX      || 0,
+    wagerX,
     breakeven: E.breakeven_wager || 0,
     cur:       cfg.cur       || S.sitecur,
   };
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// INTERCEPT /api/recalc — keep _lastCfg in sync with override edits
+// ══════════════════════════════════════════════════════════════════════
+(function patchFetchForRecalc() {
+  const _origFetch = window.fetch;
+  window.fetch = async function(url, opts) {
+    const res = await _origFetch.apply(this, arguments);
+    if (typeof url === 'string' && url.includes('/api/recalc')) {
+      res.clone().json().then(data => {
+        if (window._lastCfg) {
+          window._lastCfg._recalcCosts = data.costs;
+          window._lastCfg._recalcRatio = data.ratio;
+        }
+        if (window._editMode?.active) {
+          // Slight delay so DOM updates from recalcEcon finish first
+          setTimeout(() => renderAuditPanel(), 120);
+        }
+      }).catch(() => {});
+    }
+    return res;
+  };
+})();
+
+// All override input IDs that can be saved/restored per campaign
+const _OV_IDS = [
+  'ov_w_wager','ov_w_maxB','ov_w_mind','ov_w_fs','ov_w_pct','ov_w_days',
+  'ov_rl_wager','ov_rl_maxB','ov_rl_fs','ov_rl_pct',
+  'ov_d2_wager','ov_d2_maxB','ov_d2_fs','ov_d2_pct',
+  'ov_d3_wager','ov_d3_maxB','ov_d3_fs','ov_d3_pct',
+  'ov_ndb_wager','ov_ndb_fs','ov_ndb_amt',
+  'ov_fs_wager','ov_fs_count',
+];
+
+function _captureOverrides() {
+  const out = {};
+  _OV_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.value !== '') out[id] = el.value;
+  });
+  return Object.keys(out).length ? out : null;
+}
+
+function _applyOverrides(overrides) {
+  if (!overrides) return;
+  Object.entries(overrides).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  });
+  if (typeof recalcEcon === 'function') recalcEcon();
 }
 
 function _loadCampsStore() {
@@ -560,6 +641,7 @@ function saveCampaignToStorage(name) {
       cur:    cfg.welcome.cur || S.sitecur,
     } : null,
     economics: _captureEconomics(),
+    overrides: _captureOverrides(),
     updatedAt: null,
   };
 
@@ -642,8 +724,15 @@ function resetToOriginal() {
   if (!orig) return;
   const panel = document.getElementById('audit-panel');
   if (panel) panel.remove();
+  if (window._lastCfg) { delete window._lastCfg._recalcCosts; delete window._lastCfg._recalcRatio; }
   _applyParamsFromCampaign(orig);
-  setTimeout(() => generate(), 80);
+  setTimeout(() => {
+    generate().then(() => {
+      if (orig.overrides && Object.keys(orig.overrides).length) {
+        _applyOverrides(orig.overrides);
+      }
+    });
+  }, 80);
 }
 
 function openCampaignInConfigurator(campaign) {
@@ -653,7 +742,11 @@ function openCampaignInConfigurator(campaign) {
 
   setTimeout(() => {
     generate().then(() => {
-      if (campaign.mechanics?.wager) {
+      // Restore saved overrides (wager, maxB, minDep, FS per bonus)
+      if (campaign.overrides && Object.keys(campaign.overrides).length) {
+        _applyOverrides(campaign.overrides);
+      } else if (campaign.mechanics?.wager) {
+        // Fallback: apply wager override from mechanics if no full overrides snapshot
         const ovw = document.getElementById('ov_w_wager');
         if (ovw) { ovw.value = campaign.mechanics.wager; recalcEcon(); }
       }
@@ -771,10 +864,21 @@ function confirmSaveCampaign() {
 (function patchGenerate() {
   const _orig = window.generate;
   window.generate = async function() {
+    // Clear stale recalc data before fresh generation
+    if (window._lastCfg) {
+      delete window._lastCfg._recalcCosts;
+      delete window._lastCfg._recalcRatio;
+    }
     await _orig.apply(this, arguments);
     _injectSaveButton();
     if (window._editMode?.active) {
-      setTimeout(() => renderAuditPanel(), 350);
+      // If campaign has saved overrides, apply them then audit will render via recalc intercept
+      const orig = window._editMode.originalCampaign;
+      if (orig?.overrides && Object.keys(orig.overrides).length) {
+        setTimeout(() => _applyOverrides(orig.overrides), 200);
+      } else {
+        setTimeout(() => renderAuditPanel(), 350);
+      }
     }
   };
 })();
@@ -795,7 +899,7 @@ function _injectSaveButton() {
 
   if (window._editMode?.active) {
     btn.style.cssText = 'background:rgba(245,158,11,.15);color:#f59e0b;border-color:rgba(245,158,11,.4)';
-    btn.textContent = '💾 Обновить кампанию';
+    btn.textContent = typeof t === 'function' ? t('btn_update_camp') : '💾 Update Campaign';
     btn.onclick = updateSavedCampaign;
   } else {
     btn.textContent = typeof t === 'function' ? t('btn_save_camp') : '💾 Save Campaign';
@@ -822,6 +926,297 @@ function _showToast(msg) {
   });
   document.body.appendChild(toast);
   setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 320); }, 2200);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// UPDATE SAVED CAMPAIGN (edit mode save)
+// ══════════════════════════════════════════════════════════════════════
+function updateSavedCampaign() {
+  if (!window._editMode?.active || !window._lastCfg) return;
+  const id  = window._editMode.campaignId;
+  const arr = _loadCampsStore();
+  const idx = arr.findIndex(c => c.id === id);
+  if (idx === -1) return;
+
+  const cfg = window._lastCfg;
+  arr[idx] = {
+    ...arr[idx],
+    updatedAt: new Date().toISOString(),
+    params: {
+      region:  S.region,
+      players: S.players,
+      avgdep:  S.avgdep,
+      sitecur: S.sitecur,
+      depcur:  S.depcur,
+      lic:     S.lic,
+      plat:    S.plat,
+      rtp:     S.rtp,
+      lang:    typeof L !== 'undefined' ? L : 'ru',
+    },
+    mechanics: cfg.welcome ? {
+      type:  cfg.welcome.type,
+      pct:   cfg.welcome.pct,
+      maxB:  cfg.welcome.maxB,
+      wager: cfg.wager ? cfg.wager.wW : null,
+      cur:   cfg.welcome.cur || S.sitecur,
+    } : arr[idx].mechanics,
+    economics: _captureEconomics(),
+    overrides: _captureOverrides(),
+  };
+
+  _saveCampsStore(arr);
+  _updateCampsCount();
+
+  // Update originalCampaign so Reset now resets to this saved state
+  window._editMode.originalCampaign = JSON.parse(JSON.stringify(arr[idx]));
+
+  const btn = document.getElementById('btn-save-camp');
+  if (btn) {
+    btn.textContent = typeof t === 'function' ? t('btn_updated') : '✓ Updated';
+    btn.disabled = true;
+    setTimeout(() => { btn.textContent = typeof t === 'function' ? t('btn_update_camp') : '💾 Update Campaign'; btn.disabled = false; }, 2000);
+  }
+  _showToast(typeof t === 'function' ? t('audit_saved') : 'Campaign updated ✓');
+
+  const panel = document.getElementById('audit-panel');
+  if (panel) panel.remove();
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// AUDIT PANEL — render diff + before/after econ + verdicts
+// ══════════════════════════════════════════════════════════════════════
+function renderAuditPanel() {
+  const orig = window._editMode?.originalCampaign;
+  const cfg  = window._lastCfg;
+  if (!orig || !cfg) return;
+
+  const existing = document.getElementById('audit-panel');
+  if (existing) existing.remove();
+
+  const origP = orig.params;
+  const origE = orig.economics || null;
+  const newE  = _captureEconomics();
+  const cur   = newE?.cur || S.sitecur;
+
+  const paramDiffs = _buildParamDiff(origP, newE, origE);
+  const verdicts   = _buildVerdictItems(origP, origE, newE);
+  const vBadge     = _verdictBadge(newE?.verdict);
+
+  const panel = document.createElement('div');
+  panel.id = 'audit-panel';
+
+  panel.innerHTML = `
+    <div class="audit-head">
+      <span class="audit-head-ico">📊</span>
+      <span class="audit-head-title">Аудит изменений: ${_esc(orig.name)}</span>
+      <span class="audit-head-badge" style="${vBadge.style}">${vBadge.label}</span>
+    </div>
+
+    <div class="audit-section">
+      <div class="audit-section-title">Изменённые параметры</div>
+      ${paramDiffs.length > 0
+        ? paramDiffs.map(d => `
+          <div class="audit-diff-row">
+            <span class="audit-diff-key">${d.label}</span>
+            <span class="audit-diff-val">
+              <span class="audit-before">${d.before}</span>
+              <span class="audit-arrow">→</span>
+              <span class="audit-after">${d.after}</span>
+              <span class="audit-delta ${d.deltaClass}">${d.delta}</span>
+            </span>
+          </div>`).join('')
+        : '<div style="font-size:12px;color:#8892a4;padding:4px 0">Параметры не изменились — пересчёт с теми же значениями</div>'
+      }
+    </div>
+
+    <div class="audit-section">
+      <div class="audit-section-title">Пересчёт экономики</div>
+      <div class="audit-econ-grid">
+        ${_econCard('P10', origE?.p10Cost, newE?.p10Cost, cur, false)}
+        ${_econCard('P50', origE?.p50Cost, newE?.p50Cost, cur, false)}
+        ${_econCard('P90', origE?.p90Cost, newE?.p90Cost, cur, false)}
+      </div>
+      ${_ratioRow(origE, newE)}
+    </div>
+
+    <div class="audit-section">
+      <div class="audit-section-title">Прогнозы (новые)</div>
+      <div class="audit-econ-grid">
+        ${_forecastCard('P10 · консерв.', newE?.p10Cost, cur)}
+        ${_forecastCard('P50 · базовый',  newE?.p50Cost, cur)}
+        ${_forecastCard('P90 · оптимист.',newE?.p90Cost, cur)}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
+        ${_metricCard('ARPU',      _fmtCur(newE?.arpu, cur),             origE ? _fmtCur(origE.arpu, origE.cur) : null)}
+        ${_metricCard('ROI',       newE?.roi      ? newE.roi.toFixed(1)+'×'      : '—', origE?.roi      ? origE.roi.toFixed(1)+'×'      : null)}
+        ${_metricCard('Breakeven', newE?.breakeven ? newE.breakeven+'×'           : '—', origE?.breakeven ? origE.breakeven+'×'           : null)}
+      </div>
+    </div>
+
+    ${verdicts.length > 0 ? `
+    <div class="audit-section">
+      <div class="audit-section-title">Рекомендации</div>
+      <div class="audit-verdict">
+        ${verdicts.map(v => `
+          <div class="audit-verdict-item ${v.type}">
+            <span class="audit-verdict-ico">${v.icon}</span>
+            <span>${v.text}</span>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <div class="audit-actions">
+      <button class="audit-action-btn audit-btn-save"  onclick="updateSavedCampaign()">💾 Сохранить изменения</button>
+      <button class="audit-action-btn audit-btn-reset" onclick="resetToOriginal()">↺ Сбросить до оригинала</button>
+    </div>
+  `;
+
+  document.getElementById('out').appendChild(panel);
+}
+
+// ── Param diff ────────────────────────────────────────────────────────
+function _buildParamDiff(origP, newE, origE) {
+  const diffs = [];
+  const curr = { region: S.region, players: S.players, avgdep: S.avgdep, lic: S.lic, plat: S.plat, rtp: S.rtp };
+  const regionLabel = { cis:'СНГ', eu:'EU/UK', crypto:'Crypto', sweep:'USA Sweep', mn:'Монголия', latam:'LatAm' };
+  const platLabel   = { both:'Desktop+Mobile', mobile:'Mobile Only', desk:'Desktop Only' };
+
+  const pctDelta = (a, b) => a && b ? (((b-a)/a)*100).toFixed(0)+'%' : null;
+  const numDiff  = (key, label, fmt, higherIsBad) => {
+    const a = origP[key], b = curr[key];
+    if (a == null || b == null || String(a) === String(b)) return;
+    const d = pctDelta(Number(a), Number(b));
+    const up = Number(b) > Number(a);
+    diffs.push({
+      label,
+      before: fmt(a), after: fmt(b),
+      delta: (up ? '↑' : '↓') + Math.abs(d),
+      deltaClass: up ? (higherIsBad ? 'delta-up' : 'delta-up-good') : (higherIsBad ? 'delta-down' : 'delta-down-bad'),
+    });
+  };
+
+  if (origP.region !== curr.region)
+    diffs.push({ label:'Регион', before: regionLabel[origP.region]||origP.region, after: regionLabel[curr.region]||curr.region, delta:'changed', deltaClass:'delta-neutral' });
+  if (origP.lic !== curr.lic && curr.lic && origP.lic)
+    diffs.push({ label:'Лицензия', before: (origP.lic||'—').toUpperCase(), after: (curr.lic||'—').toUpperCase(), delta:'changed', deltaClass:'delta-neutral' });
+  if (origP.plat !== curr.plat && origP.plat && curr.plat)
+    diffs.push({ label:'Платформа', before: platLabel[origP.plat]||origP.plat, after: platLabel[curr.plat]||curr.plat, delta:'changed', deltaClass:'delta-neutral' });
+
+  numDiff('players', 'Игроков/мес', v => Number(v).toLocaleString('ru'), true);
+  numDiff('avgdep',  'Avg Deposit', v => v + ' ' + (S.depcur||''), true);
+  numDiff('rtp',     'RTP',         v => v + '%', false);
+
+  if (origE?.wagerX != null && newE?.wagerX != null && origE.wagerX !== newE.wagerX) {
+    const a = origE.wagerX, b = newE.wagerX;
+    const d = pctDelta(a, b);
+    diffs.push({
+      label:'Вейджер', before: a+'×', after: b+'×',
+      delta: (b>a?'↑':'↓') + Math.abs(d),
+      deltaClass: b > a ? 'delta-up' : 'delta-down',
+    });
+  }
+  return diffs;
+}
+
+// ── Verdict items ─────────────────────────────────────────────────────
+function _buildVerdictItems(origP, origE, newE) {
+  const items = [];
+  if (!newE) return items;
+
+  const origRatio = origE?.costRatio || 0;
+  const newRatio  = newE.costRatio   || 0;
+  const origV = origE ? _ratioVerdict(origRatio) : null;
+  const newV  = _ratioVerdict(newRatio);
+
+  if (origE && Math.abs(newRatio - origRatio) > 0.01) {
+    const diff = ((newRatio - origRatio) * 100).toFixed(1);
+    const up = newRatio > origRatio;
+    const verdictChanged = origV !== newV;
+    if (up) {
+      if (verdictChanged && (newV === 'warn' || newV === 'high')) {
+        items.push({ type:'warn', icon:'⚠️', text: `Cost Ratio вырос с ${(origRatio*100).toFixed(0)}% до ${(newRatio*100).toFixed(0)}% — перешёл в зону риска. Рассмотрите снижение maxB или увеличение вейджера.` });
+      } else {
+        items.push({ type:'info', icon:'ℹ️', text: `Cost Ratio вырос на ${diff}pp (${(origRatio*100).toFixed(0)}% → ${(newRatio*100).toFixed(0)}%). Ещё в допустимом диапазоне.` });
+      }
+    } else {
+      items.push({ type:'ok', icon:'✓', text: `Cost Ratio снизился с ${(origRatio*100).toFixed(0)}% до ${(newRatio*100).toFixed(0)}% — бюджет улучшился.` });
+    }
+  }
+
+  if (origE?.wagerX && newE.wagerX && origE.wagerX !== newE.wagerX) {
+    if (newE.wagerX < origE.wagerX) {
+      items.push({ type:'ok', icon:'✓', text: `Вейджер снижен (${origE.wagerX}× → ${newE.wagerX}×) — оффер стал привлекательнее, конверсия вырастет.` });
+    } else {
+      const overBe = newE.breakeven && newE.wagerX > newE.breakeven;
+      items.push({ type: overBe ? 'warn' : 'info', icon: overBe ? '⚠️' : 'ℹ️',
+        text: `Вейджер вырос (${origE.wagerX}× → ${newE.wagerX}×).${overBe ? ' Превышает breakeven — EV для игрока отрицательный.' : ' Проверьте конверсию на фокус-группе.'}` });
+    }
+  }
+
+  if (newE.breakeven && newE.wagerX > newE.breakeven) {
+    items.push({ type:'warn', icon:'⚠️', text: `Вейджер ${newE.wagerX}× превышает breakeven ${newE.breakeven}×. Игроки с низким балансом не смогут отыграть бонус — риск жалоб.` });
+  }
+
+  if (origP.players && S.players > origP.players * 1.5) {
+    const ratio = (S.players / origP.players).toFixed(1);
+    items.push({ type:'info', icon:'ℹ️', text: `Количество игроков выросло в ${ratio}×. Бюджет кампании масштабируется пропорционально — проверьте P90 сценарий.` });
+  }
+
+  if (origP.avgdep && Math.abs(S.avgdep - origP.avgdep) / origP.avgdep > 0.3) {
+    items.push({ type:'info', icon:'ℹ️', text: `Средний депозит изменился с ${origP.avgdep} на ${S.avgdep} ${S.depcur} — сегмент игроков другой. Убедитесь, что механика бонуса подходит новому сегменту.` });
+  }
+
+  if (items.length === 0) {
+    items.push({ type:'ok', icon:'✓', text: 'Параметры пересчитаны. Значимых рисков не обнаружено.' });
+  }
+  return items;
+}
+
+// ── Card / row helpers ────────────────────────────────────────────────
+function _econCard(label, before, after, cur, higherIsBetter) {
+  const hasOrig = before != null;
+  const improved = hasOrig && (higherIsBetter ? after > before : after < before);
+  const worsened = hasOrig && (higherIsBetter ? after < before : after > before);
+  const cls = !hasOrig ? 'econ-neutral' : improved ? 'econ-improved' : worsened ? 'econ-worsened' : 'econ-neutral';
+  return `<div class="audit-econ-card">
+    <div class="audit-econ-label">${label}</div>
+    ${hasOrig ? `<div class="audit-econ-before">${_fmtCur(before, cur)}</div>` : ''}
+    <div class="audit-econ-after ${cls}">${_fmtCur(after, cur)}</div>
+  </div>`;
+}
+
+function _forecastCard(label, val, cur) {
+  return `<div class="audit-econ-card">
+    <div class="audit-econ-label">${label}</div>
+    <div class="audit-econ-after econ-neutral">${_fmtCur(val, cur)}</div>
+  </div>`;
+}
+
+function _metricCard(label, newVal, origVal) {
+  return `<div class="audit-econ-card">
+    <div class="audit-econ-label">${label}</div>
+    ${origVal ? `<div class="audit-econ-before">${origVal}</div>` : ''}
+    <div class="audit-econ-after econ-neutral">${newVal || '—'}</div>
+  </div>`;
+}
+
+function _ratioRow(origE, newE) {
+  const oR = origE?.costRatio || 0;
+  const nR = newE?.costRatio  || 0;
+  const oV = origE ? _verdictBadge(_ratioVerdict(oR)) : null;
+  const nV = _verdictBadge(_ratioVerdict(nR));
+  const maxRatio = 0.45;
+  return `<div class="audit-ratio-row">
+    <div style="font-size:11px;color:#8892a4;min-width:80px">Cost Ratio</div>
+    <div class="audit-ratio-track">
+      ${oV ? `<div class="audit-ratio-fill-orig" style="width:${Math.min(oR/maxRatio*100,100).toFixed(1)}%"></div>` : ''}
+      <div class="audit-ratio-fill-new" style="width:${Math.min(nR/maxRatio*100,100).toFixed(1)}%;background:${nV.color}"></div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;font-size:12px;font-weight:700">
+      ${oV ? `<span style="color:#8892a4;text-decoration:line-through;font-weight:400;font-size:11px">${(oR*100).toFixed(0)}%</span><span style="color:#8892a4">→</span>` : ''}
+      <span style="color:${nV.color}">${(nR*100).toFixed(0)}% <span style="font-size:10px;font-weight:400">${nV.label}</span></span>
+    </div>
+  </div>`;
 }
 
 // ══════════════════════════════════════════════════════════════════════

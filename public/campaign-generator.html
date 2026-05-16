@@ -962,11 +962,13 @@ function renderMechanicResults(data) {
     return;
   }
 
-  draft.mechanics     = data.mechanic;
-  draft.mechanicType  = data.mechanicType;
-  draft.explanation   = data.explanation;
-  draft.alternatives  = data.alternatives;
-  draft.econ          = data.econ;
+  draft.mechanics      = data.mechanic;
+  draft.mechanicType   = data.mechanicType;
+  draft.explanation    = data.explanation;
+  draft.explanationRu  = data.explanationRu;
+  draft.explanationEn  = data.explanationEn;
+  draft.alternatives   = data.alternatives;
+  draft.econ           = data.econ;
 
   // Mechanic card — tabs if multiple types selected
   const types = data.requestedTypes || [data.mechanicType];
@@ -993,10 +995,11 @@ function renderMechanicResults(data) {
   }
 
   // Why card
+  const _whyBullets = (currentLang === 'en' ? data.explanationEn : data.explanationRu) || data.explanation || [];
   document.getElementById('whyCard').innerHTML =
     `<div class="rc-title">${t('rc_why')}</div>
      <ul class="ai-bullets">
-       ${(data.explanation || []).map(b => `<li class="ai-bullet">${b}</li>`).join('')}
+       ${_whyBullets.map(b => `<li class="ai-bullet">${b}</li>`).join('')}
      </ul>`;
 
   // Alternatives card
@@ -1526,10 +1529,12 @@ function renderDetailMechanic(c) {
     </table>
   </div>`;
 
-  const expl = c.explanation || m.explanation;
+  const expl = (currentLang === 'en' ? c.explanationEn : c.explanationRu) || c.explanation || m?.explanation;
   const explHTML = expl ? `<div class="res-card" style="margin-bottom:16px">
     <div class="rc-title" style="margin-bottom:10px">${t('rc_why')}</div>
-    <div style="font-size:.84rem;color:var(--muted);line-height:1.65">${esc(expl)}</div>
+    <ul class="ai-bullets" style="margin:0;padding-left:18px">
+      ${(Array.isArray(expl) ? expl : [expl]).map(b => `<li class="ai-bullet" style="font-size:.84rem">${b}</li>`).join('')}
+    </ul>
   </div>` : '';
 
   const alts = c.alternatives;
@@ -2000,8 +2005,10 @@ function saveCampaign() {
     econ: draft.econ,
     texts: draft.texts || null,
     audit: draft.audit || null,
-    explanation: draft.explanation || null,
-    alternatives: draft.alternatives || null,
+    explanation:   draft.explanation   || null,
+    explanationRu: draft.explanationRu || null,
+    explanationEn: draft.explanationEn || null,
+    alternatives:  draft.alternatives  || null,
   });
   putCampaigns(camps);
   return id;
