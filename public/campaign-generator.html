@@ -672,7 +672,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
         <div class="det-name" id="det-name">—</div>
         <div id="det-badge"></div>
         <div class="det-acts">
-          <button class="btn btn-outline btn-sm" onclick="openInConfigurator()" data-i18n="det_cfg">⚙ В конфигуратор ↗</button>
           <button class="btn btn-outline btn-sm" onclick="duplicateCampaign()" data-i18n="det_dup">⎘ Дублировать</button>
           <button class="btn btn-outline btn-sm" onclick="editCampaign()" data-i18n="det_edit">✏ Редактировать</button>
           <select id="det-status" class="form-select" style="font-size:.78rem;padding:5px 10px;height:30px" onchange="detailSetStatus(this.value)">
@@ -916,36 +915,36 @@ function mechRows(mech, type, data) {
   const cur = data.cur;
   const wager = data.wager;
   const rows = [];
-  if (!mech) return '<div style="color:var(--muted);font-size:.82rem">Механика недоступна для данного региона</div>';
+  if (!mech) return `<div style="color:var(--muted);font-size:.82rem">${t('mr_na')}</div>`;
 
   if (type === 'cashback') {
-    rows.push(['Тип', 'Cashback']);
+    rows.push([t('mr_type'), 'Cashback']);
     if (mech.model === 'tier') {
-      rows.push(['Модель', 'Тиерный (Bronze → Platinum)', 'acc']);
-      rows.push(['Период', 'Ежемесячно']);
-      rows.push(['Макс. сумма', mech.maxAmt || '—']);
-      rows.push(['Вейджер', 'Без вейджера', 'gn']);
+      rows.push([t('mr_model'), t('mr_tiered'), 'acc']);
+      rows.push([t('mr_period'), t('mr_monthly')]);
+      rows.push([t('mr_maxamt'), mech.maxAmt || '—']);
+      rows.push([t('mr_wager'), t('det_no_wager'), 'gn']);
     } else {
-      rows.push(['% Возврата', (mech.pct || 10) + '%', 'acc']);
-      rows.push(['Период', 'Еженедельно']);
-      rows.push(['Мин. потерь', mech.minLoss || '—']);
-      rows.push(['Макс. сумма', mech.maxAmt || '—']);
-      rows.push(['Вейджер', 'Без вейджера', 'gn']);
+      rows.push([t('mr_pct_back'), (mech.pct || 10) + '%', 'acc']);
+      rows.push([t('mr_period'), t('mr_weekly')]);
+      rows.push([t('mr_minloss'), mech.minLoss || '—']);
+      rows.push([t('mr_maxamt'), mech.maxAmt || '—']);
+      rows.push([t('mr_wager'), t('det_no_wager'), 'gn']);
     }
   } else if (mech.type === 'packages') {
-    rows.push(['Тип', 'Sweepstakes Packages', 'acc']);
-    rows.push(['Пакеты', (mech.pkgs || []).map(p => p.price).join(' / ') || '—']);
+    rows.push([t('mr_type'), 'Sweepstakes Packages', 'acc']);
+    rows.push([t('mr_pkgs'), (mech.pkgs || []).map(p => p.price).join(' / ') || '—']);
   } else {
-    const lbl = { welcome:'1-й депозит', dep2:'2-й депозит', dep3:'3-й депозит', reload:'Reload Bonus' }[type] || 'Match Bonus';
-    rows.push(['Тип', lbl, 'acc']);
+    const lbl = { welcome:t('mt_welcome'), dep2:t('mt_dep2'), dep3:t('mt_dep3'), reload:t('mt_reload') }[type] || 'Match Bonus';
+    rows.push([t('mr_type'), lbl, 'acc']);
     rows.push(['Match %', (mech.pct || 100) + '%']);
-    rows.push(['Макс. бонус', (mech.maxB || '—') + ' ' + (mech.cur || cur)]);
-    rows.push(['Мин. депозит', (mech.minD || '—') + ' ' + (mech.cur || cur)]);
+    rows.push([t('mr_maxb'), (mech.maxB || '—') + ' ' + (mech.cur || cur)]);
+    rows.push([t('mr_mind'), (mech.minD || '—') + ' ' + (mech.cur || cur)]);
     const w = mech.wager != null ? mech.wager : (wager?.wW || wager?.wR || '—');
-    rows.push(['Вейджер', w + '×']);
-    if (mech.fs) rows.push(['Фриспины', mech.fs + ' FS']);
-    rows.push(['Срок', (mech.days || 30) + ' дней']);
-    if (mech.code) rows.push(['Промокод', mech.code]);
+    rows.push([t('mr_wager'), w + '×']);
+    if (mech.fs) rows.push([t('mr_fs'), mech.fs + ' FS']);
+    rows.push([t('mr_days'), (mech.days || 30) + t('mr_days_sfx')]);
+    if (mech.code) rows.push([t('mr_promo'), mech.code]);
   }
   return rows.map(([l, v, cls]) =>
     `<div class="mech-row">
@@ -958,8 +957,8 @@ function mechRows(mech, type, data) {
 function renderMechanicResults(data) {
   if (!data || data.error) {
     document.getElementById('mechCard').innerHTML =
-      `<div class="rc-title">Рекомендованная механика</div>
-       <div style="color:#EF4444;font-size:.83rem;padding:8px 0">⚠️ Ошибка: ${data?.error || 'нет ответа от сервера'}</div>`;
+      `<div class="rc-title">${t('rc_mech')}</div>
+       <div style="color:#EF4444;font-size:.83rem;padding:8px 0">⚠️ ${currentLang==='en'?'Error':'Ошибка'}: ${data?.error || t('ec_nosrv')}</div>`;
     return;
   }
 
@@ -971,7 +970,14 @@ function renderMechanicResults(data) {
 
   // Mechanic card — tabs if multiple types selected
   const types = data.requestedTypes || [data.mechanicType];
-  const TAB_LBL = { welcome:'💰 1-й депозит', ndb:'🎁 Welcome', reload:'🔄 Reload', dep2:'💰 2-й дп.', dep3:'🎁 3-й дп.', cashback:'💳 Cashback' };
+  const TAB_LBL = {
+    welcome:  '💰 ' + t('mt_welcome'),
+    ndb:      '🎁 ' + t('mt_ndb'),
+    reload:   '🔄 ' + t('mt_reload'),
+    dep2:     '💰 ' + t('mt_dep2'),
+    dep3:     '🎁 ' + t('mt_dep3'),
+    cashback: '💳 Cashback',
+  };
   if (types.length > 1) {
     const tabs = types.map((tp, i) =>
       `<button class="mech-tab${i===0?' active':''}" onclick="switchMechTab('${tp}',this)">${TAB_LBL[tp]||tp}</button>`
@@ -1001,17 +1007,17 @@ function renderMechanicResults(data) {
   const cur = data.cur;
   const fmtK = n => n >= 1000 ? Math.round(n/1000) + 'k' : String(Math.round(n));
   const vCol = { verdict_cheap:'#10b981', verdict_ok:'#10b981', verdict_warn:'#F59E0B', verdict_high:'#EF4444' };
-  const vLbl = { verdict_cheap:'Экономичный ✓', verdict_ok:'Оптимальный ✓', verdict_warn:'Внимание ⚠', verdict_high:'Высокий риск ✗' };
+  const vLbl = { verdict_cheap:t('vrd_cheap'), verdict_ok:t('vrd_ok'), verdict_warn:t('vrd_warn'), verdict_high:t('vrd_high') };
   const col  = vCol[E.verdictKey] || 'var(--muted)';
   document.getElementById('econCard').innerHTML =
     `<div class="rc-title">${t('rc_econ')}</div>
-     <div class="mech-row"><span class="mr-l">Расходы кампании</span><span class="mr-v">~${fmtK(E.sP50?.cost||0)} ${cur}</span></div>
+     <div class="mech-row"><span class="mr-l">${t('ec_cost')}</span><span class="mr-v">~${fmtK(E.sP50?.cost||0)} ${cur}</span></div>
      <div class="mech-row"><span class="mr-l">Cost ratio</span><span class="mr-v" style="color:${col}">${((E.costRatio||0)*100).toFixed(1)}%</span></div>
-     <div class="mech-row"><span class="mr-l">ARPU / мес.</span><span class="mr-v">~$${E.arpu}</span></div>
+     <div class="mech-row"><span class="mr-l">${t('ec_arpu')}</span><span class="mr-v">~$${E.arpu}</span></div>
      <div class="mech-row"><span class="mr-l">CAC</span><span class="mr-v">~$${E.cac}</span></div>
-     <div class="mech-row"><span class="mr-l">LTV 3 мес.</span><span class="mr-v">~$${E.ltv3}</span></div>
-     <div class="mech-row"><span class="mr-l">ROI 3 мес.</span><span class="mr-v" style="color:${E.roi3>0?'#10b981':'#EF4444'}">${E.roi3}%</span></div>
-     <div class="mech-row" style="border-bottom:none"><span class="mr-l">Вердикт</span><span class="mr-v" style="color:${col};font-weight:700">${vLbl[E.verdictKey]||'—'}</span></div>`;
+     <div class="mech-row"><span class="mr-l">${t('ec_ltv')}</span><span class="mr-v">~$${E.ltv3}</span></div>
+     <div class="mech-row"><span class="mr-l">${t('ec_roi')}</span><span class="mr-v" style="color:${E.roi3>0?'#10b981':'#EF4444'}">${E.roi3}%</span></div>
+     <div class="mech-row" style="border-bottom:none"><span class="mr-l">${t('ec_verdict')}</span><span class="mr-v" style="color:${col};font-weight:700">${vLbl[E.verdictKey]||'—'}</span></div>`;
 }
 
 function renderAltCard(alts, data) {
@@ -1500,7 +1506,7 @@ function renderDetailOverview(c) {
 function renderDetailMechanic(c) {
   const m = c.mechanic;
   if (!m) return `<p style="color:var(--muted);font-size:.87rem">${t('det_no_data')}</p>`;
-  const typeLabel = MECH_LBL_TABLE[c.mechanicType] || c.mechanicType || '—';
+  const typeLabel = mechTypeLbl(c.mechanicType);
   const specRows = [
     [t('det_mech_type'),  typeLabel],
     [t('det_mech_pct'),   m.pct  ? m.pct+'%' : '—'],
@@ -1707,47 +1713,6 @@ function editCampaign() {
   showView('wizard');
 }
 
-const _CAMP_GEO = {
-  de:{ region:'eu',    lic:'mga',   sitecur:'EUR', depcur:'EUR' },
-  fr:{ region:'eu',    lic:'mga',   sitecur:'EUR', depcur:'EUR' },
-  es:{ region:'eu',    lic:'mga',   sitecur:'EUR', depcur:'EUR' },
-  it:{ region:'eu',    lic:'mga',   sitecur:'EUR', depcur:'EUR' },
-  nl:{ region:'eu',    lic:'mga',   sitecur:'EUR', depcur:'EUR' },
-  uk:{ region:'eu',    lic:'ukgc',  sitecur:'GBP', depcur:'GBP' },
-  ru:{ region:'cis',   lic:'none',  sitecur:'RUB', depcur:'RUB' },
-  kz:{ region:'cis',   lic:'none',  sitecur:'KZT', depcur:'KZT' },
-  us:{ region:'sweep', lic:'none',  sitecur:'USD', depcur:'USD' },
-  mn:{ region:'mn',    lic:'none',  sitecur:'MNT', depcur:'MNT' },
-  mx:{ region:'latam', lic:'none',  sitecur:'USD', depcur:'USD' },
-  br:{ region:'latam', lic:'none',  sitecur:'USD', depcur:'USD' },
-};
-
-function openInConfigurator() {
-  const c = getCampaigns().find(x => x.id === _detailId);
-  if (!c) return;
-  const p   = c.params || {};
-  const geo = _CAMP_GEO[p.geo] || { region:'eu', lic:'mga', sitecur:'EUR', depcur:'EUR' };
-  const avgdep  = ({ new:40, mid:100, vip:500 })[p.segment] || 100;
-  const players = ({ low:1000, mid:5000, high:10000 })[p.agg] || 5000;
-  const rtp     = ({ slots:96, table:98, live:99 })[p.games] || 96;
-  const wager   = c.mechanic?.wager ?? null;
-
-  const q = new URLSearchParams();
-  q.set('cid',     c.id);
-  q.set('name',    c.name || 'Campaign');
-  q.set('region',  geo.region);
-  q.set('lic',     geo.lic);
-  q.set('sitecur', geo.sitecur);
-  q.set('depcur',  geo.depcur);
-  q.set('avgdep',  avgdep);
-  q.set('players', players);
-  q.set('rtp',     rtp);
-  q.set('plat',    'both');
-  if (wager !== null) q.set('wager', wager);
-  q.set('autogen', '1');
-  window.open('/configurator.html?' + q.toString(), '_blank');
-}
-
 function detailSetStatus(status) {
   if (!_detailId) return;
   putCampaigns(getCampaigns().map(c => c.id === _detailId ? {...c, status} : c));
@@ -1820,6 +1785,18 @@ const I18N = {
     rc_mech:'Рекомендованная механика', rc_mechs:'Механики кампании',
     rc_why:'Почему эта механика', rc_alts:'Альтернативы', rc_econ:'Экономика P50',
     rc_audit:'Чек-лист проверки', rc_recs:'Рекомендации',
+    // mechRows labels
+    mr_na:'Механика недоступна для данного региона',
+    mr_type:'Тип', mr_model:'Модель', mr_tiered:'Тиерный (Bronze → Platinum)',
+    mr_period:'Период', mr_monthly:'Ежемесячно', mr_weekly:'Еженедельно',
+    mr_maxamt:'Макс. сумма', mr_pct_back:'% Возврата', mr_minloss:'Мин. потерь',
+    mr_pkgs:'Пакеты', mr_maxb:'Макс. бонус', mr_mind:'Мин. депозит',
+    mr_wager:'Вейджер', mr_fs:'Фриспины', mr_days:'Срок', mr_days_sfx:' дней', mr_promo:'Промокод',
+    // mechanic type labels
+    mt_welcome:'1-й депозит', mt_ndb:'Welcome', mt_reload:'Reload', mt_dep2:'2-й депозит', mt_dep3:'3-й депозит', mt_cashback:'Cashback',
+    // verdict & econ
+    vrd_cheap:'Экономичный ✓', vrd_ok:'Оптимальный ✓', vrd_warn:'Внимание ⚠', vrd_high:'Высокий риск ✗',
+    ec_cost:'Расходы кампании', ec_arpu:'ARPU / мес.', ec_ltv:'LTV 3 мес.', ec_roi:'ROI 3 мес.', ec_verdict:'Вердикт', ec_nosrv:'нет ответа от сервера',
     // Scenario categories
     sc_cat_launch:'Запуск', sc_cat_react:'Реактивация', sc_cat_dep:'Депозиты',
     sc_cat_vip:'VIP', sc_cat_sport:'Спорт', sc_cat_tourn:'Турниры', sc_cat_other:'Другое',
@@ -1832,7 +1809,7 @@ const I18N = {
     sc_sport_event:'Спортивное событие', sc_tournament:'Турнир / Ивент',
     sc_cashback:'Cashback кампания', sc_custom:'Кастомный сценарий',
     // Detail view
-    det_back:'← Кампании', det_cfg:'⚙ В конфигуратор ↗', det_dup:'⎘ Дублировать', det_edit:'✏ Редактировать',
+    det_back:'← Кампании', det_dup:'⎘ Дублировать', det_edit:'✏ Редактировать',
     det_tab_ov:'Обзор', det_tab_mech:'Механика', det_tab_texts:'Тексты', det_tab_audit:'Аудит', det_tab_export:'Экспорт',
     det_ov_scenario:'Сценарий', det_ov_geo:'Регион', det_ov_segment:'Сегмент',
     det_ov_budget:'Бюджет', det_ov_tone:'Тон', det_ov_lang:'Язык текстов',
@@ -1895,6 +1872,18 @@ const I18N = {
     rc_mech:'Recommended Mechanic', rc_mechs:'Campaign Mechanics',
     rc_why:'Why This Mechanic', rc_alts:'Alternatives', rc_econ:'Economics P50',
     rc_audit:'Compliance Checklist', rc_recs:'Recommendations',
+    // mechRows labels
+    mr_na:'Mechanic not available for this region',
+    mr_type:'Type', mr_model:'Model', mr_tiered:'Tiered (Bronze → Platinum)',
+    mr_period:'Period', mr_monthly:'Monthly', mr_weekly:'Weekly',
+    mr_maxamt:'Max Amount', mr_pct_back:'% Return', mr_minloss:'Min Loss',
+    mr_pkgs:'Packages', mr_maxb:'Max Bonus', mr_mind:'Min Deposit',
+    mr_wager:'Wager', mr_fs:'Free Spins', mr_days:'Validity', mr_days_sfx:' days', mr_promo:'Promo Code',
+    // mechanic type labels
+    mt_welcome:'1st Deposit', mt_ndb:'Welcome', mt_reload:'Reload', mt_dep2:'2nd Deposit', mt_dep3:'3rd Deposit', mt_cashback:'Cashback',
+    // verdict & econ
+    vrd_cheap:'Economical ✓', vrd_ok:'Optimal ✓', vrd_warn:'Attention ⚠', vrd_high:'High Risk ✗',
+    ec_cost:'Campaign Cost', ec_arpu:'ARPU / mo.', ec_ltv:'LTV 3 mo.', ec_roi:'ROI 3 mo.', ec_verdict:'Verdict', ec_nosrv:'no response from server',
     // Scenario categories
     sc_cat_launch:'Launch', sc_cat_react:'Reactivation', sc_cat_dep:'Deposits',
     sc_cat_vip:'VIP', sc_cat_sport:'Sport', sc_cat_tourn:'Tournaments', sc_cat_other:'Other',
@@ -1907,7 +1896,7 @@ const I18N = {
     sc_sport_event:'Sport Event', sc_tournament:'Tournament / Event',
     sc_cashback:'Cashback Campaign', sc_custom:'Custom Scenario',
     // Detail view
-    det_back:'← Campaigns', det_cfg:'⚙ Open in Configurator ↗', det_dup:'⎘ Duplicate', det_edit:'✏ Edit',
+    det_back:'← Campaigns', det_dup:'⎘ Duplicate', det_edit:'✏ Edit',
     det_tab_ov:'Overview', det_tab_mech:'Mechanics', det_tab_texts:'Texts', det_tab_audit:'Audit', det_tab_export:'Export',
     det_ov_scenario:'Scenario', det_ov_geo:'Region', det_ov_segment:'Segment',
     det_ov_budget:'Budget', det_ov_tone:'Tone', det_ov_lang:'Text Language',
@@ -1953,6 +1942,18 @@ function setUILang(lang) {
   }
   renderScenarios();
   renderCampaignViews();
+  // Re-render dynamic content that uses t() at call time
+  if (draft._apiResult && document.getElementById('s3-res')?.style.display !== 'none') {
+    renderMechanicResults(draft._apiResult);
+  }
+  if (_detailId) {
+    const activeTab = document.querySelector('.dtab.active');
+    const tabName = activeTab?.getAttribute('onclick')?.match(/'(\w+)'/)?.[1];
+    if (tabName) {
+      const c = getCampaigns().find(x => x.id === _detailId);
+      if (c) renderDetailTab(tabName, c);
+    }
+  }
 }
 
 // ── CAMPAIGN STORAGE ──────────────────────────────────────────────────────────
@@ -2005,7 +2006,7 @@ function fmtDate(iso) {
   } catch { return '—'; }
 }
 
-const MECH_LBL_TABLE = {welcome:'1-й дп.',ndb:'Welcome',reload:'Reload',dep2:'2-й дп.',dep3:'3-й дп.',cashback:'Cashback'};
+function mechTypeLbl(type) { return type ? (t('mt_'+type) || type) : '—'; }
 
 function statusBadge(s) {
   const cls = {draft:'badge-draft',active:'badge-active',done:'badge-done'}[s] || 'badge-draft';
@@ -2013,7 +2014,7 @@ function statusBadge(s) {
 }
 
 function campaignRowHTML(c) {
-  const mech = c.mechanicType ? (MECH_LBL_TABLE[c.mechanicType] || c.mechanicType) : '—';
+  const mech = mechTypeLbl(c.mechanicType);
   const geo  = c.params?.geo ? (GEO_LBL[c.params.geo] || c.params.geo) : '';
   const lang = c.params?.lang ? c.params.lang.toUpperCase() : '';
   const meta = [mech, geo, lang].filter(Boolean).join(' · ');
@@ -2098,13 +2099,6 @@ renderCampaignViews();
 try {
   const saved = localStorage.getItem('bonusLang');
   if (saved && I18N[saved]) setUILang(saved);
-} catch(e) {}
-// Open campaign detail when returning from configurator via ?open= param
-try {
-  const openId = new URLSearchParams(location.search).get('open');
-  if (openId && getCampaigns().some(x => x.id === openId)) {
-    setTimeout(() => openDetail(openId), 0);
-  }
 } catch(e) {}
 </script>
 

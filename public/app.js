@@ -1641,7 +1641,7 @@ function _showCampaignBanner(cid, name, wager) {
 // Build the URL for "Open in Configurator" button (call from campaign generator)
 // campaignParams: { region, players, avgdep, sitecur, depcur, lic, plat, rtp, wager, name, id }
 function buildConfiguratorURL(campaignParams, autoGenerate = true) {
-  const base = '/configurator.html';
+  const base = './public/index.html';   // adjust to your deployment path
   const q = new URLSearchParams();
 
   const {

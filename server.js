@@ -11,7 +11,6 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(express.json({ limit: '64kb' }));
 app.get('/generator.html', (_req, res) => res.redirect(301, '/campaign-generator.html'));
-app.get('/configurator', (_req, res) => res.redirect(301, '/configurator.html'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const apiLimiter = rateLimit({ windowMs: 60_000, max: 30, standardHeaders: true, legacyHeaders: false });
