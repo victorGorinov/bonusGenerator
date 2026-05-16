@@ -1,15 +1,17 @@
-import { Resend } from 'resend';
+import { Resend }           from 'resend';
 import { RESEND_API_KEY, NOTIFY_EMAIL } from '../config/index.js';
+import { ValidationError }  from '../errors/ValidationError.js';
+import { AppError }         from '../errors/AppError.js';
 
 const ESC      = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-export async function signup(req, res) {
+export async function signup(req, res, next) {
   const { name, email, role } = req.body || {};
 
-  if (!email || !EMAIL_RE.test(String(email))) return res.status(400).json({ error: 'valid email required' });
-  if (name && String(name).length > 200) return res.status(400).json({ error: 'name too long' });
-  if (role && String(role).length > 100) return res.status(400).json({ error: 'role too long' });
+  if (!email || !EMAIL_RE.test(String(email))) return next(new ValidationError('valid email required'));
+  if (name && String(name).length > 200) return next(new ValidationError('name too long'));
+  if (role && String(role).length > 100) return next(new ValidationError('role too long'));
 
   const resend = new Resend(RESEND_API_KEY);
   try {
@@ -28,7 +30,6 @@ export async function signup(req, res) {
     });
     res.json({ ok: true });
   } catch (err) {
-    console.error('Resend error:', err);
-    res.status(500).json({ error: 'Failed to send email' });
+    next(new AppError('Failed to send email', 500, 'EMAIL_ERROR'));
   }
 }

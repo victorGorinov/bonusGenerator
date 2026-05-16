@@ -1,10 +1,11 @@
-import express        from 'express';
-import path           from 'path';
-import { fileURLToPath } from 'url';
-import generateRoutes from '../routes/generate.routes.js';
-import campaignRoutes from '../routes/campaign.routes.js';
-import signupRoutes   from '../routes/signup.routes.js';
-import healthRoutes   from '../routes/health.routes.js';
+import express              from 'express';
+import path                 from 'path';
+import { fileURLToPath }    from 'url';
+import generateRoutes       from '../routes/generate.routes.js';
+import campaignRoutes       from '../routes/campaign.routes.js';
+import signupRoutes         from '../routes/signup.routes.js';
+import healthRoutes         from '../routes/health.routes.js';
+import { errorMiddleware }  from '../middleware/errors.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -18,5 +19,7 @@ app.use('/api',          generateRoutes);
 app.use('/api/campaign', campaignRoutes);
 app.use('/api',          signupRoutes);
 app.use('/api',          healthRoutes);
+
+app.use(errorMiddleware);
 
 export default app;

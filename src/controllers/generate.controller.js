@@ -1,21 +1,21 @@
-import * as bonusService from '../services/bonus.service.js';
+import * as bonusService   from '../services/bonus.service.js';
+import { ValidationError } from '../errors/ValidationError.js';
 
-export function generate(req, res) {
+export function generate(req, res, next) {
   try {
     const cfg = bonusService.generate(req.body || {});
     res.json({ cfg });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Could not generate configuration' });
+    next(err);
   }
 }
 
-export function recalc(req, res) {
+export function recalc(req, res, next) {
+  const { cfg, overrides } = req.body || {};
+  if (!cfg) return next(new ValidationError('cfg required'));
   try {
-    const { cfg, overrides } = req.body || {};
     res.json(bonusService.recalc(cfg, overrides));
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Recalc failed' });
+    next(err);
   }
 }

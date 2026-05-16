@@ -2,23 +2,24 @@ import { GEO_CFG, TONE_DESC, LANG_NAME, SEG_DESC } from '../domain/campaign/scen
 import { bonusLine, parseAI }                       from '../domain/ai/parser.js';
 import { generateText }                             from '../services/ai.service.js';
 import * as campaignService                         from '../services/campaign.service.js';
+import { ValidationError }                          from '../errors/ValidationError.js';
+import { AIProviderError }                          from '../errors/AIProviderError.js';
 
-export function generate(req, res) {
+export function generate(req, res, next) {
   const { scenario, params } = req.body || {};
   if (!params || typeof params !== 'object') {
-    return res.status(400).json({ error: 'params required' });
+    return next(new ValidationError('params required'));
   }
   try {
     res.json(campaignService.generateCampaign({ scenario, params }));
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Campaign generation failed' });
+    next(err);
   }
 }
 
-export async function texts(req, res) {
+export async function texts(req, res, next) {
   const { scenario, mechanic, mechanicType, params } = req.body || {};
-  if (!params) return res.status(400).json({ error: 'params required' });
+  if (!params) return next(new ValidationError('params required'));
 
   const geo   = GEO_CFG[params.geo] || GEO_CFG['de'];
   const lang  = LANG_NAME[params.lang] || 'English';
@@ -60,14 +61,13 @@ All texts in ${lang}. Include bonus code and key conditions in every variant.`;
     const text = await generateText(prompt, { maxTokens: 4096 });
     res.json(parseAI(text));
   } catch (err) {
-    console.error('Texts AI error:', err.message);
-    res.status(500).json({ error: err.message || 'AI generation failed' });
+    next(new AIProviderError(err.message || 'AI generation failed'));
   }
 }
 
-export async function audit(req, res) {
+export async function audit(req, res, next) {
   const { scenario, mechanic, mechanicType, params, uiLang } = req.body || {};
-  if (!params) return res.status(400).json({ error: 'params required' });
+  if (!params) return next(new ValidationError('params required'));
 
   const geo   = GEO_CFG[params.geo] || GEO_CFG['de'];
   const lic   = (geo.lic || 'none').toUpperCase();
@@ -103,7 +103,6 @@ Give 2-4 recommendations. Be specific to the actual bonus parameters and region.
     const text = await generateText(prompt, { maxTokens: 900 });
     res.json(parseAI(text));
   } catch (err) {
-    console.error('Audit AI error:', err.message);
-    res.status(500).json({ error: err.message || 'Audit failed' });
+    next(new AIProviderError(err.message || 'Audit failed'));
   }
 }
