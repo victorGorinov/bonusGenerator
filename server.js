@@ -4,11 +4,13 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { Resend } from 'resend';
 import rateLimit from 'express-rate-limit';
+import Anthropic from '@anthropic-ai/sdk';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
 app.use(express.json({ limit: '64kb' }));
+app.get('/generator.html', (_req, res) => res.redirect(301, '/campaign-generator.html'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const apiLimiter = rateLimit({ windowMs: 60_000, max: 30, standardHeaders: true, legacyHeaders: false });
@@ -40,7 +42,7 @@ function truncNormalPayout(B, W, adjWCR, adjRTP){
 }
 
 function buildConfig(params){
-  const { region, players, sitecur, depcur, avgdep, plat, lic, rtp } = params;
+  const { region, players, sitecur, depcur, avgdep, plat, lic, rtp, riskAdj } = params;
   const dep = Number(avgdep) || 100;
   const pl = Number(players) || 5000;
   const r = region;
@@ -54,7 +56,7 @@ function buildConfig(params){
       return { type:'sweep', sc:10, gc:1000, trigger:'v_sweep_trigger', validity:30, wager:0, cur:'USD', code:'SWEEP10' };
     }
     if (r === 'mn') {
-      return { type:'match', pct:100, maxB:100000, minD:3000, cur:'MNT', fs:50, days:60, code:'WELCOME100', trigger:'v_first_dep' };
+      return { type:'match', pct:100, maxB:100000, minD:3000, cur:'MNT', fs:30, days:30, code:'WELCOME100', trigger:'v_first_dep' };
     }
     if (r === 'latam') {
       const maxB = Math.max(300, Math.min(500, Math.round(dep * 8)));
@@ -90,7 +92,8 @@ function buildConfig(params){
       return { type:'fs_restricted', fs:20, maxW_x:3, wager:10, days:7, note:'ukgc_note', trigger:'v_reg_verify', limit:'v_1_per_account' };
     }
     if (r === 'mn') {
-      return { type:'combined', amt:5000, fs:30, ndCur:'MNT', wager:50, maxW_x:5, days:7, limit:'v_1_per_account', trigger:'v_reg_verify' };
+      const ndAmt = Math.min(5000, Math.round(dep * 0.25));
+      return { type:'combined', amt:ndAmt, fs:20, ndCur:'MNT', wager:35, maxW_x:3, days:7, limit:'v_1_per_account', trigger:'v_reg_verify' };
     }
     if (r === 'latam') {
       return { type:'combined', amt:5, fs:15, ndCur:'USD', wager:45, maxW_x:5, days:7, limit:'v_1_per_account', trigger:'v_reg_verify' };
@@ -109,7 +112,8 @@ function buildConfig(params){
       return { type:'packages', pkgs:[{price:'$4.99',sc:100},{price:'$9.99',sc:250},{price:'$19.99',sc:500},{price:'$49.99',sc:1500}] };
     }
     if (r === 'mn') {
-      return { type:'match', pct:50, maxB:5000, minD:5000, cur:'MNT', fs:10, freq:'v_weekly', day:'v_day_sat', limit:'v_1_per_period', code:'RELOAD50' };
+      const maxB = Math.min(10000, Math.round(dep * 0.75));
+      return { type:'match', pct:50, maxB, minD:welcome.minD, cur:'MNT', fs:10, freq:'v_weekly', day:'v_day_sat', limit:'v_1_per_period', code:'RELOAD50' };
     }
     if (r === 'latam') {
       const maxB = Math.min(75, Math.round(dep * 2.5));
@@ -133,7 +137,7 @@ function buildConfig(params){
       return { model:'none', wW:0, wN:0, wR:0, wF:0, mb:'v_no_limit', days:0, basis:'v_no_wager', games:'v_no_limit' };
     }
     if (r === 'mn') {
-      return { model:'standard', wW:40, wN:50, wR:35, wF:30, mb:'v_no_limit', days:60, basis:'v_bonus_only', games:'v_slots_only', gameRtp:rt }; 
+      return { model:'standard', wW:40, wN:35, wR:30, wF:25, mb:'v_no_limit', days:30, basis:'v_bonus_only', games:'v_slots_only', gameRtp:rt };
     }
     if (r === 'latam') {
       return { model:'standard', wW:40, wN:45, wR:35, wF:30, mb:'v_no_limit', days:30, basis:'v_bonus_only', games:'v_slots_only', gameRtp:rt };
@@ -147,6 +151,14 @@ function buildConfig(params){
     const games = r === 'crypto' ? 'v_all_games' : 'v_slots_only';
     return { model:'standard', wW, wN, wR, wF, mb, days: r === 'crypto' ? 90 : 30, basis, games, gameRtp:rt };
   })();
+
+  // Apply risk-level adjustment before dep2/dep3 use wager.wW and before econ is computed
+  if (riskAdj && wager.model !== 'none') {
+    wager.wW = Math.max(5, wager.wW + riskAdj);
+    wager.wN = Math.max(5, wager.wN + riskAdj);
+    wager.wR = Math.max(5, wager.wR + Math.round(riskAdj * 0.7));
+    wager.wF = Math.max(5, wager.wF + Math.round(riskAdj * 0.7));
+  }
 
   const cashback = (() => {
     if (r === 'sweep') {
@@ -429,6 +441,290 @@ app.post('/api/signup', async (req, res) => {
   } catch (err) {
     console.error('Resend error:', err);
     res.status(500).json({ error: 'Failed to send email' });
+  }
+});
+
+// ── CAMPAIGN GENERATOR ────────────────────────────────────────────────────────
+const campaignLimiter = rateLimit({ windowMs: 60_000, max: 20, standardHeaders: true, legacyHeaders: false });
+app.use('/api/campaign', campaignLimiter);
+
+const GEO_CFG = {
+  de: { region:'eu',    lic:'mga',   sitecur:'EUR', depcur:'EUR' },
+  fr: { region:'eu',    lic:'mga',   sitecur:'EUR', depcur:'EUR' },
+  es: { region:'eu',    lic:'mga',   sitecur:'EUR', depcur:'EUR' },
+  it: { region:'eu',    lic:'mga',   sitecur:'EUR', depcur:'EUR' },
+  nl: { region:'eu',    lic:'mga',   sitecur:'EUR', depcur:'EUR' },
+  uk: { region:'eu',    lic:'ukgc',  sitecur:'GBP', depcur:'GBP' },
+  ru: { region:'cis',   lic:'none',  sitecur:'RUB', depcur:'RUB' },
+  kz: { region:'cis',   lic:'none',  sitecur:'KZT', depcur:'KZT' },
+  us: { region:'sweep', lic:'none',  sitecur:'USD', depcur:'USD' },
+  mn: { region:'mn',    lic:'none',  sitecur:'MNT', depcur:'MNT' },
+  mx: { region:'latam', lic:'none',  sitecur:'USD', depcur:'USD' },
+  br: { region:'latam', lic:'none',  sitecur:'USD', depcur:'USD' },
+};
+
+const SCENARIO_MSG = {
+  first_launch:     ['Полный бонусный пакет для запуска казино максимизирует конверсию на каждом этапе жизненного цикла игрока', 'Welcome + NDB формируют первое впечатление; Reload удерживает в долгую; Cashback компенсирует потери и снижает churn в первые 90 дней'],
+  inactive_3:       ['Reload эффективен при 3-дневном перерыве — игрок ещё помнит платформу и легко конвертируется', 'Короткий срок инактивности снижает CAC на 25–40% vs стандартного бонуса на 1-й депозит'],
+  inactive_7:       ['Reload идеален для 7-дневного перерыва: баланс привлекательности и экономической эффективности', '50% match — рыночный стандарт, cost ratio ≈15–20%'],
+  inactive_30:      ['После 30+ дней инактивности нужен мощный оффер для возврата — размер бонуса имеет значение', 'Крупный match оправдан высоким retention-эффектом после 30-дневного перерыва (+35%)'],
+  churn_risk:       ['Превентивный оффер при риске оттока снижает churn на 20–30% — время действия критично', 'Раннее вмешательство обходится в 3–5 раз дешевле полноценной реактивации'],
+  return_win:       ['После крупного выигрыша игрок склонен уйти — Reload мягко возвращает в игровой цикл', 'Фокус на вовлечённость, а не на крупный бонус снижает риск бонусхантинга'],
+  return_loss:      ['Cashback после крупного проигрыша снижает фрустрацию и удерживает игрока', 'Возврат % от потерь — наиболее этичный инструмент удержания по требованиям EU-регуляторов'],
+  first_dep:        ['Бонус на 1-й депозит — рыночный стандарт, максимизирует конверсию новых игроков', 'Условия 1-го депозита определяют LTV первого года: % и вейджер критически важны для unit-экономики'],
+  second_dep:       ['2-й депозитный бонус фиксирует игровую привычку в первую неделю после регистрации', 'Удержание после 2-го депозита коррелирует с LTV 3 мес. в 2.3× выше нормы'],
+  big_dep:          ['Крупный депозит сигнализирует о высоком LTV-потенциале — оффер должен соответствовать уровню', 'Персонализированные условия при крупном депозите конвертируют в 40% случаев'],
+  vip_retention:    ['VIP-удержание требует персонального подхода — Cashback без вейджера является стандартом', 'Высокий cashback без вейджера — рыночная норма для VIP-сегмента, ожидание игрока'],
+  vip_reactivation: ['Реактивация VIP требует значительного оффера для возврата высокодоходного игрока', 'ROI от возврата одного VIP покрывает CAC 10–15 стандартных игроков'],
+  sport_event:      ['Фрибет привязан к конкретному событию — создаёт срочность и FOMO-эффект', 'Событийный маркетинг конвертирует спортивную аудиторию в 2.5× эффективнее обычного пуша'],
+  tournament:       ['Турнирный формат создаёт долгосрочную вовлечённость через соревновательный элемент', 'Призовой фонд с фиксированным бюджетом — предсказуемый cost ratio без хвостового риска'],
+  cashback:         ['Cashback без вейджера — наиболее прозрачный инструмент, лояльный для игрока и регулятора', 'EU/UK регуляторы всё строже требуют отказа от вейджера — cashback опережает тренд'],
+  custom:           ['Базовая механика подобрана по параметрам вашего региона и сегмента аудитории', 'Дополнительная настройка параметров доступна на предыдущем экране'],
+};
+
+function campaignExplanation(scenarioId, mechanicType, cfg, requestedTypes = []) {
+  const [m1, m2] = SCENARIO_MSG[scenarioId] || SCENARIO_MSG['inactive_7'];
+  const licStr = cfg.lic === 'ukgc' ? 'UKGC' : cfg.lic === 'mga' ? 'MGA' : 'Curaçao';
+  const regStr = { eu:`EU/${licStr}`, cis:'СНГ', crypto:'Crypto', mn:'Монголия', latam:'LatAm', sweep:'USA Sweep' }[cfg.r] || cfg.r;
+
+  if (requestedTypes.length > 1) {
+    const lblMap = { welcome:'1-й депозит', ndb:'Welcome', reload:'Reload', dep2:'2-й депозит', dep3:'3-й депозит', cashback:'Cashback' };
+    const mix = requestedTypes.map(t => lblMap[t] || t).join(' + ');
+    const hasCashback = requestedTypes.includes('cashback');
+    const isFullLaunch = scenarioId === 'first_launch';
+    return [
+      isFullLaunch
+        ? `Пакет запуска казино для ${regStr}: все 6 механик покрывают путь игрока от регистрации до долгосрочного удержания`
+        : `Комбинация ${mix} покрывает полный жизненный цикл игрока в рамках одной кампании`,
+      m1,
+      isFullLaunch
+        ? `NDB снижает барьер входа → Welcome конвертирует депозит → 2-й/3-й деп фиксируют привычку → Reload удерживает еженедельно → Cashback страхует от оттока`
+        : hasCashback
+          ? 'Cashback без вейджера компенсирует агрессивность других механик и снижает риск регуляторных претензий'
+          : `Единый вейджерный порог ×${cfg.wager?.wW||35} применяется ко всем механикам региона ${regStr}`,
+      `Переключайтесь между табами, чтобы просмотреть параметры каждой механики отдельно`,
+    ];
+  }
+
+  const wStr = mechanicType === 'cashback'
+    ? 'Cashback без вейджера повышает trust score игрока и снижает жалобы на 40%'
+    : `Вейджер ×${cfg.wager?.wW || 35} рассчитан по Truncated Normal — оптимальный баланс выплат и маржи`;
+  return [m1, m2, `Параметры адаптированы под регион ${regStr} и лицензионные требования`, wStr];
+}
+
+function campaignAlternatives(cfg, requestedTypes = []) {
+  const cur = cfg.cur;
+  const allM = { welcome:cfg.welcome, ndb:cfg.ndb, reload:cfg.reload, dep2:cfg.dep2, dep3:cfg.dep3, cashback:cfg.cashback };
+  const excluded = new Set(requestedTypes);
+  const info = {
+    welcome:  m => ({ icon:'💰', name:`1-й депозит ${m.pct||100}% до ${m.maxB||'?'} ${m.cur||cur}`, desc:'Бонус на первый депозит — максимизирует конверсию' }),
+    ndb:      m => ({ icon:'🎁', name:`Welcome ${m.fs||m.amt||30}${m.fs?' FS':''}`, desc:'Welcome-бонус без депозита при регистрации' }),
+    reload:   m => ({ icon:'🔄', name:`Reload ${m.pct||50}% до ${m.maxB||'?'} ${m.cur||cur}`, desc:'Еженедельный бонус для удержания' }),
+    dep2:     m => ({ icon:'💰', name:`2-й депозит ${m.pct||75}%`, desc:'Фиксирует игровую привычку в 1-ю неделю' }),
+    dep3:     m => ({ icon:'🎁', name:`3-й депозит ${m.pct||50}%`, desc:'Завершает депозитную серию' }),
+    cashback: m => ({ icon:'💳', name:`Cashback ${m.pct||10}%`, desc:'Возврат от потерь без вейджера' }),
+  };
+  return Object.entries(info)
+    .filter(([t]) => !excluded.has(t) && allM[t])
+    .map(([t, fn]) => ({ ...fn(allM[t]), type:t }))
+    .slice(0, 3);
+}
+
+app.post('/api/campaign/generate', async (req, res) => {
+  const { scenario, params } = req.body || {};
+  if (!params || typeof params !== 'object') return res.status(400).json({ error: 'params required' });
+
+  const geoCfg  = GEO_CFG[String(params.geo || 'de')] || GEO_CFG['de'];
+  const avgdep  = { new:40, mid:100, vip:500 }[params.segment] || 100;
+  const players = { low:1000, mid:5000, high:10000 }[params.agg] || 5000;
+  const rtp     = { slots:96, table:98, live:99 }[params.games] || 96;
+  // risk=low → +10 wager (stricter → lower cost ratio → safer verdict)
+  // risk=high → -8 wager (looser → higher cost ratio → aggressive offer)
+  const RISK_ADJ = { low: 10, mid: 0, high: -8 };
+  const riskAdj = RISK_ADJ[params.risk] ?? 0;
+
+  const cfg = buildConfig({ ...geoCfg, players, avgdep, plat:'both', rtp, riskAdj });
+
+  const id = String(scenario?.id || 'inactive_7');
+  let scenarioType;
+  if (['first_dep','first_launch'].includes(id))                                       scenarioType = 'welcome';
+  else if (id === 'second_dep')                                                        scenarioType = 'dep2';
+  else if (['cashback','return_loss','vip_retention','vip_reactivation'].includes(id)) scenarioType = 'cashback';
+  else                                                                                 scenarioType = 'reload';
+
+  const allMechanics = { welcome:cfg.welcome, ndb:cfg.ndb, reload:cfg.reload, dep2:cfg.dep2, dep3:cfg.dep3, cashback:cfg.cashback };
+
+  // Use user-selected bonusTypes or fall back to scenario
+  const validTypes = new Set(Object.keys(allMechanics));
+  const requestedTypes = Array.isArray(params.bonusTypes) && params.bonusTypes.length > 0
+    ? params.bonusTypes.filter(t => validTypes.has(t) && allMechanics[t])
+    : [scenarioType];
+  const finalTypes  = requestedTypes.length ? requestedTypes : [scenarioType];
+  const primaryType = finalTypes[0];
+
+  const selectedMechanics = {};
+  finalTypes.forEach(t => { if (allMechanics[t]) selectedMechanics[t] = allMechanics[t]; });
+
+  res.json({
+    mechanic:          selectedMechanics[primaryType],
+    mechanicType:      primaryType,
+    requestedTypes:    finalTypes,
+    selectedMechanics,
+    allMechanics,
+    explanation:       campaignExplanation(id, primaryType, cfg, finalTypes),
+    alternatives:      campaignAlternatives(cfg, finalTypes),
+    econ:              cfg.econ,
+    wager:             cfg.wager,
+    fsSpec:            cfg.fsSpec,
+    contrib:           cfg.contrib,
+    reg:               cfg.reg,
+    cur:               cfg.cur,
+    r:                 cfg.r,
+  });
+});
+
+// ── AI TEXT GENERATION ────────────────────────────────────────────────────────
+const aiLimiter = rateLimit({ windowMs: 60_000, max: 15, standardHeaders: true, legacyHeaders: false });
+
+const TONE_DESC = { friendly:'friendly, warm and personal', pro:'professional and trustworthy', aggressive:'urgent, bold, FOMO-driven' };
+const LANG_NAME = { de:'German', en:'English', ru:'Russian', es:'Spanish', mn:'Mongolian' };
+const SEG_DESC  = { new:'new players (first-timers)', mid:'regular players', vip:'VIP high-value players' };
+
+function bonusLine(mech, type) {
+  if (!mech) return 'bonus offer';
+  if (type === 'cashback') return `Cashback ${mech.pct||10}% of losses, no wagering`;
+  if (type === 'ndb')      return `Welcome: ${mech.fs||mech.amt||30}${mech.fs?' free spins':''} no deposit, wager ×${mech.wager||50}`;
+  return `${mech.pct||100}% match up to ${mech.maxB||'?'} ${mech.cur||''}${mech.fs?`, ${mech.fs} free spins`:''}, min dep ${mech.minD||'?'} ${mech.cur||''}, wager ×${mech.wager||35}, ${mech.days||30} days${mech.code?`, code: ${mech.code}`:''}`;
+}
+
+function tryRepairJSON(s) {
+  try {
+    const opens = [];
+    let inStr = false, esc = false;
+    for (const c of s) {
+      if (esc)             { esc = false; continue; }
+      if (c==='\\' && inStr){ esc = true;  continue; }
+      if (c==='"')         { inStr = !inStr; continue; }
+      if (inStr)           continue;
+      if (c==='{' || c==='[') opens.push(c==='{'?'}':']');
+      else if ((c==='}'||c===']') && opens.length) opens.pop();
+    }
+    let repaired = s;
+    if (inStr) repaired += '"';                          // close open string
+    for (let i = opens.length-1; i >= 0; i--) repaired += opens[i]; // close brackets
+    return JSON.parse(repaired);
+  } catch(_) { return null; }
+}
+
+function parseAI(text) {
+  const s = text.trim();
+  const raw = s.startsWith('```') ? s.replace(/```json?\n?/g,'').replace(/```/g,'').trim() : s;
+  try {
+    return JSON.parse(raw);
+  } catch(e) {
+    const repaired = tryRepairJSON(raw);
+    if (repaired) return repaired;
+    throw e;
+  }
+}
+
+app.post('/api/campaign/texts', aiLimiter, async (req, res) => {
+  const { scenario, mechanic, mechanicType, params } = req.body || {};
+  if (!params) return res.status(400).json({ error: 'params required' });
+
+  const geo   = GEO_CFG[params.geo] || GEO_CFG['de'];
+  const lang  = LANG_NAME[params.lang] || 'English';
+  const tone  = TONE_DESC[params.tone] || TONE_DESC.friendly;
+  const seg   = SEG_DESC[params.segment] || SEG_DESC.mid;
+  const bonus = bonusLine(mechanic, mechanicType);
+  const lic   = (geo.lic || 'none').toUpperCase();
+
+  const prompt = `You are a senior CRM marketing expert for an online casino. Generate 3 compelling variants (A, B, C) for each communication channel.
+
+Campaign context:
+- Scenario: ${scenario?.lbl || 'Player reactivation'}
+- Bonus: ${bonus}
+- Region: ${params.geo?.toUpperCase()} / License: ${lic}
+- Audience: ${seg}
+- Language: ${lang}
+- Tone: ${tone}
+
+Return ONLY valid JSON, no markdown, no extra text:
+{
+  "push": ["<70-100 chars, 1-2 emojis>", "variant B", "variant C"],
+  "email": [
+    {"subject": "<45-60 chars>", "body": "<60-90 words, include 1 T&C sentence>"},
+    {"subject": "...", "body": "..."},
+    {"subject": "...", "body": "..."}
+  ],
+  "sms": ["<MAX 160 chars, end: STOP>", "variant B", "variant C"],
+  "telegram": ["<*bold* _italic_, 120-200 chars>", "variant B", "variant C"],
+  "popup": [
+    {"headline": "<max 45 chars>", "subtext": "<max 75 chars>", "cta": "<max 22 chars, button text>"},
+    {"headline": "...", "subtext": "...", "cta": "..."},
+    {"headline": "...", "subtext": "...", "cta": "..."}
+  ]
+}
+All texts in ${lang}. Include bonus code and key conditions in every variant.`;
+
+  try {
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const msg = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 4096,
+      messages: [{ role:'user', content: prompt }],
+    });
+    res.json(parseAI(msg.content[0].text));
+  } catch(err) {
+    console.error('Texts AI error:', err.message);
+    res.status(500).json({ error: err.message || 'AI generation failed' });
+  }
+});
+
+app.post('/api/campaign/audit', aiLimiter, async (req, res) => {
+  const { scenario, mechanic, mechanicType, params, uiLang } = req.body || {};
+  if (!params) return res.status(400).json({ error: 'params required' });
+
+  const geo   = GEO_CFG[params.geo] || GEO_CFG['de'];
+  const lic   = (geo.lic || 'none').toUpperCase();
+  const bonus = bonusLine(mechanic, mechanicType);
+  const lang  = LANG_NAME[uiLang] || LANG_NAME[params.lang] || 'English';
+
+  const prompt = `You are a gambling compliance officer. Audit this CRM bonus campaign for risks and compliance issues.
+
+Campaign: ${scenario?.lbl || 'Reactivation'}
+Bonus: ${bonus}
+Region: ${params.geo?.toUpperCase()}, License: ${lic}
+Segment: ${SEG_DESC[params.segment]||'regular players'}, Risk: ${params.risk||'low'}
+
+IMPORTANT: Write ALL text fields (label, note, text, impact) in ${lang}.
+
+Audit 5 aspects. Return ONLY valid JSON, no markdown:
+{
+  "checks": [
+    {"label": "<aspect name in ${lang}>", "status": "ok",      "note": "<under 90 chars in ${lang}>"},
+    {"label": "<aspect name in ${lang}>", "status": "ok|warn", "note": "<under 90 chars in ${lang}>"},
+    {"label": "<aspect name in ${lang}>", "status": "ok|warn", "note": "<under 90 chars in ${lang}>"},
+    {"label": "<aspect name in ${lang}>", "status": "ok|warn", "note": "<under 90 chars in ${lang}>"},
+    {"label": "<aspect name in ${lang}>", "status": "ok|warn", "note": "<under 90 chars in ${lang}>"}
+  ],
+  "recommendations": [
+    {"text": "<specific actionable fix in ${lang}, under 95 chars>", "impact": "<expected benefit in ${lang}, under 55 chars>"}
+  ]
+}
+Give 2-4 recommendations. Be specific to the actual bonus parameters and region.`;
+
+  try {
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const msg = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 900,
+      messages: [{ role:'user', content: prompt }],
+    });
+    res.json(parseAI(msg.content[0].text));
+  } catch(err) {
+    console.error('Audit AI error:', err.message);
+    res.status(500).json({ error: err.message || 'Audit failed' });
   }
 });
 

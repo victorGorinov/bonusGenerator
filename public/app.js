@@ -843,7 +843,7 @@ function render(c){
         <span>${pl.toLocaleString('ru')} ${t('players_mo')}</span>
         <span>·</span>
         <span>${t('avg_dep')}: ${dep.toLocaleString()} ${c.depcur}</span>
-        ${lic&&lic!=='none'?`<span>·</span><span class="obadge" style="background:#F1F5F9;color:#64748B">${lic.toUpperCase()}</span>`:''}
+        ${lic&&lic!=='none'?`<span>·</span><span class="obadge" style="background:#1e2740;color:#8892a4">${lic.toUpperCase()}</span>`:''}
       </div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -902,7 +902,7 @@ function render(c){
          +pr(t('p_limit'),t(N.limit))
          +pr(t('p_wager_ndb'),t('v_no_wager'),'gn');
   } else if(N.type==='fs_restricted'){
-    nBody=`<div style="font-size:11px;color:#92400E;background:#FFF7ED;padding:8px 10px;border-radius:6px;margin-bottom:8px">⚠️ ${N.note}</div>`
+    nBody=`<div style="font-size:11px;color:#F59E0B;background:rgba(245,158,11,0.12);padding:8px 10px;border-radius:6px;margin-bottom:8px">⚠️ ${N.note}</div>`
          +pre(t('p_fs_count'),'ov_ndb_fs',N.fs,'FS','',1,1,999)
          +pr(t('p_fs_wager'),N.wager+'×')
          +pr(t('p_fs_maxw'),N.maxW_x+'× '+t('p_spin_val').toLowerCase())
@@ -1132,8 +1132,8 @@ function render(c){
 
   // Метка модели: Truncated Normal (единая модель) + авто-подбор вейджера
   const modelLabel = E.over_breakeven
-    ? `<div style="font-size:10px;padding:4px 14px 2px;color:#92400E;background:#FEF3C7">⚠️ Wager ${E.wagerX}× > breakeven ${E.breakeven_wager}× — Truncated Normal (variance tail, decaying)</div>`
-    : `<div style="font-size:10px;padding:4px 14px 2px;color:#166534;background:#DCFCE7">✅ Wager ${E.wagerX}× ≤ breakeven ${E.breakeven_wager}× — Truncated Normal (linear mean + variance)</div>`;
+    ? `<div style="font-size:10px;padding:4px 14px 2px;color:#F59E0B;background:rgba(245,158,11,0.12)">⚠️ Wager ${E.wagerX}× > breakeven ${E.breakeven_wager}× — Truncated Normal (variance tail, decaying)</div>`
+    : `<div style="font-size:10px;padding:4px 14px 2px;color:#10b981;background:rgba(16,185,129,0.12)">✅ Wager ${E.wagerX}× ≤ breakeven ${E.breakeven_wager}× — Truncated Normal (linear mean + variance)</div>`;
   const autoWagerLabel = ``; // removed: wager now uses market-standard regional defaults
 
   // ── P10 / P50 / P90 scenario cards
@@ -1147,7 +1147,7 @@ function render(c){
 
   // ── Verdict + cost ratio
   econBody += `<div style="border-top:1px solid var(--border);padding:10px 14px">
-    <div style="font-size:12px;padding:7px 10px;border-radius:6px;margin-bottom:6px;font-weight:600;color:${{gn:'#166534',gd:'#92400E',yw:'#78350F',rd:'#991B1B'}[E.verdictCls]||'#1E1B4B'};background:${{gn:'#DCFCE7',gd:'#FEF3C7',yw:'#FDE68A',rd:'#FEE2E2'}[E.verdictCls]||'#F1F5F9'}">${t(E.verdictKey)}</div>
+    <div style="font-size:12px;padding:7px 10px;border-radius:6px;margin-bottom:6px;font-weight:600;color:${{gn:'#10b981',gd:'#F59E0B',yw:'#F59E0B',rd:'#EF4444'}[E.verdictCls]||'#8892a4'};background:${{gn:'rgba(16,185,129,0.15)',gd:'rgba(245,158,11,0.15)',yw:'rgba(245,158,11,0.2)',rd:'rgba(239,68,68,0.15)'}[E.verdictCls]||'#1e2740'}">${t(E.verdictKey)}</div>
     ${prt(t('p_cost_ratio'), fmtRatio(E.costRatio)+' ('+E.costRatio.toFixed(3)+')', E.verdictCls, t('rtip_cost_ratio'), 'econ_cost_ratio')}
     ${prt(t('p_max_risk'), fmtBonusCur(E.maxRisk), 'rd', t('rtip_max_risk'), 'econ_max_risk')}
     ${pr(t('p_stress_test'), fmtBonusCur(E.stressTest), E.sP50.cost<E.stressTest?'yw':'gn')}

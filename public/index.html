@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Bonus Engine Configurator — iGaming Bonus Management</title>
-<meta name="description" content="Configure compliant bonus programs for 6 global markets in minutes. Built for iGaming operators."/>
+<title>BonusEngine — AI-Powered iGaming Bonus Platform</title>
+<meta name="description" content="Generate AI CRM campaigns and bonus specs for 6 global markets in minutes. AI writes mechanics, texts, and audits compliance. Built for iGaming operators."/>
 <style>
   :root {
     --bg: #0a0d14;
@@ -239,7 +239,7 @@
   /* ── HOW IT WORKS ── */
   .steps { display: flex; gap: 0; margin-top: 56px; position: relative; }
   .steps::before {
-    content: ''; position: absolute; top: 28px; left: 28px; right: 28px; height: 1px;
+    content: ''; position: absolute; top: 28px; left: 10%; right: 10%; height: 1px;
     background: linear-gradient(90deg, var(--border), var(--accent), var(--border));
   }
   .step {
@@ -429,8 +429,7 @@
         <button class="lang-btn active" onclick="setLang('en')">EN</button>
         <button class="lang-btn" onclick="setLang('ru')">RU</button>
       </div>
-      <a href="/generator.html" class="btn btn-outline" data-i18n="nav_demo" >▶ Demo</a>
-      <a href="#signup" class="btn btn-primary" data-i18n="nav_cta">Get Early Access</a>
+      <a href="/campaign-generator.html" class="btn btn-primary" data-i18n="nav_ai">🤖 AI Campaigns</a>
     </div>
   </div>
 </nav>
@@ -443,35 +442,34 @@
     <div class="hero-content">
       <div class="hero-badge">
         <div class="hero-badge-dot"></div>
-        <span data-i18n="badge">iGaming Bonus Infrastructure · v2.0</span>
+        <span data-i18n="badge">AI-Powered iGaming Bonus Platform · v2.0</span>
       </div>
       <h1>
-        <span data-i18n="hero_h1a">Configure Bonus Programs</span><br/>
-        <span class="grad" data-i18n="hero_h1b">for Any Market in Minutes</span>
+        <span data-i18n="hero_h1a">AI Campaign Generator</span><br/>
+        <span class="grad" data-i18n="hero_h1b">+ Bonus Configurator for 6 Markets</span>
       </h1>
       <p class="hero-sub" data-i18n="hero_sub">
-        Generate compliant, economically optimised bonus specs for 6 global regions — with built-in unit economics, regulatory wager caps, and admin-ready export.
+        Generate full CRM bonus campaigns in 5 steps — AI selects mechanics, writes Push / Email / SMS / Telegram texts, audits compliance, and exports an admin-ready spec. All in under 2 minutes.
       </p>
       <div class="hero-ctas">
-        <a href="#signup" class="btn btn-gold btn-lg" data-i18n="hero_cta1">🚀 Get Free Access</a>
-        <a href="/generator.html" class="btn btn-outline btn-lg" data-i18n="hero_cta2" >▶ Try Live Demo</a>
+        <a href="/campaign-generator.html" class="btn btn-gold btn-lg" data-i18n="hero_cta1">🤖 Launch AI Generator</a>
       </div>
       <div class="hero-stats">
         <div class="stat-item">
           <div class="stat-num">6</div>
-          <div class="stat-label" data-i18n="stat1">Global Regions</div>
+          <div class="stat-label" data-i18n="stat1">Global Markets</div>
         </div>
         <div class="stat-item">
-          <div class="stat-num">&lt;2 min</div>
-          <div class="stat-label" data-i18n="stat2">Config Generation</div>
+          <div class="stat-num">5</div>
+          <div class="stat-label" data-i18n="stat2">AI Text Channels</div>
         </div>
         <div class="stat-item">
           <div class="stat-num">P10/P50/P90</div>
           <div class="stat-label" data-i18n="stat3">Econ Scenarios</div>
         </div>
         <div class="stat-item">
-          <div class="stat-num">4 langs</div>
-          <div class="stat-label" data-i18n="stat4">UI Languages</div>
+          <div class="stat-num">&lt;2 min</div>
+          <div class="stat-label" data-i18n="stat4">Campaign Ready</div>
         </div>
       </div>
     </div>
@@ -490,45 +488,45 @@
   <div class="container">
     <div class="section-header">
       <div class="section-tag" data-i18n="feat_tag">Core Features</div>
-      <h2 data-i18n="feat_h2">Everything a Bonus Manager Needs</h2>
-      <p data-i18n="feat_sub">From welcome offer to cashback — every mechanic, every market, every compliance requirement covered.</p>
+      <h2 data-i18n="feat_h2">Two Tools. One Platform.</h2>
+      <p data-i18n="feat_sub">AI Campaign Generator for CRM teams + Bonus Configurator for admins — covering every mechanic, market, and compliance requirement.</p>
     </div>
     <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon icon-blue">🌍</div>
-        <h3 data-i18n="f1_h">Multi-Region Support</h3>
-        <p data-i18n="f1_p">CIS, EU/UKGC, Crypto, USA Sweepstakes, Mongolia, LatAm — with region-specific wager caps, currencies, and regulatory constraints pre-built in.</p>
-        <span class="feature-tag">6 markets</span>
+      <div class="feature-card" style="border-color:rgba(245,158,11,.3);background:linear-gradient(135deg,rgba(245,158,11,.05) 0%,transparent 60%)">
+        <div class="feature-icon icon-gold">🤖</div>
+        <h3 data-i18n="f1_h">AI Campaign Generator</h3>
+        <p data-i18n="f1_p">5-step wizard: choose a scenario (reactivation, first deposit, VIP, sport event…), set geo and budget — AI selects the optimal bonus mechanic and generates a complete campaign.</p>
+        <span class="feature-tag">15+ scenarios</span>
       </div>
       <div class="feature-card">
-        <div class="feature-icon icon-gold">📊</div>
-        <h3 data-i18n="f2_h">Unit Economics Engine</h3>
-        <p data-i18n="f2_p">Automatic P10/P50/P90 scenario modelling. See ARPU, CAC, LTV, ROI and bonus cost ratio before you launch — not after.</p>
-        <span class="feature-tag">Truncated Normal model</span>
+        <div class="feature-icon icon-pink">📝</div>
+        <h3 data-i18n="f2_h">5-Channel Text Generation</h3>
+        <p data-i18n="f2_p">AI writes Push, Email, SMS, Telegram, and Popup copy in your language. Multiple variants per channel, regenerate any time.</p>
+        <span class="feature-tag">Push · Email · SMS · TG · Popup</span>
       </div>
       <div class="feature-card">
-        <div class="feature-icon icon-purple">⚖️</div>
-        <h3 data-i18n="f3_h">Regulatory Compliance</h3>
-        <p data-i18n="f3_p">UKGC Jan 2026 wager cap (10×), MGA guidelines, and crypto market standards enforced automatically. No compliance surprises.</p>
+        <div class="feature-icon icon-purple">🔍</div>
+        <h3 data-i18n="f3_h">AI Compliance Audit</h3>
+        <p data-i18n="f3_p">Each campaign is automatically audited for bonus abuse risks, wager cap compliance, regulatory issues, and localisation gaps — before you send anything.</p>
         <span class="feature-tag">UKGC · MGA · Crypto</span>
       </div>
       <div class="feature-card">
-        <div class="feature-icon icon-green">💎</div>
-        <h3 data-i18n="f4_h">Full Bonus Funnel</h3>
-        <p data-i18n="f4_p">Welcome + D2 + D3 deposits, NDB, reload, cashback, free spins — the entire retention funnel configured in one session.</p>
-        <span class="feature-tag">7 bonus types</span>
+        <div class="feature-icon icon-blue">🌍</div>
+        <h3 data-i18n="f4_h">6-Market Bonus Configurator</h3>
+        <p data-i18n="f4_p">CIS, EU/UKGC, Crypto, USA Sweepstakes, Mongolia, LatAm — region-specific wager caps, currencies, Welcome/D2/D3/NDB/Reload/Cashback mechanics pre-built.</p>
+        <span class="feature-tag">6 markets · 6 bonus types</span>
       </div>
       <div class="feature-card">
-        <div class="feature-icon icon-pink">📤</div>
-        <h3 data-i18n="f5_h">Admin-Ready Export</h3>
-        <p data-i18n="f5_p">One-click spec export for your CMS or bonus engine team. All parameters, limits, wagering rules, and game contributions included.</p>
-        <span class="feature-tag">JSON · Copy-paste ready</span>
+        <div class="feature-icon icon-gold">📊</div>
+        <h3 data-i18n="f5_h">Unit Economics Engine</h3>
+        <p data-i18n="f5_p">Automatic P10/P50/P90 scenario modelling for every campaign. See ARPU, CAC, LTV, ROI and cost ratio before you launch — not after.</p>
+        <span class="feature-tag">Truncated Normal model</span>
       </div>
       <div class="feature-card">
-        <div class="feature-icon icon-cyan">🌐</div>
-        <h3 data-i18n="f6_h">4-Language Interface</h3>
-        <p data-i18n="f6_p">English, Russian, Mongolian, Spanish. Share specs with local teams without translation overhead.</p>
-        <span class="feature-tag">EN · RU · MN · ES</span>
+        <div class="feature-icon icon-green">📤</div>
+        <h3 data-i18n="f6_h">Admin-Ready Export</h3>
+        <p data-i18n="f6_p">Export as JSON, CSV, curl snippet, or full Admin Config text with all wager rules, free spin specs, and game contributions — ready for your dev team.</p>
+        <span class="feature-tag">JSON · CSV · Admin Config</span>
       </div>
     </div>
   </div>
@@ -588,24 +586,34 @@
   <div class="container">
     <div class="section-header">
       <div class="section-tag" data-i18n="how_tag">Process</div>
-      <h2 data-i18n="how_h2">Three Steps to a Live Bonus Config</h2>
-      <p data-i18n="how_sub">No spreadsheets, no guesswork. Just inputs → outputs → launch.</p>
+      <h2 data-i18n="how_h2">Full Campaign in 5 Steps</h2>
+      <p data-i18n="how_sub">From blank page to ready-to-send campaign — in under 2 minutes.</p>
     </div>
     <div class="steps">
       <div class="step">
         <div class="step-num">1</div>
-        <h3 data-i18n="step1_h">Set Your Parameters</h3>
-        <p data-i18n="step1_p">Choose region, license, average deposit, number of players, RTP and target wager. Takes under 60 seconds.</p>
+        <h3 data-i18n="step1_h">Choose a Scenario</h3>
+        <p data-i18n="step1_p">Pick from 15+ templates: reactivation, first deposit, VIP retention, sport event, cashback, casino launch…</p>
       </div>
       <div class="step">
         <div class="step-num">2</div>
-        <h3 data-i18n="step2_h">Get a Full Spec</h3>
-        <p data-i18n="step2_p">Engine generates Welcome, D2, D3, NDB, Reload, Cashback offers — all calibrated to market standards and your economics.</p>
+        <h3 data-i18n="step2_h">Set Parameters</h3>
+        <p data-i18n="step2_p">Geo, player segment, budget, communication tone, risk level, and bonus mix. Under 60 seconds.</p>
       </div>
       <div class="step">
         <div class="step-num">3</div>
-        <h3 data-i18n="step3_h">Review & Export</h3>
-        <p data-i18n="step3_p">Check P10/P50/P90 cost scenarios, adjust parameters if needed, then export directly to your admin panel or dev team.</p>
+        <h3 data-i18n="step3_h">AI Generates Mechanics</h3>
+        <p data-i18n="step3_p">Optimal bonus type, wager conditions, P50 economics, and alternatives — calculated for your market and scenario.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <h3 data-i18n="step4_h">Get Texts & Audit</h3>
+        <p data-i18n="step4_p">AI writes Push, Email, SMS, Telegram and Popup copy in your language, then audits the campaign for compliance risks.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <h3 data-i18n="step5_h">Export & Launch</h3>
+        <p data-i18n="step5_p">Download JSON, CSV, or Admin Config. Copy texts directly. Campaign saved to history with status tracking.</p>
       </div>
     </div>
   </div>
@@ -704,13 +712,15 @@
   <div class="container">
     <div class="demo-banner">
       <div class="demo-banner-left">
-        <div class="demo-icon">🎰</div>
+        <div class="demo-icon">🤖</div>
         <div>
-          <h3 data-i18n="demo_h">See It in Action — Right Now</h3>
-          <p data-i18n="demo_p">Open the live configurator, pick a region and generate a full bonus spec in under 2 minutes. No login required.</p>
+          <h3 data-i18n="demo_h">Try the AI Generator — Right Now</h3>
+          <p data-i18n="demo_p">Pick a scenario, set your geo and budget — get a full campaign with mechanics, channel texts, and compliance audit in under 2 minutes. No login required.</p>
         </div>
       </div>
-      <a href="/generator.html" class="btn btn-gold btn-lg" data-i18n="demo_btn" >▶ Open Live Demo</a>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <a href="/campaign-generator.html" class="btn btn-gold btn-lg" data-i18n="demo_btn">🤖 Launch AI Generator</a>
+      </div>
     </div>
   </div>
 </section>
@@ -759,52 +769,51 @@
 // ════ I18N ════
 const LANG = {
   en: {
-    nav_demo: '▶ Demo',
-    nav_cta: 'Get Early Access',
-    demo_h: 'See It in Action — Right Now',
-    demo_p: 'Open the live configurator, pick a region and generate a full bonus spec in under 2 minutes. No login required.',
-    demo_btn: '▶ Open Live Demo',
-    badge: 'iGaming Bonus Infrastructure · v2.0',
-    hero_h1a: 'Configure Bonus Programs',
-    hero_h1b: 'for Any Market in Minutes',
-    hero_sub: 'Generate compliant, economically optimised bonus specs for 6 global regions — with built-in unit economics, regulatory wager caps, and admin-ready export.',
-    hero_cta1: '🚀 Get Free Access',
-    hero_cta2: '▶ Try Live Demo',
-    stat1: 'Global Regions',
-    stat2: 'Config Generation',
+    nav_ai: '🤖 AI Campaigns',
+    badge: 'AI-Powered iGaming Bonus Platform · v2.0',
+    hero_h1a: 'AI Campaign Generator',
+    hero_h1b: '+ Bonus Configurator for 6 Markets',
+    hero_sub: 'Generate full CRM bonus campaigns in 5 steps — AI selects mechanics, writes Push / Email / SMS / Telegram texts, audits compliance, and exports an admin-ready spec. All in under 2 minutes.',
+    hero_cta1: '🤖 Launch AI Generator',
+    stat1: 'Global Markets',
+    stat2: 'AI Text Channels',
     stat3: 'Econ Scenarios',
-    stat4: 'UI Languages',
+    stat4: 'Campaign Ready',
     feat_tag: 'Core Features',
-    feat_h2: 'Everything a Bonus Manager Needs',
-    feat_sub: 'From welcome offer to cashback — every mechanic, every market, every compliance requirement covered.',
-    f1_h: 'Multi-Region Support',
-    f1_p: 'CIS, EU/UKGC, Crypto, USA Sweepstakes, Mongolia, LatAm — with region-specific wager caps, currencies, and regulatory constraints pre-built in.',
-    f2_h: 'Unit Economics Engine',
-    f2_p: 'Automatic P10/P50/P90 scenario modelling. See ARPU, CAC, LTV, ROI and bonus cost ratio before you launch — not after.',
-    f3_h: 'Regulatory Compliance',
-    f3_p: 'UKGC Jan 2026 wager cap (10×), MGA guidelines, and crypto market standards enforced automatically. No compliance surprises.',
-    f4_h: 'Full Bonus Funnel',
-    f4_p: 'Welcome + D2 + D3 deposits, NDB, reload, cashback, free spins — the entire retention funnel configured in one session.',
-    f5_h: 'Admin-Ready Export',
-    f5_p: 'One-click spec export for your CMS or bonus engine team. All parameters, limits, wagering rules, and game contributions included.',
-    f6_h: '4-Language Interface',
-    f6_p: 'English, Russian, Mongolian, Spanish. Share specs with local teams without translation overhead.',
+    feat_h2: 'Two Tools. One Platform.',
+    feat_sub: 'AI Campaign Generator for CRM teams + Bonus Configurator for admins — covering every mechanic, market, and compliance requirement.',
+    f1_h: 'AI Campaign Generator',
+    f1_p: '5-step wizard: choose a scenario (reactivation, first deposit, VIP, sport event…), set geo and budget — AI selects the optimal bonus mechanic and generates a complete campaign.',
+    f2_h: '5-Channel Text Generation',
+    f2_p: 'AI writes Push, Email, SMS, Telegram, and Popup copy in your language. Multiple variants per channel, regenerate any time.',
+    f3_h: 'AI Compliance Audit',
+    f3_p: 'Each campaign is automatically audited for bonus abuse risks, wager cap compliance, regulatory issues, and localisation gaps — before you send anything.',
+    f4_h: '6-Market Bonus Configurator',
+    f4_p: 'CIS, EU/UKGC, Crypto, USA Sweepstakes, Mongolia, LatAm — region-specific wager caps, currencies, Welcome/D2/D3/NDB/Reload/Cashback mechanics pre-built.',
+    f5_h: 'Unit Economics Engine',
+    f5_p: 'Automatic P10/P50/P90 scenario modelling for every campaign. See ARPU, CAC, LTV, ROI and cost ratio before you launch — not after.',
+    f6_h: 'Admin-Ready Export',
+    f6_p: 'Export as JSON, CSV, curl snippet, or full Admin Config text with all wager rules, free spin specs, and game contributions — ready for your dev team.',
     reg_tag: 'Markets',
     reg_h2: 'Built for Global iGaming',
     reg_sub: 'Each region comes pre-configured with the right defaults, currencies, and compliance rules.',
     how_tag: 'Process',
-    how_h2: 'Three Steps to a Live Bonus Config',
-    how_sub: 'No spreadsheets, no guesswork. Just inputs → outputs → launch.',
-    step1_h: 'Set Your Parameters',
-    step1_p: 'Choose region, license, average deposit, number of players, RTP and target wager. Takes under 60 seconds.',
-    step2_h: 'Get a Full Spec',
-    step2_p: 'Engine generates Welcome, D2, D3, NDB, Reload, Cashback offers — all calibrated to market standards and your economics.',
-    step3_h: 'Review & Export',
-    step3_p: 'Check P10/P50/P90 cost scenarios, adjust parameters if needed, then export directly to your admin panel or dev team.',
+    how_h2: 'Full Campaign in 5 Steps',
+    how_sub: 'From blank page to ready-to-send campaign — in under 2 minutes.',
+    step1_h: 'Choose a Scenario',
+    step1_p: 'Pick from 15+ templates: reactivation, first deposit, VIP retention, sport event, cashback, casino launch…',
+    step2_h: 'Set Parameters',
+    step2_p: 'Geo, player segment, budget, communication tone, risk level, and bonus mix. Under 60 seconds.',
+    step3_h: 'AI Generates Mechanics',
+    step3_p: 'Optimal bonus type, wager conditions, P50 economics, and alternatives — calculated for your market and scenario.',
+    step4_h: 'Get Texts & Audit',
+    step4_p: 'AI writes Push, Email, SMS, Telegram and Popup copy in your language, then audits the campaign for compliance risks.',
+    step5_h: 'Export & Launch',
+    step5_p: 'Download JSON, CSV, or Admin Config. Copy texts directly. Campaign saved to history with status tracking.',
     prev_tag: 'Unit Economics',
     prev_h2: 'Know Your Numbers Before You Launch',
     prev_sub: 'Built-in economics model shows you exactly what your bonus program will cost — before you spend a dollar.',
-    prev_ui: 'Bonus Engine Configurator — EU / MGA · €50 avg. deposit · 1000 players',
+    prev_ui: 'AI Campaign Generator — EU / MGA · €50 avg. deposit · 1000 players',
     ec_arpu: 'ARPU', ec_arpu_sub: 'avg. deposit / player',
     ec_ltv: 'LTV 12m', ec_ltv_sub: 'P50 estimate',
     ec_roi: 'Bonus ROI', ec_roi_sub: 'P50 scenario',
@@ -815,15 +824,15 @@ const LANG = {
     aud_h2: 'Built for iGaming Professionals',
     aud_sub: 'Whether you\'re launching a new brand or optimising an existing program — BonusEngine saves you hours every week.',
     a1_h: 'Bonus Managers',
-    a1_p: 'Stop building bonus specs in spreadsheets. Get compliant, market-calibrated configs in minutes — with economics validation built in.',
+    a1_p: 'Stop building bonus specs in spreadsheets. AI generates mechanics, writes CRM texts for 5 channels, and audits compliance — in one session.',
     a2_h: 'Casino Product Owners',
-    a2_p: 'Launch new markets faster. Every region has the right defaults — wager caps, currencies, regulatory notes — ready from day one.',
+    a2_p: 'Launch new markets faster. Pick a region, choose a scenario, and get a ready campaign with economics validation from day one.',
     a3_h: 'iGaming Consultants',
-    a3_p: 'Deliver polished bonus strategy documents to clients. Export specs directly, model multiple scenarios, compare market approaches side by side.',
+    a3_p: 'Deliver polished bonus strategy documents to clients. Export Admin Config, model P10/P50/P90 scenarios, and generate channel copy side by side.',
     a4_h: 'New Brand Launchers',
-    a4_p: 'Starting from scratch? Get a full, economically sound bonus program for your target market without hiring a team of analysts first.',
+    a4_p: 'Starting from scratch? Use the Casino First Launch scenario to get a complete bonus funnel — Welcome, NDB, Reload, Cashback — ready to configure.',
     su_tag: 'Early Access',
-    su_h2: 'Start Configuring in Minutes',
+    su_h2: 'Start Generating Campaigns',
     su_sub: 'Free during beta. No credit card required. Join 200+ iGaming operators already using BonusEngine.',
     ph_name: 'Your name', ph_email: 'Work email',
     ph_role: 'Your role...',
@@ -833,55 +842,57 @@ const LANG = {
     su_note: '🔒 No spam. Unsubscribe anytime. GDPR compliant.',
     footer_rights: 'All rights reserved.',
     footer_privacy: 'Privacy', footer_terms: 'Terms',
-    marquee: ['Multi-Region Config', 'Unit Economics P10/P50/P90', 'UKGC 10× Wager Cap', 'Welcome + D2 + D3 + NDB', 'MGA Compliant', 'Reload & Cashback', 'Free Spins Spec', 'Admin JSON Export', 'Crypto Markets', 'USA Sweepstakes', 'LatAm · Mongolia', '4 Languages'],
+    demo_h: 'Try the AI Generator — Right Now',
+    demo_p: 'Pick a scenario, set your geo and budget — get a full campaign with mechanics, channel texts, and compliance audit in under 2 minutes. No login required.',
+    demo_btn: '🤖 Launch AI Generator',
+    marquee: ['AI Campaign Generator', '5 Channel Texts', 'Compliance Audit', 'Push · Email · SMS · TG', 'Unit Economics P10/P50/P90', 'UKGC 10× Wager Cap', 'Welcome + D2 + D3 + NDB', 'MGA Compliant', 'Reload & Cashback', 'Admin Config Export', 'Crypto Markets', 'USA Sweepstakes', 'LatAm · Mongolia', 'Campaign History'],
   },
   ru: {
-    nav_demo: '▶ Демо',
-    nav_cta: 'Получить доступ',
-    demo_h: 'Попробуйте прямо сейчас',
-    demo_p: 'Откройте конфигуратор, выберите регион и сгенерируйте полную бонусную спецификацию за 2 минуты. Без регистрации.',
-    demo_btn: '▶ Открыть демо',
-    badge: 'Инфраструктура бонусов для iGaming · v2.0',
-    hero_h1a: 'Конфигуратор бонусных программ',
-    hero_h1b: 'для любого рынка за минуты',
-    hero_sub: 'Генерируйте compliant-спецификации бонусов для 6 глобальных регионов — со встроенной юнит-экономикой, регуляторными ограничениями вейджера и готовым экспортом для администраторов.',
-    hero_cta1: '🚀 Получить бесплатный доступ',
-    hero_cta2: '▶ Открыть демо',
-    stat1: 'Регионов',
-    stat2: 'Генерация конфига',
+    nav_ai: '🤖 AI Кампании',
+    badge: 'AI-платформа бонусов для iGaming · v2.0',
+    hero_h1a: 'AI-генератор CRM-кампаний',
+    hero_h1b: '+ Конфигуратор бонусов для 6 рынков',
+    hero_sub: 'Создавайте полные CRM-кампании за 5 шагов — AI подбирает механику, пишет тексты для Push / Email / SMS / Telegram, проводит аудит соответствия и экспортирует готовый конфиг для администратора. Менее 2 минут.',
+    hero_cta1: '🤖 Запустить AI-генератор',
+    stat1: 'Рынков',
+    stat2: 'Каналов AI-текстов',
     stat3: 'Сценарии экономики',
-    stat4: 'Языка интерфейса',
+    stat4: 'Кампания готова',
     feat_tag: 'Функциональность',
-    feat_h2: 'Всё необходимое бонусному менеджеру',
-    feat_sub: 'От велком-оффера до кэшбека — каждая механика, каждый рынок, каждое регуляторное требование.',
-    f1_h: 'Поддержка нескольких регионов',
-    f1_p: 'СНГ, ЕС/UKGC, Крипто, США Sweepstakes, Монголия, LatAm — с региональными лимитами вейджера, валютами и регуляторными ограничениями.',
-    f2_h: 'Юнит-экономика',
-    f2_p: 'Автоматическое моделирование сценариев P10/P50/P90. ARPU, CAC, LTV, ROI и коэффициент затрат на бонусы — до запуска.',
-    f3_h: 'Регуляторное соответствие',
-    f3_p: 'Лимит вейджера UKGC (10×, январь 2026), требования MGA и стандарты крипторынка применяются автоматически.',
-    f4_h: 'Полная бонусная воронка',
-    f4_p: 'Welcome + D2 + D3, NDB, reload, кэшбек, фриспины — вся воронка удержания настраивается за одну сессию.',
-    f5_h: 'Экспорт для администраторов',
-    f5_p: 'Экспорт спецификации одним кликом для вашей CMS или команды разработки. Все параметры, лимиты, вейджеры и контрибуции игр.',
-    f6_h: 'Интерфейс на 4 языках',
-    f6_p: 'Английский, русский, монгольский, испанский. Делитесь спеками с локальными командами без потерь на перевод.',
+    feat_h2: 'Два инструмента. Одна платформа.',
+    feat_sub: 'AI-генератор кампаний для CRM-команд + Конфигуратор бонусов для администраторов — каждая механика, каждый рынок, каждое регуляторное требование.',
+    f1_h: 'AI-генератор кампаний',
+    f1_p: 'Мастер из 5 шагов: выберите сценарий (реактивация, первый депозит, VIP, спортивное событие…), задайте гео и бюджет — AI подберёт оптимальную механику и создаст кампанию.',
+    f2_h: 'Генерация текстов для 5 каналов',
+    f2_p: 'AI пишет Push, Email, SMS, Telegram и Popup на вашем языке. Несколько вариантов на каждый канал, перегенерация в любой момент.',
+    f3_h: 'AI-аудит соответствия',
+    f3_p: 'Каждая кампания автоматически проверяется на риски злоупотреблений, соответствие лимитам вейджера, регуляторные нарушения и пробелы в локализации.',
+    f4_h: 'Конфигуратор для 6 рынков',
+    f4_p: 'СНГ, ЕС/UKGC, Крипто, США Sweepstakes, Монголия, LatAm — Welcome/D2/D3/NDB/Reload/Cashback с региональными лимитами и валютами.',
+    f5_h: 'Юнит-экономика',
+    f5_p: 'Автоматическое моделирование P10/P50/P90 для каждой кампании. ARPU, CAC, LTV, ROI и коэффициент затрат — до запуска, а не после.',
+    f6_h: 'Экспорт для администраторов',
+    f6_p: 'Экспорт в JSON, CSV, curl или полный Admin Config с вейджерными правилами, спекой по фриспинам и контрибуциями игр — готово для разработчиков.',
     reg_tag: 'Рынки',
     reg_h2: 'Создан для глобального iGaming',
     reg_sub: 'Каждый регион поставляется с правильными настройками по умолчанию, валютами и регуляторными правилами.',
     how_tag: 'Процесс',
-    how_h2: 'Три шага до готового конфига',
-    how_sub: 'Никаких таблиц, никаких догадок. Просто параметры → результат → запуск.',
-    step1_h: 'Задайте параметры',
-    step1_p: 'Выберите регион, лицензию, средний депозит, количество игроков, RTP и целевой вейджер. Занимает меньше 60 секунд.',
-    step2_h: 'Получите полную спецификацию',
-    step2_p: 'Движок генерирует Welcome, D2, D3, NDB, Reload, Cashback — всё откалибровано под рыночные стандарты и вашу экономику.',
-    step3_h: 'Проверьте и экспортируйте',
-    step3_p: 'Проверьте P10/P50/P90 сценарии затрат, при необходимости скорректируйте параметры, затем экспортируйте в панель администратора.',
+    how_h2: 'Полная кампания за 5 шагов',
+    how_sub: 'От чистого листа до готовой к отправке кампании — менее чем за 2 минуты.',
+    step1_h: 'Выберите сценарий',
+    step1_p: 'Более 15 шаблонов: реактивация, первый депозит, VIP-удержание, спортивное событие, кэшбек, запуск казино…',
+    step2_h: 'Задайте параметры',
+    step2_p: 'Гео, сегмент игроков, бюджет, тон коммуникации, уровень риска и бонусный микс. Менее 60 секунд.',
+    step3_h: 'AI генерирует механику',
+    step3_p: 'Оптимальный тип бонуса, условия вейджера, экономика P50 и альтернативы — рассчитаны для вашего рынка и сценария.',
+    step4_h: 'Тексты и аудит',
+    step4_p: 'AI пишет Push, Email, SMS, Telegram и Popup на вашем языке, затем проверяет кампанию на соответствие регуляторным требованиям.',
+    step5_h: 'Экспорт и запуск',
+    step5_p: 'Скачайте JSON, CSV или Admin Config. Скопируйте тексты напрямую. Кампания сохраняется в историю со статусом.',
     prev_tag: 'Юнит-экономика',
     prev_h2: 'Знайте цифры до запуска',
-    prev_sub: 'Встроенная модель экономики показывает, во сколько обойдётся ваша бонусная программа — прежде чем вы потратите хоть доллар.',
-    prev_ui: 'Bonus Engine Configurator — ЕС / MGA · €50 ср. депозит · 1000 игроков',
+    prev_sub: 'Встроенная модель экономики показывает, во сколько обойдётся бонусная программа — прежде чем вы потратите хоть доллар.',
+    prev_ui: 'AI Campaign Generator — ЕС / MGA · €50 ср. депозит · 1000 игроков',
     ec_arpu: 'ARPU', ec_arpu_sub: 'ср. депозит / игрок',
     ec_ltv: 'LTV 12м', ec_ltv_sub: 'оценка P50',
     ec_roi: 'ROI бонусов', ec_roi_sub: 'сценарий P50',
@@ -892,15 +903,15 @@ const LANG = {
     aud_h2: 'Создан для профессионалов iGaming',
     aud_sub: 'Запускаете новый бренд или оптимизируете существующую программу — BonusEngine экономит часы каждую неделю.',
     a1_h: 'Бонусные менеджеры',
-    a1_p: 'Хватит собирать бонусные спеки в таблицах. Получите compliant-конфиги, откалиброванные под рынок, за минуты — с встроенной проверкой экономики.',
+    a1_p: 'Хватит собирать бонусные спеки в таблицах. AI генерирует механику, пишет CRM-тексты для 5 каналов и проводит аудит — за одну сессию.',
     a2_h: 'Продакт-менеджеры казино',
-    a2_p: 'Выходите на новые рынки быстрее. В каждом регионе правильные дефолты — лимиты вейджера, валюты, регуляторные примечания — готовы с первого дня.',
+    a2_p: 'Выходите на новые рынки быстрее. Выберите регион и сценарий — получите готовую кампанию с проверкой экономики с первого дня.',
     a3_h: 'Консультанты iGaming',
-    a3_p: 'Предоставляйте клиентам проработанные документы по бонусной стратегии. Экспортируйте спеки напрямую, моделируйте сценарии, сравнивайте подходы разных рынков.',
+    a3_p: 'Предоставляйте клиентам проработанные документы по бонусной стратегии. Экспортируйте Admin Config, моделируйте P10/P50/P90 и генерируйте тексты для каналов.',
     a4_h: 'Запускающие новые бренды',
-    a4_p: 'Начинаете с нуля? Получите полноценную, экономически обоснованную бонусную программу для целевого рынка — без найма команды аналитиков.',
+    a4_p: 'Начинаете с нуля? Используйте сценарий «Первый запуск казино» — Welcome, NDB, Reload, Cashback — всё готово к настройке.',
     su_tag: 'Ранний доступ',
-    su_h2: 'Начните конфигурировать за минуты',
+    su_h2: 'Начните генерировать кампании',
     su_sub: 'Бесплатно в период бета-тестирования. Карта не нужна. Присоединяйтесь к 200+ iGaming-операторам, которые уже используют BonusEngine.',
     ph_name: 'Ваше имя', ph_email: 'Рабочий email',
     ph_role: 'Ваша роль...',
@@ -910,7 +921,10 @@ const LANG = {
     su_note: '🔒 Без спама. Отписка в любое время. Соответствие GDPR.',
     footer_rights: 'Все права защищены.',
     footer_privacy: 'Конфиденциальность', footer_terms: 'Условия',
-    marquee: ['Конфиг для 6 регионов', 'Юнит-экономика P10/P50/P90', 'Лимит вейджера UKGC 10×', 'Welcome + D2 + D3 + NDB', 'Соответствие MGA', 'Reload и Cashback', 'Спека по фриспинам', 'Экспорт JSON', 'Крипторынки', 'USA Sweepstakes', 'LatAm · Монголия', '4 языка'],
+    demo_h: 'Попробуйте AI-генератор прямо сейчас',
+    demo_p: 'Выберите сценарий, задайте гео и бюджет — получите полную кампанию с механикой, текстами для каналов и аудитом за 2 минуты. Без регистрации.',
+    demo_btn: '🤖 Запустить AI-генератор',
+    marquee: ['AI-генератор кампаний', 'Тексты для 5 каналов', 'Аудит соответствия', 'Push · Email · SMS · TG', 'Юнит-экономика P10/P50/P90', 'Лимит вейджера UKGC 10×', 'Welcome + D2 + D3 + NDB', 'Соответствие MGA', 'Reload и Cashback', 'Экспорт Admin Config', 'Крипторынки', 'USA Sweepstakes', 'LatAm · Монголия', 'История кампаний'],
   }
 };
 
@@ -983,7 +997,13 @@ async function handleSignup(e) {
 }
 
 // ════ INIT ════
-buildMarquee('en');
+(function() {
+  try {
+    const saved = localStorage.getItem('bonusLang');
+    if (saved && LANG[saved]) { setLang(saved); return; }
+  } catch(e) {}
+  buildMarquee('en');
+})();
 
 // Intersection Observer for subtle entrance animations
 if ('IntersectionObserver' in window) {
