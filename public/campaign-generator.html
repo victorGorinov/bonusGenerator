@@ -419,7 +419,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
         <div class="step-sub" data-i18n="s2_sub">Настройте аудиторию, бюджет и тон коммуникации</div>
         <div class="params-grid">
           <div class="fg">
-            <div class="fl">Гео / Страна</div>
+            <div class="fl" data-i18n="s2_geo">Гео / Страна</div>
             <select class="form-select" id="p-geo" onchange="syncLangToGeo(this.value)">
               <option value="de">🇩🇪 Germany (DE)</option>
               <option value="uk">🇬🇧 United Kingdom (UK)</option>
@@ -432,7 +432,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
             </select>
           </div>
           <div class="fg">
-            <div class="fl">Вертикаль</div>
+            <div class="fl" data-i18n="s2_vertical">Вертикаль</div>
             <div class="chip-group">
               <div class="chip active" data-g="vertical" data-v="casino" onclick="pickChip(this)">🎰 Casino</div>
               <div class="chip" data-g="vertical" data-v="sports" onclick="pickChip(this)">⚽ Sports</div>
@@ -440,27 +440,27 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
             </div>
           </div>
           <div class="fg">
-            <div class="fl">Сегмент игроков</div>
+            <div class="fl" data-i18n="s2_segment">Сегмент игроков</div>
             <div class="chip-group">
-              <div class="chip" data-g="segment" data-v="new" onclick="pickChip(this)">🆕 Новые</div>
-              <div class="chip active" data-g="segment" data-v="mid" onclick="pickChip(this)">👤 Средние</div>
+              <div class="chip" data-g="segment" data-v="new" onclick="pickChip(this)" data-i18n="chip_seg_new">🆕 Новые</div>
+              <div class="chip active" data-g="segment" data-v="mid" onclick="pickChip(this)" data-i18n="chip_seg_mid">👤 Средние</div>
               <div class="chip" data-g="segment" data-v="vip" onclick="pickChip(this)">👑 VIP</div>
             </div>
           </div>
           <div class="fg">
-            <div class="fl">Предпочтительные игры</div>
+            <div class="fl" data-i18n="s2_games">Предпочтительные игры</div>
             <div class="chip-group">
-              <div class="chip active" data-g="games" data-v="slots" onclick="pickChip(this)">🎰 Слоты</div>
-              <div class="chip" data-g="games" data-v="table" onclick="pickChip(this)">🃏 Настольные</div>
+              <div class="chip active" data-g="games" data-v="slots" onclick="pickChip(this)" data-i18n="chip_games_slots">🎰 Слоты</div>
+              <div class="chip" data-g="games" data-v="table" onclick="pickChip(this)" data-i18n="chip_games_table">🃏 Настольные</div>
               <div class="chip" data-g="games" data-v="live" onclick="pickChip(this)">📺 Live</div>
             </div>
           </div>
           <div class="fg">
-            <div class="fl">Бюджет кампании (€)</div>
+            <div class="fl" data-i18n="s2_budget">Бюджет кампании (€)</div>
             <input class="form-input" type="number" id="p-budget" value="5000" min="100">
           </div>
           <div class="fg">
-            <div class="fl">Язык коммуникации</div>
+            <div class="fl" data-i18n="s2_lang">Язык коммуникации</div>
             <select class="form-select" id="p-lang">
               <option value="de">Deutsch</option>
               <option value="en">English</option>
@@ -470,39 +470,39 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
             </select>
           </div>
           <div class="fg">
-            <div class="fl">Тон коммуникации</div>
+            <div class="fl" data-i18n="s2_tone">Тон коммуникации</div>
             <div class="chip-group">
-              <div class="chip active" data-g="tone" data-v="friendly" onclick="pickChip(this)">😊 Дружелюбный</div>
-              <div class="chip" data-g="tone" data-v="pro" onclick="pickChip(this)">🤝 Профессиональный</div>
-              <div class="chip" data-g="tone" data-v="aggressive" onclick="pickChip(this)">⚡ Агрессивный</div>
+              <div class="chip active" data-g="tone" data-v="friendly" onclick="pickChip(this)" data-i18n="chip_tone_friendly">😊 Дружелюбный</div>
+              <div class="chip" data-g="tone" data-v="pro" onclick="pickChip(this)" data-i18n="chip_tone_pro">🤝 Профессиональный</div>
+              <div class="chip" data-g="tone" data-v="aggressive" onclick="pickChip(this)" data-i18n="chip_tone_agg">⚡ Агрессивный</div>
             </div>
           </div>
           <div class="fg">
-            <div class="fl">Агрессивность предложения</div>
+            <div class="fl" data-i18n="s2_agg">Агрессивность предложения</div>
             <div class="toggle3">
-              <button class="t3-btn active" data-g="agg" data-v="low" onclick="pickT3(this)">Низкая</button>
-              <button class="t3-btn" data-g="agg" data-v="mid" onclick="pickT3(this)">Средняя</button>
-              <button class="t3-btn" data-g="agg" data-v="high" onclick="pickT3(this)">Высокая</button>
+              <button class="t3-btn active" data-g="agg" data-v="low" onclick="pickT3(this)" data-i18n="t3_agg_low">Низкая</button>
+              <button class="t3-btn" data-g="agg" data-v="mid" onclick="pickT3(this)" data-i18n="t3_agg_mid">Средняя</button>
+              <button class="t3-btn" data-g="agg" data-v="high" onclick="pickT3(this)" data-i18n="t3_agg_high">Высокая</button>
             </div>
           </div>
           <div class="fg full">
-            <div class="fl">Риск-уровень</div>
+            <div class="fl" data-i18n="s2_risk">Риск-уровень</div>
             <div class="toggle3" style="max-width:340px">
-              <button class="t3-btn active" data-g="risk" data-v="low" onclick="pickT3(this)">🟢 Низкий</button>
-              <button class="t3-btn" data-g="risk" data-v="mid" onclick="pickT3(this)">🟡 Средний</button>
-              <button class="t3-btn" data-g="risk" data-v="high" onclick="pickT3(this)">🔴 Высокий</button>
+              <button class="t3-btn active" data-g="risk" data-v="low" onclick="pickT3(this)" data-i18n="t3_risk_low">🟢 Низкий</button>
+              <button class="t3-btn" data-g="risk" data-v="mid" onclick="pickT3(this)" data-i18n="t3_risk_mid">🟡 Средний</button>
+              <button class="t3-btn" data-g="risk" data-v="high" onclick="pickT3(this)" data-i18n="t3_risk_high">🔴 Высокий</button>
             </div>
           </div>
           <div class="fg full" style="margin-top:6px">
             <div class="fl" style="margin-bottom:2px">
-              Бонусный микс <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:.72rem">— выберите один или несколько типов</span>
+              <span data-i18n="s2_bmix">Бонусный микс</span> <span data-i18n="s2_bmix_hint" style="font-weight:400;text-transform:none;letter-spacing:0;font-size:.72rem">— выберите один или несколько типов</span>
             </div>
             <div class="chip-group" id="btypeGroup">
               <div class="chip-multi" data-btype="ndb" onclick="toggleBtype(this)">🎁 Welcome</div>
-              <div class="chip-multi" data-btype="welcome" onclick="toggleBtype(this)">💰 1-й депозит</div>
+              <div class="chip-multi" data-btype="welcome" onclick="toggleBtype(this)" data-i18n="chip_btype_welcome">💰 1-й депозит</div>
               <div class="chip-multi" data-btype="reload" onclick="toggleBtype(this)">🔄 Reload</div>
-              <div class="chip-multi" data-btype="dep2" onclick="toggleBtype(this)">💰 2-й депозит</div>
-              <div class="chip-multi" data-btype="dep3" onclick="toggleBtype(this)">🎁 3-й депозит</div>
+              <div class="chip-multi" data-btype="dep2" onclick="toggleBtype(this)" data-i18n="chip_btype_dep2">💰 2-й депозит</div>
+              <div class="chip-multi" data-btype="dep3" onclick="toggleBtype(this)" data-i18n="chip_btype_dep3">🎁 3-й депозит</div>
               <div class="chip-multi" data-btype="cashback" onclick="toggleBtype(this)">💳 Cashback</div>
             </div>
           </div>
@@ -1747,6 +1747,16 @@ const I18N = {
     s1_title:'Выберите сценарий кампании',
     s1_sub:'Сценарий определяет тип аудитории и логику бонусного предложения',
     s2_title:'Параметры кампании', s2_sub:'Настройте аудиторию, бюджет и тон коммуникации',
+    s2_geo:'Гео / Страна', s2_vertical:'Вертикаль', s2_segment:'Сегмент игроков',
+    s2_games:'Предпочтительные игры', s2_budget:'Бюджет кампании (€)', s2_lang:'Язык коммуникации',
+    s2_tone:'Тон коммуникации', s2_agg:'Агрессивность предложения', s2_risk:'Риск-уровень',
+    s2_bmix:'Бонусный микс', s2_bmix_hint:'— выберите один или несколько типов',
+    chip_seg_new:'🆕 Новые', chip_seg_mid:'👤 Средние',
+    chip_games_slots:'🎰 Слоты', chip_games_table:'🃏 Настольные',
+    chip_tone_friendly:'😊 Дружелюбный', chip_tone_pro:'🤝 Профессиональный', chip_tone_agg:'⚡ Агрессивный',
+    t3_agg_low:'Низкая', t3_agg_mid:'Средняя', t3_agg_high:'Высокая',
+    t3_risk_low:'🟢 Низкий', t3_risk_mid:'🟡 Средний', t3_risk_high:'🔴 Высокий',
+    chip_btype_welcome:'💰 1-й депозит', chip_btype_dep2:'💰 2-й депозит', chip_btype_dep3:'🎁 3-й депозит',
     s4_title:'Тексты и аудит кампании',
     s4_sub:'AI генерирует тексты для каждого канала и проводит аудит рисков',
     s5_title:'Экспорт кампании', s5_sub:'Скачайте или скопируйте конфигурацию в нужном формате',
@@ -1834,6 +1844,16 @@ const I18N = {
     s1_title:'Select Campaign Scenario',
     s1_sub:'The scenario defines the audience type and bonus offer logic',
     s2_title:'Campaign Parameters', s2_sub:'Configure audience, budget and communication tone',
+    s2_geo:'Geo / Country', s2_vertical:'Vertical', s2_segment:'Player Segment',
+    s2_games:'Preferred Games', s2_budget:'Campaign Budget (€)', s2_lang:'Communication Language',
+    s2_tone:'Communication Tone', s2_agg:'Offer Aggressiveness', s2_risk:'Risk Level',
+    s2_bmix:'Bonus Mix', s2_bmix_hint:'— select one or more types',
+    chip_seg_new:'🆕 New', chip_seg_mid:'👤 Regular',
+    chip_games_slots:'🎰 Slots', chip_games_table:'🃏 Table',
+    chip_tone_friendly:'😊 Friendly', chip_tone_pro:'🤝 Professional', chip_tone_agg:'⚡ Aggressive',
+    t3_agg_low:'Low', t3_agg_mid:'Medium', t3_agg_high:'High',
+    t3_risk_low:'🟢 Low', t3_risk_mid:'🟡 Medium', t3_risk_high:'🔴 High',
+    chip_btype_welcome:'💰 1st Deposit', chip_btype_dep2:'💰 2nd Deposit', chip_btype_dep3:'🎁 3rd Deposit',
     s4_title:'Texts & Campaign Audit',
     s4_sub:'AI generates texts for each channel and audits risks',
     s5_title:'Export Campaign', s5_sub:'Download or copy the configuration in your preferred format',
