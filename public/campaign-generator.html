@@ -672,6 +672,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
         <div class="det-name" id="det-name">—</div>
         <div id="det-badge"></div>
         <div class="det-acts">
+          <button class="btn btn-outline btn-sm" onclick="openInConfigurator()" data-i18n="det_cfg">⚙ В конфигуратор ↗</button>
           <button class="btn btn-outline btn-sm" onclick="duplicateCampaign()" data-i18n="det_dup">⎘ Дублировать</button>
           <button class="btn btn-outline btn-sm" onclick="editCampaign()" data-i18n="det_edit">✏ Редактировать</button>
           <select id="det-status" class="form-select" style="font-size:.78rem;padding:5px 10px;height:30px" onchange="detailSetStatus(this.value)">
@@ -1706,6 +1707,47 @@ function editCampaign() {
   showView('wizard');
 }
 
+const _CAMP_GEO = {
+  de:{ region:'eu',    lic:'mga',   sitecur:'EUR', depcur:'EUR' },
+  fr:{ region:'eu',    lic:'mga',   sitecur:'EUR', depcur:'EUR' },
+  es:{ region:'eu',    lic:'mga',   sitecur:'EUR', depcur:'EUR' },
+  it:{ region:'eu',    lic:'mga',   sitecur:'EUR', depcur:'EUR' },
+  nl:{ region:'eu',    lic:'mga',   sitecur:'EUR', depcur:'EUR' },
+  uk:{ region:'eu',    lic:'ukgc',  sitecur:'GBP', depcur:'GBP' },
+  ru:{ region:'cis',   lic:'none',  sitecur:'RUB', depcur:'RUB' },
+  kz:{ region:'cis',   lic:'none',  sitecur:'KZT', depcur:'KZT' },
+  us:{ region:'sweep', lic:'none',  sitecur:'USD', depcur:'USD' },
+  mn:{ region:'mn',    lic:'none',  sitecur:'MNT', depcur:'MNT' },
+  mx:{ region:'latam', lic:'none',  sitecur:'USD', depcur:'USD' },
+  br:{ region:'latam', lic:'none',  sitecur:'USD', depcur:'USD' },
+};
+
+function openInConfigurator() {
+  const c = getCampaigns().find(x => x.id === _detailId);
+  if (!c) return;
+  const p   = c.params || {};
+  const geo = _CAMP_GEO[p.geo] || { region:'eu', lic:'mga', sitecur:'EUR', depcur:'EUR' };
+  const avgdep  = ({ new:40, mid:100, vip:500 })[p.segment] || 100;
+  const players = ({ low:1000, mid:5000, high:10000 })[p.agg] || 5000;
+  const rtp     = ({ slots:96, table:98, live:99 })[p.games] || 96;
+  const wager   = c.mechanic?.wager ?? null;
+
+  const q = new URLSearchParams();
+  q.set('cid',     c.id);
+  q.set('name',    c.name || 'Campaign');
+  q.set('region',  geo.region);
+  q.set('lic',     geo.lic);
+  q.set('sitecur', geo.sitecur);
+  q.set('depcur',  geo.depcur);
+  q.set('avgdep',  avgdep);
+  q.set('players', players);
+  q.set('rtp',     rtp);
+  q.set('plat',    'both');
+  if (wager !== null) q.set('wager', wager);
+  q.set('autogen', '1');
+  window.open('/configurator.html?' + q.toString(), '_blank');
+}
+
 function detailSetStatus(status) {
   if (!_detailId) return;
   putCampaigns(getCampaigns().map(c => c.id === _detailId ? {...c, status} : c));
@@ -1790,7 +1832,7 @@ const I18N = {
     sc_sport_event:'Спортивное событие', sc_tournament:'Турнир / Ивент',
     sc_cashback:'Cashback кампания', sc_custom:'Кастомный сценарий',
     // Detail view
-    det_back:'← Кампании', det_dup:'⎘ Дублировать', det_edit:'✏ Редактировать',
+    det_back:'← Кампании', det_cfg:'⚙ В конфигуратор ↗', det_dup:'⎘ Дублировать', det_edit:'✏ Редактировать',
     det_tab_ov:'Обзор', det_tab_mech:'Механика', det_tab_texts:'Тексты', det_tab_audit:'Аудит', det_tab_export:'Экспорт',
     det_ov_scenario:'Сценарий', det_ov_geo:'Регион', det_ov_segment:'Сегмент',
     det_ov_budget:'Бюджет', det_ov_tone:'Тон', det_ov_lang:'Язык текстов',
@@ -1865,7 +1907,7 @@ const I18N = {
     sc_sport_event:'Sport Event', sc_tournament:'Tournament / Event',
     sc_cashback:'Cashback Campaign', sc_custom:'Custom Scenario',
     // Detail view
-    det_back:'← Campaigns', det_dup:'⎘ Duplicate', det_edit:'✏ Edit',
+    det_back:'← Campaigns', det_cfg:'⚙ Open in Configurator ↗', det_dup:'⎘ Duplicate', det_edit:'✏ Edit',
     det_tab_ov:'Overview', det_tab_mech:'Mechanics', det_tab_texts:'Texts', det_tab_audit:'Audit', det_tab_export:'Export',
     det_ov_scenario:'Scenario', det_ov_geo:'Region', det_ov_segment:'Segment',
     det_ov_budget:'Budget', det_ov_tone:'Tone', det_ov_lang:'Text Language',
@@ -2056,6 +2098,13 @@ renderCampaignViews();
 try {
   const saved = localStorage.getItem('bonusLang');
   if (saved && I18N[saved]) setUILang(saved);
+} catch(e) {}
+// Open campaign detail when returning from configurator via ?open= param
+try {
+  const openId = new URLSearchParams(location.search).get('open');
+  if (openId && getCampaigns().some(x => x.id === openId)) {
+    setTimeout(() => openDetail(openId), 0);
+  }
 } catch(e) {}
 </script>
 
