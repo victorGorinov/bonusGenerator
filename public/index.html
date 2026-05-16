@@ -1002,7 +1002,7 @@ async function handleSignup(e) {
     const saved = localStorage.getItem('bonusLang');
     if (saved && LANG[saved]) { setLang(saved); return; }
   } catch(e) {}
-  buildMarquee('en');
+  setLang('en');
 })();
 
 // Intersection Observer for subtle entrance animations
