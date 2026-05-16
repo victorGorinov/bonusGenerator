@@ -1,18 +1,11 @@
-import { Resend }           from 'resend';
+import { Resend }   from 'resend';
 import { RESEND_API_KEY, NOTIFY_EMAIL } from '../config/index.js';
-import { ValidationError }  from '../errors/ValidationError.js';
-import { AppError }         from '../errors/AppError.js';
+import { AppError } from '../errors/AppError.js';
 
-const ESC      = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const ESC = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 export async function signup(req, res, next) {
-  const { name, email, role } = req.body || {};
-
-  if (!email || !EMAIL_RE.test(String(email))) return next(new ValidationError('valid email required'));
-  if (name && String(name).length > 200) return next(new ValidationError('name too long'));
-  if (role && String(role).length > 100) return next(new ValidationError('role too long'));
-
+  const { name, email, role } = req.body;   // validated by SignupSchema
   const resend = new Resend(RESEND_API_KEY);
   try {
     await resend.emails.send({
