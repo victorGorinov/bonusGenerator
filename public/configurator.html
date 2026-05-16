@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Bonus Configurator — BonusEngine</title>
+<link rel="stylesheet" href="styles.css"/>
+<style>
+/* ── SAVED CAMPAIGNS SIDEBAR ─────────────────────────────────────── */
+.camps-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;backdrop-filter:blur(3px)}
+.camps-overlay.open{display:block}
+.camps-drawer{position:fixed;top:0;right:-420px;width:420px;max-width:100vw;height:100vh;background:#0f1420;border-left:1px solid #1e2740;z-index:301;display:flex;flex-direction:column;transition:right .28s cubic-bezier(.4,0,.2,1);box-shadow:-8px 0 40px rgba(0,0,0,.5)}
+.camps-drawer.open{right:0}
+.camps-head{padding:18px 20px;border-bottom:1px solid #1e2740;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.camps-head-title{font-size:15px;font-weight:700;color:#e8eaf0}
+.camps-head-close{width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.08);border:none;color:#8892a4;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.camps-head-close:hover{background:rgba(255,255,255,.15);color:#e8eaf0}
+.camps-body{flex:1;overflow-y:auto;padding:16px}
+.camps-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:#8892a4;text-align:center;gap:8px}
+.camps-empty-ico{font-size:36px;opacity:.4}
+.camps-empty-t{font-size:13px;font-weight:600}
+.camps-empty-s{font-size:12px;opacity:.7}
+.camp-card{background:#161c2d;border:1px solid #1e2740;border-radius:10px;padding:14px;margin-bottom:10px;transition:border-color .15s}
+.camp-card:hover{border-color:rgba(79,110,247,.4)}
+.camp-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+.camp-card-name{font-size:13px;font-weight:700;color:#e8eaf0;line-height:1.3}
+.camp-card-del{width:22px;height:22px;border-radius:5px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.camp-card-del:hover{background:rgba(239,68,68,.25)}
+.camp-card-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.camp-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:.04em}
+.camp-badge-region{background:rgba(79,110,247,.15);color:#a0b0ff}
+.camp-badge-lic{background:rgba(245,158,11,.12);color:#f59e0b}
+.camp-badge-dep{background:rgba(16,185,129,.1);color:#10b981}
+.camp-card-date{font-size:10px;color:#8892a4;margin-bottom:10px}
+.camp-card-actions{display:flex;gap:8px}
+.camp-btn{flex:1;padding:7px 10px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s;text-align:center}
+.camp-btn-open{background:linear-gradient(135deg,#4f6ef7,#7c3aed);color:#fff}
+.camp-btn-open:hover{opacity:.85;transform:translateY(-1px)}
+.camp-btn-view{background:rgba(255,255,255,.06);color:#8892a4;border:1px solid #1e2740}
+.camp-btn-view:hover{background:rgba(255,255,255,.12);color:#e8eaf0}
+
+/* ── SAVE CAMPAIGN BUTTON (in output header) ─────────────────────── */
+.btn-save-camp{padding:7px 14px;background:rgba(16,185,129,.15);color:#10b981;border:1.5px solid rgba(16,185,129,.3);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
+.btn-save-camp:hover{background:rgba(16,185,129,.25);border-color:rgba(16,185,129,.5)}
+.btn-save-camp.saved{background:rgba(16,185,129,.25);border-color:#10b981;color:#6ee7b7}
+
+/* ── SAVE MODAL ──────────────────────────────────────────────────── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:#0f1420;border:1px solid #1e2740;border-radius:16px;padding:28px;width:380px;max-width:calc(100vw - 32px);box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.modal h3{font-size:16px;font-weight:700;margin-bottom:6px}
+.modal p{font-size:12px;color:#8892a4;margin-bottom:20px;line-height:1.6}
+.modal-input{width:100%;padding:10px 14px;background:#161c2d;border:1.5px solid #1e2740;border-radius:9px;color:#e8eaf0;font-size:14px;outline:none;font-family:inherit;margin-bottom:14px;transition:border-color .15s}
+.modal-input:focus{border-color:#7c3aed}
+.modal-actions{display:flex;gap:10px}
+.modal-btn{flex:1;padding:10px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s}
+.modal-btn-cancel{background:rgba(255,255,255,.06);color:#8892a4;border:1px solid #1e2740}
+.modal-btn-cancel:hover{background:rgba(255,255,255,.12)}
+.modal-btn-save{background:linear-gradient(135deg,#4f6ef7,#7c3aed);color:#fff}
+.modal-btn-save:hover{opacity:.85}
+
+/* ── CAMPAIGNS NAV BADGE ─────────────────────────────────────────── */
+.camps-count{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;background:#7c3aed;color:#fff;border-radius:50%;font-size:9px;font-weight:800;margin-left:4px;vertical-align:middle}
+
+/* ── EDIT MODE BANNER ────────────────────────────────────────────── */
+#edit-mode-bar{
+  position:sticky;top:52px;z-index:90;
+  background:linear-gradient(135deg,rgba(245,158,11,.12),rgba(217,119,6,.08));
+  border-bottom:1px solid rgba(245,158,11,.3);
+  padding:9px 24px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  font-size:12px;
+}
+.edit-bar-left{display:flex;align-items:center;gap:10px}
+.edit-bar-icon{font-size:16px}
+.edit-bar-label{color:#fcd34d;font-weight:600}
+.edit-bar-name{color:#e8eaf0;font-weight:700;font-size:13px}
+.edit-bar-right{display:flex;align-items:center;gap:8px}
+.edit-bar-btn{padding:5px 12px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s}
+.edit-bar-reset{background:rgba(255,255,255,.08);color:#8892a4;border:1px solid #1e2740}
+.edit-bar-reset:hover{background:rgba(255,255,255,.15);color:#e8eaf0}
+.edit-bar-exit{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2)}
+.edit-bar-exit:hover{background:rgba(239,68,68,.2)}
+
+/* ── AUDIT PANEL ─────────────────────────────────────────────────── */
+#audit-panel{
+  background:#161c2d;border:1px solid rgba(245,158,11,.3);
+  border-radius:14px;margin-top:20px;overflow:hidden;
+}
+.audit-head{
+  padding:14px 18px;display:flex;align-items:center;gap:10px;
+  background:rgba(245,158,11,.07);border-bottom:1px solid rgba(245,158,11,.2);
+}
+.audit-head-ico{font-size:18px}
+.audit-head-title{font-size:14px;font-weight:700;color:#fcd34d;flex:1}
+.audit-head-badge{padding:3px 10px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:.05em}
+.audit-section{padding:14px 18px;border-bottom:1px solid #1e2740}
+.audit-section:last-of-type{border-bottom:none}
+.audit-section-title{font-size:10px;font-weight:700;color:#8892a4;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
+.audit-diff-row{display:flex;align-items:baseline;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);gap:8px}
+.audit-diff-row:last-child{border-bottom:none}
+.audit-diff-key{font-size:11.5px;color:#8892a4;flex-shrink:0}
+.audit-diff-val{font-size:12px;font-weight:600;text-align:right;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.audit-before{color:#8892a4;text-decoration:line-through;font-weight:400;font-size:11px}
+.audit-arrow{color:#4f6ef7;font-size:11px}
+.audit-after{color:#e8eaf0}
+.audit-delta{font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px}
+.delta-up{background:rgba(239,68,68,.12);color:#f87171}
+.delta-up-good{background:rgba(16,185,129,.12);color:#10b981}
+.delta-down{background:rgba(16,185,129,.12);color:#10b981}
+.delta-down-bad{background:rgba(239,68,68,.12);color:#f87171}
+.delta-neutral{background:rgba(148,163,184,.1);color:#8892a4}
+
+/* econ comparison grid */
+.audit-econ-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}
+.audit-econ-card{background:#0f1420;border:1px solid #1e2740;border-radius:9px;padding:10px 12px;text-align:center}
+.audit-econ-label{font-size:9.5px;color:#8892a4;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.audit-econ-before{font-size:11px;color:#8892a4;text-decoration:line-through;margin-bottom:2px}
+.audit-econ-after{font-size:16px;font-weight:800}
+.econ-improved{color:#10b981}
+.econ-worsened{color:#f87171}
+.econ-neutral{color:#e8eaf0}
+
+/* ratio bar */
+.audit-ratio-row{display:flex;align-items:center;gap:12px;margin-top:8px}
+.audit-ratio-track{flex:1;height:6px;background:#1e2740;border-radius:10px;position:relative;overflow:hidden}
+.audit-ratio-fill-orig{height:100%;border-radius:10px;background:#8892a4;opacity:.5;position:absolute;top:0;left:0;transition:width .4s}
+.audit-ratio-fill-new{height:100%;border-radius:10px;position:absolute;top:0;left:0;transition:width .5s .1s}
+
+/* verdict box */
+.audit-verdict{padding:12px 14px;border-radius:9px;margin-top:0}
+.audit-verdict-item{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:12px;color:#8892a4;line-height:1.5}
+.audit-verdict-item:first-child{padding-top:0}
+.audit-verdict-item.warn{color:#fcd34d}
+.audit-verdict-item.ok{color:#6ee7b7}
+.audit-verdict-item.info{color:#93c5fd}
+.audit-verdict-ico{flex-shrink:0;font-size:13px;line-height:1.4}
+
+/* audit actions */
+.audit-actions{display:flex;gap:10px;padding:14px 18px;background:rgba(255,255,255,.02);flex-wrap:wrap}
+.audit-action-btn{padding:9px 18px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s}
+.audit-btn-save{background:linear-gradient(135deg,#10b981,#059669);color:#fff;flex:1}
+.audit-btn-save:hover{opacity:.85;transform:translateY(-1px)}
+.audit-btn-reset{background:rgba(255,255,255,.06);color:#8892a4;border:1px solid #1e2740}
+.audit-btn-reset:hover{background:rgba(255,255,255,.12);color:#e8eaf0}
+</style>
+</head>
+<body>
+
+<!-- ════ HEADER ════ -->
+<div class="hdr">
+  <div class="hdr-logo">Bonus<span>Engine</span></div>
+  <div class="hdr-tag" data-i18n="hdr_sub">v2.0</div>
+  <div class="hdr-sub" data-i18n="pnl_title" style="margin-left:8px">Bonus Admin Spec Generator</div>
+  <a href="/campaign-generator.html" class="hdr-campaigns" id="hdr-gen-link">🤖 AI Generator</a>
+  <button class="hdr-campaigns" onclick="openCampaignsDrawer()" id="hdr-camps-btn" style="cursor:pointer;background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.3);color:#10b981">
+    📂 <span data-i18n="camps_btn">Saved Campaigns</span><span class="camps-count" id="camps-count" style="display:none">0</span>
+  </button>
+  <div class="lang-sel">
+    <div class="lchip on" data-l="ru" onclick="setLang('ru')">RU</div>
+    <div class="lchip" data-l="en" onclick="setLang('en')">EN</div>
+    <div class="lchip" data-l="mn" onclick="setLang('mn')">MN</div>
+    <div class="lchip" data-l="es" onclick="setLang('es')">ES</div>
+  </div>
+</div>
+
+<!-- ════ EDIT MODE BANNER (hidden by default) ════ -->
+<div id="edit-mode-bar" style="display:none">
+  <div class="edit-bar-left">
+    <span class="edit-bar-icon">✏️</span>
+    <span class="edit-bar-label" data-i18n="edit_bar_label">Редактирование:</span>
+    <span class="edit-bar-name" id="edit-bar-name">—</span>
+  </div>
+  <div class="edit-bar-right">
+    <button class="edit-bar-btn edit-bar-reset" onclick="resetToOriginal()" data-i18n="edit_bar_reset">↺ Сбросить параметры</button>
+    <button class="edit-bar-btn edit-bar-exit" onclick="exitEditMode()" data-i18n="edit_bar_exit">✕ Выйти</button>
+  </div>
+</div>
+
+<!-- ════ MAIN LAYOUT ════ -->
+<div class="wrap">
+
+  <!-- ════ LEFT PANEL — FORM ════ -->
+  <div class="left">
+    <div class="pnl-title" data-i18n="pnl_title">Параметры конфигурации</div>
+
+    <!-- Region -->
+    <div class="fg">
+      <div class="fl" data-i18n="lbl_region">Регион и бизнес-модель</div>
+      <div class="rgrid">
+        <div class="rcard" id="rc-cis" onclick="pickRegion('cis')">
+          <span class="flag">🇷🇺</span>
+          <div class="rn" data-i18n="reg_cis">СНГ</div>
+          <div class="rs" data-i18n="reg_cis_sub">RU · UA · KZ / Фиат</div>
+        </div>
+        <div class="rcard" id="rc-eu" onclick="pickRegion('eu')">
+          <span class="flag">🇪🇺</span>
+          <div class="rn" data-i18n="reg_eu">EU / UK</div>
+          <div class="rs" data-i18n="reg_eu_sub">EUR · GBP / Фиат</div>
+        </div>
+        <div class="rcard" id="rc-crypto" onclick="pickRegion('crypto')">
+          <span class="flag">₿</span>
+          <div class="rn" data-i18n="reg_crypto">Global Crypto</div>
+          <div class="rs" data-i18n="reg_crypto_sub">BTC · ETH · USDT</div>
+        </div>
+        <div class="rcard" id="rc-sweep" onclick="pickRegion('sweep')">
+          <span class="flag">🇺🇸</span>
+          <div class="rn" data-i18n="reg_sweep">USA / Sweep</div>
+          <div class="rs" data-i18n="reg_sweep_sub">SC · GC / Sweepcoins</div>
+        </div>
+        <div class="rcard" id="rc-mn" onclick="pickRegion('mn')">
+          <span class="flag">🇲🇳</span>
+          <div class="rn" data-i18n="reg_mn">Монголия</div>
+          <div class="rs" data-i18n="reg_mn_sub">MNT / Фиат</div>
+        </div>
+        <div class="rcard" id="rc-latam" onclick="pickRegion('latam')">
+          <span class="flag">🌎</span>
+          <div class="rn" data-i18n="reg_latam">LatAm</div>
+          <div class="rs" data-i18n="reg_latam_sub">USD / Фиат</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Players -->
+    <div class="fg">
+      <div class="fl">
+        <span data-i18n="lbl_players">Новых игроков / месяц</span>
+        <span id="plbl"></span>
+      </div>
+      <div class="sv" id="pdsp">5 000</div>
+      <input type="range" id="prange" min="100" max="50000" step="100" value="5000" oninput="syncR('p')" onchange="syncR('p')"/>
+      <div class="sl"><span data-i18n="sl_min">100</span><span data-i18n="sl_max">50 000+</span></div>
+      <div class="irow" style="margin-top:6px">
+        <input type="number" id="pnum" value="5000" min="100" max="200000" step="100" oninput="syncN('p')"/>
+      </div>
+    </div>
+
+    <!-- Currencies & Avg Deposit -->
+    <div class="fg">
+      <div class="fl">
+        <span class="tip-wrap">
+          <span data-i18n="lbl_sitecur">Основная валюта сайта</span>
+          <span class="tip-btn" onclick="toggleTip(this)">?</span>
+          <div class="tip-box" data-i18n="tip_sitecur"></div>
+        </span>
+      </div>
+      <div class="irow">
+        <select id="sitecur" onchange="S.sitecur=this.value">
+          <option value="USD">USD</option><option value="EUR">EUR</option>
+          <option value="GBP">GBP</option><option value="RUB">RUB</option>
+          <option value="UAH">UAH</option><option value="KZT">KZT</option>
+          <option value="USDT">USDT</option><option value="BTC">BTC</option>
+          <option value="ETH">ETH</option><option value="MNT">MNT</option>
+          <option value="SC">SC</option>
+        </select>
+        <select id="depcur" onchange="S.depcur=this.value">
+          <option value="USD">USD</option><option value="EUR">EUR</option>
+          <option value="GBP">GBP</option><option value="RUB">RUB</option>
+          <option value="UAH">UAH</option><option value="KZT">KZT</option>
+          <option value="USDT">USDT</option><option value="BTC">BTC</option>
+          <option value="ETH">ETH</option><option value="MNT">MNT</option>
+          <option value="SC">SC</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg">
+      <div class="fl">
+        <span class="tip-wrap">
+          <span data-i18n="lbl_avgdep">Средний первый депозит</span>
+          <span class="tip-btn" onclick="toggleTip(this)">?</span>
+          <div class="tip-box" data-i18n="tip_avgdep"></div>
+        </span>
+        <em id="dephint"></em>
+      </div>
+      <input type="number" id="avgdep" value="100" min="1" step="1" oninput="S.avgdep=parseFloat(this.value)||100"/>
+    </div>
+
+    <!-- Platform -->
+    <div class="fg">
+      <div class="fl">
+        <span class="tip-wrap">
+          <span data-i18n="lbl_platform">Платформа</span>
+          <span class="tip-btn" onclick="toggleTip(this)">?</span>
+          <div class="tip-box" data-i18n="tip_platform"></div>
+        </span>
+      </div>
+      <div class="chips">
+        <div class="chip on" data-g="plat" data-v="both" onclick="pickChip(this)" data-i18n="plat_both">Desktop + Mobile</div>
+        <div class="chip" data-g="plat" data-v="mobile" onclick="pickChip(this)" data-i18n="plat_mobile">Mobile Only</div>
+        <div class="chip" data-g="plat" data-v="desk" onclick="pickChip(this)" data-i18n="plat_desk">Desktop Only</div>
+      </div>
+    </div>
+
+    <!-- License -->
+    <div class="fg" id="lic-wrap">
+      <div class="fl">
+        <span class="tip-wrap">
+          <span data-i18n="lbl_license">Лицензия / юрисдикция</span>
+          <span class="tip-btn" onclick="toggleTip(this)">?</span>
+          <div class="tip-box" data-i18n="tip_license"></div>
+        </span>
+      </div>
+      <div class="chips">
+        <div class="chip" data-g="lic" data-v="mga" onclick="pickChip(this)" data-i18n="lic_mga">MGA</div>
+        <div class="chip on" data-g="lic" data-v="ukgc" onclick="pickChip(this)" data-i18n="lic_ukgc">UKGC</div>
+        <div class="chip" data-g="lic" data-v="curacao" onclick="pickChip(this)" data-i18n="lic_curacao">Curaçao</div>
+        <div class="chip" data-g="lic" data-v="none" onclick="pickChip(this)" data-i18n="lic_none">Нет / Офшор</div>
+      </div>
+    </div>
+
+    <!-- RTP -->
+    <div class="fg">
+      <div class="fl">
+        <span class="tip-wrap">
+          <span data-i18n="lbl_rtp">Средний RTP слотов</span>
+          <span class="tip-btn" onclick="toggleTip(this)">?</span>
+          <div class="tip-box" data-i18n="tip_rtp"></div>
+        </span>
+      </div>
+      <div class="sv" id="rtpdsp">96.0%</div>
+      <input type="range" id="rtprange" min="85" max="99" step="0.5" value="96" oninput="syncRtp(this.value)" onchange="syncRtp(this.value)"/>
+      <div class="sl"><span>85%</span><span>99%</span></div>
+      <div class="irow" style="margin-top:6px">
+        <input type="number" id="rtpnum" value="96" min="85" max="99" step="0.5" oninput="syncRtp(this.value)"/>
+      </div>
+    </div>
+
+    <hr class="dv"/>
+
+    <!-- Generate button -->
+    <button class="btn-gen" onclick="generate()" data-i18n="btn_gen">⚡ Сгенерировать конфигурацию</button>
+  </div><!-- /left -->
+
+  <!-- ════ RIGHT PANEL — OUTPUT ════ -->
+  <div class="right">
+
+    <!-- Placeholder -->
+    <div class="ph" id="ph">
+      <div class="ph-ico">⚙️</div>
+      <div class="ph-t" data-i18n="ph_t">Выберите регион и заполните параметры</div>
+      <div class="ph-s" data-i18n="ph_s">Нажмите «Сгенерировать конфигурацию» — получите полный набор настроек</div>
+    </div>
+
+    <!-- Output (rendered by app.js render()) -->
+    <div id="out" style="display:none"></div>
+
+  </div><!-- /right -->
+</div><!-- /wrap -->
+
+<!-- ════ SAVED CAMPAIGNS DRAWER ════ -->
+<div class="camps-overlay" id="campsOverlay" onclick="closeCampaignsDrawer()"></div>
+<div class="camps-drawer" id="campsDrawer">
+  <div class="camps-head">
+    <span class="camps-head-title">📂 <span data-i18n="camps_drawer_title">Сохранённые кампании</span></span>
+    <button class="camps-head-close" onclick="closeCampaignsDrawer()">✕</button>
+  </div>
+  <div class="camps-body" id="campsBody"></div>
+</div>
+
+<!-- ════ SAVE CAMPAIGN MODAL ════ -->
+<div class="modal-overlay" id="saveModal">
+  <div class="modal">
+    <h3 data-i18n="save_modal_title">💾 Сохранить кампанию</h3>
+    <p data-i18n="save_modal_sub">Дайте название — потом сможете открыть с теми же параметрами из любой сессии.</p>
+    <input class="modal-input" id="campNameInput" type="text" maxlength="60"
+           data-i18n-ph="save_modal_ph" placeholder="Например: EU Reload May 2025"
+           onkeydown="if(event.key==='Enter')confirmSaveCampaign()"/>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-cancel" onclick="closeSaveModal()" data-i18n="save_modal_cancel">Отмена</button>
+      <button class="modal-btn modal-btn-save" onclick="confirmSaveCampaign()" data-i18n="save_modal_ok">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+// ══════════════════════════════════════════════════════════════════════
+// RTP SYNC (not in app.js — specific to this page's slider)
+// ══════════════════════════════════════════════════════════════════════
+function syncRtp(v) {
+  v = parseFloat(v) || 96;
+  v = Math.min(99, Math.max(85, v));
+  const rng = document.getElementById('rtprange');
+  const num = document.getElementById('rtpnum');
+  const dsp = document.getElementById('rtpdsp');
+  if (rng) rng.value = v;
+  if (num) num.value = v;
+  if (dsp) dsp.textContent = v.toFixed(1) + '%';
+  S.rtp = v;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// ADD i18n KEYS for this page
+// ══════════════════════════════════════════════════════════════════════
+(function patchLang() {
+  const extra = {
+    ru: {
+      camps_btn: 'Кампании',
+      camps_drawer_title: 'Сохранённые кампании',
+      camps_empty_t: 'Нет сохранённых кампаний',
+      camps_empty_s: 'Сгенерируйте конфиг и нажмите «Сохранить кампанию»',
+      camp_open: 'Открыть в конфигураторе',
+      camp_reopen: 'Переоткрыть',
+      save_modal_title: '💾 Сохранить кампанию',
+      save_modal_sub: 'Дайте название — потом сможете открыть с теми же параметрами из любой сессии.',
+      save_modal_ph: 'Например: EU Reload May 2025',
+      save_modal_cancel: 'Отмена',
+      save_modal_ok: 'Сохранить',
+      btn_save_camp: '💾 Сохранить кампанию',
+      camp_saved_toast: 'Кампания сохранена ✓',
+    },
+    en: {
+      camps_btn: 'Campaigns',
+      camps_drawer_title: 'Saved Campaigns',
+      camps_empty_t: 'No saved campaigns',
+      camps_empty_s: 'Generate a config and click "Save Campaign"',
+      camp_open: 'Open in Configurator',
+      camp_reopen: 'Reopen',
+      save_modal_title: '💾 Save Campaign',
+      save_modal_sub: 'Give it a name — you can reopen it with the same parameters any time.',
+      save_modal_ph: 'e.g. EU Reload May 2025',
+      save_modal_cancel: 'Cancel',
+      save_modal_ok: 'Save',
+      btn_save_camp: '💾 Save Campaign',
+      camp_saved_toast: 'Campaign saved ✓',
+    },
+    mn: {
+      camps_btn: 'Кампани',
+      camps_drawer_title: 'Хадгалагдсан кампани',
+      camps_empty_t: 'Хадгалагдсан кампани байхгүй',
+      camps_empty_s: 'Тохиргоо үүсгэж «Хадгалах» дарна уу',
+      camp_open: 'Тохируулагч дотор нээх',
+      camp_reopen: 'Дахин нээх',
+      save_modal_title: '💾 Кампани хадгалах',
+      save_modal_sub: 'Нэр өгнө үү — ижил параметртэйгээр хүссэн үедээ нээж болно.',
+      save_modal_ph: 'Жишээ: EU Reload May 2025',
+      save_modal_cancel: 'Цуцлах',
+      save_modal_ok: 'Хадгалах',
+      btn_save_camp: '💾 Кампани хадгалах',
+      camp_saved_toast: 'Кампани хадгалагдлаа ✓',
+    },
+    es: {
+      camps_btn: 'Campañas',
+      camps_drawer_title: 'Campañas guardadas',
+      camps_empty_t: 'No hay campañas guardadas',
+      camps_empty_s: 'Genera una config y haz clic en «Guardar campaña»',
+      camp_open: 'Abrir en configurador',
+      camp_reopen: 'Reabrir',
+      save_modal_title: '💾 Guardar campaña',
+      save_modal_sub: 'Dale un nombre — podrás reabrirla con los mismos parámetros en cualquier momento.',
+      save_modal_ph: 'Ej.: EU Reload Mayo 2025',
+      save_modal_cancel: 'Cancelar',
+      save_modal_ok: 'Guardar',
+      btn_save_camp: '💾 Guardar campaña',
+      camp_saved_toast: 'Campaña guardada ✓',
+    },
+  };
+  ['ru','en','mn','es'].forEach(lang => {
+    if (typeof LANG !== 'undefined' && LANG[lang]) {
+      Object.assign(LANG[lang], extra[lang]);
+    }
+  });
+})();
+
+// ══════════════════════════════════════════════════════════════════════
+// SAVED CAMPAIGNS — localStorage CRUD
+// ══════════════════════════════════════════════════════════════════════
+const CAMPS_KEY = 'bonusCampaigns';
+
+// ══════════════════════════════════════════════════════════════════════
+// EDIT MODE STATE
+// ══════════════════════════════════════════════════════════════════════
+window._editMode = { active: false, campaignId: null, originalCampaign: null };
+
+// ══════════════════════════════════════════════════════════════════════
+// ECONOMICS HELPERS
+// ══════════════════════════════════════════════════════════════════════
+function _ratioVerdict(ratio) {
+  if (ratio < 0.10) return 'cheap';
+  if (ratio < 0.25) return 'ok';
+  if (ratio < 0.40) return 'warn';
+  return 'high';
+}
+
+function _fmtCur(val, cur) {
+  if (val == null || isNaN(val)) return '—';
+  const n = Math.round(val);
+  if (cur === 'USD' || cur === 'USDT') return '$' + n.toLocaleString('en');
+  if (cur === 'EUR') return '€' + n.toLocaleString('en');
+  if (cur === 'GBP') return '£' + n.toLocaleString('en');
+  if (cur === 'MNT') return n.toLocaleString('ru') + '₮';
+  if (cur === 'RUB') return n.toLocaleString('ru') + ' ₽';
+  return n.toLocaleString('en') + ' ' + (cur || '');
+}
+
+function _verdictBadge(verdict) {
+  const map = {
+    cheap: { label:'Слабый',     color:'#8892a4', style:'background:rgba(148,163,184,.12);color:#8892a4' },
+    ok:    { label:'OK ✓',       color:'#10b981', style:'background:rgba(16,185,129,.12);color:#10b981' },
+    warn:  { label:'Риск ⚠',    color:'#f59e0b', style:'background:rgba(245,158,11,.12);color:#f59e0b' },
+    high:  { label:'Высокий ✕', color:'#ef4444', style:'background:rgba(239,68,68,.12);color:#ef4444' },
+  };
+  return map[verdict] || map.ok;
+}
+
+function _captureEconomics() {
+  const cfg = window._lastCfg;
+  if (!cfg || !cfg.econ) return null;
+  const E  = cfg.econ;
+  const pl = cfg.pl || S.players;
+  return {
+    costRatio: E.costRatio   || 0,
+    verdict:   _ratioVerdict(E.costRatio || 0),
+    p10Cost:   Math.round((E.sP10?.cost || 0) * pl),
+    p50Cost:   Math.round((E.sP50?.cost || 0) * pl),
+    p90Cost:   Math.round((E.sP90?.cost || 0) * pl),
+    p50Conv:   E.sP50?.conv  || 0,
+    arpu:      E.arpu        || S.avgdep,
+    ltv3:      E.ltv3        || 0,
+    roi:       E.roi         || 0,
+    wagerX:    E.wagerX      || 0,
+    breakeven: E.breakeven_wager || 0,
+    cur:       cfg.cur       || S.sitecur,
+  };
+}
+
+function _loadCampsStore() {
+  try { return JSON.parse(localStorage.getItem(CAMPS_KEY) || '[]'); }
+  catch(e) { return []; }
+}
+function _saveCampsStore(arr) {
+  try { localStorage.setItem(CAMPS_KEY, JSON.stringify(arr)); } catch(e) {}
+}
+
+function saveCampaignToStorage(name) {
+  if (!S.region || !window._lastCfg) return false;
+  const cfg = window._lastCfg;
+  const campaign = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    name: name.trim() || 'Campaign',
+    createdAt: new Date().toISOString(),
+    // form state
+    params: {
+      region:   S.region,
+      players:  S.players,
+      avgdep:   S.avgdep,
+      sitecur:  S.sitecur,
+      depcur:   S.depcur,
+      lic:      S.lic,
+      plat:     S.plat,
+      rtp:      S.rtp,
+      lang:     typeof L !== 'undefined' ? L : 'ru',
+    },
+    // key mechanics from generated config
+    mechanics: cfg.welcome ? {
+      type:   cfg.welcome.type,
+      pct:    cfg.welcome.pct,
+      maxB:   cfg.welcome.maxB,
+      wager:  cfg.wager ? cfg.wager.wW : null,
+      cur:    cfg.welcome.cur || S.sitecur,
+    } : null,
+    economics: _captureEconomics(),
+    updatedAt: null,
+  };
+
+  const arr = _loadCampsStore();
+  arr.unshift(campaign);              // newest first
+  _saveCampsStore(arr);
+  _updateCampsCount();
+  return campaign.id;
+}
+
+function deleteSavedCampaign(id) {
+  const arr = _loadCampsStore().filter(c => c.id !== id);
+  _saveCampsStore(arr);
+  _updateCampsCount();
+  renderCampaignsDrawer();
+}
+
+function _updateCampsCount() {
+  const arr = _loadCampsStore();
+  const badge = document.getElementById('camps-count');
+  if (!badge) return;
+  if (arr.length > 0) {
+    badge.textContent = arr.length;
+    badge.style.display = 'inline-flex';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// OPEN SAVED CAMPAIGN IN CONFIGURATOR
+// (same page — just re-apply params and enter edit mode)
+// ══════════════════════════════════════════════════════════════════════
+
+function _applyParamsFromCampaign(campaign) {
+  const p = campaign.params;
+  if (p.region) pickRegion(p.region);
+  if (p.avgdep  != null) { const el = document.getElementById('avgdep');  if(el){el.value=p.avgdep;  S.avgdep=p.avgdep;} }
+  if (p.sitecur)         { const el = document.getElementById('sitecur'); if(el){el.value=p.sitecur; S.sitecur=p.sitecur;} }
+  if (p.depcur)          { const el = document.getElementById('depcur');  if(el){el.value=p.depcur;  S.depcur=p.depcur;} }
+  if (p.players != null) {
+    const rng = document.getElementById('prange');
+    const num = document.getElementById('pnum');
+    const dsp = document.getElementById('pdsp');
+    if (rng) rng.value = Math.min(p.players, parseInt(rng.max||50000));
+    if (num) num.value = p.players;
+    if (dsp) dsp.textContent = Number(p.players).toLocaleString('ru');
+    S.players = p.players;
+  }
+  if (p.lic)  setChip('lic',  p.lic);
+  if (p.plat) setChip('plat', p.plat);
+  if (p.rtp  != null) syncRtp(p.rtp);
+  if (p.lang && typeof setLang === 'function') setLang(p.lang);
+}
+
+function _setEditMode(campaign) {
+  window._editMode = {
+    active: true,
+    campaignId: campaign.id,
+    originalCampaign: JSON.parse(JSON.stringify(campaign)),
+  };
+  const nameEl = document.getElementById('edit-bar-name');
+  if (nameEl) nameEl.textContent = campaign.name;
+  document.getElementById('edit-mode-bar').style.display = 'flex';
+}
+
+function _clearEditMode() {
+  window._editMode = { active: false, campaignId: null, originalCampaign: null };
+  document.getElementById('edit-mode-bar').style.display = 'none';
+  const panel = document.getElementById('audit-panel');
+  if (panel) panel.remove();
+}
+
+function exitEditMode() {
+  _clearEditMode();
+}
+
+function resetToOriginal() {
+  const orig = window._editMode?.originalCampaign;
+  if (!orig) return;
+  const panel = document.getElementById('audit-panel');
+  if (panel) panel.remove();
+  _applyParamsFromCampaign(orig);
+  setTimeout(() => generate(), 80);
+}
+
+function openCampaignInConfigurator(campaign) {
+  _applyParamsFromCampaign(campaign);
+  closeCampaignsDrawer();
+  _setEditMode(campaign);
+
+  setTimeout(() => {
+    generate().then(() => {
+      if (campaign.mechanics?.wager) {
+        const ovw = document.getElementById('ov_w_wager');
+        if (ovw) { ovw.value = campaign.mechanics.wager; recalcEcon(); }
+      }
+      if (window.innerWidth <= 768) {
+        document.querySelector('.right')?.scrollIntoView({ behavior:'smooth', block:'start' });
+      }
+    });
+  }, 80);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// DRAWER UI
+// ══════════════════════════════════════════════════════════════════════
+function openCampaignsDrawer() {
+  renderCampaignsDrawer();
+  document.getElementById('campsOverlay').classList.add('open');
+  document.getElementById('campsDrawer').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeCampaignsDrawer() {
+  document.getElementById('campsOverlay').classList.remove('open');
+  document.getElementById('campsDrawer').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function renderCampaignsDrawer() {
+  const arr = _loadCampsStore();
+  const body = document.getElementById('campsBody');
+  if (!body) return;
+
+  if (arr.length === 0) {
+    body.innerHTML = `
+      <div class="camps-empty">
+        <div class="camps-empty-ico">📭</div>
+        <div class="camps-empty-t" data-i18n="camps_empty_t">Нет сохранённых кампаний</div>
+        <div class="camps-empty-s" data-i18n="camps_empty_s">Сгенерируйте конфиг и нажмите «Сохранить кампанию»</div>
+      </div>`;
+    if (typeof relabel === 'function') relabel();
+    return;
+  }
+
+  const regionLabel = {
+    cis:'СНГ', eu:'EU/UK', crypto:'Crypto', sweep:'USA Sweep', mn:'Монголия', latam:'LatAm'
+  };
+
+  body.innerHTML = arr.map(c => {
+    const date = new Date(c.createdAt).toLocaleDateString('ru', { day:'2-digit', month:'short', year:'numeric' });
+    const mechStr = c.mechanics
+      ? `${c.mechanics.pct}% / ${c.mechanics.maxB?.toLocaleString?.() ?? c.mechanics.maxB} ${c.mechanics.cur}`
+      : '';
+    const wagerStr = c.mechanics?.wager ? `x${c.mechanics.wager}` : '';
+    return `
+      <div class="camp-card" id="cc-${c.id}">
+        <div class="camp-card-top">
+          <div class="camp-card-name">${_esc(c.name)}</div>
+          <button class="camp-card-del" onclick="deleteSavedCampaign('${c.id}')" title="Удалить">✕</button>
+        </div>
+        <div class="camp-card-meta">
+          <span class="camp-badge camp-badge-region">${regionLabel[c.params.region] || c.params.region}</span>
+          ${c.params.lic && c.params.lic !== 'none' ? `<span class="camp-badge camp-badge-lic">${c.params.lic.toUpperCase()}</span>` : ''}
+          ${mechStr ? `<span class="camp-badge camp-badge-dep">${mechStr}</span>` : ''}
+          ${wagerStr ? `<span class="camp-badge" style="background:rgba(124,58,237,.12);color:#a78bfa">${wagerStr}</span>` : ''}
+        </div>
+        <div class="camp-card-date">${date} · avg dep: ${c.params.avgdep} ${c.params.depcur} · ${c.params.players?.toLocaleString?.() ?? c.params.players} players</div>
+        <div class="camp-card-actions">
+          <button class="camp-btn camp-btn-open" onclick="openCampaignInConfigurator(${JSON.stringify(c).replace(/"/g,'&quot;')})" data-i18n="camp_open">Открыть в конфигураторе</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  if (typeof relabel === 'function') relabel();
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// SAVE MODAL
+// ══════════════════════════════════════════════════════════════════════
+function openSaveModal() {
+  if (!S.region || !window._lastCfg) return;
+  // Suggest name from region + date
+  const regionLabel = { cis:'CIS', eu:'EU', crypto:'Crypto', sweep:'Sweep', mn:'MN', latam:'LatAm' };
+  const mo = new Date().toLocaleString('en', { month:'short', year:'numeric' });
+  const suggested = `${regionLabel[S.region] || S.region} Bonus ${mo}`;
+  document.getElementById('campNameInput').value = suggested;
+  document.getElementById('saveModal').classList.add('open');
+  setTimeout(() => {
+    const inp = document.getElementById('campNameInput');
+    if (inp) { inp.focus(); inp.select(); }
+  }, 60);
+}
+function closeSaveModal() {
+  document.getElementById('saveModal').classList.remove('open');
+}
+function confirmSaveCampaign() {
+  const name = document.getElementById('campNameInput').value.trim();
+  if (!name) return;
+  saveCampaignToStorage(name);
+  closeSaveModal();
+  // Update save button
+  const btn = document.getElementById('btn-save-camp');
+  if (btn) {
+    btn.classList.add('saved');
+    btn.textContent = typeof t === 'function' ? t('camp_saved_toast') : 'Saved ✓';
+    setTimeout(() => {
+      btn.classList.remove('saved');
+      btn.textContent = typeof t === 'function' ? t('btn_save_camp') : '💾 Save Campaign';
+    }, 2500);
+  }
+  // Show toast
+  _showToast(typeof t === 'function' ? t('camp_saved_toast') : 'Campaign saved ✓');
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// PATCH generate() to inject Save button into output header
+// ══════════════════════════════════════════════════════════════════════
+(function patchGenerate() {
+  const _orig = window.generate;
+  window.generate = async function() {
+    await _orig.apply(this, arguments);
+    _injectSaveButton();
+    if (window._editMode?.active) {
+      setTimeout(() => renderAuditPanel(), 350);
+    }
+  };
+})();
+
+function _injectSaveButton() {
+  const oh = document.querySelector('#out .oh');
+  if (!oh) return;
+  // Always re-inject so label/handler updates when edit mode changes
+  const existing = document.getElementById('btn-save-camp');
+  if (existing) existing.remove();
+
+  const actionsDiv = oh.querySelector('div:last-child');
+  if (!actionsDiv) return;
+
+  const btn = document.createElement('button');
+  btn.id = 'btn-save-camp';
+  btn.className = 'btn-save-camp';
+
+  if (window._editMode?.active) {
+    btn.style.cssText = 'background:rgba(245,158,11,.15);color:#f59e0b;border-color:rgba(245,158,11,.4)';
+    btn.textContent = '💾 Обновить кампанию';
+    btn.onclick = updateSavedCampaign;
+  } else {
+    btn.textContent = typeof t === 'function' ? t('btn_save_camp') : '💾 Save Campaign';
+    btn.onclick = openSaveModal;
+  }
+
+  actionsDiv.insertBefore(btn, actionsDiv.firstChild);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════════════════
+function _showToast(msg) {
+  const existing = document.getElementById('cfg-toast');
+  if (existing) existing.remove();
+  const toast = document.createElement('div');
+  toast.id = 'cfg-toast';
+  toast.textContent = msg;
+  Object.assign(toast.style, {
+    position:'fixed', bottom:'24px', left:'50%', transform:'translateX(-50%) translateY(0)',
+    background:'#10b981', color:'#fff', padding:'10px 22px', borderRadius:'10px',
+    fontSize:'13px', fontWeight:'700', zIndex:'999', boxShadow:'0 4px 20px rgba(0,0,0,.4)',
+    transition:'opacity .3s', fontFamily:'Inter,sans-serif',
+  });
+  document.body.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 320); }, 2200);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// CLOSE MODAL on overlay click
+// ══════════════════════════════════════════════════════════════════════
+document.getElementById('saveModal').addEventListener('click', function(e) {
+  if (e.target === this) closeSaveModal();
+});
+
+// ESC closes drawer and modal
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeSaveModal();
+    closeCampaignsDrawer();
+  }
+});
+
+// Init count badge on load
+document.addEventListener('DOMContentLoaded', function() {
+  _updateCampsCount();
+});
+</script>
+</body>
+</html>
