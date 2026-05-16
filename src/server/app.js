@@ -1,4 +1,5 @@
 import express              from 'express';
+import helmet               from 'helmet';
 import path                 from 'path';
 import { fileURLToPath }    from 'url';
 import generateRoutes       from '../routes/generate.routes.js';
@@ -11,6 +12,23 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 
 const app = express();
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      // inline scripts exist in index.html + campaign-generator.html; remove once migrated to external files
+      scriptSrc:  ["'self'", "'unsafe-inline'"],
+      styleSrc:   ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc:    ["'self'", 'https://fonts.gstatic.com'],
+      imgSrc:     ["'self'", 'data:', 'blob:'],
+      connectSrc: ["'self'"],
+      objectSrc:  ["'none'"],
+      baseUri:    ["'self'"],
+    },
+  },
+}));
+
 app.use(express.json({ limit: '64kb' }));
 app.get('/generator.html', (_req, res) => res.redirect(301, '/campaign-generator.html'));
 app.use(express.static(path.join(__dirname, '../../public')));
