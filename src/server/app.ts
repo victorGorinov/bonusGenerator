@@ -20,14 +20,15 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      // inline scripts exist in index.html + campaign-generator.html; remove once migrated to external files
-      scriptSrc:  ["'self'", "'unsafe-inline'"],
-      styleSrc:   ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-      fontSrc:    ["'self'", 'https://fonts.gstatic.com'],
-      imgSrc:     ["'self'", 'data:', 'blob:'],
-      connectSrc: ["'self'"],
-      objectSrc:  ["'none'"],
-      baseUri:    ["'self'"],
+      // inline scripts and onclick handlers exist in HTML files; remove once migrated to external files
+      scriptSrc:     ["'self'", "'unsafe-inline'"],
+      scriptSrcAttr: ["'unsafe-inline'"],
+      styleSrc:      ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc:       ["'self'", 'https://fonts.gstatic.com'],
+      imgSrc:        ["'self'", 'data:', 'blob:'],
+      connectSrc:    ["'self'"],
+      objectSrc:     ["'none'"],
+      baseUri:       ["'self'"],
     },
   },
 }));
