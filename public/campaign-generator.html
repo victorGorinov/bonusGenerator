@@ -424,7 +424,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
               <option value="de">🇩🇪 Germany (DE)</option>
               <option value="dk">🇩🇰 Denmark (DK)</option>
               <option value="uk">🇬🇧 United Kingdom (UK)</option>
-              <option value="ru">🇷🇺 Russia (RU)</option>
+              <option value="ru">🌐 Russia (RU)</option>
               <option value="kz">🇰🇿 Kazakhstan (KZ)</option>
               <option value="mx">🇲🇽 Mexico (MX)</option>
               <option value="br">🇧🇷 Brazil (BR)</option>
@@ -723,7 +723,7 @@ const SCENARIOS = [
 function getProgSteps() {
   return [t('prog_1'),t('prog_2'),t('prog_3'),t('prog_4'),t('prog_5')];
 }
-const GEO_LBL   = {de:'🇩🇪 Germany',dk:'🇩🇰 Denmark',uk:'🇬🇧 UK',ru:'🇷🇺 Russia',kz:'🇰🇿 Kazakhstan',mx:'🇲🇽 Mexico',br:'🇧🇷 Brazil',mn:'🇲🇳 Mongolia',us:'🇺🇸 USA'};
+const GEO_LBL   = {de:'🇩🇪 Germany',dk:'🇩🇰 Denmark',uk:'🇬🇧 UK',ru:'🌐 Russia',kz:'🇰🇿 Kazakhstan',mx:'🇲🇽 Mexico',br:'🇧🇷 Brazil',mn:'🇲🇳 Mongolia',us:'🇺🇸 USA'};
 const SEG_LBL   = {new:'Новые',mid:'Средние',vip:'VIP'};
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
@@ -1461,7 +1461,7 @@ let _detailId = null;
 const CH_LABELS = {push:'📲 Push',email:'📧 Email',sms:'📱 SMS',telegram:'✈️ Telegram',popup:'💬 Popup'};
 const TONE_LBL  = {ru:{friendly:'Дружелюбный',formal:'Официальный',aggressive:'Агрессивный'},
                    en:{friendly:'Friendly',formal:'Formal',aggressive:'Aggressive'}};
-const LANG_DISP = {ru:'🇷🇺 RU',en:'🇬🇧 EN',mn:'🇲🇳 MN',es:'🇪🇸 ES'};
+const LANG_DISP = {ru:'RU',en:'🇬🇧 EN',mn:'🇲🇳 MN',es:'🇪🇸 ES'};
 
 function openDetail(id) {
   closeMenu();
