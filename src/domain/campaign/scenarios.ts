@@ -1,5 +1,6 @@
 export const GEO_CFG: Record<string, { region: string; lic: string; sitecur: string; depcur: string }> = {
   de: { region:'eu',    lic:'mga',  sitecur:'EUR', depcur:'EUR' },
+  dk: { region:'eu',    lic:'dga',  sitecur:'DKK', depcur:'DKK' },
   fr: { region:'eu',    lic:'mga',  sitecur:'EUR', depcur:'EUR' },
   es: { region:'eu',    lic:'mga',  sitecur:'EUR', depcur:'EUR' },
   it: { region:'eu',    lic:'mga',  sitecur:'EUR', depcur:'EUR' },
@@ -19,7 +20,7 @@ export const TONE_DESC: Record<string, string> = {
   aggressive: 'urgent, bold, FOMO-driven',
 };
 
-export const LANG_NAME: Record<string, string> = { de:'German', en:'English', ru:'Russian', es:'Spanish', mn:'Mongolian' };
+export const LANG_NAME: Record<string, string> = { da:'Danish', de:'German', en:'English', ru:'Russian', es:'Spanish', mn:'Mongolian' };
 export const SEG_DESC:  Record<string, string>  = { new:'new players (first-timers)', mid:'regular players', vip:'VIP high-value players' };
 
 export const SCENARIO_MSG: Record<string, [string, string]> = {

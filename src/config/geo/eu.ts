@@ -38,5 +38,18 @@ export const EU = {
       dep3:    { maxBMulti: 1.5, maxBMin: 0, maxBMax: 75, fs: 0 },
       reg:     ['reg_ukgc_1', 'reg_ukgc_2', 'reg_ukgc_3', 'reg_ukgc_4', 'reg_ukgc_5', 'reg_ukgc_6'] as string[],
     },
+    // Denmark — Spillemyndigheden (DGA) license
+    // Statutory hard cap: 1 000 DKK max bonus per offer, min 60-day validity for wagering
+    // Market practice wagering: 25x (range 10–35x); ROFUS check mandatory before bonus award
+    // 2025 DGA update: T&Cs must appear in same font size as the promotional offer
+    dga: {
+      welcome: { maxBMin: 200, maxBMax: 1000 },
+      ndb:     { type: 'fs_restricted' as string, amt: 0, ndCur: 'FS', wager: 20, maxW_x: 3, fs: 20, days: 60, note: 'dga_note' },
+      reload:  { maxBMax: 500, fs: 25 },
+      wager:   { wW: 25, wN: 30, wF: 25, mb: 'v_dga_max_bet', days: 60 },
+      dep2:    { maxBMulti: 3, maxBMin: 0, maxBMax: 750, fs: 30 },
+      dep3:    { maxBMulti: 2, maxBMin: 0, maxBMax: 500, fs: 20 },
+      reg:     ['reg_dga_1', 'reg_dga_2', 'reg_dga_3', 'reg_dga_4'] as string[],
+    },
   } as Record<string, Record<string, unknown>>,
 };

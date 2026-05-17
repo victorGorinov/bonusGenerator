@@ -422,6 +422,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
             <div class="fl" data-i18n="s2_geo">Гео / Страна</div>
             <select class="form-select" id="p-geo" onchange="syncLangToGeo(this.value)">
               <option value="de">🇩🇪 Germany (DE)</option>
+              <option value="dk">🇩🇰 Denmark (DK)</option>
               <option value="uk">🇬🇧 United Kingdom (UK)</option>
               <option value="ru">🇷🇺 Russia (RU)</option>
               <option value="kz">🇰🇿 Kazakhstan (KZ)</option>
@@ -462,6 +463,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
           <div class="fg">
             <div class="fl" data-i18n="s2_lang">Язык коммуникации</div>
             <select class="form-select" id="p-lang">
+              <option value="da">Dansk</option>
               <option value="de">Deutsch</option>
               <option value="en">English</option>
               <option value="ru">Русский</option>
@@ -721,7 +723,7 @@ const SCENARIOS = [
 function getProgSteps() {
   return [t('prog_1'),t('prog_2'),t('prog_3'),t('prog_4'),t('prog_5')];
 }
-const GEO_LBL   = {de:'🇩🇪 Germany',uk:'🇬🇧 UK',ru:'🇷🇺 Russia',kz:'🇰🇿 Kazakhstan',mx:'🇲🇽 Mexico',br:'🇧🇷 Brazil',mn:'🇲🇳 Mongolia',us:'🇺🇸 USA'};
+const GEO_LBL   = {de:'🇩🇪 Germany',dk:'🇩🇰 Denmark',uk:'🇬🇧 UK',ru:'🇷🇺 Russia',kz:'🇰🇿 Kazakhstan',mx:'🇲🇽 Mexico',br:'🇧🇷 Brazil',mn:'🇲🇳 Mongolia',us:'🇺🇸 USA'};
 const SEG_LBL   = {new:'Новые',mid:'Средние',vip:'VIP'};
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
@@ -859,7 +861,7 @@ function selScenario(id, el) {
 }
 
 // ── STEP 2 ────────────────────────────────────────────────────────────────────
-const GEO_LANG = { de:'de', uk:'en', ru:'ru', kz:'ru', mx:'es', br:'es', mn:'mn', us:'en' };
+const GEO_LANG = { de:'de', dk:'da', uk:'en', ru:'ru', kz:'ru', mx:'es', br:'es', mn:'mn', us:'en' };
 
 function syncLangToGeo(geo) {
   const lang = GEO_LANG[geo] || 'en';

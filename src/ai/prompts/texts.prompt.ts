@@ -16,6 +16,17 @@ export function buildTextsPrompt({ scenario, mechanic, mechanicType, params }: T
   const bonus = bonusLine(mechanic ?? null, mechanicType ?? '');
   const lic   = (geo.lic || 'none').toUpperCase();
 
+  const licContext = lic === 'DGA'
+    ? `\nDGA compliance requirements for all texts:
+- Every communication MUST include T&Cs in the same visual prominence as the offer
+- Include "Gælder for nye spillere" (new players) or "Gælder for eksisterende spillere" as applicable
+- Reference Stopspillet.dk in at least one text element per channel
+- Do NOT use phrases implying guaranteed wins or loss recovery
+- Max bonus cap (1.000 DKK) must be stated explicitly in email and popup
+- Wagering requirement must be clearly stated — no hiding behind fine print
+- Danish regulatory standard: 18+ and "Spil ansvarligt" must appear in email footer`
+    : '';
+
   return `You are a senior CRM marketing expert for an online casino. Generate 3 compelling variants (A, B, C) for each communication channel.
 
 Campaign context:
@@ -25,7 +36,7 @@ Campaign context:
 - Audience: ${seg}
 - Language: ${lang}
 - Tone: ${tone}
-
+${licContext}
 Return ONLY valid JSON, no markdown, no extra text:
 {
   "push": ["<70-100 chars, 1-2 emojis>", "variant B", "variant C"],
