@@ -694,6 +694,18 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   </div><!-- /content -->
 </div><!-- /main -->
 
+<!-- Exit confirmation modal — must be before <script> so setUILang finds it in the DOM -->
+<div id="exit-modal" class="exit-overlay" style="display:none" onclick="if(event.target===this)closeExitModal()">
+  <div class="exit-box">
+    <h3 data-i18n="exit_title">Выйти из приложения?</h3>
+    <p data-i18n="exit_body">Несохранённые данные текущей сессии будут потеряны.</p>
+    <div class="exit-actions">
+      <button class="btn btn-outline" onclick="closeExitModal()" data-i18n="exit_stay">Остаться</button>
+      <button class="btn btn-primary" onclick="doExit()" data-i18n="exit_confirm">Выйти</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── DATA ──────────────────────────────────────────────────────────────────────
 const SCENARIOS = [
@@ -2129,16 +2141,5 @@ try {
 } catch(e) {}
 </script>
 
-<!-- Exit confirmation modal -->
-<div id="exit-modal" class="exit-overlay" style="display:none" onclick="if(event.target===this)closeExitModal()">
-  <div class="exit-box">
-    <h3 data-i18n="exit_title">Выйти из приложения?</h3>
-    <p data-i18n="exit_body">Несохранённые данные текущей сессии будут потеряны.</p>
-    <div class="exit-actions">
-      <button class="btn btn-outline" onclick="closeExitModal()" data-i18n="exit_stay">Остаться</button>
-      <button class="btn btn-primary" onclick="doExit()" data-i18n="exit_confirm">Выйти</button>
-    </div>
-  </div>
-</div>
 </body>
 </html>
