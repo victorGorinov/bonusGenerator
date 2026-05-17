@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Terms of Service — BonusEngine</title>
+<meta name="robots" content="noindex"/>
+<style>
+  :root {
+    --bg: #0a0d14; --bg2: #0f1420; --card: #161c2d;
+    --border: #1e2740; --accent: #4f6ef7; --accent2: #7c3aed;
+    --text: #e8eaf0; --muted: #8892a4;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; font-size: 15px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,13,20,.92); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px; height: 60px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-logo { font-weight: 700; font-size: 1rem; color: var(--text); text-decoration: none; display: flex; align-items: center; gap: 10px; }
+  .nav-logo-icon { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .nav-back { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .nav-back:hover { color: var(--text); text-decoration: none; }
+  .lang-toggle { display: flex; background: var(--card); border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+  .lang-btn { padding: 5px 12px; background: none; border: none; color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s; }
+  .lang-btn.active { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
+
+  .page-wrap { max-width: 740px; margin: 0 auto; padding: 56px 24px 96px; }
+  .page-label { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+  h1 { font-size: clamp(1.6rem, 3vw, 2.25rem); font-weight: 700; margin-bottom: 8px; }
+  .page-meta { font-size: 13px; color: var(--muted); margin-bottom: 48px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+
+  h2 { font-size: 1.1rem; font-weight: 700; color: var(--text); margin: 36px 0 12px; padding-left: 14px; border-left: 3px solid var(--accent2); }
+  p { color: #b0bcd0; margin-bottom: 14px; }
+  ul { color: #b0bcd0; padding-left: 20px; margin-bottom: 14px; }
+  ul li { margin-bottom: 6px; }
+  .highlight-box { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin: 20px 0; }
+  .highlight-box p { margin: 0; color: var(--text); font-size: 14px; }
+  .warn-box { background: rgba(245,158,11,.07); border: 1px solid rgba(245,158,11,.25); border-radius: 10px; padding: 16px 20px; margin: 20px 0; }
+  .warn-box p { margin: 0; color: #fcd34d; font-size: 13px; }
+
+  footer { border-top: 1px solid var(--border); padding: 24px; text-align: center; font-size: 12px; color: var(--muted); }
+  footer a { color: var(--muted); margin: 0 10px; }
+  footer a:hover { color: var(--text); text-decoration: none; }
+
+  [data-lang] { display: none; }
+  [data-lang].active { display: block; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">
+    <div class="nav-logo-icon">⚡</div>
+    BonusEngine
+  </a>
+  <div style="display:flex;align-items:center;gap:16px">
+    <a href="/" class="nav-back">← <span id="back-label">Back to Home</span></a>
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" onclick="setLang('ru')">RU</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ════ EN ════ -->
+<div data-lang="en" class="active">
+<div class="page-wrap">
+  <div class="page-label">Legal</div>
+  <h1>Terms of Service</h1>
+  <p class="page-meta">Last updated: 20 May 2025 &nbsp;·&nbsp; Effective date: 20 May 2025</p>
+
+  <div class="highlight-box">
+    <p>📋 <strong>Short version:</strong> BonusEngine is a professional B2B tool for iGaming operators. It is provided as-is during beta. You are responsible for verifying all bonus configurations against your local regulations before using them in production. We do not provide legal or regulatory advice.</p>
+  </div>
+
+  <h2>1. Acceptance of Terms</h2>
+  <p>By accessing or using BonusEngine ("the Service"), you agree to be bound by these Terms of Service. If you do not agree to these terms, do not use the Service.</p>
+  <p>These terms apply to all users who access the Service, including users who submit the early access form, use the Bonus Configurator, or use the AI Campaign Generator.</p>
+
+  <h2>2. Description of Service</h2>
+  <p>BonusEngine is a B2B software platform that provides:</p>
+  <ul>
+    <li>An AI-powered CRM campaign generator for iGaming bonus programmes</li>
+    <li>A bonus configurator with unit economics modelling for 6 global markets</li>
+    <li>AI-generated marketing copy for Push, Email, SMS, Telegram, and Popup channels</li>
+    <li>Automated compliance audit guidance based on common iGaming regulatory frameworks</li>
+  </ul>
+  <p>The Service is currently in <strong>beta</strong>. Features, outputs, and availability may change without notice.</p>
+
+  <h2>3. Professional Use Only</h2>
+  <p>The Service is intended exclusively for iGaming industry professionals — including bonus managers, product owners, CRM managers, consultants, and developers working with licensed gambling operators. By using the Service you confirm that:</p>
+  <ul>
+    <li>You are 18 years of age or older</li>
+    <li>You are accessing the Service in a professional capacity</li>
+    <li>You are not using the Service to directly offer gambling services to end consumers</li>
+    <li>You comply with all applicable laws and regulations in your jurisdiction</li>
+  </ul>
+
+  <h2>4. Compliance Responsibility</h2>
+  <div class="warn-box">
+    <p>⚠️ <strong>Important:</strong> All bonus configurations, wager requirements, economic models, and compliance audit outputs generated by BonusEngine are provided as a starting point for professional review — not as final regulatory guidance.</p>
+  </div>
+  <p>You are solely responsible for:</p>
+  <ul>
+    <li>Verifying that all generated bonus configurations comply with your applicable gaming licence conditions (MGA, UKGC, Curaçao, etc.)</li>
+    <li>Reviewing all AI-generated marketing texts for accuracy, compliance, and suitability before sending them to players</li>
+    <li>Ensuring that minimum deposit amounts, wagering requirements, and bonus caps meet current regulatory requirements in your jurisdiction</li>
+    <li>Conducting your own responsible gambling assessment of any campaign before launch</li>
+  </ul>
+  <p>BonusEngine does not provide legal, regulatory, or financial advice. Consult qualified legal counsel for compliance questions.</p>
+
+  <h2>5. AI-Generated Content</h2>
+  <p>BonusEngine uses large language models (Claude by Anthropic) to generate marketing copy, campaign mechanics, and audit recommendations. You acknowledge that:</p>
+  <ul>
+    <li>AI-generated content may contain errors, inaccuracies, or outdated regulatory information</li>
+    <li>All AI outputs must be reviewed by a qualified professional before use in production</li>
+    <li>BonusEngine is not responsible for any consequences arising from use of unreviewed AI-generated content</li>
+    <li>You will not use AI-generated content in ways that violate applicable advertising standards or gambling regulations</li>
+  </ul>
+
+  <h2>6. Acceptable Use</h2>
+  <p>You agree not to:</p>
+  <ul>
+    <li>Use the Service to generate content for unlicensed gambling operations</li>
+    <li>Attempt to extract, reverse-engineer, or reproduce the underlying business logic or AI prompts</li>
+    <li>Use automated scripts or bots to make excessive API requests</li>
+    <li>Resell or sublicence access to the Service without written permission</li>
+    <li>Use the Service in any way that violates applicable laws</li>
+  </ul>
+
+  <h2>7. Intellectual Property</h2>
+  <p>The BonusEngine platform, including its business logic, economic models, UI design, and code, is proprietary. You retain ownership of any campaign configurations and marketing texts you generate using the Service.</p>
+  <p>You grant us a limited, non-exclusive licence to process your inputs through the Service solely to generate the outputs you request.</p>
+
+  <h2>8. Beta Disclaimer and Limitation of Liability</h2>
+  <p>The Service is provided <strong>"as is"</strong> and <strong>"as available"</strong> during the beta period, without warranties of any kind, either express or implied, including but not limited to merchantability, fitness for a particular purpose, or non-infringement.</p>
+  <p>To the fullest extent permitted by law, BonusEngine shall not be liable for:</p>
+  <ul>
+    <li>Any errors in generated bonus configurations, economic models, or compliance assessments</li>
+    <li>Any financial loss arising from campaigns configured using the Service</li>
+    <li>Regulatory fines or licence conditions arising from use of generated content</li>
+    <li>Service interruptions, data loss, or API unavailability</li>
+    <li>Any indirect, incidental, special, or consequential damages</li>
+  </ul>
+
+  <h2>9. Privacy</h2>
+  <p>Your use of the Service is also governed by our <a href="/privacy">Privacy Policy</a>, which is incorporated into these Terms by reference.</p>
+
+  <h2>10. Changes to Terms</h2>
+  <p>We may update these Terms at any time. Continued use of the Service after changes take effect constitutes acceptance of the revised Terms. We will notify registered users of material changes by email.</p>
+
+  <h2>11. Governing Law</h2>
+  <p>These Terms are governed by applicable law. Any disputes will be resolved in accordance with the laws of the jurisdiction in which BonusEngine is established.</p>
+
+  <h2>12. Contact</h2>
+  <p>For questions about these Terms: <a href="mailto:hello@bonusengine.io">hello@bonusengine.io</a></p>
+</div>
+</div>
+
+<!-- ════ RU ════ -->
+<div data-lang="ru">
+<div class="page-wrap">
+  <div class="page-label">Юридическая информация</div>
+  <h1>Условия использования</h1>
+  <p class="page-meta">Последнее обновление: 20 мая 2025 г. &nbsp;·&nbsp; Дата вступления в силу: 20 мая 2025 г.</p>
+
+  <div class="highlight-box">
+    <p>📋 <strong>Кратко:</strong> BonusEngine — профессиональный B2B-инструмент для iGaming-операторов. Предоставляется «как есть» в период бета-тестирования. Вы несёте ответственность за проверку всех конфигураций бонусов на соответствие местным регуляторным требованиям перед использованием в боевой среде. Мы не предоставляем юридических или регуляторных консультаций.</p>
+  </div>
+
+  <h2>1. Принятие условий</h2>
+  <p>Получая доступ к BonusEngine («Сервис») или используя его, вы соглашаетесь с настоящими Условиями использования. Если вы не согласны с этими условиями, не используйте Сервис.</p>
+
+  <h2>2. Описание сервиса</h2>
+  <p>BonusEngine — B2B-программная платформа, предоставляющая:</p>
+  <ul>
+    <li>AI-генератор CRM-кампаний для бонусных программ iGaming</li>
+    <li>Конфигуратор бонусов с моделированием юнит-экономики для 6 глобальных рынков</li>
+    <li>AI-тексты для каналов Push, Email, SMS, Telegram и Popup</li>
+    <li>Автоматизированный аудит соответствия на основе распространённых iGaming-регуляторных фреймворков</li>
+  </ul>
+  <p>Сервис находится в стадии <strong>бета-тестирования</strong>. Функции, результаты и доступность могут изменяться без предварительного уведомления.</p>
+
+  <h2>3. Только профессиональное использование</h2>
+  <p>Сервис предназначен исключительно для профессионалов iGaming-индустрии. Используя Сервис, вы подтверждаете, что:</p>
+  <ul>
+    <li>Вам исполнилось 18 лет</li>
+    <li>Вы используете Сервис в профессиональных целях</li>
+    <li>Вы не используете Сервис для непосредственного предоставления азартных услуг конечным потребителям</li>
+    <li>Вы соблюдаете все применимые законы и нормы в вашей юрисдикции</li>
+  </ul>
+
+  <h2>4. Ответственность за соответствие требованиям</h2>
+  <div class="warn-box">
+    <p>⚠️ <strong>Важно:</strong> Все конфигурации бонусов, требования по вейджеру, экономические модели и результаты аудита соответствия, сгенерированные BonusEngine, предоставляются как отправная точка для профессиональной проверки — не как окончательное регуляторное руководство.</p>
+  </div>
+  <p>Вы несёте полную ответственность за:</p>
+  <ul>
+    <li>Проверку соответствия сгенерированных конфигураций условиям вашей игровой лицензии (MGA, UKGC, Кюрасао и др.)</li>
+    <li>Проверку всех AI-текстов перед их отправкой игрокам</li>
+    <li>Соответствие минимальных депозитов, вейджерных требований и лимитов бонусов регуляторным требованиям вашей юрисдикции</li>
+    <li>Самостоятельную оценку ответственной игры перед запуском любой кампании</li>
+  </ul>
+  <p>BonusEngine не предоставляет юридических, регуляторных или финансовых консультаций.</p>
+
+  <h2>5. AI-сгенерированный контент</h2>
+  <p>BonusEngine использует большие языковые модели (Claude от Anthropic) для генерации маркетинговых текстов, механик кампаний и рекомендаций по аудиту. Вы признаёте, что:</p>
+  <ul>
+    <li>AI-контент может содержать ошибки, неточности или устаревшую регуляторную информацию</li>
+    <li>Все AI-результаты должны быть проверены квалифицированным специалистом перед использованием в боевой среде</li>
+    <li>BonusEngine не несёт ответственности за последствия использования непроверенного AI-контента</li>
+  </ul>
+
+  <h2>6. Допустимое использование</h2>
+  <p>Вы соглашаетесь не:</p>
+  <ul>
+    <li>Использовать Сервис для генерации контента нелицензированных азартных операций</li>
+    <li>Пытаться извлечь, декомпилировать или воспроизвести бизнес-логику или AI-промпты</li>
+    <li>Использовать автоматизированные скрипты или боты для чрезмерных API-запросов</li>
+    <li>Перепродавать или сублицензировать доступ к Сервису без письменного разрешения</li>
+  </ul>
+
+  <h2>7. Интеллектуальная собственность</h2>
+  <p>Платформа BonusEngine, включая бизнес-логику, экономические модели, дизайн интерфейса и код, является собственностью правообладателя. Вы сохраняете право собственности на конфигурации кампаний и маркетинговые тексты, созданные с помощью Сервиса.</p>
+
+  <h2>8. Бета-версия и ограничение ответственности</h2>
+  <p>Сервис предоставляется <strong>«как есть»</strong> в период бета-тестирования без каких-либо явных или подразумеваемых гарантий.</p>
+  <p>BonusEngine не несёт ответственности за:</p>
+  <ul>
+    <li>Ошибки в конфигурациях бонусов, экономических моделях или аудите соответствия</li>
+    <li>Финансовые потери от кампаний, настроенных с помощью Сервиса</li>
+    <li>Регуляторные штрафы, возникшие в результате использования сгенерированного контента</li>
+    <li>Перебои в работе Сервиса, потерю данных или недоступность API</li>
+  </ul>
+
+  <h2>9. Конфиденциальность</h2>
+  <p>Использование Сервиса также регулируется нашей <a href="/privacy">Политикой конфиденциальности</a>.</p>
+
+  <h2>10. Изменения условий</h2>
+  <p>Мы можем обновлять настоящие Условия в любое время. Продолжение использования Сервиса после внесения изменений означает принятие обновлённых Условий.</p>
+
+  <h2>11. Контакты</h2>
+  <p>По вопросам об условиях использования: <a href="mailto:hello@bonusengine.io">hello@bonusengine.io</a></p>
+</div>
+</div>
+
+<footer>
+  <a href="/">← Home</a>
+  <a href="/privacy">Privacy Policy</a>
+  <a href="/terms">Terms of Service</a>
+  <a href="mailto:hello@bonusengine.io">hello@bonusengine.io</a>
+  <p style="margin-top:12px">© 2025 BonusEngine. All rights reserved.</p>
+</footer>
+
+<script>
+let _lang = 'en';
+function setLang(lang) {
+  _lang = lang;
+  try { localStorage.setItem('bonusLang', lang); } catch(e) {}
+  document.querySelectorAll('[data-lang]').forEach(el => {
+    el.classList.toggle('active', el.getAttribute('data-lang') === lang);
+  });
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent === lang.toUpperCase());
+  });
+  document.getElementById('back-label').textContent = lang === 'ru' ? 'На главную' : 'Back to Home';
+  document.title = lang === 'ru' ? 'Условия использования — BonusEngine' : 'Terms of Service — BonusEngine';
+}
+(function() {
+  try { const s = localStorage.getItem('bonusLang'); if (s === 'ru') { setLang('ru'); return; } } catch(e) {}
+  setLang('en');
+})();
+</script>
+</body>
+</html>

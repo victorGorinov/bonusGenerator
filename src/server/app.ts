@@ -41,6 +41,8 @@ const httpLogger = (_pinoHttp as unknown as (opts: unknown) => RequestHandler)({
 app.use(httpLogger);
 app.use(express.json({ limit: '64kb' }));
 app.get('/generator.html', (_req, res) => res.redirect(301, '/campaign-generator.html'));
+app.get('/privacy',        (_req, res) => res.sendFile(path.join(__dirname, '../../public/privacy.html')));
+app.get('/terms',          (_req, res) => res.sendFile(path.join(__dirname, '../../public/terms.html')));
 app.use(express.static(path.join(__dirname, '../../public')));
 
 app.use('/api',          generateRoutes);

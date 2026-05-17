@@ -758,12 +758,24 @@
   <div class="container footer-inner">
     <div class="footer-copy">© 2025 BonusEngine. <span data-i18n="footer_rights">All rights reserved.</span></div>
     <div class="footer-links">
-      <a href="#" data-i18n="footer_privacy">Privacy</a>
-      <a href="#" data-i18n="footer_terms">Terms</a>
+      <a href="/privacy" data-i18n="footer_privacy">Privacy</a>
+      <a href="/terms" data-i18n="footer_terms">Terms</a>
       <a href="mailto:hello@bonusengine.io">hello@bonusengine.io</a>
     </div>
   </div>
 </footer>
+
+<!-- ════ COOKIE CONSENT BANNER ════ -->
+<div id="cookie-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#0f1420;border-top:1px solid #1e2740;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;box-shadow:0 -8px 32px rgba(0,0,0,.5)">
+  <div style="flex:1;min-width:260px">
+    <p style="font-size:13px;color:#e8eaf0;margin:0 0 4px;font-weight:600" data-i18n="cookie_title">We use cookies</p>
+    <p style="font-size:12px;color:#8892a4;margin:0;line-height:1.5" data-i18n="cookie_text">We use only functional storage (language preference) to improve your experience. No tracking or advertising cookies. <a href="/privacy" style="color:#4f6ef7;text-decoration:none" data-i18n="cookie_link">Privacy Policy</a></p>
+  </div>
+  <div style="display:flex;gap:10px;flex-shrink:0">
+    <button onclick="cookieDecline()" style="padding:8px 18px;background:rgba(255,255,255,.06);color:#8892a4;border:1px solid #1e2740;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit" data-i18n="cookie_decline">Decline</button>
+    <button onclick="cookieAccept()" style="padding:8px 18px;background:linear-gradient(135deg,#4f6ef7,#7c3aed);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit" data-i18n="cookie_accept">Accept</button>
+  </div>
+</div>
 
 <script>
 // ════ I18N ════
@@ -842,6 +854,11 @@ const LANG = {
     su_note: '🔒 No spam. Unsubscribe anytime. GDPR compliant.',
     footer_rights: 'All rights reserved.',
     footer_privacy: 'Privacy', footer_terms: 'Terms',
+    cookie_title: 'We use cookies',
+    cookie_text: 'We use only functional storage (language preference) to improve your experience. No tracking or advertising cookies.',
+    cookie_link: 'Privacy Policy',
+    cookie_decline: 'Decline',
+    cookie_accept: 'Accept',
     demo_h: 'Try the AI Generator — Right Now',
     demo_p: 'Pick a scenario, set your geo and budget — get a full campaign with mechanics, channel texts, and compliance audit in under 2 minutes. No login required.',
     demo_btn: '🤖 Launch AI Generator',
@@ -921,6 +938,11 @@ const LANG = {
     su_note: '🔒 Без спама. Отписка в любое время. Соответствие GDPR.',
     footer_rights: 'Все права защищены.',
     footer_privacy: 'Конфиденциальность', footer_terms: 'Условия',
+    cookie_title: 'Мы используем cookies',
+    cookie_text: 'Мы используем только функциональное хранилище (языковые настройки) для улучшения работы. Без отслеживания и рекламных куки.',
+    cookie_link: 'Политика конфиденциальности',
+    cookie_decline: 'Отказаться',
+    cookie_accept: 'Принять',
     demo_h: 'Попробуйте AI-генератор прямо сейчас',
     demo_p: 'Выберите сценарий, задайте гео и бюджет — получите полную кампанию с механикой, текстами для каналов и аудитом за 2 минуты. Без регистрации.',
     demo_btn: '🤖 Запустить AI-генератор',
@@ -996,13 +1018,35 @@ async function handleSignup(e) {
   }
 }
 
+// ════ COOKIE CONSENT ════
+function cookieAccept() {
+  try { localStorage.setItem('cookieConsent', 'accepted'); } catch(e) {}
+  document.getElementById('cookie-banner').style.display = 'none';
+}
+function cookieDecline() {
+  try { localStorage.setItem('cookieConsent', 'declined'); } catch(e) {}
+  document.getElementById('cookie-banner').style.display = 'none';
+}
+function initCookieBanner() {
+  try {
+    const consent = localStorage.getItem('cookieConsent');
+    if (!consent) {
+      setTimeout(() => {
+        const banner = document.getElementById('cookie-banner');
+        if (banner) banner.style.display = 'flex';
+      }, 1200);
+    }
+  } catch(e) {}
+}
+
 // ════ INIT ════
 (function() {
   try {
     const saved = localStorage.getItem('bonusLang');
-    if (saved && LANG[saved]) { setLang(saved); return; }
-  } catch(e) {}
-  setLang('en');
+    if (saved && LANG[saved]) { setLang(saved); }
+    else setLang('en');
+  } catch(e) { setLang('en'); }
+  initCookieBanner();
 })();
 
 // Intersection Observer for subtle entrance animations
