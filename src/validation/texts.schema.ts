@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const TextsSchema = z.object({
   scenario:     z.object({ lbl: z.string().max(200).optional() }).optional(),
-  mechanic:     z.record(z.string(), z.unknown()).optional(),
+  mechanic:     z.record(z.string(), z.unknown()).nullable().optional(),
   mechanicType: z.string().max(20).optional(),
   params: z.object({
     geo:     z.string().length(2),

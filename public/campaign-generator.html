@@ -899,7 +899,7 @@ function runProgress() {
   })
   .then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(e)))
   .then(data => { draft._apiResult = data; })
-  .catch(err  => { draft._apiResult = { error: String(err?.error || err) }; });
+  .catch(err  => { draft._apiResult = { error: err?.message || err?.error || String(err) }; });
 
   let i = 0;
   (function tick() {
@@ -1140,7 +1140,7 @@ function loadStep4() {
   .catch(err => {
     document.getElementById('s4t-loading').style.display = 'none';
     const el = document.getElementById('s4t-error');
-    el.textContent = '⚠️ Ошибка генерации текстов: ' + (err?.error || String(err));
+    el.textContent = '⚠️ Ошибка генерации текстов: ' + (err?.message || err?.error || String(err));
     el.style.display = '';
   });
 
@@ -1154,7 +1154,7 @@ function loadStep4() {
   .catch(err => {
     document.getElementById('s4a-loading').style.display = 'none';
     const el = document.getElementById('s4a-error');
-    el.textContent = '⚠️ Ошибка аудита: ' + (err?.error || String(err));
+    el.textContent = '⚠️ Ошибка аудита: ' + (err?.message || err?.error || String(err));
     el.style.display = '';
   });
 
