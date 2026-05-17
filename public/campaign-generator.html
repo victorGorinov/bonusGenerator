@@ -1017,7 +1017,7 @@ function renderMechanicResults(data) {
      </ul>`;
 
   // Alternatives card
-  renderAltCard(data.alternatives, data);
+  renderAltCard(localizedAlts(data), data);
 
   // Econ card
   const E = data.econ;
@@ -1035,6 +1035,10 @@ function renderMechanicResults(data) {
      <div class="mech-row"><span class="mr-l">${t('ec_ltv')}</span><span class="mr-v">~$${E.ltv3}</span></div>
      <div class="mech-row"><span class="mr-l">${t('ec_roi')}</span><span class="mr-v" style="color:${E.roi3>0?'#10b981':'#EF4444'}">${E.roi3}%</span></div>
      <div class="mech-row" style="border-bottom:none"><span class="mr-l">${t('ec_verdict')}</span><span class="mr-v" style="color:${col};font-weight:700">${vLbl[E.verdictKey]||'—'}</span></div>`;
+}
+
+function localizedAlts(data) {
+  return (currentLang === 'en' ? data.alternativesEn : data.alternativesRu) || data.alternatives || [];
 }
 
 function renderAltCard(alts, data) {
@@ -1073,7 +1077,7 @@ function switchMechanic(type) {
     `<div class="rc-title">${t('rc_mech')}</div>
      ${mechRows(mech, type, data)}`;
 
-  renderAltCard((data.alternatives || []).filter(a => a.type !== type), data);
+  renderAltCard(localizedAlts(data).filter(a => a.type !== type), data);
 }
 
 // ── STEP 4 ────────────────────────────────────────────────────────────────────

@@ -66,18 +66,30 @@ export function campaignExplanation(scenarioId: string, mechanicType: string, cf
   return [m1, m2, `Параметры адаптированы под регион ${regStr} и лицензионные требования`, wStr];
 }
 
-export function campaignAlternatives(cfg: BonusCfg, requestedTypes: string[] = []): Array<Record<string, unknown>> {
+export function campaignAlternatives(cfg: BonusCfg, requestedTypes: string[] = [], lang = 'ru'): Array<Record<string, unknown>> {
   const cur  = cfg['cur'] as string;
   const allM = cfg as Record<string, Record<string, unknown>>;
   const excluded = new Set(requestedTypes);
-  const info: Record<string, (m: Record<string, unknown>) => Record<string, unknown>> = {
-    welcome:  m => ({ icon:'💰', name:`1-й депозит ${m['pct'] || 100}% до ${m['maxB'] || '?'} ${m['cur'] || cur}`, desc:'Бонус на первый депозит — максимизирует конверсию' }),
-    ndb:      m => ({ icon:'🎁', name:`Welcome ${m['fs'] || m['amt'] || 30}${m['fs'] ? ' FS' : ''}`, desc:'Welcome-бонус без депозита при регистрации' }),
-    reload:   m => ({ icon:'🔄', name:`Reload ${m['pct'] || 50}% до ${m['maxB'] || '?'} ${m['cur'] || cur}`, desc:'Еженедельный бонус для удержания' }),
-    dep2:     m => ({ icon:'💰', name:`2-й депозит ${m['pct'] || 75}%`, desc:'Фиксирует игровую привычку в 1-ю неделю' }),
-    dep3:     m => ({ icon:'🎁', name:`3-й депозит ${m['pct'] || 50}%`, desc:'Завершает депозитную серию' }),
-    cashback: m => ({ icon:'💳', name:`Cashback ${m['pct'] || 10}%`, desc:'Возврат от потерь без вейджера' }),
-  };
+  const isEn = lang === 'en';
+
+  const info: Record<string, (m: Record<string, unknown>) => Record<string, unknown>> = isEn
+    ? {
+        welcome:  m => ({ icon:'💰', name:`1st Deposit ${m['pct'] || 100}% up to ${m['maxB'] || '?'} ${m['cur'] || cur}`, desc:'Match deposit bonus — maximises conversion' }),
+        ndb:      m => ({ icon:'🎁', name:`Welcome ${m['fs'] || m['amt'] || 30}${m['fs'] ? ' FS' : ''}`, desc:'No-deposit welcome bonus at registration' }),
+        reload:   m => ({ icon:'🔄', name:`Reload ${m['pct'] || 50}% up to ${m['maxB'] || '?'} ${m['cur'] || cur}`, desc:'Weekly retention bonus' }),
+        dep2:     m => ({ icon:'💰', name:`2nd Deposit ${m['pct'] || 75}%`, desc:'Locks in play habit in week 1' }),
+        dep3:     m => ({ icon:'🎁', name:`3rd Deposit ${m['pct'] || 50}%`, desc:'Completes the deposit series' }),
+        cashback: m => ({ icon:'💳', name:`Cashback ${m['pct'] || 10}%`, desc:'Loss rebate with no wagering' }),
+      }
+    : {
+        welcome:  m => ({ icon:'💰', name:`1-й депозит ${m['pct'] || 100}% до ${m['maxB'] || '?'} ${m['cur'] || cur}`, desc:'Бонус на первый депозит — максимизирует конверсию' }),
+        ndb:      m => ({ icon:'🎁', name:`Welcome ${m['fs'] || m['amt'] || 30}${m['fs'] ? ' FS' : ''}`, desc:'Welcome-бонус без депозита при регистрации' }),
+        reload:   m => ({ icon:'🔄', name:`Reload ${m['pct'] || 50}% до ${m['maxB'] || '?'} ${m['cur'] || cur}`, desc:'Еженедельный бонус для удержания' }),
+        dep2:     m => ({ icon:'💰', name:`2-й депозит ${m['pct'] || 75}%`, desc:'Фиксирует игровую привычку в 1-ю неделю' }),
+        dep3:     m => ({ icon:'🎁', name:`3-й депозит ${m['pct'] || 50}%`, desc:'Завершает депозитную серию' }),
+        cashback: m => ({ icon:'💳', name:`Cashback ${m['pct'] || 10}%`, desc:'Возврат от потерь без вейджера' }),
+      };
+
   return Object.entries(info)
     .filter(([t]) => !excluded.has(t) && allM[t])
     .map(([t, fn]) => ({ ...fn(allM[t]), type: t }))
