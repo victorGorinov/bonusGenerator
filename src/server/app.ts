@@ -39,6 +39,16 @@ const httpLogger = (_pinoHttp as unknown as (opts: unknown) => RequestHandler)({
   autoLogging: { ignore: (req: { url?: string }) => req.url === '/api/health' },
 });
 app.use(httpLogger);
+
+if (process.env.NODE_ENV === 'staging') {
+  app.use((_req, res, next) => {
+    res.setHeader('X-Environment', 'staging');
+    // Equivalent to <meta name="robots" content="noindex"> — prevents search engine indexing
+    res.setHeader('X-Robots-Tag', 'noindex');
+    next();
+  });
+}
+
 app.use(express.json({ limit: '64kb' }));
 app.get('/generator.html', (_req, res) => res.redirect(301, '/campaign-generator.html'));
 app.get('/privacy',        (_req, res) => res.sendFile(path.join(__dirname, '../../public/privacy.html')));
