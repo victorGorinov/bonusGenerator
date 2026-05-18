@@ -272,8 +272,44 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .ct-row.clickable{cursor:pointer}
 .ct-row.clickable:hover .ct-name{color:var(--accent)}
 
+.econ-scenarios-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:16px 0}
+.econ-scenario-card{border-radius:12px;border:1px solid;padding:16px;position:relative}
+.econ-p10{background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.25)}
+.econ-p50{background:rgba(79,110,247,.08);border-color:rgba(79,110,247,.5);border-width:2px}
+.econ-p90{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.25)}
+.econ-scenario-badge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:rgba(79,110,247,.15);border:1px solid rgba(79,110,247,.3);border-radius:100px;padding:2px 10px;font-size:10px;font-weight:600;color:#4f6ef7;white-space:nowrap}
+.econ-scenario-header{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.econ-scenario-icon{font-size:14px}
+.econ-p10 .econ-scenario-icon,.econ-p10 .econ-scenario-label{color:#10b981}
+.econ-p50 .econ-scenario-icon,.econ-p50 .econ-scenario-label{color:#4f6ef7}
+.econ-p90 .econ-scenario-icon,.econ-p90 .econ-scenario-label{color:#f59e0b}
+.econ-scenario-label{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.econ-scenario-cost{font-size:24px;font-weight:800;margin-bottom:2px}
+.econ-p10 .econ-scenario-cost{color:#10b981}
+.econ-p50 .econ-scenario-cost{color:#4f6ef7}
+.econ-p90 .econ-scenario-cost{color:#f59e0b}
+.econ-scenario-sub{font-size:11px;color:#8892a4;margin-bottom:12px}
+.econ-scenario-rows{border-top:1px solid rgba(255,255,255,.08);padding-top:10px;display:flex;flex-direction:column;gap:6px}
+.econ-row{display:flex;justify-content:space-between;font-size:12px}
+.econ-row span:first-child{color:#8892a4}
+.econ-p10 .econ-row span:last-child{color:#10b981;font-weight:600}
+.econ-p50 .econ-row span:last-child{color:#4f6ef7;font-weight:600}
+.econ-p90 .econ-row span:last-child{color:#f59e0b;font-weight:600}
+.econ-scenario-note{margin-top:10px;font-size:11px;font-style:italic;line-height:1.4;color:#8892a4}
+.econ-range-wrap{background:rgba(255,255,255,.04);border:1px solid #1e2740;border-radius:10px;padding:14px 16px;margin-top:4px}
+.econ-range-label{font-size:11px;color:#8892a4;font-weight:600;margin-bottom:8px}
+.econ-range-track{height:8px;background:#1e2740;border-radius:100px;position:relative;overflow:hidden;margin-bottom:6px}
+.econ-range-track div{position:absolute;height:100%}
+.econ-range-track .rp10{background:rgba(16,185,129,.5);left:0}
+.econ-range-track .rp50{background:rgba(79,110,247,.5)}
+.econ-range-track .rp90{background:rgba(245,158,11,.5)}
+.econ-range-markers{display:flex;justify-content:space-between;font-size:11px;color:#8892a4}
+.econ-range-markers .mp10{color:#10b981}
+.econ-range-markers .mp50{color:#4f6ef7}
+.econ-range-markers .mp90{color:#f59e0b}
 @media(max-width:900px){.params-grid,.res-grid,.audit-grid,.exp-layout{grid-template-columns:1fr}}
 @media(max-width:680px){.sidebar{display:none}.main{margin-left:0}.ct-hd,.ct-row{grid-template-columns:1fr 80px 70px}}
+@media(max-width:600px){.econ-scenarios-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -555,10 +591,10 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
               <div class="res-card" id="altCard">
                 <div class="rc-title">Альтернативы</div>
               </div>
-              <div class="res-card" id="econCard" style="margin-top:14px">
-                <div class="rc-title">Экономика P50</div>
-              </div>
             </div>
+          </div>
+          <div class="res-card" id="econCard" style="margin-top:14px">
+            <div class="rc-title" data-i18n="rc_econ">Экономика</div>
           </div>
           <div class="wiz-foot">
             <div class="wiz-foot-l"><button class="btn btn-outline" onclick="goStep(2)" data-i18n="btn_back">← Назад</button><span class="step-ctr" data-step="3">Шаг 3 из 5</span></div>
@@ -945,6 +981,78 @@ function runProgress() {
 }
 
 // ── STEP 3 RENDER ─────────────────────────────────────────────────────────────
+function renderEconScenarios(econ, pl, dep, cur, lang) {
+  const isRu = lang === 'ru';
+  const fmt  = v => cur + Math.round(v).toLocaleString();
+  const pct  = v => (v * 100).toFixed(1) + '%';
+
+  const p10cost = econ.sP10.cost;
+  const p50cost = econ.sP50.cost;
+  const p90cost = econ.sP90.cost;
+  const base    = pl * dep;
+  const p10r    = p10cost / base;
+  const p50r    = p50cost / base;
+  const p90r    = p90cost / base;
+
+  const scale = v => Math.min(v * 200, 100);
+  const p10w  = scale(p10r);
+  const p50w  = scale(p50r - p10r);
+  const p90w  = scale(p90r - p50r);
+
+  const L = isRu
+    ? { p10:'P10 · Лучший сценарий', p50:'P50 · Ожидаемый', p90:'P90 · Худший сценарий',
+        badge:'Базовый', perPlayer:'На игрока', ratio:'Cost ratio', wagerComp:'Отыгрыш',
+        total:'общие затраты', range:'Диапазон cost ratio',
+        n10:'Игроки конвертируются плохо — низкий процент отыгрыша',
+        n50:'Реалистичная медиана — используйте для планирования бюджета',
+        n90:'Кампания выстреливает — установите здесь потолок бюджета' }
+    : { p10:'P10 · Best case', p50:'P50 · Expected', p90:'P90 · Worst case',
+        badge:'Base scenario', perPlayer:'Per player', ratio:'Cost ratio', wagerComp:'Wager completion',
+        total:'total campaign cost', range:'Cost ratio range',
+        n10:'Players convert poorly — low bonus completion rate',
+        n50:'Realistic median — use this for budget planning',
+        n90:'Campaign over-performs — set budget ceiling here' };
+
+  const card = (cls, icon, label, cost, ratio, note, badge) => `
+    <div class="econ-scenario-card ${cls}">
+      ${badge ? `<div class="econ-scenario-badge">${L.badge}</div>` : ''}
+      <div class="econ-scenario-header">
+        <span class="econ-scenario-icon">${icon}</span>
+        <span class="econ-scenario-label">${label}</span>
+      </div>
+      <div class="econ-scenario-cost">${fmt(cost)}</div>
+      <div class="econ-scenario-sub">${L.total}</div>
+      <div class="econ-scenario-rows">
+        <div class="econ-row"><span>${L.perPlayer}</span><span>${fmt(cost / pl)}</span></div>
+        <div class="econ-row"><span>${L.ratio}</span><span>${pct(ratio)}</span></div>
+        <div class="econ-row"><span>${L.wagerComp}</span><span>~${Math.round(ratio * 60)}%</span></div>
+      </div>
+      <div class="econ-scenario-note">${note}</div>
+    </div>`;
+
+  return `
+    <div class="econ-scenarios-grid">
+      ${card('econ-p10', '↘', L.p10, p10cost, p10r, L.n10, false)}
+      ${card('econ-p50', '→', L.p50, p50cost, p50r, L.n50, true)}
+      ${card('econ-p90', '↗', L.p90, p90cost, p90r, L.n90, false)}
+    </div>
+    <div class="econ-range-wrap">
+      <div class="econ-range-label">${L.range}</div>
+      <div class="econ-range-track">
+        <div class="rp10" style="width:${p10w}%"></div>
+        <div class="rp50" style="left:${p10w}%; width:${p50w}%"></div>
+        <div class="rp90" style="left:${scale(p50r)}%; width:${p90w}%"></div>
+      </div>
+      <div class="econ-range-markers">
+        <span>0%</span>
+        <span class="mp10">P10 ${pct(p10r)}</span>
+        <span class="mp50">P50 ${pct(p50r)}</span>
+        <span class="mp90">P90 ${pct(p90r)}</span>
+        <span>50%</span>
+      </div>
+    </div>`;
+}
+
 function mechRows(mech, type, data) {
   const cur = data.cur;
   const wager = data.wager;
@@ -1040,21 +1148,22 @@ function renderMechanicResults(data) {
   renderAltCard(localizedAlts(data), data);
 
   // Econ card
-  const E = data.econ;
+  const E   = data.econ;
   const cur = data.cur;
-  const fmtK = n => n >= 1000 ? Math.round(n/1000) + 'k' : String(Math.round(n));
-  const vCol = { verdict_cheap:'#10b981', verdict_ok:'#10b981', verdict_warn:'#F59E0B', verdict_high:'#EF4444' };
-  const vLbl = { verdict_cheap:t('vrd_cheap'), verdict_ok:t('vrd_ok'), verdict_warn:t('vrd_warn'), verdict_high:t('vrd_high') };
-  const col  = vCol[E.verdictKey] || 'var(--muted)';
+  if (!E?.sP10?.cost) {
+    // fallback for legacy responses without P10/P90
+    const fmtK = n => n >= 1000 ? Math.round(n/1000)+'k' : String(Math.round(n));
+    const vCol = { verdict_cheap:'#10b981', verdict_ok:'#10b981', verdict_warn:'#F59E0B', verdict_high:'#EF4444' };
+    const col  = vCol[E?.verdictKey] || 'var(--muted)';
+    document.getElementById('econCard').innerHTML =
+      `<div class="rc-title">${t('rc_econ')}</div>
+       <div class="mech-row"><span class="mr-l">${t('ec_cost')}</span><span class="mr-v">~${fmtK(E?.sP50?.cost||0)} ${cur}</span></div>
+       <div class="mech-row" style="border-bottom:none"><span class="mr-l">Cost ratio</span><span class="mr-v" style="color:${col}">${((E?.costRatio||0)*100).toFixed(1)}%</span></div>`;
+    return;
+  }
   document.getElementById('econCard').innerHTML =
     `<div class="rc-title">${t('rc_econ')}</div>
-     <div class="mech-row"><span class="mr-l">${t('ec_cost')}</span><span class="mr-v">~${fmtK(E.sP50?.cost||0)} ${cur}</span></div>
-     <div class="mech-row"><span class="mr-l">Cost ratio</span><span class="mr-v" style="color:${col}">${((E.costRatio||0)*100).toFixed(1)}%</span></div>
-     <div class="mech-row"><span class="mr-l">${t('ec_arpu')}</span><span class="mr-v">~$${E.arpu}</span></div>
-     <div class="mech-row"><span class="mr-l">CAC</span><span class="mr-v">~$${E.cac}</span></div>
-     <div class="mech-row"><span class="mr-l">${t('ec_ltv')}</span><span class="mr-v">~$${E.ltv3}</span></div>
-     <div class="mech-row"><span class="mr-l">${t('ec_roi')}</span><span class="mr-v" style="color:${E.roi3>0?'#10b981':'#EF4444'}">${E.roi3}%</span></div>
-     <div class="mech-row" style="border-bottom:none"><span class="mr-l">${t('ec_verdict')}</span><span class="mr-v" style="color:${col};font-weight:700">${vLbl[E.verdictKey]||'—'}</span></div>`;
+     ${renderEconScenarios(E, data.pl ?? E.pl, data.dep, cur, currentLang)}`;
 }
 
 function localizedAlts(data) {
@@ -1837,7 +1946,7 @@ const I18N = {
     prog_1:'Анализ сценария', prog_2:'Подбор механики бонуса', prog_3:'Генерация условий',
     prog_4:'Создание текстов', prog_5:'Проверка на риски',
     rc_mech:'Рекомендованная механика', rc_mechs:'Механики кампании',
-    rc_why:'Почему эта механика', rc_alts:'Альтернативы', rc_econ:'Экономика P50',
+    rc_why:'Почему эта механика', rc_alts:'Альтернативы', rc_econ:'Экономика кампании',
     rc_audit:'Чек-лист проверки', rc_recs:'Рекомендации',
     // mechRows labels
     mr_na:'Механика недоступна для данного региона',
@@ -1935,7 +2044,7 @@ const I18N = {
     prog_1:'Analysing scenario', prog_2:'Selecting bonus mechanic', prog_3:'Generating conditions',
     prog_4:'Creating texts', prog_5:'Checking for risks',
     rc_mech:'Recommended Mechanic', rc_mechs:'Campaign Mechanics',
-    rc_why:'Why This Mechanic', rc_alts:'Alternatives', rc_econ:'Economics P50',
+    rc_why:'Why This Mechanic', rc_alts:'Alternatives', rc_econ:'Campaign Economics',
     rc_audit:'Compliance Checklist', rc_recs:'Recommendations',
     // mechRows labels
     mr_na:'Mechanic not available for this region',
