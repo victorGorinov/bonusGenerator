@@ -35,7 +35,7 @@
 
   /* ── TYPOGRAPHY ── */
   h1, h2, h3, h4 { font-weight: 700; line-height: 1.2; }
-  h1 { font-size: clamp(2rem, 5vw, 3.5rem); }
+  h1 { font-size: clamp(2.8rem, 6.2vw, 4.8rem); line-height: 1.1; letter-spacing: -.02em; }
   h2 { font-size: clamp(1.5rem, 3vw, 2.25rem); }
   h3 { font-size: 1.15rem; }
 
@@ -49,8 +49,8 @@
 
   /* ── LAYOUT ── */
   .container { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
-  .section { padding: 96px 0; }
-  .section--tight { padding: 64px 0; }
+  .section { padding: 120px 0; }
+  .section--tight { padding: 80px 0; }
 
   /* ── NAV ── */
   nav {
@@ -104,9 +104,20 @@
   .btn-lg { padding: 16px 36px; font-size: 1rem; border-radius: 12px; }
   .btn-gold {
     background: linear-gradient(135deg, #f59e0b, #d97706);
-    color: #000; font-weight: 700; box-shadow: 0 4px 20px rgba(245,158,11,.4);
+    color: #000; font-weight: 700;
+    box-shadow: 0 4px 28px rgba(245,158,11,.5), 0 2px 8px rgba(0,0,0,.3);
+    animation: ctaPulse 6s ease-in-out infinite;
   }
-  .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(245,158,11,.55); }
+  .btn-gold:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 40px rgba(245,158,11,.65), 0 0 60px rgba(245,158,11,.2);
+    animation: none;
+  }
+  @keyframes ctaPulse {
+    0%, 70%, 100% { box-shadow: 0 4px 24px rgba(245,158,11,.45), 0 0 0 0 rgba(245,158,11,.0); }
+    78%  { box-shadow: 0 4px 24px rgba(245,158,11,.55), 0 0 48px rgba(245,158,11,.25); }
+    86%  { box-shadow: 0 4px 24px rgba(245,158,11,.45), 0 0 0 0 rgba(245,158,11,.0); }
+  }
 
   /* ── HERO ── */
   .hero {
@@ -116,8 +127,42 @@
   .hero-bg {
     position: absolute; inset: 0; pointer-events: none;
     background:
-      radial-gradient(ellipse 80% 60% at 20% 40%, rgba(79,110,247,.12) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 50% at 80% 60%, rgba(124,58,237,.1) 0%, transparent 60%);
+      radial-gradient(ellipse 70% 55% at 15% 45%, rgba(79,110,247,.16) 0%, transparent 55%),
+      radial-gradient(ellipse 55% 45% at 85% 55%, rgba(124,58,237,.13) 0%, transparent 55%),
+      radial-gradient(ellipse 40% 30% at 50% 100%, rgba(79,110,247,.07) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 32% 52%, rgba(79,110,247,.06) 0%, transparent 65%);
+  }
+  /* Slow-drifting glow orbs */
+  .hero-orb {
+    position: absolute; pointer-events: none; border-radius: 50%;
+    filter: blur(80px);
+  }
+  .hero-orb-1 {
+    width: 600px; height: 400px; top: -80px; left: -100px;
+    background: radial-gradient(ellipse, rgba(79,110,247,.1) 0%, transparent 70%);
+    animation: orbDrift1 18s ease-in-out infinite alternate;
+  }
+  .hero-orb-2 {
+    width: 500px; height: 350px; bottom: -60px; right: -80px;
+    background: radial-gradient(ellipse, rgba(124,58,237,.09) 0%, transparent 70%);
+    animation: orbDrift2 22s ease-in-out infinite alternate;
+  }
+  .hero-orb-3 {
+    width: 360px; height: 280px; top: 40%; left: 38%;
+    background: radial-gradient(ellipse, rgba(245,158,11,.05) 0%, transparent 70%);
+    animation: orbDrift3 28s ease-in-out infinite alternate;
+  }
+  @keyframes orbDrift1 {
+    from { transform: translate(0, 0) scale(1); }
+    to   { transform: translate(80px, 40px) scale(1.15); }
+  }
+  @keyframes orbDrift2 {
+    from { transform: translate(0, 0) scale(1); }
+    to   { transform: translate(-60px, -50px) scale(1.2); }
+  }
+  @keyframes orbDrift3 {
+    from { transform: translate(0, 0) scale(1) rotate(0deg); }
+    to   { transform: translate(-40px, 30px) scale(1.1) rotate(10deg); }
   }
   .hero-grid {
     position: absolute; inset: 0; pointer-events: none; opacity: .03;
@@ -140,10 +185,10 @@
   @keyframes pulse {
     0%, 100% { opacity: 1; } 50% { opacity: .4; }
   }
-  .hero h1 { margin-bottom: 24px; }
+  .hero h1 { margin-top: 8px; margin-bottom: 32px; }
   .hero-sub {
-    font-size: 1.15rem; color: var(--muted); max-width: 580px;
-    margin-bottom: 44px; line-height: 1.75;
+    font-size: 1.1rem; color: #5e6d85; max-width: 560px;
+    margin-bottom: 44px; line-height: 1.8;
   }
   .hero-ctas { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 56px; }
   .hero-stats {
@@ -196,9 +241,9 @@
   .feature-card:hover { border-color: rgba(79,110,247,.4); transform: translateY(-3px); box-shadow: 0 8px 32px rgba(79,110,247,.12); }
   .feature-card:hover::before { opacity: 1; }
   .feature-icon {
-    width: 48px; height: 48px; border-radius: 12px; margin-bottom: 18px;
+    width: 56px; height: 56px; border-radius: 14px; margin-bottom: 20px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 22px;
+    font-size: 26px;
   }
   .icon-blue { background: rgba(79,110,247,.15); }
   .icon-purple { background: rgba(124,58,237,.15); }
@@ -455,6 +500,158 @@
     font-size: 0.82rem; color: var(--muted); font-weight: 500;
   }
 
+  /* ── HERO TWO-COLUMN LAYOUT ── */
+  .hero-layout {
+    display: flex; align-items: center; gap: 56px;
+  }
+  .hero-layout .hero-content { flex: 1; min-width: 0; max-width: 620px; }
+
+  /* ── HERO MOCKUP CARD ── */
+  .hero-visual {
+    flex: 0 0 420px; max-width: 420px;
+    perspective: 1000px;
+    position: relative;
+  }
+  /* Glow halo behind card */
+  .hero-visual::before {
+    content: '';
+    position: absolute; inset: -40px;
+    background: radial-gradient(ellipse 80% 70% at 50% 50%,
+      rgba(79,110,247,.18) 0%, rgba(124,58,237,.1) 40%, transparent 70%);
+    filter: blur(24px);
+    pointer-events: none; z-index: 0;
+    animation: haloBreath 8s ease-in-out infinite alternate;
+  }
+  @keyframes haloBreath {
+    from { opacity: .7; transform: scale(1); }
+    to   { opacity: 1;  transform: scale(1.08); }
+  }
+  .mockup-card {
+    position: relative; z-index: 1;
+    background: rgba(22, 28, 45, 0.85);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(79,110,247,.22);
+    border-radius: 20px; overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,.55),
+                0 0 0 1px rgba(255,255,255,.04),
+                inset 0 1px 0 rgba(255,255,255,.06);
+    transform: perspective(900px) rotateY(-5deg) rotateX(2deg);
+    transition: transform .5s cubic-bezier(.23,1,.32,1), box-shadow .5s ease;
+    animation: floatCard 6s ease-in-out infinite;
+  }
+  .mockup-card:hover {
+    transform: perspective(900px) rotateY(0deg) rotateX(0deg) translateY(-6px);
+    box-shadow: 0 40px 100px rgba(0,0,0,.6),
+                0 0 0 1px rgba(79,110,247,.3),
+                inset 0 1px 0 rgba(255,255,255,.08);
+    animation: none;
+  }
+  @keyframes floatCard {
+    0%, 100% { transform: perspective(900px) rotateY(-4deg) rotateX(2deg) translateY(0); }
+    50% { transform: perspective(900px) rotateY(-4deg) rotateX(2deg) translateY(-8px); }
+  }
+  .mockup-card:hover { animation: none; }
+
+  .mockup-chrome {
+    background: var(--bg3); border-bottom: 1px solid var(--border);
+    padding: 12px 16px; display: flex; align-items: center; gap: 10px;
+  }
+  .mockup-dots { display: flex; gap: 6px; }
+  .mockup-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+  .mockup-dot-r { background: #ef4444; }
+  .mockup-dot-y { background: #f59e0b; }
+  .mockup-dot-g { background: #10b981; }
+  .mockup-url {
+    flex: 1; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 5px 10px;
+    font-size: 0.68rem; color: var(--muted); font-family: monospace;
+  }
+
+  .mockup-body { padding: 20px; }
+
+  /* Campaign slide */
+  .mockup-slide { display: none; }
+  .mockup-slide.active { display: block; animation: slideIn .45s ease; }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .mockup-geo-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .mockup-geo {
+    font-size: 0.75rem; font-weight: 700; color: var(--muted);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .mockup-lic-badge {
+    font-size: 0.65rem; font-weight: 700; padding: 2px 8px;
+    border-radius: 100px; letter-spacing: .04em;
+  }
+  .mockup-mechanic {
+    font-size: 0.97rem; font-weight: 700; margin-bottom: 12px;
+    line-height: 1.3;
+  }
+
+  .mockup-econ-row {
+    display: flex; gap: 8px; margin-bottom: 14px;
+  }
+  .mockup-econ-pill {
+    flex: 1; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 10px; text-align: center;
+  }
+  .mockup-econ-label {
+    font-size: 0.6rem; color: var(--muted); text-transform: uppercase;
+    letter-spacing: .05em; margin-bottom: 2px;
+  }
+  .mockup-econ-val {
+    font-size: 0.82rem; font-weight: 700;
+  }
+
+  .mockup-text-box {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px; margin-bottom: 12px;
+  }
+  .mockup-text-ch {
+    font-size: 0.62rem; font-weight: 700; color: var(--accent);
+    text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px;
+  }
+  .mockup-text-body {
+    font-size: 0.74rem; color: var(--muted); line-height: 1.5;
+  }
+
+  .mockup-checks { display: flex; gap: 6px; flex-wrap: wrap; }
+  .mockup-check {
+    font-size: 0.65rem; font-weight: 600; padding: 2px 8px;
+    border-radius: 100px; background: rgba(16,185,129,.1); color: #34d399;
+  }
+
+  /* Progress dots */
+  .mockup-progress {
+    display: flex; justify-content: center; gap: 6px;
+    padding: 10px 0 14px;
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
+  }
+  .mockup-prog-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--border); transition: background .3s;
+  }
+  .mockup-prog-dot.active { background: var(--accent); }
+
+  /* Generating pulse label */
+  .mockup-generating {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.68rem; color: var(--muted); margin-bottom: 12px;
+  }
+  .mockup-gen-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--success);
+    animation: pulse 1.4s infinite;
+  }
+
   /* ── EXAMPLES ── */
   .examples-section { background: var(--bg2); }
   .examples-grid {
@@ -513,6 +710,16 @@
   }
 
   /* ── RESPONSIVE ── */
+  @media (max-width: 960px) {
+    .hero-layout { flex-direction: column; gap: 40px; }
+    .hero-layout .hero-content { max-width: 100%; }
+    .hero-visual { flex: none; width: 100%; max-width: 480px; margin: 0 auto; }
+    .mockup-card { transform: none; animation: floatCard 6s ease-in-out infinite; }
+    @keyframes floatCard {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+  }
   @media (max-width: 680px) {
     .steps { flex-direction: column; }
     .steps::before { display: none; }
@@ -520,6 +727,10 @@
     .form-row { flex-direction: column; }
     .econ-cards { flex-direction: column; }
     .sticky-cta { display: block; }
+    .hero-visual { max-width: 100%; }
+    .hero { padding: 100px 0 60px; }
+    h1 { font-size: clamp(2.2rem, 8vw, 2.8rem); letter-spacing: -.01em; }
+    .hero-sub { max-width: 100%; }
   }
 </style>
 </head>
@@ -546,47 +757,192 @@
 <section class="hero">
   <div class="hero-bg"></div>
   <div class="hero-grid"></div>
+  <div class="hero-orb hero-orb-1"></div>
+  <div class="hero-orb hero-orb-2"></div>
+  <div class="hero-orb hero-orb-3"></div>
+  <canvas id="heroParticles" style="position:absolute;inset:0;pointer-events:none;opacity:.4"></canvas>
   <div class="container">
-    <div class="hero-content">
-      <div class="hero-badge">
-        <div class="hero-badge-dot"></div>
-        <span data-i18n="badge">Compliance-Ready Bonus Platform for iGaming</span>
-      </div>
-      <h1>
-        <span data-i18n="hero_h1a">Stop Configuring Bonuses in Spreadsheets.</span><br/>
-        <span class="grad" data-i18n="hero_h1b">AI Does It — Compliant, Costed, Ready to Start.</span>
-      </h1>
-      <p class="hero-sub" data-i18n="hero_sub">
-        Pick a scenario, set your geo — AI selects the right bonus mechanic, writes ready-to-send copy for 5 channels, models the cost, and flags compliance issues. Full campaign spec in under 2 minutes. No spreadsheets, no guesswork.
-      </p>
-      <div class="hero-ctas">
-        <a href="/campaign-generator.html" class="btn btn-gold btn-lg" data-i18n="hero_cta1">🤖 Generate My Campaign Free →</a>
-      </div>
-      <div class="trust-strip">
-        <div class="trust-item">⚡ <span data-i18n="tr1">Ready in 2 min</span></div>
-        <div class="trust-item">🔒 <span data-i18n="tr2">No signup required</span></div>
-        <div class="trust-item">✅ <span data-i18n="tr3">Free during beta</span></div>
-        <div class="trust-item">🌍 <span data-i18n="tr4">9 jurisdictions</span></div>
-      </div>
-      <div class="hero-stats">
-        <div class="stat-item">
-          <div class="stat-num">15+</div>
-          <div class="stat-label" data-i18n="stat1">CRM Scenarios</div>
+    <div class="hero-layout">
+
+      <!-- ── Left: Text ── -->
+      <div class="hero-content">
+        <div class="hero-badge">
+          <div class="hero-badge-dot"></div>
+          <span data-i18n="badge">Compliance-Ready Bonus Platform for iGaming</span>
         </div>
-        <div class="stat-item">
-          <div class="stat-num">5</div>
-          <div class="stat-label" data-i18n="stat2">AI Text Channels</div>
+        <h1>
+          <span data-i18n="hero_h1a">Stop Configuring Bonuses in Spreadsheets.</span><br/>
+          <span class="grad" data-i18n="hero_h1b">AI Does It — Compliant, Costed, Ready to Start.</span>
+        </h1>
+        <p class="hero-sub" data-i18n="hero_sub">
+          Pick a scenario, set your geo — AI selects the right bonus mechanic, writes ready-to-send copy for 5 channels, models the cost, and flags compliance issues. Full campaign spec in under 2 minutes. No spreadsheets, no guesswork.
+        </p>
+        <div class="hero-ctas">
+          <a href="/campaign-generator.html" class="btn btn-gold btn-lg" data-i18n="hero_cta1">🤖 Generate My Campaign Free →</a>
         </div>
-        <div class="stat-item">
-          <div class="stat-num">3</div>
-          <div class="stat-label" data-i18n="stat3">Cost Scenarios</div>
+        <div class="trust-strip">
+          <div class="trust-item">⚡ <span data-i18n="tr1">Ready in 2 min</span></div>
+          <div class="trust-item">🔒 <span data-i18n="tr2">No signup required</span></div>
+          <div class="trust-item">✅ <span data-i18n="tr3">Free during beta</span></div>
+          <div class="trust-item">🌍 <span data-i18n="tr4">9 jurisdictions</span></div>
         </div>
-        <div class="stat-item">
-          <div class="stat-num">&lt;2 min</div>
-          <div class="stat-label" data-i18n="stat4">Campaign Ready</div>
+        <div class="hero-stats">
+          <div class="stat-item">
+            <div class="stat-num">15+</div>
+            <div class="stat-label" data-i18n="stat1">CRM Scenarios</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num">5</div>
+            <div class="stat-label" data-i18n="stat2">AI Text Channels</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num">3</div>
+            <div class="stat-label" data-i18n="stat3">Cost Scenarios</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num">&lt;2 min</div>
+            <div class="stat-label" data-i18n="stat4">Campaign Ready</div>
+          </div>
         </div>
       </div>
-    </div>
+
+      <!-- ── Right: Animated product mockup ── -->
+      <div class="hero-visual">
+        <div class="mockup-card" id="heroMockup">
+
+          <!-- Browser chrome -->
+          <div class="mockup-chrome">
+            <div class="mockup-dots">
+              <span class="mockup-dot mockup-dot-r"></span>
+              <span class="mockup-dot mockup-dot-y"></span>
+              <span class="mockup-dot mockup-dot-g"></span>
+            </div>
+            <div class="mockup-url">bonusengine.app / campaign-generator</div>
+          </div>
+
+          <!-- Campaign slides -->
+          <div class="mockup-body">
+
+            <!-- Slide 1: EU / MGA First Deposit -->
+            <div class="mockup-slide active" id="mslide-0">
+              <div class="mockup-generating">
+                <div class="mockup-gen-dot"></div>
+                <span>AI generated · EU · First Deposit</span>
+              </div>
+              <div class="mockup-geo-row">
+                <div class="mockup-geo">🇪🇺 Europe · EUR</div>
+                <span class="mockup-lic-badge" style="background:rgba(79,110,247,.12);color:#a0b0ff">MGA</span>
+              </div>
+              <div class="mockup-mechanic">100% Welcome Bonus<br/>up to €200 + 30 Free Spins</div>
+              <div class="mockup-econ-row">
+                <div class="mockup-econ-pill">
+                  <div class="mockup-econ-label">Best case</div>
+                  <div class="mockup-econ-val" style="color:var(--success)">€1 840</div>
+                </div>
+                <div class="mockup-econ-pill">
+                  <div class="mockup-econ-label">Expected</div>
+                  <div class="mockup-econ-val" style="color:var(--accent)">€3 200</div>
+                </div>
+                <div class="mockup-econ-pill">
+                  <div class="mockup-econ-label">Worst case</div>
+                  <div class="mockup-econ-val" style="color:var(--gold)">€5 600</div>
+                </div>
+              </div>
+              <div class="mockup-text-box">
+                <div class="mockup-text-ch">📲 Push · 3 variants</div>
+                <div class="mockup-text-body">"Welcome! Claim your 100% bonus up to €200 + 30 free spins on your first deposit. Wagering 25×. T&Cs apply."</div>
+              </div>
+              <div class="mockup-checks">
+                <span class="mockup-check">✓ MGA compliant</span>
+                <span class="mockup-check">✓ Wager 25× set</span>
+                <span class="mockup-check">✓ Cost modeled</span>
+              </div>
+            </div>
+
+            <!-- Slide 2: LatAm / Reactivation -->
+            <div class="mockup-slide" id="mslide-1">
+              <div class="mockup-generating">
+                <div class="mockup-gen-dot"></div>
+                <span>AI generated · LatAm · Reactivation</span>
+              </div>
+              <div class="mockup-geo-row">
+                <div class="mockup-geo">🌎 Latin America · USD</div>
+                <span class="mockup-lic-badge" style="background:rgba(16,185,129,.12);color:#34d399">Offshore</span>
+              </div>
+              <div class="mockup-mechanic">50% Reload Bonus<br/>up to $100 · Dormant players</div>
+              <div class="mockup-econ-row">
+                <div class="mockup-econ-pill">
+                  <div class="mockup-econ-label">Best case</div>
+                  <div class="mockup-econ-val" style="color:var(--success)">$1 900</div>
+                </div>
+                <div class="mockup-econ-pill">
+                  <div class="mockup-econ-label">Expected</div>
+                  <div class="mockup-econ-val" style="color:var(--accent)">$3 700</div>
+                </div>
+                <div class="mockup-econ-pill">
+                  <div class="mockup-econ-label">Worst case</div>
+                  <div class="mockup-econ-val" style="color:var(--gold)">$6 400</div>
+                </div>
+              </div>
+              <div class="mockup-text-box">
+                <div class="mockup-text-ch">📧 Email · 3 variants</div>
+                <div class="mockup-text-body">"¡Te echamos de menos! Recarga ahora y obtén un 50% de bonificación hasta $100. ¡Vuelve a jugar hoy!"</div>
+              </div>
+              <div class="mockup-checks">
+                <span class="mockup-check">✓ ES localised</span>
+                <span class="mockup-check">✓ No wager cap</span>
+                <span class="mockup-check">✓ Cost modeled</span>
+              </div>
+            </div>
+
+            <!-- Slide 3: US Sweepstakes / VIP -->
+            <div class="mockup-slide" id="mslide-2">
+              <div class="mockup-generating">
+                <div class="mockup-gen-dot"></div>
+                <span>AI generated · US Sweepstakes · VIP Retention</span>
+              </div>
+              <div class="mockup-geo-row">
+                <div class="mockup-geo">🇺🇸 United States · SC</div>
+                <span class="mockup-lic-badge" style="background:rgba(245,158,11,.12);color:#f59e0b">Sweeps</span>
+              </div>
+              <div class="mockup-mechanic">20% Weekly Cashback<br/>+ 500 Sweepstakes Coins</div>
+              <div class="mockup-econ-row">
+                <div class="mockup-econ-pill">
+                  <div class="mockup-econ-label">Best case</div>
+                  <div class="mockup-econ-val" style="color:var(--success)">$2 800</div>
+                </div>
+                <div class="mockup-econ-pill">
+                  <div class="mockup-econ-label">Expected</div>
+                  <div class="mockup-econ-val" style="color:var(--accent)">$5 100</div>
+                </div>
+                <div class="mockup-econ-pill">
+                  <div class="mockup-econ-label">Worst case</div>
+                  <div class="mockup-econ-val" style="color:var(--gold)">$8 600</div>
+                </div>
+              </div>
+              <div class="mockup-text-box">
+                <div class="mockup-text-ch">💬 Popup · 3 variants</div>
+                <div class="mockup-text-body">"VIP reward: 20% cashback on your weekly play + 500 Sweeps Coins bonus. No purchase necessary. Void where prohibited."</div>
+              </div>
+              <div class="mockup-checks">
+                <span class="mockup-check">✓ Sweeps compliant</span>
+                <span class="mockup-check">✓ No-purchase rule</span>
+                <span class="mockup-check">✓ Cost modeled</span>
+              </div>
+            </div>
+
+            <!-- Progress dots -->
+            <div class="mockup-progress">
+              <div class="mockup-prog-dot active" id="mpd-0"></div>
+              <div class="mockup-prog-dot" id="mpd-1"></div>
+              <div class="mockup-prog-dot" id="mpd-2"></div>
+            </div>
+
+          </div><!-- /mockup-body -->
+        </div><!-- /mockup-card -->
+      </div><!-- /hero-visual -->
+
+    </div><!-- /hero-layout -->
   </div>
 </section>
 
@@ -1589,6 +1945,149 @@ if ('IntersectionObserver' in window) {
   document.querySelectorAll('.feature-card, .region-card, .audience-card, .step, .example-card, .lic-card')
     .forEach(el => obs.observe(el));
 }
+
+// ── Hero reveal (staggered fade-up) ──
+(function() {
+  const items = [
+    '.hero-badge',
+    '.hero h1',
+    '.hero-sub',
+    '.hero-ctas',
+    '.trust-strip',
+    '.hero-stats',
+    '.hero-visual'
+  ];
+  const style = document.createElement('style');
+  style.textContent = `
+    .hero-reveal { opacity: 0; transform: translateY(28px); }
+    .hero-reveal.in { opacity: 1; transform: translateY(0);
+      transition: opacity .7s cubic-bezier(.23,1,.32,1),
+                  transform .7s cubic-bezier(.23,1,.32,1); }
+  `;
+  document.head.appendChild(style);
+  items.forEach(sel => {
+    const el = document.querySelector(sel);
+    if (el) el.classList.add('hero-reveal');
+  });
+  // Stagger on load
+  const base = 80;
+  items.forEach((sel, i) => {
+    const el = document.querySelector(sel);
+    if (el) setTimeout(() => el.classList.add('in'), base + i * 110);
+  });
+})();
+
+// ── Hero particles ──
+(function() {
+  const canvas = document.getElementById('heroParticles');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let W, H, particles;
+
+  const COLORS = ['rgba(79,110,247,', 'rgba(124,58,237,', 'rgba(167,139,250,'];
+
+  function resize() {
+    W = canvas.width  = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+  }
+
+  function init() {
+    resize();
+    particles = Array.from({ length: 38 }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.6 + 0.4,
+      vx: (Math.random() - .5) * .28,
+      vy: (Math.random() - .5) * .28,
+      a: Math.random() * .55 + .1,
+      col: COLORS[Math.floor(Math.random() * COLORS.length)]
+    }));
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+      if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.col + p.a + ')';
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', () => { resize(); init(); });
+  init(); draw();
+})();
+
+// ── Stat count-up ──
+(function() {
+  const stats = document.querySelectorAll('.stat-num');
+  const parse = t => {
+    const m = t.match(/^([<]?)(\d+)([+]?)(.*)$/);
+    return m ? { prefix: m[1], num: +m[2], suffix: m[3] + m[4] } : null;
+  };
+  const fmt = (prefix, n, suffix) => prefix + n + suffix;
+
+  if (!('IntersectionObserver' in window)) return;
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const el = entry.target;
+      const p = parse(el.textContent.trim());
+      if (!p || p.num === 0) return;
+      obs.unobserve(el);
+      const dur = 900, steps = 40;
+      let i = 0;
+      const id = setInterval(() => {
+        i++;
+        const eased = 1 - Math.pow(1 - i / steps, 3);
+        el.textContent = fmt(p.prefix, Math.round(p.num * eased), p.suffix);
+        if (i >= steps) { clearInterval(id); el.textContent = fmt(p.prefix, p.num, p.suffix); }
+      }, dur / steps);
+    });
+  }, { threshold: 0.6 });
+
+  stats.forEach(el => obs.observe(el));
+})();
+
+// ── Hero mockup carousel ──
+(function() {
+  const TOTAL = 3;
+  let current = 0;
+  let timer;
+
+  function show(idx) {
+    for (let i = 0; i < TOTAL; i++) {
+      const slide = document.getElementById('mslide-' + i);
+      const dot   = document.getElementById('mpd-' + i);
+      if (slide) slide.classList.toggle('active', i === idx);
+      if (dot)   dot.classList.toggle('active', i === idx);
+    }
+    current = idx;
+  }
+
+  function next() { show((current + 1) % TOTAL); }
+
+  function startTimer() { timer = setInterval(next, 4000); }
+  function stopTimer()  { clearInterval(timer); }
+
+  const card = document.getElementById('heroMockup');
+  if (card) {
+    card.addEventListener('mouseenter', stopTimer);
+    card.addEventListener('mouseleave', startTimer);
+    startTimer();
+  }
+
+  // tap through on mobile
+  const dots = document.querySelectorAll('.mockup-prog-dot');
+  dots.forEach((d, i) => {
+    d.style.cursor = 'pointer';
+    d.addEventListener('click', () => { stopTimer(); show(i); startTimer(); });
+  });
+})();
 </script>
 </body>
 </html>
