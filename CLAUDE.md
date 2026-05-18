@@ -315,6 +315,13 @@ Key i18n helpers:
 
 **License chip selector (Step 2)** — 10 chips: `auto / mga / ukgc / dga / curacao / anjouan / kahnawake / gibraltar / isle_of_man / none`. Default is `auto` (resolves to `GEO_CFG[geo].lic`). Resets to `auto` when geo changes via `syncLangToGeo()`. Value flows through `draft.params.lic` → `POST /api/campaign/generate` → `campaign.service.ts` → `buildConfig` + both AI prompts.
 
+**Step 3 — Economics panel** — `renderEconScenarios(econ, _unused, _unused2, cur, lang)`:
+- Three scenario cards: Best case / Expected / Worst case (no P10/P50/P90 labels shown)
+- Card cost formatted as `cur + ' ' + amount` (e.g. `EUR 1 234`)
+- `pl` taken from `econ.pl`; base (`pl × avgdep`) derived as `econ.sP50.cost / econ.costRatio` to avoid needing `dep` (not returned by campaign API)
+- `p50r` uses pre-computed `econ.costRatio` directly; `p10r` and `p90r` = `sP{n}.cost / base`
+- Range bar sits below the grid; `econCard` is full-width outside `res-grid`
+
 Flow: select geo → auto-set language → select scenario → `/api/campaign/generate` → optional `/api/campaign/texts` → optional `/api/campaign/audit` → save to localStorage.
 
 ### `public/index.html` — Landing page

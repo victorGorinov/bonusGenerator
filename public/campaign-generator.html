@@ -981,17 +981,19 @@ function runProgress() {
 }
 
 // ── STEP 3 RENDER ─────────────────────────────────────────────────────────────
-function renderEconScenarios(econ, pl, dep, cur, lang) {
+function renderEconScenarios(econ, _unused, _unused2, cur, lang) {
   const isRu = lang === 'ru';
-  const fmt  = v => cur + Math.round(v).toLocaleString();
+  const fmt  = v => cur + ' ' + Math.round(v).toLocaleString();
   const pct  = v => (v * 100).toFixed(1) + '%';
 
+  const pl      = econ.pl;
   const p10cost = econ.sP10.cost;
   const p50cost = econ.sP50.cost;
   const p90cost = econ.sP90.cost;
-  const base    = pl * dep;
+  // base = pl * avgdep; derive from p50cost and pre-computed costRatio to avoid needing dep
+  const base    = econ.costRatio > 0 ? p50cost / econ.costRatio : p50cost;
   const p10r    = p10cost / base;
-  const p50r    = p50cost / base;
+  const p50r    = econ.costRatio;
   const p90r    = p90cost / base;
 
   const scale = v => Math.min(v * 200, 100);
@@ -1000,13 +1002,13 @@ function renderEconScenarios(econ, pl, dep, cur, lang) {
   const p90w  = scale(p90r - p50r);
 
   const L = isRu
-    ? { p10:'P10 · Лучший сценарий', p50:'P50 · Ожидаемый', p90:'P90 · Худший сценарий',
+    ? { p10:'Лучший сценарий', p50:'Ожидаемый', p90:'Худший сценарий',
         badge:'Базовый', perPlayer:'На игрока', ratio:'Cost ratio', wagerComp:'Отыгрыш',
         total:'общие затраты', range:'Диапазон cost ratio',
         n10:'Игроки конвертируются плохо — низкий процент отыгрыша',
         n50:'Реалистичная медиана — используйте для планирования бюджета',
         n90:'Кампания выстреливает — установите здесь потолок бюджета' }
-    : { p10:'P10 · Best case', p50:'P50 · Expected', p90:'P90 · Worst case',
+    : { p10:'Best case', p50:'Expected', p90:'Worst case',
         badge:'Base scenario', perPlayer:'Per player', ratio:'Cost ratio', wagerComp:'Wager completion',
         total:'total campaign cost', range:'Cost ratio range',
         n10:'Players convert poorly — low bonus completion rate',
