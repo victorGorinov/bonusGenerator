@@ -1,6 +1,6 @@
 # CLAUDE.md — Bonus Engine Configurator
 
-Complete architecture reference for Claude Code sessions. Updated: 2026-05-17.
+Complete architecture reference for Claude Code sessions. Updated: 2026-05-18.
 
 ---
 
@@ -313,11 +313,41 @@ Key i18n helpers:
 - `setUILang(lang)` — swaps all `data-i18n` text; must only reference DOM elements that exist **above** the `<script>` tag in source order (elements after `</script>` are not yet parsed)
 - `localizedAlts(data)` — returns `data.alternativesEn` or `data.alternativesRu` based on `currentLang`; use instead of `data.alternatives` to get localized alternative mechanic cards
 
+**License chip selector (Step 2)** — 10 chips: `auto / mga / ukgc / dga / curacao / anjouan / kahnawake / gibraltar / isle_of_man / none`. Default is `auto` (resolves to `GEO_CFG[geo].lic`). Resets to `auto` when geo changes via `syncLangToGeo()`. Value flows through `draft.params.lic` → `POST /api/campaign/generate` → `campaign.service.ts` → `buildConfig` + both AI prompts.
+
 Flow: select geo → auto-set language → select scenario → `/api/campaign/generate` → optional `/api/campaign/texts` → optional `/api/campaign/audit` → save to localStorage.
 
 ### `public/index.html` — Landing page
 
 EN/RU toggle. Signup form → `/api/signup`. Cookie consent banner (localStorage `cookieConsent`, 1.2s delay). Footer: `/privacy`, `/terms`.
+
+**Sections (top → bottom):**
+1. Hero — headline, CTA, stats (15+ scenarios / 5 channels / 3 cost scenarios / <2 min)
+2. Marquee — scrolling feature highlights
+3. Features (6 cards) — AI Generator, 5-Channel Texts, AI Compliance Audit, Multi-Geo Engine, Unit Economics, Admin Export
+4. Markets — 6 region cards (CIS, EU/UKGC, Crypto, USA Sweeps, Mongolia, LatAm)
+5. **License Rules** — 6 license cards with key constraints per jurisdiction (see below)
+6. How it Works — 5 steps
+7. Unit Economics preview — mock econ panel
+8. Who It's For — 4 audience cards (Bonus Managers, CRM Leads, Consultants, Compliance Officers)
+9. Demo Banner — CTA to AI Generator
+10. Signup form — early access
+
+**License Rules section** (`id="licenses"`) — added 2026-05-18. Six cards, each showing the license name, jurisdiction, strictness badge, and 4 key rules:
+
+| Card | Strictness | Key rules |
+|---|---|---|
+| MGA | Standard | 20–40× wager, responsible gambling tools, clear T&Cs |
+| UKGC | Strict | £10/spin cap, Gamstop check, BeGambleAware, no countdown timers |
+| DGA | Strict | 1,000 DKK hard cap, 60-day min validity, ROFUS check, T&C font parity |
+| Curaçao | Permissive | No statutory cap, basic KYC/AML, T&Cs on site, no self-exclusion registry |
+| Anjouan | Permissive | No statutory cap, basic KYC, responsible gambling disclaimer recommended |
+| Kahnawake | Standard | No bonus cap, player dispute resolution required, KYC/AML |
+| Gibraltar | Standard | Fair wager terms, responsible gambling tools, GRA oversight |
+| Isle of Man | Standard | Fair transparent T&Cs, responsible gambling, no statutory cap |
+| Offshore/None | Flexible | No restrictions, operator self-regulates, base geo config applied |
+
+i18n keys follow pattern: `mga_r1..4`, `ukgc_r1..4`, `dga_r1..4`, `cur_r1..4`, `anj_r1..4`, `kah_r1..4`, `gib_r1..4`, `iom_r1..4`, `none_r1..4`. Level badges: `lic_lv_high`, `lic_lv_mid`, `lic_lv_perm`, `lic_lv_flex`. Both EN and RU translations present.
 
 ### `public/privacy.html` + `public/terms.html`
 
@@ -452,7 +482,7 @@ tests/integration/security.headers.test.js
 See `REFACTORING_PLAN.md` for full 12-phase plan.
 
 **Immediate (P0/P1):**
-- `GenerateSchema.lic` still enumerates `['mga', 'ukgc', 'none']` — add `'dga'` to allow DK in the Configurator (currently only Campaign Generator uses it via GEO_CFG)
+- `GenerateSchema.lic` (Configurator) still only allows `mga / ukgc / dga / curacao / anjouan / kahnawake / gibraltar / isle_of_man / none` — global licenses work in Campaign Generator but Configurator UI has its own chip set and does not yet expose them
 - Add `reg_dga_1..4` strings to `app.js` LANG dictionary (currently unresolved keys in Configurator)
 - Add `v_dga_max_bet` i18n key to `app.js`
 - Add `dk` country to `buildConfig.test.js` snapshot
@@ -461,5 +491,4 @@ See `REFACTORING_PLAN.md` for full 12-phase plan.
 - Move inline `<script>` blocks from HTML files to external `.js` files → then remove CSP `'unsafe-inline'` from both `scriptSrc` and `scriptSrcAttr`
 
 **P3:**
-- Test coverage for DGA license override path in buildConfig
 - Test DK scenario in campaign.service integration test
