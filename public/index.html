@@ -193,7 +193,7 @@
     background: linear-gradient(135deg, rgba(79,110,247,.05) 0%, transparent 60%);
     opacity: 0; transition: opacity .3s;
   }
-  .feature-card:hover { border-color: rgba(79,110,247,.4); transform: translateY(-3px); }
+  .feature-card:hover { border-color: rgba(79,110,247,.4); transform: translateY(-3px); box-shadow: 0 8px 32px rgba(79,110,247,.12); }
   .feature-card:hover::before { opacity: 1; }
   .feature-icon {
     width: 48px; height: 48px; border-radius: 12px; margin-bottom: 18px;
@@ -445,6 +445,73 @@
     color: var(--accent); font-size: 0.72rem; top: 1px;
   }
 
+  /* ── TRUST STRIP ── */
+  .trust-strip {
+    display: flex; gap: 20px; flex-wrap: wrap;
+    margin: 20px 0 0;
+  }
+  .trust-item {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 0.82rem; color: var(--muted); font-weight: 500;
+  }
+
+  /* ── EXAMPLES ── */
+  .examples-section { background: var(--bg2); }
+  .examples-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px; margin-top: 48px;
+  }
+  .example-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; overflow: hidden;
+    transition: border-color .2s, transform .2s;
+  }
+  .example-card:hover { border-color: rgba(79,110,247,.4); transform: translateY(-3px); box-shadow: 0 8px 32px rgba(79,110,247,.1); }
+  .example-card-header {
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg3);
+  }
+  .example-tag {
+    font-size: 0.7rem; font-weight: 700; padding: 3px 10px;
+    border-radius: 100px; letter-spacing: .04em; white-space: nowrap;
+  }
+  .example-scenario { font-size: 0.75rem; color: var(--muted); margin-top: 3px; }
+  .example-body { padding: 20px; }
+  .example-mechanic { font-size: 1.05rem; font-weight: 700; margin-bottom: 14px; }
+  .example-details { display: flex; flex-direction: column; gap: 7px; margin-bottom: 16px; }
+  .example-detail { display: flex; justify-content: space-between; font-size: 0.78rem; }
+  .example-detail-label { color: var(--muted); }
+  .example-detail-val { font-weight: 600; }
+  .example-text-preview {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px;
+    font-size: 0.76rem; color: var(--muted); line-height: 1.55; font-style: italic;
+  }
+  .example-checks { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 14px; }
+  .example-check {
+    font-size: 0.69rem; font-weight: 600; padding: 3px 10px;
+    border-radius: 100px; background: rgba(16,185,129,.1); color: #34d399;
+  }
+
+  /* ── STICKY MOBILE CTA ── */
+  .sticky-cta {
+    display: none;
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 90;
+    padding: 12px 16px 20px;
+    background: rgba(10,13,20,.96); backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border);
+  }
+  .sticky-cta a {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; padding: 15px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #000; font-weight: 700; font-size: 0.95rem;
+    border-radius: 12px; text-decoration: none;
+    box-shadow: 0 4px 20px rgba(245,158,11,.4);
+  }
+
   /* ── RESPONSIVE ── */
   @media (max-width: 680px) {
     .steps { flex-direction: column; }
@@ -452,6 +519,7 @@
     .hero-stats { gap: 24px; }
     .form-row { flex-direction: column; }
     .econ-cards { flex-direction: column; }
+    .sticky-cta { display: block; }
   }
 </style>
 </head>
@@ -486,13 +554,19 @@
       </div>
       <h1>
         <span data-i18n="hero_h1a">Stop Configuring Bonuses in Spreadsheets.</span><br/>
-        <span class="grad" data-i18n="hero_h1b">AI Does It — Compliant, Costed, Ready to Send.</span>
+        <span class="grad" data-i18n="hero_h1b">AI Does It — Compliant, Costed, Ready to Start.</span>
       </h1>
       <p class="hero-sub" data-i18n="hero_sub">
-        Build a full CRM campaign in minutes — AI picks the right mechanic for your market, writes Push / Email / SMS / Telegram copy, checks compliance, and models P10/P50/P90 economics. No more guesswork before you hit Send.
+        Pick a scenario, set your geo — AI selects the right bonus mechanic, writes ready-to-send copy for 5 channels, models the cost, and flags compliance issues. Full campaign spec in under 2 minutes. No spreadsheets, no guesswork.
       </p>
       <div class="hero-ctas">
-        <a href="/campaign-generator.html" class="btn btn-gold btn-lg" data-i18n="hero_cta1">🤖 Launch AI Generator</a>
+        <a href="/campaign-generator.html" class="btn btn-gold btn-lg" data-i18n="hero_cta1">🤖 Generate My Campaign Free →</a>
+      </div>
+      <div class="trust-strip">
+        <div class="trust-item">⚡ <span data-i18n="tr1">Ready in 2 min</span></div>
+        <div class="trust-item">🔒 <span data-i18n="tr2">No signup required</span></div>
+        <div class="trust-item">✅ <span data-i18n="tr3">Free during beta</span></div>
+        <div class="trust-item">🌍 <span data-i18n="tr4">9 jurisdictions</span></div>
       </div>
       <div class="hero-stats">
         <div class="stat-item">
@@ -568,6 +642,122 @@
         <p data-i18n="f6_p">Export as JSON, CSV, curl snippet, or full Admin Config text with all wager rules, free spin specs, and game contributions — ready for your dev team.</p>
         <span class="feature-tag">JSON · CSV · Admin Config</span>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ EXAMPLES ════ -->
+<section class="section--tight examples-section" id="examples">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag" data-i18n="ex_tag">See What You Get</div>
+      <h2 data-i18n="ex_h2">Real Campaign Output — in Under 2 Minutes</h2>
+      <p data-i18n="ex_sub">This is exactly what BonusEngine generates: the right bonus mechanic, compliance-checked texts for 5 channels, and a full cost model — ready to hand to your dev team.</p>
+    </div>
+    <div class="examples-grid">
+
+      <div class="example-card">
+        <div class="example-card-header">
+          <div>
+            <div style="font-weight:700;font-size:0.85rem">🇬🇧 Reactivation · UKGC</div>
+            <div class="example-scenario" data-i18n="ex1_scenario">Dormant players · 30+ days inactive</div>
+          </div>
+          <div class="example-tag" style="background:rgba(239,68,68,.12);color:#f87171" data-i18n="lic_lv_high">Strict</div>
+        </div>
+        <div class="example-body">
+          <div class="example-mechanic" data-i18n="ex1_mechanic">50% Deposit Match — up to £50</div>
+          <div class="example-details">
+            <div class="example-detail">
+              <span class="example-detail-label">Wager</span>
+              <span class="example-detail-val">10× (UKGC compliant)</span>
+            </div>
+            <div class="example-detail">
+              <span class="example-detail-label" data-i18n="ex_cost_l">Expected cost</span>
+              <span class="example-detail-val">£4,200 / 1k players</span>
+            </div>
+            <div class="example-detail">
+              <span class="example-detail-label" data-i18n="ex_ch_l">Texts generated</span>
+              <span class="example-detail-val" data-i18n="ex_ch_v">5 channels × 3 variants</span>
+            </div>
+          </div>
+          <div class="example-text-preview" data-i18n="ex1_text">📲 Push: "Hey! We've missed you. Claim your 50% bonus now — 10× wagering applies. 18+ BeGambleAware.org"</div>
+          <div class="example-checks">
+            <span class="example-check" data-i18n="ex1_c1">✓ UKGC compliant</span>
+            <span class="example-check" data-i18n="ex1_c2">✓ Gamstop verified</span>
+            <span class="example-check" data-i18n="ex_cc3">✓ Cost modeled</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="example-card">
+        <div class="example-card-header">
+          <div>
+            <div style="font-weight:700;font-size:0.85rem">🇪🇺 First Deposit · MGA</div>
+            <div class="example-scenario" data-i18n="ex2_scenario">New registrations · EU market</div>
+          </div>
+          <div class="example-tag" style="background:rgba(79,110,247,.12);color:#a0b0ff" data-i18n="lic_lv_mid">Standard</div>
+        </div>
+        <div class="example-body">
+          <div class="example-mechanic" data-i18n="ex2_mechanic">100% Welcome Bonus + 30 Free Spins</div>
+          <div class="example-details">
+            <div class="example-detail">
+              <span class="example-detail-label">Wager</span>
+              <span class="example-detail-val">25× (MGA standard)</span>
+            </div>
+            <div class="example-detail">
+              <span class="example-detail-label" data-i18n="ex_cost_l">Expected cost</span>
+              <span class="example-detail-val">€9,800 / 1k players</span>
+            </div>
+            <div class="example-detail">
+              <span class="example-detail-label" data-i18n="ex_ch_l">Texts generated</span>
+              <span class="example-detail-val" data-i18n="ex_ch_v">5 channels × 3 variants</span>
+            </div>
+          </div>
+          <div class="example-text-preview" data-i18n="ex2_text">✉️ Email: "Welcome! Your 100% bonus + 30 FS are waiting. Wagering: 25×. Responsible gambling tools available."</div>
+          <div class="example-checks">
+            <span class="example-check" data-i18n="ex2_c1">✓ MGA compliant</span>
+            <span class="example-check" data-i18n="ex2_c2">✓ RG tools added</span>
+            <span class="example-check" data-i18n="ex_cc3">✓ Cost modeled</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="example-card">
+        <div class="example-card-header">
+          <div>
+            <div style="font-weight:700;font-size:0.85rem">₿ VIP Retention · Crypto</div>
+            <div class="example-scenario" data-i18n="ex3_scenario">High-value segment · no-KYC</div>
+          </div>
+          <div class="example-tag" style="background:rgba(16,185,129,.12);color:#34d399" data-i18n="lic_lv_perm">Permissive</div>
+        </div>
+        <div class="example-body">
+          <div class="example-mechanic" data-i18n="ex3_mechanic">15% Weekly Cashback — No Wagering</div>
+          <div class="example-details">
+            <div class="example-detail">
+              <span class="example-detail-label">Wager</span>
+              <span class="example-detail-val" data-i18n="ex3_wager">None (crypto standard)</span>
+            </div>
+            <div class="example-detail">
+              <span class="example-detail-label" data-i18n="ex_cost_l">Expected cost</span>
+              <span class="example-detail-val">$6,300 / 500 players</span>
+            </div>
+            <div class="example-detail">
+              <span class="example-detail-label" data-i18n="ex_ch_l">Texts generated</span>
+              <span class="example-detail-val" data-i18n="ex_ch_v">5 channels × 3 variants</span>
+            </div>
+          </div>
+          <div class="example-text-preview" data-i18n="ex3_text">💬 Telegram: "💎 Your weekly cashback is ready! 15% back on net losses — zero wagering. Credited instantly."</div>
+          <div class="example-checks">
+            <span class="example-check" data-i18n="ex3_c1">✓ No wager</span>
+            <span class="example-check" data-i18n="ex3_c2">✓ USDT / BTC</span>
+            <span class="example-check" data-i18n="ex_cc3">✓ Cost modeled</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div style="text-align:center;margin-top:40px">
+      <a href="/campaign-generator.html" class="btn btn-primary btn-lg" data-i18n="ex_cta">🤖 Generate Your Own Campaign →</a>
     </div>
   </div>
 </section>
@@ -894,8 +1084,8 @@
       <div class="demo-banner-left">
         <div class="demo-icon">🤖</div>
         <div>
-          <h3 data-i18n="demo_h">Try the AI Generator — Right Now</h3>
-          <p data-i18n="demo_p">Pick a scenario, set your geo and budget — get a full campaign with mechanics, channel texts, and compliance audit in under 2 minutes. No login required.</p>
+          <h3 data-i18n="demo_h">Your Next Campaign Is 2 Minutes Away.</h3>
+          <p data-i18n="demo_p">Pick a scenario, set your geo — get bonus mechanics, texts for 5 channels, cost model, and compliance audit. Free, instant, no login required.</p>
         </div>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap">
@@ -945,6 +1135,11 @@
   </div>
 </footer>
 
+<!-- ════ STICKY MOBILE CTA ════ -->
+<div class="sticky-cta" id="stickyCta">
+  <a href="/campaign-generator.html" data-i18n="sticky_cta">🤖 Generate My Campaign Free →</a>
+</div>
+
 <!-- ════ COOKIE CONSENT BANNER ════ -->
 <div id="cookie-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#0f1420;border-top:1px solid #1e2740;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;box-shadow:0 -8px 32px rgba(0,0,0,.5)">
   <div style="flex:1;min-width:260px">
@@ -964,9 +1159,10 @@ const LANG = {
     nav_ai: '🤖 AI Campaigns',
     badge: 'Compliance-Ready Bonus Platform for iGaming',
     hero_h1a: 'Stop Configuring Bonuses in Spreadsheets.',
-    hero_h1b: 'AI Does It — Compliant, Costed, Ready to Send.',
-    hero_sub: 'Build a full CRM campaign in minutes — AI picks the right mechanic for your market, writes Push / Email / SMS / Telegram copy, checks compliance, and shows you the expected bonus cost before you spend a cent. No more guesswork before you hit Send.',
-    hero_cta1: '🤖 Launch AI Generator',
+    hero_h1b: 'AI Does It — Compliant, Costed, Ready to Start.',
+    hero_sub: 'Pick a scenario, set your geo — AI selects the right bonus mechanic, writes ready-to-send copy for 5 channels, models the cost, and flags compliance issues. Full campaign spec in under 2 minutes. No spreadsheets, no guesswork.',
+    hero_cta1: '🤖 Generate My Campaign Free →',
+    tr1: 'Ready in 2 min', tr2: 'No signup required', tr3: 'Free during beta', tr4: '9 jurisdictions',
     stat1: 'CRM Scenarios',
     stat2: 'AI Text Channels',
     stat3: 'Cost Scenarios',
@@ -1080,18 +1276,39 @@ const LANG = {
     cookie_link: 'Privacy Policy',
     cookie_decline: 'Decline',
     cookie_accept: 'Accept',
-    demo_h: 'Try the AI Generator — Right Now',
-    demo_p: 'Pick a scenario, set your geo and segment — get a full campaign with mechanics, channel texts, economics, and compliance audit in under 2 minutes. No login required.',
-    demo_btn: '🤖 Launch AI Generator',
+    ex_tag: 'See What You Get',
+    ex_h2: 'Real Campaign Output — in Under 2 Minutes',
+    ex_sub: 'This is exactly what BonusEngine generates: the right bonus mechanic, compliance-checked texts for 5 channels, and a full cost model — ready to hand to your dev team.',
+    ex1_scenario: 'Dormant players · 30+ days inactive',
+    ex1_mechanic: '50% Deposit Match — up to £50',
+    ex1_text: '📲 Push: "Hey! We\'ve missed you. Claim your 50% bonus now — 10× wagering applies. 18+ BeGambleAware.org"',
+    ex1_c1: '✓ UKGC compliant', ex1_c2: '✓ Gamstop verified',
+    ex2_scenario: 'New registrations · EU market',
+    ex2_mechanic: '100% Welcome Bonus + 30 Free Spins',
+    ex2_text: '✉️ Email: "Welcome! Your 100% bonus + 30 FS are waiting. Wagering: 25×. Responsible gambling tools available."',
+    ex2_c1: '✓ MGA compliant', ex2_c2: '✓ RG tools added',
+    ex3_scenario: 'High-value segment · no-KYC',
+    ex3_mechanic: '15% Weekly Cashback — No Wagering',
+    ex3_wager: 'None (crypto standard)',
+    ex3_text: '💬 Telegram: "💎 Your weekly cashback is ready! 15% back on net losses — zero wagering. Credited instantly."',
+    ex3_c1: '✓ No wager', ex3_c2: '✓ USDT / BTC',
+    ex_cost_l: 'Expected cost', ex_ch_l: 'Texts generated', ex_ch_v: '5 channels × 3 variants',
+    ex_cc3: '✓ Cost modeled',
+    ex_cta: '🤖 Generate Your Own Campaign →',
+    sticky_cta: '🤖 Generate My Campaign Free →',
+    demo_h: 'Your Next Campaign Is 2 Minutes Away.',
+    demo_p: 'Pick a scenario, set your geo — get bonus mechanics, texts for 5 channels, cost model, and compliance audit. Free, instant, no login required.',
+    demo_btn: '🤖 Generate My Campaign Free →',
     marquee: ['AI Campaign Generator', 'Compliance-Ready Config', '5 Channel Texts', 'Push · Email · SMS · TG · Popup', 'Best / Expected / Worst-Case Cost', 'UKGC · MGA · DGA · Curaçao', 'Auto-Applied License Rules', 'Welcome + D2 + D3 + NDB', 'Reload & Cashback', 'AI Compliance Audit', 'Admin Config Export', 'Multi-Geo Support', '15+ CRM Scenarios', 'No Spreadsheets'],
   },
   ru: {
     nav_ai: '🤖 AI Кампании',
     badge: 'Compliance-Ready платформа бонусов для iGaming',
     hero_h1a: 'Хватит настраивать бонусы в таблицах.',
-    hero_h1b: 'AI сделает это — соответствие, экономика, готово к отправке.',
-    hero_sub: 'Создайте полную CRM-кампанию за минуты — AI подберёт правильную механику для вашего рынка, напишет тексты для Push / Email / SMS / Telegram, проверит compliance и покажет, сколько реально обойдётся бонус. Никаких догадок перед отправкой.',
-    hero_cta1: '🤖 Запустить AI-генератор',
+    hero_h1b: 'AI сделает это — соответствие, экономика, готово к старту.',
+    hero_sub: 'Выберите сценарий, задайте гео — AI подберёт правильную механику, напишет тексты для 5 каналов, рассчитает стоимость и проверит комплаенс. Полная спека кампании за 2 минуты. Без таблиц, без догадок.',
+    hero_cta1: '🤖 Сгенерировать бесплатно →',
+    tr1: 'Готово за 2 мин', tr2: 'Без регистрации', tr3: 'Бесплатно в бете', tr4: '9 юрисдикций',
     stat1: 'CRM-сценариев',
     stat2: 'Каналов AI-текстов',
     stat3: 'Сценария затрат',
@@ -1205,9 +1422,29 @@ const LANG = {
     cookie_link: 'Политика конфиденциальности',
     cookie_decline: 'Отказаться',
     cookie_accept: 'Принять',
-    demo_h: 'Попробуйте AI-генератор прямо сейчас',
-    demo_p: 'Выберите сценарий, задайте гео и сегмент — получите полную кампанию с механикой, текстами для каналов, экономикой и аудитом за 2 минуты. Без регистрации.',
-    demo_btn: '🤖 Запустить AI-генератор',
+    ex_tag: 'Смотрите, что получите',
+    ex_h2: 'Реальный аутпут кампании — за 2 минуты',
+    ex_sub: 'Именно это генерирует BonusEngine: правильная механика бонуса, тексты для 5 каналов с проверкой комплаенса и полная модель стоимости — готово для передачи в разработку.',
+    ex1_scenario: 'Спящие игроки · неактивны 30+ дней',
+    ex1_mechanic: '50% матч депозита — до £50',
+    ex1_text: '📲 Push: «Мы скучали! Заберите бонус 50% прямо сейчас — вейджер 10×. 18+ BeGambleAware.org»',
+    ex1_c1: '✓ UKGC-комплаенс', ex1_c2: '✓ Проверка Gamstop',
+    ex2_scenario: 'Новые регистрации · рынок ЕС',
+    ex2_mechanic: '100% велком-бонус + 30 фриспинов',
+    ex2_text: '✉️ Email: «Добро пожаловать! Ваш бонус 100% + 30 FS ждут. Вейджер: 25×. Инструменты ответственной игры подключены.»',
+    ex2_c1: '✓ MGA-комплаенс', ex2_c2: '✓ RG-инструменты',
+    ex3_scenario: 'VIP-сегмент · без KYC',
+    ex3_mechanic: '15% еженедельный кэшбек — без вейджера',
+    ex3_wager: 'Без вейджера (крипто-стандарт)',
+    ex3_text: '💬 Telegram: «💎 Ваш еженедельный кэшбек готов! 15% от чистых потерь — вейджера нет. Начислено мгновенно.»',
+    ex3_c1: '✓ Без вейджера', ex3_c2: '✓ USDT / BTC',
+    ex_cost_l: 'Ожидаемые затраты', ex_ch_l: 'Тексты сгенерированы', ex_ch_v: '5 каналов × 3 варианта',
+    ex_cc3: '✓ Стоимость рассчитана',
+    ex_cta: '🤖 Сгенерировать свою кампанию →',
+    sticky_cta: '🤖 Сгенерировать бесплатно →',
+    demo_h: 'Ваша следующая кампания — через 2 минуты.',
+    demo_p: 'Выберите сценарий, задайте гео — получите механику, тексты для 5 каналов, модель стоимости и аудит. Бесплатно, мгновенно, без регистрации.',
+    demo_btn: '🤖 Сгенерировать бесплатно →',
     marquee: ['AI-генератор кампаний', 'Compliance-Ready конфиг', 'Тексты для 5 каналов', 'Push · Email · SMS · TG · Popup', 'Лучший / ожидаемый / худший сценарий', 'UKGC · MGA · DGA · Curaçao', 'Автоприменение лицензионных правил', 'Welcome + D2 + D3 + NDB', 'Reload и Cashback', 'AI-аудит соответствия', 'Экспорт Admin Config', 'Мульти-гео поддержка', '15+ CRM-сценариев', 'Без таблиц'],
   }
 };
@@ -1311,6 +1548,20 @@ function initCookieBanner() {
   initCookieBanner();
 })();
 
+// ════ STICKY MOBILE CTA ════
+(function() {
+  const el = document.getElementById('stickyCta');
+  const hero = document.querySelector('.hero');
+  if (!el || !hero) return;
+  function checkSticky() {
+    if (window.innerWidth > 680) { el.style.display = 'none'; return; }
+    el.style.display = hero.getBoundingClientRect().bottom < 0 ? 'block' : 'none';
+  }
+  window.addEventListener('scroll', checkSticky, { passive: true });
+  window.addEventListener('resize', checkSticky, { passive: true });
+  checkSticky();
+})();
+
 // Intersection Observer for subtle entrance animations
 if ('IntersectionObserver' in window) {
   const style = document.createElement('style');
@@ -1335,7 +1586,7 @@ if ('IntersectionObserver' in window) {
     });
   }, { threshold: 0.1 });
 
-  document.querySelectorAll('.feature-card, .region-card, .audience-card, .step')
+  document.querySelectorAll('.feature-card, .region-card, .audience-card, .step, .example-card, .lic-card')
     .forEach(el => obs.observe(el));
 }
 </script>
