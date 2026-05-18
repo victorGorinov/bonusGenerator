@@ -508,6 +508,21 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
               <div class="chip-multi" data-btype="cashback" onclick="toggleBtype(this)">💳 Cashback</div>
             </div>
           </div>
+          <div class="fg full">
+            <div class="fl" data-i18n="s2_lic">Лицензия / Юрисдикция</div>
+            <div class="chip-group">
+              <div class="chip active" data-g="lic" data-v="auto"        onclick="pickChip(this)" data-i18n="chip_lic_auto">Auto (by geo)</div>
+              <div class="chip"        data-g="lic" data-v="mga"         onclick="pickChip(this)">MGA</div>
+              <div class="chip"        data-g="lic" data-v="ukgc"        onclick="pickChip(this)">UKGC</div>
+              <div class="chip"        data-g="lic" data-v="dga"         onclick="pickChip(this)">DGA</div>
+              <div class="chip"        data-g="lic" data-v="curacao"     onclick="pickChip(this)">Curaçao</div>
+              <div class="chip"        data-g="lic" data-v="anjouan"     onclick="pickChip(this)">Anjouan</div>
+              <div class="chip"        data-g="lic" data-v="kahnawake"   onclick="pickChip(this)">Kahnawake</div>
+              <div class="chip"        data-g="lic" data-v="gibraltar"   onclick="pickChip(this)">Gibraltar</div>
+              <div class="chip"        data-g="lic" data-v="isle_of_man" onclick="pickChip(this)">Isle of Man</div>
+              <div class="chip"        data-g="lic" data-v="none"        onclick="pickChip(this)" data-i18n="chip_lic_none">Offshore / None</div>
+            </div>
+          </div>
         </div>
         <div class="wiz-foot">
           <div class="wiz-foot-l"><button class="btn btn-outline" onclick="goStep(1)" data-i18n="btn_back">← Назад</button><span class="step-ctr" data-step="2">Шаг 2 из 5</span></div>
@@ -526,7 +541,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
         </div>
         <div id="s3-res" style="display:none">
           <div class="step-title" data-i18n="s3_title">Механика подобрана ✓</div>
-          <div class="step-sub" data-i18n="s3_sub">Параметры рассчитаны по региональной модели buildConfig для вашего сценария</div>
+          <div class="step-sub" data-i18n="s3_sub">Параметры рассчитаны по региональной модели BonusEngine для вашего сценария</div>
           <div class="res-grid">
             <div>
               <div class="res-card" id="mechCard" style="margin-bottom:14px">
@@ -727,7 +742,7 @@ const GEO_LBL   = {de:'🇩🇪 Germany',dk:'🇩🇰 Denmark',uk:'🇬🇧 UK',
 const SEG_LBL   = {new:'Новые',mid:'Средние',vip:'VIP'};
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
-let draft = { scenario: null, params: { vertical:'casino', segment:'mid', games:'slots', tone:'friendly', agg:'low', risk:'low' } };
+let draft = { scenario: null, params: { vertical:'casino', segment:'mid', games:'slots', tone:'friendly', agg:'low', risk:'low', lic:'auto' } };
 
 // ── VIEWS ─────────────────────────────────────────────────────────────────────
 function showView(name) {
@@ -754,7 +769,7 @@ function showView(name) {
 
 // ── WIZARD ────────────────────────────────────────────────────────────────────
 function startWizard() {
-  draft = { scenario:null, _step:1, params:{vertical:'casino',segment:'mid',games:'slots',tone:'friendly',agg:'low',risk:'low', bonusTypes:['reload']} };
+  draft = { scenario:null, _step:1, params:{vertical:'casino',segment:'mid',games:'slots',tone:'friendly',agg:'low',risk:'low',lic:'auto', bonusTypes:['reload']} };
   renderScenarios();
   goStep(1);
   showView('wizard');
@@ -868,6 +883,11 @@ function syncLangToGeo(geo) {
   const sel = document.getElementById('p-lang');
   if (sel) sel.value = lang;
   draft.params.lang = lang;
+  // Reset license to auto when geo changes — geo determines the default license
+  draft.params.lic = 'auto';
+  document.querySelectorAll('.chip[data-g="lic"]').forEach(c => {
+    c.classList.toggle('active', c.dataset.v === 'auto');
+  });
 }
 
 function pickChip(el) {
@@ -1774,6 +1794,7 @@ const I18N = {
     s2_games:'Предпочтительные игры', s2_budget:'Бюджет кампании (€)', s2_lang:'Язык коммуникации',
     s2_tone:'Тон коммуникации', s2_agg:'Агрессивность предложения', s2_risk:'Риск-уровень',
     s2_bmix:'Бонусный микс', s2_bmix_hint:'— выберите один или несколько типов',
+    s2_lic:'Лицензия / Юрисдикция', chip_lic_auto:'Авто (по гео)', chip_lic_none:'Офшор / Нет',
     chip_seg_new:'🆕 Новые', chip_seg_mid:'👤 Средние',
     chip_games_slots:'🎰 Слоты', chip_games_table:'🃏 Настольные',
     chip_tone_friendly:'😊 Дружелюбный', chip_tone_pro:'🤝 Профессиональный', chip_tone_agg:'⚡ Агрессивный',
@@ -1812,7 +1833,7 @@ const I18N = {
     qc_tourn_n:'Турнир / Ивент', qc_tourn_d:'Механика слот-турнира',
     // Step 3
     s3_gen_title:'AI генерирует кампанию...', s3_gen_sub:'Анализируем сценарий и подбираем оптимальную механику',
-    s3_title:'Механика подобрана ✓', s3_sub:'Параметры рассчитаны по региональной модели buildConfig для вашего сценария',
+    s3_title:'Механика подобрана ✓', s3_sub:'Параметры рассчитаны по региональной модели BonusEngine для вашего сценария',
     prog_1:'Анализ сценария', prog_2:'Подбор механики бонуса', prog_3:'Генерация условий',
     prog_4:'Создание текстов', prog_5:'Проверка на риски',
     rc_mech:'Рекомендованная механика', rc_mechs:'Механики кампании',
@@ -1871,6 +1892,7 @@ const I18N = {
     s2_games:'Preferred Games', s2_budget:'Campaign Budget (€)', s2_lang:'Communication Language',
     s2_tone:'Communication Tone', s2_agg:'Offer Aggressiveness', s2_risk:'Risk Level',
     s2_bmix:'Bonus Mix', s2_bmix_hint:'— select one or more types',
+    s2_lic:'License / Jurisdiction', chip_lic_auto:'Auto (by geo)', chip_lic_none:'Offshore / None',
     chip_seg_new:'🆕 New', chip_seg_mid:'👤 Regular',
     chip_games_slots:'🎰 Slots', chip_games_table:'🃏 Table',
     chip_tone_friendly:'😊 Friendly', chip_tone_pro:'🤝 Professional', chip_tone_agg:'⚡ Aggressive',
@@ -1909,7 +1931,7 @@ const I18N = {
     qc_tourn_n:'Tournament / Event', qc_tourn_d:'Slot tournament mechanic',
     // Step 3
     s3_gen_title:'AI is generating campaign...', s3_gen_sub:'Analysing scenario and selecting optimal mechanics',
-    s3_title:'Mechanic Selected ✓', s3_sub:'Parameters calculated using the regional buildConfig model for your scenario',
+    s3_title:'Mechanic Selected ✓', s3_sub:'Parameters calculated using the regional BonusEngine model for your scenario',
     prog_1:'Analysing scenario', prog_2:'Selecting bonus mechanic', prog_3:'Generating conditions',
     prog_4:'Creating texts', prog_5:'Checking for risks',
     rc_mech:'Recommended Mechanic', rc_mechs:'Campaign Mechanics',

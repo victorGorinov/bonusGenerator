@@ -405,6 +405,46 @@
   .demo-banner h3 { font-size: 1.25rem; margin-bottom: 6px; }
   .demo-banner p { color: var(--muted); font-size: 0.88rem; line-height: 1.65; }
 
+  /* ── LICENSE COMPLIANCE ── */
+  .lic-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 16px; margin-top: 48px;
+  }
+  .lic-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 24px;
+    transition: border-color .2s, transform .2s;
+  }
+  .lic-card:hover { border-color: rgba(79,110,247,.4); transform: translateY(-2px); }
+  .lic-card-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .lic-name {
+    font-size: 0.88rem; font-weight: 800; letter-spacing: .05em;
+    padding: 4px 12px; border-radius: 6px;
+    background: rgba(79,110,247,.15); color: #a0b0ff;
+  }
+  .lic-region { font-size: 0.75rem; color: var(--muted); flex: 1; }
+  .lic-level {
+    font-size: 0.68rem; font-weight: 700; padding: 2px 8px;
+    border-radius: 100px; letter-spacing: .04em; white-space: nowrap;
+  }
+  .lic-high  { background: rgba(239,68,68,.12);   color: #f87171; }
+  .lic-mid   { background: rgba(79,110,247,.12);  color: #a0b0ff; }
+  .lic-perm  { background: rgba(16,185,129,.12);  color: #34d399; }
+  .lic-flex  { background: rgba(136,146,164,.1);  color: var(--muted); }
+  .lic-rules { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+  .lic-rules li {
+    font-size: 0.79rem; color: var(--muted); line-height: 1.5;
+    padding-left: 16px; position: relative;
+  }
+  .lic-rules li::before {
+    content: '→'; position: absolute; left: 0;
+    color: var(--accent); font-size: 0.72rem; top: 1px;
+  }
+
   /* ── RESPONSIVE ── */
   @media (max-width: 680px) {
     .steps { flex-direction: column; }
@@ -508,7 +548,7 @@
         <div class="feature-icon icon-purple">🔍</div>
         <h3 data-i18n="f3_h">AI Compliance Audit</h3>
         <p data-i18n="f3_p">Each campaign is automatically checked for bonus abuse risk, wager cap violations, regulatory issues, and localisation gaps — before you send a single message. Compliance fines are expensive. This isn't.</p>
-        <span class="feature-tag">UKGC · MGA · DGA · Crypto</span>
+        <span class="feature-tag">UKGC · MGA · DGA · Curaçao · Offshore</span>
       </div>
       <div class="feature-card">
         <div class="feature-icon icon-blue">🌍</div>
@@ -577,6 +617,90 @@
         <div class="region-desc">MX · BR · CO · AR</div>
         <div class="region-badge badge-live">USD</div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ LICENSE COMPLIANCE ════ -->
+<section class="section" id="licenses">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag" data-i18n="lic_tag">License Rules</div>
+      <h2 data-i18n="lic_h2">Every Bonus Configured for Your Jurisdiction</h2>
+      <p data-i18n="lic_sub">Bonus caps, wager limits, mandatory regulatory strings, and self-exclusion checks — each license has its own rules. BonusEngine knows them and applies them automatically.</p>
+    </div>
+    <div class="lic-grid">
+
+      <div class="lic-card">
+        <div class="lic-card-header">
+          <div class="lic-name">MGA</div>
+          <div class="lic-region">Malta / EU</div>
+          <div class="lic-level lic-mid" data-i18n="lic_lv_mid">Standard</div>
+        </div>
+        <ul class="lic-rules">
+          <li data-i18n="mga_r1">Wager 20–40× typical range</li>
+          <li data-i18n="mga_r2">Responsible gambling tools required</li>
+          <li data-i18n="mga_r3">T&Cs must be clearly accessible</li>
+          <li data-i18n="mga_r4">No misleading winning probability claims</li>
+        </ul>
+      </div>
+
+      <div class="lic-card" style="border-color:rgba(239,68,68,.2)">
+        <div class="lic-card-header">
+          <div class="lic-name" style="background:rgba(239,68,68,.12);color:#f87171">UKGC</div>
+          <div class="lic-region">United Kingdom</div>
+          <div class="lic-level lic-high" data-i18n="lic_lv_high">Strict</div>
+        </div>
+        <ul class="lic-rules">
+          <li data-i18n="ukgc_r1">Max £10 per spin / bet while wagering</li>
+          <li data-i18n="ukgc_r2">Gamstop self-exclusion check required</li>
+          <li data-i18n="ukgc_r3">BeGambleAware.org reference mandatory</li>
+          <li data-i18n="ukgc_r4">No countdown timers on active bonuses</li>
+        </ul>
+      </div>
+
+      <div class="lic-card" style="border-color:rgba(245,158,11,.2)">
+        <div class="lic-card-header">
+          <div class="lic-name" style="background:rgba(245,158,11,.12);color:#f59e0b">DGA</div>
+          <div class="lic-region">Denmark</div>
+          <div class="lic-level lic-high" data-i18n="lic_lv_high">Strict</div>
+        </div>
+        <ul class="lic-rules">
+          <li data-i18n="dga_r1">Hard cap: 1,000 DKK per bonus offer</li>
+          <li data-i18n="dga_r2">Minimum validity: 60 days</li>
+          <li data-i18n="dga_r3">ROFUS self-exclusion check required</li>
+          <li data-i18n="dga_r4">T&Cs same font size as promotional headline</li>
+        </ul>
+      </div>
+
+      <div class="lic-card">
+        <div class="lic-card-header">
+          <div class="lic-name" style="background:rgba(16,185,129,.12);color:#34d399">Curaçao</div>
+          <div class="lic-region">Global</div>
+          <div class="lic-level lic-perm" data-i18n="lic_lv_perm">Permissive</div>
+        </div>
+        <ul class="lic-rules">
+          <li data-i18n="cur_r1">No statutory bonus or wager cap</li>
+          <li data-i18n="cur_r2">Basic KYC & AML compliance required</li>
+          <li data-i18n="cur_r3">T&Cs must be published on site</li>
+          <li data-i18n="cur_r4">No mandatory self-exclusion registry</li>
+        </ul>
+      </div>
+
+      <div class="lic-card">
+        <div class="lic-card-header">
+          <div class="lic-name" style="background:rgba(136,146,164,.1);color:var(--muted)" data-i18n="lic_none_name">Offshore</div>
+          <div class="lic-region" data-i18n="lic_none_region">No license</div>
+          <div class="lic-level lic-flex" data-i18n="lic_lv_flex">Flexible</div>
+        </div>
+        <ul class="lic-rules">
+          <li data-i18n="none_r1">No statutory restrictions</li>
+          <li data-i18n="none_r2">Operator sets own bonus terms</li>
+          <li data-i18n="none_r3">Base geo config applied as-is</li>
+          <li data-i18n="none_r4">Best practices still recommended</li>
+        </ul>
+      </div>
+
     </div>
   </div>
 </section>
@@ -809,6 +933,31 @@ const LANG = {
     reg_tag: 'Markets',
     reg_h2: 'Works Across Your Markets',
     reg_sub: 'Each region ships pre-configured — correct wager caps, local currencies, and regulatory strings out of the box. New geos are added on an ongoing basis.',
+    lic_tag: 'License Rules',
+    lic_h2: 'Every Bonus Configured for Your Jurisdiction',
+    lic_sub: 'Bonus caps, wager limits, mandatory regulatory strings, and self-exclusion checks — each license has its own rules. BonusEngine knows them and applies them automatically.',
+    lic_lv_high: 'Strict', lic_lv_mid: 'Standard', lic_lv_perm: 'Permissive', lic_lv_flex: 'Flexible',
+    lic_none_name: 'Offshore', lic_none_region: 'No license',
+    mga_r1: 'Wager 20–40× typical range',
+    mga_r2: 'Responsible gambling tools required',
+    mga_r3: 'T&Cs must be clearly accessible',
+    mga_r4: 'No misleading winning probability claims',
+    ukgc_r1: 'Max £10 per spin / bet while wagering',
+    ukgc_r2: 'Gamstop self-exclusion check required',
+    ukgc_r3: 'BeGambleAware.org reference mandatory',
+    ukgc_r4: 'No countdown timers on active bonuses',
+    dga_r1: 'Hard cap: 1,000 DKK per bonus offer',
+    dga_r2: 'Minimum validity: 60 days',
+    dga_r3: 'ROFUS self-exclusion check required',
+    dga_r4: 'T&Cs same font size as promotional headline',
+    cur_r1: 'No statutory bonus or wager cap',
+    cur_r2: 'Basic KYC & AML compliance required',
+    cur_r3: 'T&Cs must be published on site',
+    cur_r4: 'No mandatory self-exclusion registry',
+    none_r1: 'No statutory restrictions',
+    none_r2: 'Operator sets own bonus terms',
+    none_r3: 'Base geo config applied as-is',
+    none_r4: 'Best practices still recommended',
     how_tag: 'Process',
     how_h2: 'Full Campaign in 5 Steps',
     how_sub: 'From blank page to ready-to-send campaign — in under 2 minutes.',
@@ -862,7 +1011,7 @@ const LANG = {
     demo_h: 'Try the AI Generator — Right Now',
     demo_p: 'Pick a scenario, set your geo and segment — get a full campaign with mechanics, channel texts, economics, and compliance audit in under 2 minutes. No login required.',
     demo_btn: '🤖 Launch AI Generator',
-    marquee: ['AI Campaign Generator', 'Compliance-Ready Config', '5 Channel Texts', 'Push · Email · SMS · TG · Popup', 'Best / Expected / Worst-Case Cost', 'UKGC · MGA · DGA Rules', 'Welcome + D2 + D3 + NDB', 'Reload & Cashback', 'AI Compliance Audit', 'Admin Config Export', 'Multi-Geo Support', '15+ CRM Scenarios', 'Campaign History', 'No Spreadsheets'],
+    marquee: ['AI Campaign Generator', 'Compliance-Ready Config', '5 Channel Texts', 'Push · Email · SMS · TG · Popup', 'Best / Expected / Worst-Case Cost', 'UKGC · MGA · DGA · Curaçao', 'Auto-Applied License Rules', 'Welcome + D2 + D3 + NDB', 'Reload & Cashback', 'AI Compliance Audit', 'Admin Config Export', 'Multi-Geo Support', '15+ CRM Scenarios', 'No Spreadsheets'],
   },
   ru: {
     nav_ai: '🤖 AI Кампании',
@@ -893,6 +1042,31 @@ const LANG = {
     reg_tag: 'Рынки',
     reg_h2: 'Работает на ваших рынках',
     reg_sub: 'Каждый регион поставляется настроенным — правильные лимиты вейджера, местные валюты и регуляторные строки из коробки. Новые гео добавляются на постоянной основе.',
+    lic_tag: 'Лицензионные правила',
+    lic_h2: 'Каждый бонус настроен под вашу юрисдикцию',
+    lic_sub: 'Лимиты бонусов, лимиты вейджера, обязательные регуляторные строки и проверки на самоисключение — у каждой лицензии свои правила. BonusEngine знает их и применяет автоматически.',
+    lic_lv_high: 'Строгая', lic_lv_mid: 'Стандарт', lic_lv_perm: 'Мягкая', lic_lv_flex: 'Гибко',
+    lic_none_name: 'Офшор', lic_none_region: 'Без лицензии',
+    mga_r1: 'Вейджер 20–40× — типичный диапазон',
+    mga_r2: 'Инструменты ответственной игры обязательны',
+    mga_r3: 'T&C должны быть легкодоступны',
+    mga_r4: 'Запрещены вводящие в заблуждение заявления о выигрыше',
+    ukgc_r1: 'Лимит £10 на ставку при игре с бонусом',
+    ukgc_r2: 'Обязательна проверка через Gamstop',
+    ukgc_r3: 'Обязательна ссылка на BeGambleAware.org',
+    ukgc_r4: 'Таймеры обратного отсчёта на бонусах запрещены',
+    dga_r1: 'Жёсткий лимит: 1 000 DKK на один бонус',
+    dga_r2: 'Минимальный срок действия: 60 дней',
+    dga_r3: 'Обязательна проверка через ROFUS',
+    dga_r4: 'T&C должны быть в том же размере шрифта, что и оффер',
+    cur_r1: 'Нет законодательных ограничений на бонус или вейджер',
+    cur_r2: 'Базовый KYC и AML-комплаенс обязательны',
+    cur_r3: 'T&C должны быть опубликованы на сайте',
+    cur_r4: 'Обязательный реестр самоисключений не требуется',
+    none_r1: 'Никаких законодательных ограничений',
+    none_r2: 'Оператор устанавливает условия бонусов самостоятельно',
+    none_r3: 'Применяется базовая конфигурация гео',
+    none_r4: 'Соблюдение лучших практик всё равно рекомендуется',
     how_tag: 'Процесс',
     how_h2: 'Полная кампания за 5 шагов',
     how_sub: 'От чистого листа до готовой к отправке кампании — менее чем за 2 минуты.',
@@ -946,7 +1120,7 @@ const LANG = {
     demo_h: 'Попробуйте AI-генератор прямо сейчас',
     demo_p: 'Выберите сценарий, задайте гео и сегмент — получите полную кампанию с механикой, текстами для каналов, экономикой и аудитом за 2 минуты. Без регистрации.',
     demo_btn: '🤖 Запустить AI-генератор',
-    marquee: ['AI-генератор кампаний', 'Compliance-Ready конфиг', 'Тексты для 5 каналов', 'Push · Email · SMS · TG · Popup', 'Лучший / ожидаемый / худший сценарий', 'Правила UKGC · MGA · DGA', 'Welcome + D2 + D3 + NDB', 'Reload и Cashback', 'AI-аудит соответствия', 'Экспорт Admin Config', 'Мульти-гео поддержка', '15+ CRM-сценариев', 'История кампаний', 'Без таблиц'],
+    marquee: ['AI-генератор кампаний', 'Compliance-Ready конфиг', 'Тексты для 5 каналов', 'Push · Email · SMS · TG · Popup', 'Лучший / ожидаемый / худший сценарий', 'UKGC · MGA · DGA · Curaçao', 'Автоприменение лицензионных правил', 'Welcome + D2 + D3 + NDB', 'Reload и Cashback', 'AI-аудит соответствия', 'Экспорт Admin Config', 'Мульти-гео поддержка', '15+ CRM-сценариев', 'Без таблиц'],
   }
 };
 

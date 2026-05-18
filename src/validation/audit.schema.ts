@@ -10,6 +10,7 @@ export const AuditSchema = z.object({
     lang:    z.string().min(2).max(5).optional(),
     segment: z.string().max(10).optional(),
     risk:    z.enum(['low', 'mid', 'high']).optional(),
+    lic:     z.string().max(20).optional(),
   }),
 });
 

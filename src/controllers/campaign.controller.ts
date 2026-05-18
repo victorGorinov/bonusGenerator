@@ -22,7 +22,7 @@ export async function texts(req: Request, res: Response, next: NextFunction): Pr
       scenario: scenario as { lbl?: string } | null,
       mechanic: mechanic as Record<string, unknown> | null,
       mechanicType: mechanicType as string | undefined,
-      params: params as { geo: string; lang?: string; tone?: string; segment?: string },
+      params: params as { geo: string; lang?: string; tone?: string; segment?: string; lic?: string },
     });
     const raw = await aiGenerate(prompt, { maxTokens: 4096 });
     res.json(parseTextsResponse(raw));
@@ -39,7 +39,7 @@ export async function audit(req: Request, res: Response, next: NextFunction): Pr
       mechanic: mechanic as Record<string, unknown> | null,
       mechanicType: mechanicType as string | undefined,
       uiLang: uiLang as string | undefined,
-      params: params as { geo: string; lang?: string; segment?: string; risk?: string },
+      params: params as { geo: string; lang?: string; segment?: string; risk?: string; lic?: string },
     });
     const raw = await aiGenerate(prompt, { maxTokens: 900 });
     res.json(parseAuditResponse(raw));

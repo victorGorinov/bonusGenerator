@@ -12,12 +12,14 @@ interface CampaignParams {
   bonusTypes?: string[];
   lang?: string;
   tone?: string;
+  lic?: string;
 }
 
 export function generateCampaign({ scenario, params }: { scenario?: ScenarioRef | null; params?: CampaignParams | null }): Record<string, unknown> {
   if (!params || typeof params !== 'object') throw new Error('params required');
 
   const geoCfg  = GEO_CFG[String(params.geo || 'de')] || GEO_CFG['de'];
+  const resolvedLic = (params.lic && params.lic !== 'auto') ? params.lic : geoCfg.lic;
   const avgdep  = ({ new: 40, mid: 100, vip: 500 } as Record<string, number>)[params.segment ?? ''] ?? 100;
   const players = ({ low: 1000, mid: 5000, high: 10000 } as Record<string, number>)[params.agg ?? ''] ?? 5000;
   const rtp     = ({ slots: 96, table: 98, live: 99 } as Record<string, number>)[params.games ?? ''] ?? 96;
@@ -25,7 +27,7 @@ export function generateCampaign({ scenario, params }: { scenario?: ScenarioRef 
   const RISK_ADJ: Record<string, number> = { low: 10, mid: 0, high: -8 };
   const riskAdj  = RISK_ADJ[params.risk ?? ''] ?? 0;
 
-  const cfg = buildConfig({ ...geoCfg, players, avgdep, plat: 'both', rtp, riskAdj });
+  const cfg = buildConfig({ ...geoCfg, lic: resolvedLic, players, avgdep, plat: 'both', rtp, riskAdj });
 
   const id = String(scenario?.id || 'inactive_7');
   let scenarioType: string;

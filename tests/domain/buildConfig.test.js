@@ -118,6 +118,46 @@ describe('buildConfig — riskAdj', () => {
   });
 });
 
+// ── EU / DGA ──────────────────────────────────────────────────────────────────
+
+describe('buildConfig — EU/DGA (Denmark)', () => {
+  const cfg = buildConfig({ ...eu, lic: 'dga', sitecur: 'DKK', depcur: 'DKK' });
+
+  it('caps welcome maxB ≤ 1000 DKK',    () => expect(cfg.welcome.maxB).toBeLessThanOrEqual(1000));
+  it('wW = 25 (DGA market practice)',    () => expect(cfg.wager.wW).toBe(25));
+  it('NDB validity = 60 days',           () => expect(cfg.ndb.days).toBe(60));
+  it('reg strings present',              () => expect(cfg.reg).toHaveLength(4));
+});
+
+// ── Global licenses ───────────────────────────────────────────────────────────
+
+describe('buildConfig — Curaçao (global license on EU geo)', () => {
+  const cfg = buildConfig({ ...eu, lic: 'curacao' });
+
+  it('uses EU base wager model',         () => expect(cfg.wager.model).toBe('standard'));
+  it('no strict bonus cap applied',      () => expect(cfg.welcome.maxB).toBeGreaterThan(200));
+  it('reg strings are Curaçao strings',  () => {
+    expect(cfg.reg).toEqual(['reg_curacao_1', 'reg_curacao_2']);
+  });
+  it('wager mb = v_standard_max_bet',    () => expect(cfg.wager.mb).toBe('v_standard_max_bet'));
+});
+
+describe('buildConfig — Curaçao on CIS geo', () => {
+  const cfg = buildConfig({ ...cis, lic: 'curacao' });
+
+  it('reg overridden to Curaçao strings', () => {
+    expect(cfg.reg).toEqual(['reg_curacao_1', 'reg_curacao_2']);
+  });
+  it('still uses CIS currency',           () => expect(cfg.cur).toBe('RUB'));
+});
+
+describe('buildConfig — Gibraltar (global license)', () => {
+  const cfg = buildConfig({ ...eu, lic: 'gibraltar' });
+
+  it('wW capped at 30 (GRA context)',    () => expect(cfg.wager.wW).toBe(30));
+  it('reg strings are Gibraltar strings', () => expect(cfg.reg).toEqual(['reg_gibraltar_1']));
+});
+
 // ── Snapshots ─────────────────────────────────────────────────────────────────
 
 describe('buildConfig — snapshots', () => {

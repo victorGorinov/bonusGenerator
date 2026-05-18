@@ -1,5 +1,6 @@
-import { truncNormalPayout } from './payout.js';
-import { GEO }               from '../../config/geo/index.js';
+import { truncNormalPayout }          from './payout.js';
+import { GEO }                        from '../../config/geo/index.js';
+import { GLOBAL_LICENSE_OVERRIDES }   from '../../config/geo/global-licenses.js';
 
 type GeoValue = (typeof GEO)[keyof typeof GEO];
 
@@ -70,13 +71,16 @@ function buildWager(geo: GeoValue, rt: number, license: string): Record<string, 
   const base = geo.wager as Record<string, unknown>;
   if (base['model'] === 'none') return { ...base };
 
-  const licCfg = (geo as Record<string, unknown>)['licenses'] as Record<string, Record<string, unknown>> | undefined;
-  const ov = (licCfg?.[license]?.['wager'] ?? {}) as Record<string, unknown>;
+  const licCfg  = (geo as Record<string, unknown>)['licenses'] as Record<string, Record<string, unknown>> | undefined;
+  const ov      = (licCfg?.[license]?.['wager'] ?? {}) as Record<string, unknown>;
+  const globalOv = (GLOBAL_LICENSE_OVERRIDES[license]?.wager ?? {}) as Record<string, unknown>;
   return {
     model: 'standard',
-    wW: ov['wW'] ?? base['wW'], wN: ov['wN'] ?? base['wN'],
-    wR: ov['wR'] ?? base['wR'], wF: ov['wF'] ?? base['wF'],
-    mb: ov['mb'] ?? base['mb'],
+    wW: ov['wW'] ?? globalOv['wW'] ?? base['wW'],
+    wN: ov['wN'] ?? globalOv['wN'] ?? base['wN'],
+    wR: ov['wR'] ?? globalOv['wR'] ?? base['wR'],
+    wF: ov['wF'] ?? globalOv['wF'] ?? base['wF'],
+    mb: ov['mb'] ?? globalOv['mb'] ?? base['mb'],
     days: base['days'], basis: base['basis'], games: base['games'], gameRtp: rt,
   };
 }
@@ -181,7 +185,7 @@ export function buildConfig(params: BuildConfigParams): Record<string, unknown> 
   const geoFsSpec = geo.fsSpec as Record<string, unknown> | null;
   const fsSpec   = geoFsSpec ? { ...geoFsSpec, wager: wager['wF'], games: 'v_slots_only', maxW: '5x_spin_value' } : null;
   const licCfg   = (geo as Record<string, unknown>)['licenses'] as Record<string, Record<string, unknown>> | undefined;
-  const reg      = licCfg?.[license]?.['reg'] ?? geo.reg;
+  const reg      = licCfg?.[license]?.['reg'] ?? GLOBAL_LICENSE_OVERRIDES[license]?.reg ?? geo.reg;
 
   const { arpu, bpct, cac } = geo;
   const ltv3    = arpu * 3;

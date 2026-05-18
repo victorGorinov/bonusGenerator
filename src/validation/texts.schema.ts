@@ -9,6 +9,7 @@ export const TextsSchema = z.object({
     lang:    z.string().min(2).max(5).optional(),
     tone:    z.string().max(20).optional(),
     segment: z.string().max(10).optional(),
+    lic:     z.string().max(20).optional(),
   }),
 });
 
