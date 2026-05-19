@@ -321,6 +321,16 @@ Key functions:
 - `generate()` → POST `/api/generate` → renders spec sheet
 - `recalcEcon()` → POST `/api/recalc` → updates economics panel; triggers edit mode audit via fetch interceptor
 
+**i18n keys added (2026-05-19):**
+- `v_eu_max_bet`, `v_ukgc_max_bet`, `v_dga_max_bet`, `v_standard_max_bet` — max bet labels (all 4 languages)
+- `reg_dga_1..4` — DGA regulatory strings (RU + EN)
+- `reg_curacao_1..2`, `reg_anjouan_1`, `reg_kahnawake_1`, `reg_gibraltar_1`, `reg_iom_1` — global license strings
+- `sec_cg_econ`, `sec_mech_exp`, `sec_cfg_audit` — section titles for Configurator panels
+- `btn_run_cfg_audit`, `cfg_audit_running`, `cfg_audit_pass`, `cfg_audit_fail`, `cfg_audit_warn`, `cfg_audit_impact`, `cfg_audit_recs`, `cfg_audit_not_run`, `cfg_audit_error` — AI compliance audit UI
+- `cg_best`, `cg_expected`, `cg_worst`, `cg_cost_per_bonus`, `cg_dep_load`, `cg_wager_compl` — economics panel labels
+- `rtip_cg_cpb`, `rtip_cg_dl`, `rtip_cg_wc` — tooltip hint texts for econ metrics
+- `mech_exp_welcome`, `mech_exp_ndb`, `mech_exp_reload`, `mech_exp_below_be`, `mech_exp_above_be` — mechanic explanation labels
+
 ### `public/campaign-generator.html` — AI Campaign Generator SPA
 
 Fully self-contained (no app.js). All logic inline.

@@ -151,11 +151,43 @@ const LANG = {
     reg_sweep_3:'SC не являются деньгами: не регулируются как ставки',
     reg_sweep_4:'Юридический дисклеймер обязателен на каждой странице с бонусами',
     reg_sweep_5:'Проверка возраста: 18+ (в ряде штатов 21+); запрет в RI, AZ, SC, ID, MT, WA',
+    // ── Макс. ставка (v_ ключи)
+    v_eu_max_bet:'€5/spin (рекомендуемый лимит MGA)',
+    v_ukgc_max_bet:'£2/spin (регуляторный лимит UKGC)',
+    v_dga_max_bet:'Без спин-лимита (DGA; бонусный кэп 1 000 DKK)',
+    v_standard_max_bet:'Стандартный лимит оператора',
+    // ── DGA (Дания)
+    reg_dga_1:'Жёсткий кэп: макс. бонус 1 000 DKK за одно предложение (закон)',
+    reg_dga_2:'Мин. срок отыгрыша: 60 дней (законодательный минимум)',
+    reg_dga_3:'ROFUS: проверка самоисключения обязательна до выдачи любого бонуса',
+    reg_dga_4:'2025: T&C должны печататься тем же размером шрифта, что и заголовок промо',
+    // ── Глобальные лицензии
+    reg_curacao_1:'Нет законодательного кэпа на бонусы и вейджер; мягкая юрисдикция',
+    reg_curacao_2:'KYC/AML обязательны; правила должны быть опубликованы на сайте',
+    reg_anjouan_1:'Базовый KYC обязателен; рекомендуется дисклеймер ответственной игры',
+    reg_kahnawake_1:'Обязателен механизм урегулирования споров игроков (KGC)',
+    reg_gibraltar_1:'Справедливые условия вейджера; ответственная игра обязательна; надзор GRA',
+    reg_iom_1:'Прозрачные T&C обязательны; требования ответственной игры; нет статутного кэпа',
     // cashback tiers
     ct_level:'Уровень', ct_losses:'Потери', ct_pct:'%',
     ct_bronze:'Bronze', ct_silver:'Silver', ct_gold:'Gold', ct_platinum:'Platinum',
     // package
     pkg_package:'Пакет', pkg_price:'Цена', pkg_sc:'SC',
+    // ── Новые секции: CG-экономика, объяснение механики, AI-аудит
+    sec_cg_econ:'Сценарии кампании', sec_mech_exp:'Объяснение механики', sec_cfg_audit:'AI-аудит соответствия',
+    btn_run_cfg_audit:'⚡ Запустить аудит', cfg_audit_running:'Анализируем конфигурацию...',
+    cfg_audit_pass:'✅ Пройдено', cfg_audit_fail:'❌ Нарушение', cfg_audit_warn:'⚠️ Предупреждение',
+    cfg_audit_impact:'Влияние', cfg_audit_recs:'Рекомендации',
+    cfg_audit_not_run:'Нажмите для запуска AI-аудита соответствия текущей конфигурации',
+    cfg_audit_error:'Ошибка аудита: ',
+    cg_best:'Лучший случай', cg_expected:'Ожидаемый', cg_worst:'Худший случай',
+    cg_cost_per_bonus:'Стоимость / игрок', cg_dep_load:'Нагрузка на деп.', cg_wager_compl:'Завершение вейджера',
+    rtip_cg_cpb:'Средняя выплата на одного активировавшего игрока = бюджет кампании / (N × конверсия)',
+    rtip_cg_dl:'Расходы как % от суммы депозитов. Целевой диапазон: 10–20%',
+    rtip_cg_wc:'Доля игроков, успешно завершивших отыгрыш и получивших выплату',
+    mech_exp_welcome:'Welcome Bonus', mech_exp_ndb:'No Deposit Bonus', mech_exp_reload:'Reload Bonus',
+    mech_exp_below_be:'✅ Вейджер ниже breakeven — хороший профиль конверсии.',
+    mech_exp_above_be:'⚠️ Вейджер выше breakeven — ожидается давление на конверсию.',
   },
 
   en: {
@@ -300,9 +332,41 @@ const LANG = {
     reg_sweep_3:'SC are not money: not regulated as wagers',
     reg_sweep_4:'Legal disclaimer required on every page with bonuses',
     reg_sweep_5:'Age verification: 18+ (21+ in some states); prohibited in RI, AZ, SC, ID, MT, WA',
+    // ── Max bet v_ keys
+    v_eu_max_bet:'€5/spin (MGA recommended limit)',
+    v_ukgc_max_bet:'£2/spin (UKGC regulatory cap)',
+    v_dga_max_bet:'No spin cap (DGA; see 1,000 DKK bonus ceiling)',
+    v_standard_max_bet:'Operator standard limit',
+    // ── DGA (Denmark)
+    reg_dga_1:'Hard cap: max bonus 1,000 DKK per offer (statutory)',
+    reg_dga_2:'Min. wagering period: 60 days (statutory minimum)',
+    reg_dga_3:'ROFUS: self-exclusion check mandatory before any bonus award',
+    reg_dga_4:'2025: T&Cs must appear in same font size as the promotional headline',
+    // ── Global licenses
+    reg_curacao_1:'No statutory bonus or wagering cap; permissive framework',
+    reg_curacao_2:'KYC/AML required; T&Cs must be published on site',
+    reg_anjouan_1:'Basic KYC required; responsible gambling disclaimer recommended',
+    reg_kahnawake_1:'Player dispute resolution mechanism required by KGC',
+    reg_gibraltar_1:'Fair wagering terms required; responsible gambling tools mandatory; GRA oversight',
+    reg_iom_1:'Fair transparent T&Cs required; responsible gambling obligations apply; no statutory cap',
     ct_level:'Level', ct_losses:'Losses', ct_pct:'%',
     ct_bronze:'Bronze', ct_silver:'Silver', ct_gold:'Gold', ct_platinum:'Platinum',
     pkg_package:'Package', pkg_price:'Price', pkg_sc:'SC',
+    // ── New sections: CG economics, mechanic explanation, AI audit
+    sec_cg_econ:'Campaign Scenarios', sec_mech_exp:'Mechanic Explanation', sec_cfg_audit:'AI Compliance Audit',
+    btn_run_cfg_audit:'⚡ Run Audit', cfg_audit_running:'Analyzing configuration...',
+    cfg_audit_pass:'✅ Pass', cfg_audit_fail:'❌ Fail', cfg_audit_warn:'⚠️ Warning',
+    cfg_audit_impact:'Impact', cfg_audit_recs:'Recommendations',
+    cfg_audit_not_run:'Click to run an AI compliance audit on the current configuration',
+    cfg_audit_error:'Audit error: ',
+    cg_best:'Best Case', cg_expected:'Expected', cg_worst:'Worst Case',
+    cg_cost_per_bonus:'Cost / player', cg_dep_load:'Deposit load', cg_wager_compl:'Wager completion',
+    rtip_cg_cpb:'Average payout per activated player = campaign total / (N × conversion)',
+    rtip_cg_dl:'Cost as % of total deposits. Target range: 10–20%',
+    rtip_cg_wc:'Share of players who complete wagering and receive a payout',
+    mech_exp_welcome:'Welcome Bonus', mech_exp_ndb:'No Deposit Bonus', mech_exp_reload:'Reload Bonus',
+    mech_exp_below_be:'✅ Wager is below breakeven — healthy conversion profile.',
+    mech_exp_above_be:'⚠️ Wager exceeds breakeven — conversion pressure expected.',
   },
 
   mn: {
@@ -449,9 +513,38 @@ const LANG = {
     reg_sweep_3:'SC нь мөнгө биш: бооцоо гэж зохицуулагддаггүй',
     reg_sweep_4:'Бонустай бүх хуудсанд хуулийн застереженье заавал байх ёстой',
     reg_sweep_5:'Насны баталгаажуулалт: 18+ (зарим мужид 21+); RI, AZ, SC, ID, MT, WA-д хориглоно',
+    v_eu_max_bet:'€5/spin (MGA санал болгосон хязгаар)',
+    v_ukgc_max_bet:'£2/spin (UKGC зохицуулалтын хязгаар)',
+    v_dga_max_bet:'Спин хязгаар байхгүй (DGA; 1,000 DKK бонусын дээд хязгаар)',
+    v_standard_max_bet:'Операторын стандарт хязгаар',
+    reg_dga_1:'Хатуу дээд хязгаар: нэг санал дээр макс. бонус 1,000 DKK (хуулийн)',
+    reg_dga_2:'Мин. вейжерийн хугацаа: 60 хоног (хуулийн доод хязгаар)',
+    reg_dga_3:'ROFUS: ямар нэгэн бонус олгохоос өмнө өөрийг хасах шалгалт заавал',
+    reg_dga_4:'2025: T&C нь промо гарчигтай ижил фонт хэмжээтэй байх ёстой',
+    reg_curacao_1:'Бонус, вейжерт хуулийн хязгаар байхгүй; зөвшилцлийн орчин',
+    reg_curacao_2:'KYC/AML шаардлагатай; дүрэм журмыг сайтад нийтлэх ёстой',
+    reg_anjouan_1:'Үндсэн KYC шаардлагатай; хариуцлагатай тоглоомын мэдэгдэл зөвлөмжтэй',
+    reg_kahnawake_1:'Тоглогчдын маргаан шийдвэрлэх механизм KGC-ийн шаардлага',
+    reg_gibraltar_1:'Шударга вейжерийн нөхцөл; хариуцлагатай тоглоом заавал; GRA хяналт',
+    reg_iom_1:'Ил тод T&C заавал; хариуцлагатай тоглоомын үүрэг; хуулийн кэп байхгүй',
     ct_level:'Түвшин', ct_losses:'Алдагдал', ct_pct:'%',
     ct_bronze:'Хүрэл', ct_silver:'Мөнгө', ct_gold:'Алт', ct_platinum:'Платин',
     pkg_package:'Багц', pkg_price:'Үнэ', pkg_sc:'SC',
+    // ── Шинэ хэсгүүд: CG эдийн засаг, механикийн тайлбар, AI аудит
+    sec_cg_econ:'Кампанийн хувилбарууд', sec_mech_exp:'Механикийн тайлбар', sec_cfg_audit:'AI дагаж мөрдөлтийн аудит',
+    btn_run_cfg_audit:'⚡ Аудит ажиллуулах', cfg_audit_running:'Тохиргоог шинжилж байна...',
+    cfg_audit_pass:'✅ Тэнцлээ', cfg_audit_fail:'❌ Зөрчил', cfg_audit_warn:'⚠️ Анхааруулга',
+    cfg_audit_impact:'Нөлөө', cfg_audit_recs:'Зөвлөмжүүд',
+    cfg_audit_not_run:'AI аудит ажиллуулахын тулд товчийг дарна уу',
+    cfg_audit_error:'Аудитын алдаа: ',
+    cg_best:'Хамгийн сайн тохиолдол', cg_expected:'Хүлээгдэж буй', cg_worst:'Хамгийн муу тохиолдол',
+    cg_cost_per_bonus:'Зардал / тоглогч', cg_dep_load:'Хадгаламжийн ачаалал', cg_wager_compl:'Вейжерийн дуусгалт',
+    rtip_cg_cpb:'Идэвхжүүлсэн тоглогч тус бүрийн дундаж олгохол = нийт / (N × конверс)',
+    rtip_cg_dl:'Нийт хадгаламжийн %-ийн зардал. Зорилтот: 10–20%',
+    rtip_cg_wc:'Вейжерийг амжилттай дуусгаж, олгохол авсан тоглогчдын хувь',
+    mech_exp_welcome:'Тавтай морилсны бонус', mech_exp_ndb:'Хадгаламжгүй бонус', mech_exp_reload:'Дахин хадгаламжийн бонус',
+    mech_exp_below_be:'✅ Вейжер breakeven-ээс доош — сайн конверсийн профиль.',
+    mech_exp_above_be:'⚠️ Вейжер breakeven-ийг хэтэрсэн — конверст дарамт хүлээгдэж байна.',
   },
 
   es: {
@@ -597,9 +690,38 @@ const LANG = {
     reg_sweep_3:'Los SC no son dinero: no se regulan como apuestas',
     reg_sweep_4:'Aviso legal obligatorio en cada página con bonos',
     reg_sweep_5:'Verificación de edad: 18+ (21+ en algunos estados); prohibido en RI, AZ, SC, ID, MT, WA',
+    v_eu_max_bet:'€5/spin (límite recomendado MGA)',
+    v_ukgc_max_bet:'£2/spin (límite regulatorio UKGC)',
+    v_dga_max_bet:'Sin límite por spin (DGA; tope de 1.000 DKK por bono)',
+    v_standard_max_bet:'Límite estándar del operador',
+    reg_dga_1:'Tope máximo: bono máx. 1.000 DKK por oferta (estatutario)',
+    reg_dga_2:'Período mínimo de wagering: 60 días (mínimo legal)',
+    reg_dga_3:'ROFUS: verificación de autoexclusión obligatoria antes de otorgar cualquier bono',
+    reg_dga_4:'2025: los T&C deben aparecer en el mismo tamaño de fuente que el titular de la promo',
+    reg_curacao_1:'Sin tope legal de bonos o wagering; marco permisivo',
+    reg_curacao_2:'KYC/AML obligatorios; T&Cs deben publicarse en el sitio',
+    reg_anjouan_1:'KYC básico obligatorio; se recomienda aviso de juego responsable',
+    reg_kahnawake_1:'Mecanismo de resolución de disputas de jugadores requerido por KGC',
+    reg_gibraltar_1:'Términos de wagering justos; juego responsable obligatorio; supervisión GRA',
+    reg_iom_1:'T&Cs transparentes obligatorios; obligaciones de juego responsable; sin tope legal',
     ct_level:'Nivel', ct_losses:'Pérdidas', ct_pct:'%',
     ct_bronze:'Bronce', ct_silver:'Plata', ct_gold:'Oro', ct_platinum:'Platino',
     pkg_package:'Paquete', pkg_price:'Precio', pkg_sc:'SC',
+    // ── Nuevas secciones: economía CG, explicación mecánica, auditoría IA
+    sec_cg_econ:'Escenarios de Campaña', sec_mech_exp:'Explicación de la Mecánica', sec_cfg_audit:'Auditoría de Cumplimiento IA',
+    btn_run_cfg_audit:'⚡ Ejecutar Auditoría', cfg_audit_running:'Analizando configuración...',
+    cfg_audit_pass:'✅ Aprobado', cfg_audit_fail:'❌ Incumplimiento', cfg_audit_warn:'⚠️ Advertencia',
+    cfg_audit_impact:'Impacto', cfg_audit_recs:'Recomendaciones',
+    cfg_audit_not_run:'Haga clic para ejecutar una auditoría de cumplimiento IA',
+    cfg_audit_error:'Error de auditoría: ',
+    cg_best:'Mejor caso', cg_expected:'Esperado', cg_worst:'Peor caso',
+    cg_cost_per_bonus:'Costo / jugador', cg_dep_load:'Carga sobre depósito', cg_wager_compl:'Compl. wagering',
+    rtip_cg_cpb:'Pago promedio por jugador activado = total campaña / (N × conversión)',
+    rtip_cg_dl:'Costo como % del total de depósitos. Rango objetivo: 10–20%',
+    rtip_cg_wc:'Proporción de jugadores que completan el wagering y reciben pago',
+    mech_exp_welcome:'Bono de Bienvenida', mech_exp_ndb:'Bono Sin Depósito', mech_exp_reload:'Bono de Recarga',
+    mech_exp_below_be:'✅ Wagering por debajo del breakeven — buen perfil de conversión.',
+    mech_exp_above_be:'⚠️ Wagering supera el breakeven — presión en conversión esperada.',
   }
 };
 
@@ -1136,14 +1258,8 @@ function render(c){
     : `<div style="font-size:10px;padding:4px 14px 2px;color:#10b981;background:rgba(16,185,129,0.12)">✅ Wager ${E.wagerX}× ≤ breakeven ${E.breakeven_wager}× — Truncated Normal (linear mean + variance)</div>`;
   const autoWagerLabel = ``; // removed: wager now uses market-standard regional defaults
 
-  // ── P10 / P50 / P90 scenario cards
+  // ── Model label (breakeven indicator, no scenario cards here — moved to CG section below)
   econBody += modelLabel;
-  econBody += autoWagerLabel;
-  econBody += `<div class="eg" style="padding:10px 14px">
-    ${scenCard(t('p_scenario_p10'), E.sP10, '#64748B', 'econ_cost_p10')}
-    ${scenCard(t('p_scenario_p50'), E.sP50, '#2563EB', 'econ_cost_p50')}
-    ${scenCard(t('p_scenario_p90'), E.sP90, '#DC2626', 'econ_cost_p90')}
-  </div>`;
 
   // ── Verdict + cost ratio
   econBody += `<div style="border-top:1px solid var(--border);padding:10px 14px">
@@ -1170,6 +1286,23 @@ function render(c){
 
   h += `<div class="sec fw">${shdr('#1E1B4B','📊',t('sec_econ'),E.pl.toLocaleString('ru')+' '+t('players_mo'))}<div>${econBody}</div></div>`;
 
+  // ── Campaign Generator-style P10/P50/P90 cards with tooltip metrics
+  if (r !== 'sweep') {
+    h += renderCGEconCards(E, cur, r);
+  }
+
+  // ── Mechanic Explanation (static, no AI)
+  h += buildMechanicExpSection(c);
+
+  // ── AI Compliance Audit
+  h += `<div class="sec fw" id="cfg-audit-sec">
+    ${shdr('#0F4C81','🔍',t('sec_cfg_audit'),'')}
+    <div class="pl" style="padding:10px 14px">
+      <button class="cfg-btn gen" id="cfg-audit-btn" onclick="runConfiguratorAudit(this)" style="margin-bottom:10px">${t('btn_run_cfg_audit')}</button>
+      <div id="cfg-audit-result" style="font-size:12px;color:var(--muted)">${t('cfg_audit_not_run')}</div>
+    </div>
+  </div>`;
+
   // ── Admin Config Summary (collapsed by default, generated on demand)
   h += `<div class="sec fw" id="admin-sec">
     <div class="sh clickable" onclick="toggleAdminSec()">
@@ -1193,6 +1326,136 @@ function render(c){
   </div>`;
 
   return h;
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// CAMPAIGN GENERATOR-STYLE ECON CARDS (P10/P50/P90 with tooltip metrics)
+// ═════════════════════════════════════════════════════════════════════════════
+function renderCGEconCards(E, cur, r) {
+  const fmtBCur = v => fmtC(v, cur);
+  const fmtPct  = v => (v * 100).toFixed(1) + '%';
+  const pl   = E.pl;
+  const base = E.costRatio > 0 ? E.sP50.cost / E.costRatio : (pl > 0 ? pl * 100 : 1);
+
+  // costId: retain econ_cost_p10/p50/p90 IDs so recalcEcon() can update them
+  function cgCard(label, sP, col, costId) {
+    const cpb   = (pl > 0 && sP.conv > 0) ? Math.round(sP.cost / (pl * sP.conv)) : 0;
+    const ratio = base > 0 ? sP.cost / base : 0;
+    const rCol  = ratio > 0.35 ? 'rd' : ratio > 0.20 ? 'yw' : 'gn';
+    return `<div class="ei" style="border:1px solid ${col}40;border-radius:10px;padding:10px 12px;background:${col}0a;flex:1;min-width:0">
+      <div style="font-size:10px;font-weight:700;color:${col};text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">${label}</div>
+      <div style="font-size:19px;font-weight:800;color:${col};margin-bottom:8px;line-height:1.1" id="${costId}">${fmtBCur(sP.cost)}</div>
+      ${prt(t('cg_cost_per_bonus'), fmtBCur(cpb), '', t('rtip_cg_cpb'))}
+      ${prt(t('cg_dep_load'), fmtPct(ratio), rCol, t('rtip_cg_dl'))}
+      ${prt(t('cg_wager_compl'), (sP.conv * 100).toFixed(0) + '%', '', t('rtip_cg_wc'))}
+    </div>`;
+  }
+
+  const cards = `<div class="eg" style="padding:10px 14px 8px;gap:8px;align-items:stretch">
+    ${cgCard(t('cg_best'),     E.sP10, '#64748B', 'econ_cost_p10')}
+    ${cgCard(t('cg_expected'), E.sP50, '#2563EB', 'econ_cost_p50')}
+    ${cgCard(t('cg_worst'),    E.sP90, '#DC2626', 'econ_cost_p90')}
+  </div>`;
+
+  const mn = E.sP10.cost, mx = E.sP90.cost, md = E.sP50.cost;
+  const rng = mx > mn ? mx - mn : 1;
+  const pct = (((md - mn) / rng) * 100).toFixed(1);
+  const rangeBar = `<div style="padding:0 14px 10px">
+    <div style="height:4px;border-radius:2px;background:linear-gradient(90deg,#64748B 0%,#2563EB ${pct}%,#DC2626 100%);position:relative">
+      <div style="position:absolute;top:-3px;left:${pct}%;transform:translateX(-50%);width:10px;height:10px;border-radius:50%;background:#2563EB;border:2px solid var(--bg)"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:3px">
+      <span>${fmtBCur(mn)}</span><span style="color:#2563EB">${fmtBCur(md)}</span><span>${fmtBCur(mx)}</span>
+    </div>
+  </div>`;
+
+  return `<div class="sec fw">${shdr('#1565C0','📈',t('sec_cg_econ'),'P10 / P50 / P90')}<div>${cards}${rangeBar}</div></div>`;
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// MECHANIC EXPLANATION SECTION (static, derived from config)
+// ═════════════════════════════════════════════════════════════════════════════
+function buildMechanicExpSection(cfg) {
+  const W  = cfg.welcome || {};
+  const N  = cfg.ndb     || {};
+  const RL = cfg.reload  || {};
+  const E  = cfg.econ    || {};
+  const cur = cfg.cur, r = cfg.r, lic = (cfg.lic || 'none').toLowerCase();
+
+  const fmtB   = v => (v == null || v === Infinity || v > 9999999) ? '∞' : fmtC(v, cur);
+  const wagerX = E.wagerX || 0;
+  const beNote = E.over_breakeven ? t('mech_exp_above_be') : t('mech_exp_below_be');
+
+  let body = '';
+
+  if (r === 'sweep') {
+    body += `<div style="padding:10px 14px">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">🎰 Sweepcoins Welcome</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6">
+        <strong style="color:var(--text)">${W.sc || 0} SC + ${W.gc || 0} GC</strong> on registration.
+        No wagering requirement — free-play model under US sweepstakes law.
+        SC redeemable for cash prizes (min 100 SC · max $5,000/mo). GC are non-redeemable game coins.
+        Validity: <strong style="color:var(--text)">${W.validity || 30} days</strong>.
+      </div>
+    </div>`;
+  } else {
+    // Welcome bonus
+    const wFs = W.fs || 0;
+    const turnover = wagerX > 0 && E.mixedWCR > 0 ? Math.round((W.maxB || 0) * wagerX / E.mixedWCR) : 0;
+    body += `<div style="padding:10px 14px;border-bottom:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:5px">🎁 ${t('mech_exp_welcome')}</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.65">
+        <strong style="color:var(--text)">${W.pct || 100}%</strong> match up to
+        <strong style="color:var(--text)">${fmtB(W.maxB)}</strong>,
+        min deposit <strong style="color:var(--text)">${fmtB(W.minD)}</strong>${wFs > 0 ? ` + <strong style="color:var(--text)">${wFs} FS</strong>` : ''}.
+        Wagering: <strong style="color:var(--text)">${wagerX}×</strong>
+        (breakeven: <strong style="color:var(--text)">${E.breakeven_wager || '—'}×</strong>).
+        Validity: <strong style="color:var(--text)">${W.days || 30} days</strong>.
+        ${turnover > 0 ? `<br>Effective turnover on max bonus: <strong style="color:var(--text)">${fmtC(turnover, cur)}</strong>.` : ''}
+        <br><span style="color:${E.over_breakeven ? '#F59E0B' : '#10b981'}">${beNote}</span>
+      </div>
+    </div>`;
+
+    // NDB (if configured with a non-zero amount or FS)
+    const ndbAmt = N.amt || 0, ndbFs = N.fs || 0;
+    if (ndbAmt > 0 || ndbFs > 0) {
+      const ukgcNote = (lic === 'ukgc' && ndbAmt > 0) ? ' <span style="color:#F59E0B">⚠️ UKGC: cash NDB prohibited — FS only.</span>' : '';
+      body += `<div style="padding:8px 14px;border-bottom:1px solid var(--border)">
+        <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px">🎁 ${t('mech_exp_ndb')}</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6">
+          ${ndbAmt > 0 ? `<strong style="color:var(--text)">${fmtB(ndbAmt)}</strong> no-deposit bonus` : ''}
+          ${ndbFs  > 0 ? `${ndbAmt > 0 ? ' + ' : ''}<strong style="color:var(--text)">${ndbFs} free spins</strong>` : ''}.
+          Wagering: <strong style="color:var(--text)">${N.wager || 50}×</strong>.
+          Validity: <strong style="color:var(--text)">${N.days || 7} days</strong>.${ukgcNote}
+        </div>
+      </div>`;
+    }
+
+    // Reload bonus (only if configured with a real cap)
+    const rlMaxB = (RL.maxB == null || RL.maxB === Infinity || RL.maxB > 9999999) ? null : RL.maxB;
+    if ((RL.pct || 0) > 0 && rlMaxB !== null) {
+      body += `<div style="padding:8px 14px">
+        <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px">🔄 ${t('mech_exp_reload')}</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6">
+          <strong style="color:var(--text)">${RL.pct}%</strong> reload up to
+          <strong style="color:var(--text)">${fmtB(rlMaxB)}</strong>.
+          Validity: <strong style="color:var(--text)">${RL.validity || 7} days</strong>.
+        </div>
+      </div>`;
+    } else if ((RL.pct || 0) > 0 && RL.maxBMulti) {
+      // CIS: maxBMax = Infinity, cap enforced via maxBMulti (avgdep multiplier)
+      body += `<div style="padding:8px 14px">
+        <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px">🔄 ${t('mech_exp_reload')}</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6">
+          <strong style="color:var(--text)">${RL.pct}%</strong> reload,
+          cap: <strong style="color:var(--text)">${RL.maxBMulti}× avg. deposit</strong>.
+          Validity: <strong style="color:var(--text)">${RL.validity || 7} days</strong>.
+        </div>
+      </div>`;
+    }
+  }
+
+  return `<div class="sec fw">${shdr('#065F46','💡',t('sec_mech_exp'),'')}<div>${body}</div></div>`;
 }
 
 function sec(c,ico,title,badge,body){
@@ -1465,6 +1728,99 @@ function copyCfg(){
     b.textContent = t('copied');
     setTimeout(()=>{ b.textContent = t('copy_btn'); }, 2000);
   });
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// AI COMPLIANCE AUDIT (Configurator)
+// ═════════════════════════════════════════════════════════════════════════════
+async function runConfiguratorAudit(btn) {
+  const cfg = window._lastCfg;
+  if (!cfg) return;
+  const resultEl = document.getElementById('cfg-audit-result');
+  if (!resultEl) return;
+
+  if (btn) { btn.disabled = true; btn.textContent = t('cfg_audit_running'); }
+  resultEl.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:6px 0">${t('cfg_audit_running')}</div>`;
+
+  // Map region → representative country code (audit prompt uses geo for context)
+  const geoMap = { eu:'de', cis:'ru', crypto:'us', sweep:'us', mn:'mn', latam:'mx' };
+  const geo = geoMap[cfg.r] || cfg.r;
+  const lic = (cfg.lic || 'mga').toUpperCase();
+
+  const payload = {
+    scenario: { id: 'configurator', lbl: 'Manual Config' },
+    mechanic: cfg.welcome || null,
+    mechanicType: 'welcome',
+    params: {
+      geo,
+      lic: lic.toLowerCase(),
+      segment: 'mid',
+      tone: 'professional',
+      lang: L,
+      bonusTypes: ['welcome'],
+      agg: 'moderate',
+      games: ['slots'],
+      risk: 'mid'
+    },
+    uiLang: L
+  };
+
+  try {
+    const res = await fetch('/api/campaign/audit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.message || errBody.error || `${res.status} ${res.statusText}`);
+    }
+    const data = await res.json();
+    renderConfiguratorAuditResult(resultEl, data);
+  } catch (ex) {
+    resultEl.innerHTML = `<div style="color:#EF4444;font-size:12px;padding:6px 0">⚠️ ${t('cfg_audit_error')} ${ex?.message || ex}</div>`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = t('btn_run_cfg_audit'); }
+  }
+}
+
+function renderConfiguratorAuditResult(el, data) {
+  // API returns status: 'ok' | 'warn' (from AuditCheckSchema)
+  const statusColor = { ok: '#10b981', warn: '#F59E0B' };
+  const statusLabel = { ok: t('cfg_audit_pass'), warn: t('cfg_audit_warn') };
+
+  let html = `<div>`;
+
+  // ── Compliance checks
+  if (data.checks && data.checks.length) {
+    html += `<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">`;
+    data.checks.forEach(ch => {
+      const col = statusColor[ch.status] || '#8892a4';
+      const lbl = statusLabel[ch.status] || ch.status;
+      html += `<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-radius:6px;background:${col}12;border:1px solid ${col}30">
+        <span style="font-size:10px;font-weight:700;color:${col};white-space:nowrap;padding-top:1px">${lbl}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:600;color:var(--text)">${ch.label}</div>
+          ${ch.note ? `<div style="font-size:11px;color:var(--muted);margin-top:1px">${ch.note}</div>` : ''}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // ── Recommendations
+  if (data.recommendations && data.recommendations.length) {
+    html += `<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${t('cfg_audit_recs')}</div>`;
+    data.recommendations.forEach(rec => {
+      html += `<div style="padding:6px 8px;border-radius:6px;background:rgba(37,99,235,0.08);border:1px solid rgba(37,99,235,0.20);margin-bottom:4px">
+        <div style="font-size:12px;color:var(--text)">💡 ${rec.text}</div>
+        ${rec.impact ? `<div style="font-size:10px;color:var(--muted);margin-top:2px">${t('cfg_audit_impact')}: ${rec.impact}</div>` : ''}
+      </div>`;
+    });
+  }
+
+  html += `</div>`;
+  el.innerHTML = html;
 }
 
 // ── TOOLTIPS ──────────────────────────────────────────────────────────────
