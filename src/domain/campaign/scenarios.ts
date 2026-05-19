@@ -1,15 +1,25 @@
-export const GEO_CFG: Record<string, { region: string; lic: string; sitecur: string; depcur: string }> = {
+// avgdep: realistic average deposit per segment in the site currency.
+// Omit for EUR/GBP/USD geos — the default (40/100/500) is calibrated for those.
+// Required for high-denomination currencies (RUB, KZT, MNT) and DKK.
+export const GEO_CFG: Record<string, {
+  region: string; lic: string; sitecur: string; depcur: string;
+  avgdep?: { new: number; mid: number; vip: number };
+}> = {
   de: { region:'eu',    lic:'mga',  sitecur:'EUR', depcur:'EUR' },
-  dk: { region:'eu',    lic:'dga',  sitecur:'DKK', depcur:'DKK' },
+  dk: { region:'eu',    lic:'dga',  sitecur:'DKK', depcur:'DKK',
+        avgdep: { new: 300,    mid: 700,    vip: 3500   } },  // ~€40 / €95 / €470
   fr: { region:'eu',    lic:'mga',  sitecur:'EUR', depcur:'EUR' },
   es: { region:'eu',    lic:'mga',  sitecur:'EUR', depcur:'EUR' },
   it: { region:'eu',    lic:'mga',  sitecur:'EUR', depcur:'EUR' },
   nl: { region:'eu',    lic:'mga',  sitecur:'EUR', depcur:'EUR' },
   uk: { region:'eu',    lic:'ukgc', sitecur:'GBP', depcur:'GBP' },
-  ru: { region:'cis',   lic:'none', sitecur:'RUB', depcur:'RUB' },
-  kz: { region:'cis',   lic:'none', sitecur:'KZT', depcur:'KZT' },
+  ru: { region:'cis',   lic:'none', sitecur:'RUB', depcur:'RUB',
+        avgdep: { new: 2000,   mid: 5000,   vip: 25000  } },  // ~$22 / $55 / $275
+  kz: { region:'cis',   lic:'none', sitecur:'KZT', depcur:'KZT',
+        avgdep: { new: 8000,   mid: 20000,  vip: 100000 } },  // ~$16 / $40 / $200
   us: { region:'sweep', lic:'none', sitecur:'USD', depcur:'USD' },
-  mn: { region:'mn',    lic:'none', sitecur:'MNT', depcur:'MNT' },
+  mn: { region:'mn',    lic:'none', sitecur:'MNT', depcur:'MNT',
+        avgdep: { new: 40000,  mid: 100000, vip: 500000 } },  // ~$12 / $29 / $145
   mx: { region:'latam', lic:'none', sitecur:'USD', depcur:'USD' },
   br: { region:'latam', lic:'none', sitecur:'USD', depcur:'USD' },
 };

@@ -20,7 +20,12 @@ export function generateCampaign({ scenario, params }: { scenario?: ScenarioRef 
 
   const geoCfg  = GEO_CFG[String(params.geo || 'de')] || GEO_CFG['de'];
   const resolvedLic = (params.lic && params.lic !== 'auto') ? params.lic : geoCfg.lic;
-  const avgdep  = ({ new: 40, mid: 100, vip: 500 } as Record<string, number>)[params.segment ?? ''] ?? 100;
+  // Use geo-specific avgdep when defined (e.g. RUB, KZT, MNT, DKK).
+  // Fall back to EUR-calibrated defaults for EUR/GBP/USD geos.
+  const BASE_AVGDEP: Record<string, number> = { new: 40, mid: 100, vip: 500 };
+  const segAvgdep = geoCfg.avgdep ?? BASE_AVGDEP;
+  const seg = params.segment ?? 'mid';
+  const avgdep  = segAvgdep[seg as keyof typeof segAvgdep] ?? BASE_AVGDEP[seg] ?? 100;
   const players = ({ low: 1000, mid: 5000, high: 10000 } as Record<string, number>)[params.agg ?? ''] ?? 5000;
   const rtp     = ({ slots: 96, table: 98, live: 99 } as Record<string, number>)[params.games ?? ''] ?? 96;
 

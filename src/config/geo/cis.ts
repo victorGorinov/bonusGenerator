@@ -8,7 +8,8 @@ export const CIS = {
     minDRatio: 0.30, minDMin: 0, fs: 100, days: 30, code: 'WELCOME100',
   },
   ndb: { type: 'combined' as string, amt: 30, ndCur: 'FS', wager: 55, maxW_x: 5, fs: 50, days: 7 },
-  reload: { maxBMulti: 1.5, maxBMin: 0, maxBMax: 200, day: 'v_day_fri', fs: 50 },
+  // maxBMax removed — maxBMulti:1.5 already caps at 1.5× avgdep in any currency
+  reload: { maxBMulti: 1.5, maxBMin: 0, maxBMax: Infinity, day: 'v_day_fri', fs: 50 },
   wager: { wW: 40, wN: 55, wR: 35, wF: 35, mb: 'v_no_limit', days: 30, basis: 'v_bonus_only', games: 'v_slots_only' },
   cashback: { model: 'flat' as string, pct: 10, period: 'v_weekly', basis: 'v_net_losses', wager: 0, minLossRatio: 0.30, maxAmtRatio: 50 },
   dep2: { pct: 75, maxBMulti: 3, maxBMin: 0, maxBMax: Infinity, fs: 75 },
