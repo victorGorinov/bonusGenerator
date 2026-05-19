@@ -1,6 +1,6 @@
 # CLAUDE.md — Bonus Engine Configurator
 
-Complete architecture reference for Claude Code sessions. Updated: 2026-05-18.
+Complete architecture reference for Claude Code sessions. Updated: 2026-05-19.
 
 ---
 
@@ -148,6 +148,19 @@ const maxBMax   = overrides['maxBMax'] ?? (w['maxBMax'] as number);
 
 Active licenses: `mga` (EU default), `ukgc` (UK), `dga` (Denmark), `none` (CIS/latam/sweep/mn).
 
+**CIS config note** (`src/config/geo/cis.ts`) — `reload.maxBMax` is `Infinity` (not an absolute cap). The bonus ceiling is enforced exclusively via `maxBMulti: 1.5` (1.5× avgdep), which is currency-agnostic. An earlier absolute cap of 200 RUB was incorrect and has been removed.
+
+**`calcScenario` payout fallback (added 2026-05-19)** — `truncNormalPayout` is not scale-invariant: its z-score scales as `√B`, so for large-denomination currencies (RUB 5000, KZT 20000, MNT 100000) z ≈ −8 to −40, driving all Gaussian terms to zero and returning 0. `calcScenario` now falls back to a deterministic estimate when `payoutStat = 0`:
+
+```typescript
+const payoutStat = truncNormalPayout(bonusSize, wagerX, adjWCR, adjRTP);
+const adjBe  = adjWCR / (1 - adjRTP);
+const adjEff = wagerX > 0 ? Math.min(1, adjBe / Math.max(adjBe, wagerX)) : 1;
+const payout = payoutStat > 0 ? payoutStat : bonusSize * adjEff;
+```
+
+This is consistent with `_effW` used in `totalBonusCost`. EUR/GBP/USD geos are unaffected (their `payoutStat > 0`). Sweep geos (wagerX=0) now get `adjEff=1` (full bonus passes through, no wagering).
+
 ### `recalcCosts(cfg, overrides)` — `src/domain/bonus/recalcCosts.ts`
 
 Pure function. Accepts full `cfg` object and flat overrides map (keys: `w_wager`, `w_maxB`, `w_mind`, `w_fs`, `w_pct`, `rl_pct`, `rl_wager`, `rl_maxB`, `rl_fs`, `d2_pct`, `d2_wager`, `d2_maxB`, `d2_fs`, `d3_pct`, `d3_wager`, `d3_maxB`, `d3_fs`, `ndb_wager`, `ndb_amt`, `ndb_fs`, `fs_wager`, `fs_count`).
@@ -169,6 +182,8 @@ Uses `truncNormalPayout` (payout.ts) for statistical modelling. P10 = optimistic
 Key fields used in the frontend and recalc:
 `arpu`, `cac`, `ltv3`, `roi`, `wagerX`, `costRatio`, `breakeven_wager`, `sP10.cost`, `sP50.cost`, `sP90.cost`, `mixedRTP`, `mixedWCR`.
 
+Each `sP{n}` object: `{ conv, wcr, rtp, turnover, payout, cost }`. `conv` is the conversion rate (0.10/0.20/0.40 for P10/P50/P90). `cost` is TOTAL campaign cost (already multiplied by `pl`). After the 2026-05-19 fix, `sP{n}.cost` is always non-zero for any geo with a real bonus (including RU/KZ/MN).
+
 ---
 
 ## Geo config — `src/config/geo/`
@@ -188,18 +203,26 @@ Key fields used in the frontend and recalc:
 
 ```
 de → region:eu, lic:mga,  EUR/EUR
-dk → region:eu, lic:dga,  DKK/DKK   ← Denmark (Spillemyndigheden)
+dk → region:eu, lic:dga,  DKK/DKK   ← avgdep: new=300 / mid=700 / vip=3500 DKK
 fr → region:eu, lic:mga,  EUR/EUR
 es → region:eu, lic:mga,  EUR/EUR
 it → region:eu, lic:mga,  EUR/EUR
 nl → region:eu, lic:mga,  EUR/EUR
 uk → region:eu, lic:ukgc, GBP/GBP
-ru → region:cis, lic:none, RUB/RUB
-kz → region:cis, lic:none, KZT/KZT
+ru → region:cis, lic:none, RUB/RUB   ← avgdep: new=2000 / mid=5000 / vip=25000 RUB
+kz → region:cis, lic:none, KZT/KZT   ← avgdep: new=8000 / mid=20000 / vip=100000 KZT
 us → region:sweep, lic:none, USD/USD
-mn → region:mn, lic:none, MNT/MNT
+mn → region:mn,  lic:none, MNT/MNT   ← avgdep: new=40000 / mid=100000 / vip=500000 MNT
 mx → region:latam, lic:none, USD/USD
 br → region:latam, lic:none, USD/USD
+```
+
+`GEO_CFG` type includes optional `avgdep?: { new: number; mid: number; vip: number }`. Geos without this field (EUR/GBP/USD) fall back to `BASE_AVGDEP = { new: 40, mid: 100, vip: 500 }` in `campaign.service.ts`. The per-segment avgdep is resolved as:
+
+```typescript
+const BASE_AVGDEP = { new: 40, mid: 100, vip: 500 };
+const segAvgdep = geoCfg.avgdep ?? BASE_AVGDEP;
+const avgdep = segAvgdep[seg] ?? BASE_AVGDEP[seg] ?? 100;
 ```
 
 ### License override blocks — `src/config/geo/eu.ts`
@@ -315,12 +338,22 @@ Key i18n helpers:
 
 **License chip selector (Step 2)** — 10 chips: `auto / mga / ukgc / dga / curacao / anjouan / kahnawake / gibraltar / isle_of_man / none`. Default is `auto` (resolves to `GEO_CFG[geo].lic`). Resets to `auto` when geo changes via `syncLangToGeo()`. Value flows through `draft.params.lic` → `POST /api/campaign/generate` → `campaign.service.ts` → `buildConfig` + both AI prompts.
 
+**Step 2 — Risk hint** — `RISK_HINTS` object + `updateRiskHint(val)` function. Called on chip click and on `goStep(2)`. Shows a coloured hint below the risk toggle explaining wager impact:
+- `low` (green) — wager +10× above regional base, better operator protection
+- `mid` (blue) — wager unchanged, market standard
+- `high` (amber) — wager −8×, higher conversion but higher payout risk
+
 **Step 3 — Economics panel** — `renderEconScenarios(econ, _unused, _unused2, cur, lang)`:
 - Three scenario cards: Best case / Expected / Worst case (no P10/P50/P90 labels shown)
 - Card cost formatted as `cur + ' ' + amount` (e.g. `EUR 1 234`)
 - `pl` taken from `econ.pl`; base (`pl × avgdep`) derived as `econ.sP50.cost / econ.costRatio` to avoid needing `dep` (not returned by campaign API)
 - `p50r` uses pre-computed `econ.costRatio` directly; `p10r` and `p90r` = `sP{n}.cost / base`
+- Each card shows 3 metrics with CSS-only `data-tip` tooltips: **cost per bonus** (`sP.cost / (pl × conv)`), **deposit load** (`ratio`), **wager completion** (`conv × 100%`)
+- `conv` values come from `econ.sP10.conv / sP50.conv / sP90.conv` (0.10 / 0.20 / 0.40)
 - Range bar sits below the grid; `econCard` is full-width outside `res-grid`
+- `econCard` rendering wrapped in `try/catch` — errors display inline as red text rather than silently leaving the card empty
+
+**Tooltip CSS** — `.tip` class with `::after` pseudo-element. `position:absolute; bottom:calc(100% + 6px)`. Requires parent to have `overflow:visible` (all econ card parents do). `z-index:50`.
 
 Flow: select geo → auto-set language → select scenario → `/api/campaign/generate` → optional `/api/campaign/texts` → optional `/api/campaign/audit` → save to localStorage.
 
@@ -329,7 +362,7 @@ Flow: select geo → auto-set language → select scenario → `/api/campaign/ge
 EN/RU toggle. Signup form → `/api/signup`. Cookie consent banner (localStorage `cookieConsent`, 1.2s delay). Footer: `/privacy`, `/terms`.
 
 **Sections (top → bottom):**
-1. Hero — headline, CTA, stats (15+ scenarios / 5 channels / 3 cost scenarios / <2 min)
+1. Hero — **two-column layout** (`.hero-layout { display:flex; gap:56px }`). Left: headline H1 `clamp(2.8rem,6.2vw,4.8rem)`, subtitle, CTA button with `ctaPulse` glow animation. Right: `.hero-visual` — glassmorphism card (`backdrop-filter:blur(20px)`, `rgba(22,28,45,.85)`) cycling 3 campaign mockup cards every 4s. Canvas floating particles (38 dots, 40% opacity). 3 drift orbs (`.hero-orb-1/2/3`) blurred 80px, 18–28s animation. Staggered fade-up reveal (7 elements, 110ms stagger). Responsive breakpoint 960px → single column.
 2. Marquee — scrolling feature highlights
 3. Features (6 cards) — AI Generator, 5-Channel Texts, AI Compliance Audit, Multi-Geo Engine, Unit Economics, Admin Export
 4. Markets — 6 region cards (CIS, EU/UKGC, Crypto, USA Sweeps, Mongolia, LatAm)
@@ -493,9 +526,11 @@ See `REFACTORING_PLAN.md` for full 12-phase plan.
 - Add `reg_dga_1..4` strings to `app.js` LANG dictionary (currently unresolved keys in Configurator)
 - Add `v_dga_max_bet` i18n key to `app.js`
 - Add `dk` country to `buildConfig.test.js` snapshot
+- Add RU/KZ/MN snapshots to `buildConfig.test.js` to cover the payout fallback path — should confirm `sP10.cost > 0` for all high-denomination geos
 
 **P2:**
 - Move inline `<script>` blocks from HTML files to external `.js` files → then remove CSP `'unsafe-inline'` from both `scriptSrc` and `scriptSrcAttr`
 
 **P3:**
 - Test DK scenario in campaign.service integration test
+- `truncNormalPayout` model is not scale-invariant (z ~ √B). Long-term: replace with a properly normalised model or add a EUR-equivalent cap on B before passing to `truncNormalPayout`. Current deterministic fallback is pragmatic but underestimates variance for high-denomination currencies.

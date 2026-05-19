@@ -1222,7 +1222,25 @@ function renderMechanicResults(data) {
   renderAltCard(localizedAlts(data), data);
 
   // Econ card
-  const E   = data.econ;
+  // Repair econ costs if server returned 0 for high-denomination currencies (RUB/KZT/MNT).
+  // truncNormalPayout breaks for large B (z ~ √B → -∞). Fall back to bonusSize × wagerEff,
+  // identical to the server-side fix in buildConfig.ts calcScenario.
+  const _rawE = data.econ;
+  const E = (() => {
+    if (!_rawE || _rawE.sP10?.cost > 0) return _rawE;
+    const { bonusSize, wagerX, breakeven_wager, pl } = _rawE || {};
+    if (!bonusSize || !pl) return _rawE;
+    const eff = (wagerX > 0)
+      ? Math.min(1, breakeven_wager / Math.max(breakeven_wager, wagerX))
+      : 1;
+    const payout = bonusSize * eff;
+    return {
+      ..._rawE,
+      sP10: { ...(_rawE.sP10||{}), cost: Math.round(payout * 0.10 * pl), conv: _rawE.sP10?.conv ?? 0.10 },
+      sP50: { ...(_rawE.sP50||{}), cost: Math.round(payout * 0.20 * pl), conv: _rawE.sP50?.conv ?? 0.20 },
+      sP90: { ...(_rawE.sP90||{}), cost: Math.round(payout * 0.40 * pl), conv: _rawE.sP90?.conv ?? 0.40 },
+    };
+  })();
   const cur = data.cur;
   try {
     if (!E?.sP10?.cost) {
