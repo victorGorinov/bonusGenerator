@@ -211,7 +211,14 @@ export function buildConfig(params: BuildConfigParams): Record<string, unknown> 
   const calcScenario = (conv: number, dWCR: number, dRTP: number) => {
     const adjWCR = Math.max(0.01, mixedWCR + dWCR);
     const adjRTP = Math.min(0.999, Math.max(0.5, mixedRTP + dRTP));
-    const payout = truncNormalPayout(bonusSize, wagerX, adjWCR, adjRTP);
+    const payoutStat = truncNormalPayout(bonusSize, wagerX, adjWCR, adjRTP);
+    // For large-denomination currencies (RUB, KZT, MNT), the truncated-normal model
+    // breaks down because z = sqrt(B) × constant becomes extremely negative, driving
+    // all Gaussian terms to zero. Fall back to a deterministic linear payout estimate
+    // based on wager efficiency: payout ≈ bonusSize × (breakeven / wager).
+    const adjBe  = adjWCR / (1 - adjRTP);
+    const adjEff = wagerX > 0 ? Math.min(1, adjBe / Math.max(adjBe, wagerX)) : 1;
+    const payout = payoutStat > 0 ? payoutStat : bonusSize * adjEff;
     const cost   = Math.round(payout * conv * pl);
     return { conv, wcr: +adjWCR.toFixed(3), rtp: +adjRTP.toFixed(3), turnover: Math.round(bonusSize * wagerX / adjWCR), payout: +payout.toFixed(2), cost };
   };

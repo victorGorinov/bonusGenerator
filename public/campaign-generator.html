@@ -1224,20 +1224,27 @@ function renderMechanicResults(data) {
   // Econ card
   const E   = data.econ;
   const cur = data.cur;
-  if (!E?.sP10?.cost) {
-    // fallback for legacy responses without P10/P90
-    const fmtK = n => n >= 1000 ? Math.round(n/1000)+'k' : String(Math.round(n));
-    const vCol = { verdict_cheap:'#10b981', verdict_ok:'#10b981', verdict_warn:'#F59E0B', verdict_high:'#EF4444' };
-    const col  = vCol[E?.verdictKey] || 'var(--muted)';
+  try {
+    if (!E?.sP10?.cost) {
+      // sP10.cost is 0: happens for sweep (wagerX=0) or degenerate configs.
+      // Show cost ratio summary only.
+      const fmtK = n => n >= 1000 ? Math.round(n/1000)+'k' : String(Math.round(n));
+      const vCol = { verdict_cheap:'#10b981', verdict_ok:'#10b981', verdict_warn:'#F59E0B', verdict_high:'#EF4444' };
+      const col  = vCol[E?.verdictKey] || 'var(--muted)';
+      document.getElementById('econCard').innerHTML =
+        `<div class="rc-title">${t('rc_econ')}</div>
+         <div class="mech-row"><span class="mr-l">${t('ec_cost')}</span><span class="mr-v">~${fmtK(E?.sP50?.cost||0)} ${cur}</span></div>
+         <div class="mech-row" style="border-bottom:none"><span class="mr-l">Cost ratio</span><span class="mr-v" style="color:${col}">${((E?.costRatio||0)*100).toFixed(1)}%</span></div>`;
+    } else {
+      document.getElementById('econCard').innerHTML =
+        `<div class="rc-title">${t('rc_econ')}</div>
+         ${renderEconScenarios(E, data.pl ?? E.pl, data.dep, cur, currentLang)}`;
+    }
+  } catch(ex) {
     document.getElementById('econCard').innerHTML =
       `<div class="rc-title">${t('rc_econ')}</div>
-       <div class="mech-row"><span class="mr-l">${t('ec_cost')}</span><span class="mr-v">~${fmtK(E?.sP50?.cost||0)} ${cur}</span></div>
-       <div class="mech-row" style="border-bottom:none"><span class="mr-l">Cost ratio</span><span class="mr-v" style="color:${col}">${((E?.costRatio||0)*100).toFixed(1)}%</span></div>`;
-    return;
+       <div style="color:#EF4444;font-size:.82rem;padding:8px 0">⚠️ Econ render error: ${ex?.message || ex}</div>`;
   }
-  document.getElementById('econCard').innerHTML =
-    `<div class="rc-title">${t('rc_econ')}</div>
-     ${renderEconScenarios(E, data.pl ?? E.pl, data.dep, cur, currentLang)}`;
 }
 
 function localizedAlts(data) {
