@@ -295,6 +295,20 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .econ-p10 .econ-row span:last-child{color:#10b981;font-weight:600}
 .econ-p50 .econ-row span:last-child{color:#4f6ef7;font-weight:600}
 .econ-p90 .econ-row span:last-child{color:#f59e0b;font-weight:600}
+/* ── Tooltips ── */
+.tip{position:relative;cursor:help;border-bottom:1px dashed rgba(136,146,164,.4)}
+.tip::after{
+  content:attr(data-tip);
+  position:absolute;bottom:calc(100% + 6px);left:0;
+  background:#1a2035;border:1px solid rgba(79,110,247,.25);
+  border-radius:8px;padding:8px 11px;
+  font-size:11px;line-height:1.55;color:#c8d0e0;font-style:normal;
+  white-space:normal;width:220px;pointer-events:none;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:50;
+  opacity:0;transform:translateY(4px);
+  transition:opacity .18s,transform .18s;
+}
+.tip:hover::after{opacity:1;transform:translateY(0)}
 .econ-scenario-note{margin-top:10px;font-size:11px;font-style:italic;line-height:1.4;color:#8892a4}
 .econ-range-wrap{background:rgba(255,255,255,.04);border:1px solid #1e2740;border-radius:10px;padding:14px 16px;margin-top:4px}
 .econ-range-label{font-size:11px;color:#8892a4;font-weight:600;margin-bottom:8px}
@@ -530,6 +544,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
               <button class="t3-btn" data-g="risk" data-v="mid" onclick="pickT3(this)" data-i18n="t3_risk_mid">🟡 Средний</button>
               <button class="t3-btn" data-g="risk" data-v="high" onclick="pickT3(this)" data-i18n="t3_risk_high">🔴 Высокий</button>
             </div>
+            <div id="riskHint" style="margin-top:8px;font-size:11.5px;line-height:1.55;color:#8892a4;padding:8px 10px;background:rgba(255,255,255,.03);border-radius:7px;border-left:2px solid #4f6ef7"></div>
           </div>
           <div class="fg full" style="margin-top:6px">
             <div class="fl" style="margin-bottom:2px">
@@ -826,6 +841,7 @@ function goStep(n) {
   document.getElementById('step-'+n).classList.add('active');
   if (n === 2) {
     syncLangToGeo(document.getElementById('p-geo').value);
+    updateRiskHint(draft.params.risk || 'low');
   }
   if (n === 3) {
     draft.params.geo    = document.getElementById('p-geo').value;
@@ -932,10 +948,35 @@ function pickChip(el) {
   el.classList.add('active');
   draft.params[g] = el.dataset.v;
 }
+const RISK_HINTS = {
+  ru: {
+    low:  { color:'#10b981', text:'<b>Вейджер +10×</b> к базовому значению региона. Оператор лучше защищён от бонусных злоупотреблений, но бонус становится менее привлекательным — меньше игроков дойдут до выплаты.' },
+    mid:  { color:'#4f6ef7', text:'<b>Вейджер без изменений</b> — рыночный стандарт региона. Оптимальный баланс между затратами оператора и привлекательностью бонуса для игрока.' },
+    high: { color:'#f59e0b', text:'<b>Вейджер −8×</b> от базового значения. Более мягкие условия → выше конверсия и привлекательность бонуса, но выше вероятность выплаты → увеличиваются затраты.' },
+  },
+  en: {
+    low:  { color:'#10b981', text:'<b>Wager +10×</b> above the regional base. Better operator protection against bonus abuse, but the bonus becomes less attractive — fewer players will complete wagering.' },
+    mid:  { color:'#4f6ef7', text:'<b>Wager unchanged</b> — regional market standard. Optimal balance between operator costs and bonus attractiveness for players.' },
+    high: { color:'#f59e0b', text:'<b>Wager −8×</b> below the regional base. More lenient terms → higher conversion and bonus appeal, but higher payout likelihood → increased campaign costs.' },
+  },
+};
+
+function updateRiskHint(val) {
+  const el = document.getElementById('riskHint');
+  if (!el) return;
+  const lang = currentLang === 'ru' ? 'ru' : 'en';
+  const h = RISK_HINTS[lang][val];
+  if (!h) { el.style.display = 'none'; return; }
+  el.style.borderLeftColor = h.color;
+  el.style.display = '';
+  el.innerHTML = h.text;
+}
+
 function pickT3(el) {
   el.closest('.toggle3').querySelectorAll('.t3-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
   draft.params[el.dataset.g] = el.dataset.v;
+  if (el.dataset.g === 'risk') updateRiskHint(el.dataset.v);
 }
 
 // ── STEP 3 PROGRESS + API ─────────────────────────────────────────────────────
@@ -1001,21 +1042,40 @@ function renderEconScenarios(econ, _unused, _unused2, cur, lang) {
   const p50w  = scale(p50r - p10r);
   const p90w  = scale(p90r - p50r);
 
+  // conv values from calcScenario: P10=0.10, P50=0.20, P90=0.40
+  const conv10 = econ.sP10.conv ?? 0.10;
+  const conv50 = econ.sP50.conv ?? 0.20;
+  const conv90 = econ.sP90.conv ?? 0.40;
+  // Cost per player who actually received and completed the bonus
+  const cpp10 = pl * conv10 > 0 ? p10cost / (pl * conv10) : 0;
+  const cpp50 = pl * conv50 > 0 ? p50cost / (pl * conv50) : 0;
+  const cpp90 = pl * conv90 > 0 ? p90cost / (pl * conv90) : 0;
+
   const L = isRu
     ? { p10:'Лучший сценарий', p50:'Ожидаемый', p90:'Худший сценарий',
-        badge:'Базовый', perPlayer:'На игрока', ratio:'Cost ratio', wagerComp:'Отыгрыш',
-        total:'общие затраты', range:'Диапазон cost ratio',
-        n10:'Игроки конвертируются плохо — низкий процент отыгрыша',
+        badge:'Базовый', perPlayer:'Стоимость на бонус', conv:'Отыграют вейджер',
+        ratio:'Нагрузка на депозиты', ratioHint:'% от депозитного оборота',
+        total:'суммарные затраты на кампанию', range:'Диапазон нагрузки на депозиты',
+        legend:'Нагрузка на депозиты — какую долю депозитного оборота составят затраты на бонусы. До 20% — норма, 20–40% — повышенный риск, выше 40% — пересмотрите параметры.',
+        n10:'Мало игроков дойдёт до конца вейджера — бонус почти не выплачивается',
         n50:'Реалистичная медиана — используйте для планирования бюджета',
-        n90:'Кампания выстреливает — установите здесь потолок бюджета' }
+        n90:'Кампания выстреливает — установите здесь потолок бюджета',
+        tip_cpp:'Средние затраты на одного игрока, который дошёл до конца вейджера и получил выплату. Считается: суммарные затраты ÷ (игроки × конверсия).',
+        tip_ratio:'Отношение затрат на бонусы к общему депозитному обороту. Норма: до 20%. 20–40% — повышенный риск. Выше 40% — пересмотрите вейджер или % бонуса.',
+        tip_conv:'Доля игроков, которые выполнят вейджерное требование до конца и получат выплату по бонусу. Остальные теряют бонус досрочно.' }
     : { p10:'Best case', p50:'Expected', p90:'Worst case',
-        badge:'Base scenario', perPlayer:'Per player', ratio:'Cost ratio', wagerComp:'Wager completion',
-        total:'total campaign cost', range:'Cost ratio range',
-        n10:'Players convert poorly — low bonus completion rate',
+        badge:'Base scenario', perPlayer:'Cost per bonus', conv:'Will complete wager',
+        ratio:'Deposit load', ratioHint:'% of total deposit turnover',
+        total:'total campaign cost', range:'Deposit load range',
+        legend:'Deposit load = bonus costs ÷ deposit turnover. Under 20% is healthy; 20–40% is elevated risk; above 40% — reconsider bonus terms.',
+        n10:'Few players will complete wagering — bonus rarely pays out',
         n50:'Realistic median — use this for budget planning',
-        n90:'Campaign over-performs — set budget ceiling here' };
+        n90:'Campaign over-performs — set budget ceiling here',
+        tip_cpp:'Average cost per player who completed wagering and received a payout. Calculated as: total cost ÷ (players × conversion rate).',
+        tip_ratio:'Bonus costs as a share of total deposit turnover. Healthy: under 20%. Elevated risk: 20–40%. Above 40% — reconsider wager multiplier or bonus %.',
+        tip_conv:'Share of players expected to complete the wagering requirement and receive a bonus payout. The rest forfeit the bonus before finishing.' };
 
-  const card = (cls, icon, label, cost, ratio, note, badge) => `
+  const card = (cls, icon, label, cost, ratio, conv, cpp, note, badge) => `
     <div class="econ-scenario-card ${cls}">
       ${badge ? `<div class="econ-scenario-badge">${L.badge}</div>` : ''}
       <div class="econ-scenario-header">
@@ -1025,18 +1085,30 @@ function renderEconScenarios(econ, _unused, _unused2, cur, lang) {
       <div class="econ-scenario-cost">${fmt(cost)}</div>
       <div class="econ-scenario-sub">${L.total}</div>
       <div class="econ-scenario-rows">
-        <div class="econ-row"><span>${L.perPlayer}</span><span>${fmt(cost / pl)}</span></div>
-        <div class="econ-row"><span>${L.ratio}</span><span>${pct(ratio)}</span></div>
-        <div class="econ-row"><span>${L.wagerComp}</span><span>~${Math.round(ratio * 60)}%</span></div>
+        <div class="econ-row">
+          <span class="tip" data-tip="${L.tip_cpp}">${L.perPlayer}</span>
+          <span>${fmt(cpp)}</span>
+        </div>
+        <div class="econ-row">
+          <span class="tip" data-tip="${L.tip_ratio}">${L.ratio}</span>
+          <span>${pct(ratio)}</span>
+        </div>
+        <div class="econ-row">
+          <span class="tip" data-tip="${L.tip_conv}">${L.conv}</span>
+          <span>${Math.round(conv * 100)}%</span>
+        </div>
       </div>
       <div class="econ-scenario-note">${note}</div>
     </div>`;
 
   return `
+    <div style="font-size:11px;color:#8892a4;line-height:1.6;margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid rgba(255,255,255,.06)">
+      💡 ${L.legend}
+    </div>
     <div class="econ-scenarios-grid">
-      ${card('econ-p10', '↘', L.p10, p10cost, p10r, L.n10, false)}
-      ${card('econ-p50', '→', L.p50, p50cost, p50r, L.n50, true)}
-      ${card('econ-p90', '↗', L.p90, p90cost, p90r, L.n90, false)}
+      ${card('econ-p10', '↘', L.p10, p10cost, p10r, conv10, cpp10, L.n10, false)}
+      ${card('econ-p50', '→', L.p50, p50cost, p50r, conv50, cpp50, L.n50, true)}
+      ${card('econ-p90', '↗', L.p90, p90cost, p90r, conv90, cpp90, L.n90, false)}
     </div>
     <div class="econ-range-wrap">
       <div class="econ-range-label">${L.range}</div>
@@ -1047,9 +1119,9 @@ function renderEconScenarios(econ, _unused, _unused2, cur, lang) {
       </div>
       <div class="econ-range-markers">
         <span>0%</span>
-        <span class="mp10">P10 ${pct(p10r)}</span>
-        <span class="mp50">P50 ${pct(p50r)}</span>
-        <span class="mp90">P90 ${pct(p90r)}</span>
+        <span class="mp10">${isRu ? 'Лучший' : 'Best'} ${pct(p10r)}</span>
+        <span class="mp50">${isRu ? 'Ожидаемый' : 'Expected'} ${pct(p50r)}</span>
+        <span class="mp90">${isRu ? 'Худший' : 'Worst'} ${pct(p90r)}</span>
         <span>50%</span>
       </div>
     </div>`;
@@ -2112,6 +2184,8 @@ function setUILang(lang) {
     el.textContent = t('step_ctr').replace('{n}', el.dataset.step);
   });
   updateTopbar(currentView);
+  // Re-render risk hint in the new language if step 2 is visible
+  if (draft._step === 2) updateRiskHint(draft.params.risk || 'low');
   if (!['dashboard','configurator'].includes(currentView)) {
     const tbr = document.getElementById('tb-right');
     if (tbr && tbr.innerHTML) tbr.innerHTML = `<button class="btn btn-primary btn-sm" onclick="startWizard()">${t('btn_new_camp')}</button>`;
