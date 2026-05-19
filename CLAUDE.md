@@ -291,6 +291,10 @@ Response schemas:
 
 ~1250 lines HTML + inline JS. Loads `app.js`.
 
+**EU Country Picker** — shown only when `region=eu` is selected. 7 country chips: DE / FR / ES / IT / NL / UK / DK. Selecting a country calls `pickCountry(chip)` which sets `sitecur`, `depcur`, `lic`, and `avgdep` from `EU_COUNTRY` map (in `app.js`) and updates the license chip selection automatically. Hint text below the picker (`eu-country-hint`) shows the resolved license + currency + avg deposit for the selected country.
+
+**License chip selector** — chips: `mga / ukgc / dga / curacao / anjouan / kahnawake / gibraltar / isle_of_man / none`. DGA chip added (2026-05-19). Default chip depends on selected EU country; auto-set by `pickCountry()`.
+
 **Edit mode** (fully implemented, see `FEATURE_EDIT_CAMPAIGN.md`):
 
 ```javascript
@@ -321,6 +325,19 @@ Key functions:
 - `generate()` → POST `/api/generate` → renders spec sheet
 - `recalcEcon()` → POST `/api/recalc` → updates economics panel; triggers edit mode audit via fetch interceptor
 
+**`EU_COUNTRY` map** — `{ de, fr, es, it, nl, uk, dk }` each with `{ lic, sitecur, depcur, avgdep }`. Used by `pickCountry()` in `configurator.html` to auto-fill form fields when a country chip is selected:
+```javascript
+const EU_COUNTRY = {
+  de: { lic:'mga',  sitecur:'EUR', depcur:'EUR', avgdep:50  },
+  fr: { lic:'mga',  sitecur:'EUR', depcur:'EUR', avgdep:45  },
+  es: { lic:'mga',  sitecur:'EUR', depcur:'EUR', avgdep:40  },
+  it: { lic:'mga',  sitecur:'EUR', depcur:'EUR', avgdep:40  },
+  nl: { lic:'mga',  sitecur:'EUR', depcur:'EUR', avgdep:55  },
+  uk: { lic:'ukgc', sitecur:'GBP', depcur:'GBP', avgdep:45  },
+  dk: { lic:'dga',  sitecur:'DKK', depcur:'DKK', avgdep:700 },
+};
+```
+
 **i18n keys added (2026-05-19):**
 - `v_eu_max_bet`, `v_ukgc_max_bet`, `v_dga_max_bet`, `v_standard_max_bet` — max bet labels (all 4 languages)
 - `reg_dga_1..4` — DGA regulatory strings (RU + EN)
@@ -336,9 +353,11 @@ Key functions:
 Fully self-contained (no app.js). All logic inline.
 
 Key JS objects:
-- `GEO_LBL` — country code → display label (13 countries)
-- `GEO_LANG` — country code → default language (`dk:'da'`, `uk:'en'`, `ru:'ru'`, `de:'de'`, etc.)
+- `GEO_LBL` — country code → display label; includes grouped `eu:'🇪🇺 EU / UK'` + individual EU countries
+- `GEO_LANG` — country code → default language (`dk:'da'`, `uk:'en'`, `ru:'ru'`, `de:'de'`, `fr/it/nl/eu:'en'`, `es:'es'`, etc.)
 - `S` — current session state
+
+**EU grouped geo (Step 2)** — geo dropdown has a single `eu` option instead of separate DE/DK/UK entries. Selecting `eu` shows `#eu-ctry-wrap` — a chip group (DE / FR / ES / IT / NL / DK / UK). Clicking a chip calls `pickEuCountry(chip)` which resolves `draft.params.geo` to the actual country code and sets `draft.params._euPending = false`. Attempting to proceed to Step 3 without picking a country shows an alert and returns to Step 2. License chip resets to `auto` on country pick; `GEO_CFG[country].lic` resolves the correct license downstream.
 
 Supported languages: `da` (Danish), `de` (German), `en` (English), `ru` (Russian), `es` (Spanish), `mn` (Mongolian).
 

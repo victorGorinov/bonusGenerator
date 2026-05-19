@@ -21,7 +21,15 @@ const LANG = {
     lbl_license:'Лицензия / юрисдикция',
     lbl_rtp:'Средний RTP слотов',
     plat_both:'Desktop + Mobile', plat_mobile:'Mobile Only', plat_desk:'Desktop Only',
-    lic_mga:'MGA', lic_ukgc:'UKGC', lic_curacao:'Curaçao', lic_none:'Нет / Офшор',
+    lic_mga:'MGA', lic_ukgc:'UKGC', lic_dga:'DGA', lic_curacao:'Curaçao', lic_none:'Нет / Офшор',
+    lbl_country:'Страна EU',
+    hint_de:'типично для Германии', hint_fr:'типично для Франции', hint_es:'типично для Испании',
+    hint_it:'типично для Италии', hint_nl:'типично для Нидерландов',
+    hint_uk:'типично для Великобритании', hint_dk:'типично для Дании',
+    eu_ctry_hint_de:'MGA · EUR · ср. деп. €50', eu_ctry_hint_fr:'MGA · EUR · ср. деп. €45',
+    eu_ctry_hint_es:'MGA · EUR · ср. деп. €40', eu_ctry_hint_it:'MGA · EUR · ср. деп. €40',
+    eu_ctry_hint_nl:'MGA · EUR · ср. деп. €55', eu_ctry_hint_uk:'UKGC · GBP · ср. деп. £45',
+    eu_ctry_hint_dk:'DGA · DKK · ср. деп. 700 DKK',
     btn_gen:'⚡ Сгенерировать конфигурацию',
     ph_t:'Выберите регион и заполните параметры',
     ph_s:'Нажмите «Сгенерировать конфигурацию» — получите полный набор настроек для вашей админки',
@@ -68,7 +76,9 @@ const LANG = {
     p_arpu:'ARPU / мес', p_ltv3:'LTV 3 месяца', p_cac:'CAC (бонус)',
     p_arpu_sub:'на активного игрока', p_ltv3_sub:'расчётный', p_cac_sub:'на привлечение',
     p_bonus_cost:'Bonus Cost % GGR', p_monthly_budget:'Мес. бонусный бюджет',
-    p_cohort_ltv:'Суммарный LTV когорты за 3 мес', p_roi:'ROI за 3 месяца',
+    p_cohort_ltv:'Суммарный LTV когорты за 3 мес', p_roi:'ROI региона (бенчмарк)', p_roi_campaign:'ROI кампании',
+    rtip_roi_reg:'ROI рассчитан на основе среднего CAC по региону — это бенчмарк, не зависящий от конкретных параметров бонуса. Формула: (Cohort LTV − 3 × pl × cac) / (3 × pl × cac).',
+    rtip_roi_camp:'ROI рассчитан от реальной стоимости этой кампании. Обновляется при изменении параметров бонуса. Формула: (Cohort LTV − 3 × campaign_cost_usd) / (3 × campaign_cost_usd).',
     p_breakeven:'Точка безубыточности', p_ggr_rate:'GGR ставка (типовая)',
     p_mo_on_player:' мес на игрока', p_ggr_val:'3–5% от ставок',
     sec_bonus_cost:'Анализ стоимости бонуса',
@@ -208,7 +218,15 @@ const LANG = {
     lbl_license:'License / Jurisdiction',
     lbl_rtp:'Avg. Slot RTP',
     plat_both:'Desktop + Mobile', plat_mobile:'Mobile Only', plat_desk:'Desktop Only',
-    lic_mga:'MGA', lic_ukgc:'UKGC', lic_curacao:'Curaçao', lic_none:'Unlicensed / Offshore',
+    lic_mga:'MGA', lic_ukgc:'UKGC', lic_dga:'DGA', lic_curacao:'Curaçao', lic_none:'Unlicensed / Offshore',
+    lbl_country:'EU Country',
+    hint_de:'typical for Germany', hint_fr:'typical for France', hint_es:'typical for Spain',
+    hint_it:'typical for Italy', hint_nl:'typical for Netherlands',
+    hint_uk:'typical for UK', hint_dk:'typical for Denmark',
+    eu_ctry_hint_de:'MGA · EUR · avg dep €50', eu_ctry_hint_fr:'MGA · EUR · avg dep €45',
+    eu_ctry_hint_es:'MGA · EUR · avg dep €40', eu_ctry_hint_it:'MGA · EUR · avg dep €40',
+    eu_ctry_hint_nl:'MGA · EUR · avg dep €55', eu_ctry_hint_uk:'UKGC · GBP · avg dep £45',
+    eu_ctry_hint_dk:'DGA · DKK · avg dep 700 DKK',
     btn_gen:'⚡ Generate Configuration',
     ph_t:'Select a region and fill in the parameters',
     ph_s:'Click «Generate Configuration» to get the full admin panel settings',
@@ -252,7 +270,9 @@ const LANG = {
     p_arpu:'ARPU / mo', p_ltv3:'LTV 3 Months', p_cac:'CAC (Bonus)',
     p_arpu_sub:'per active player', p_ltv3_sub:'estimated', p_cac_sub:'per acquisition',
     p_bonus_cost:'Bonus Cost % GGR', p_monthly_budget:'Monthly Bonus Budget',
-    p_cohort_ltv:'Cohort LTV 3 Months', p_roi:'ROI 3 Months',
+    p_cohort_ltv:'Cohort LTV 3 Months', p_roi:'Regional ROI (benchmark)', p_roi_campaign:'Campaign ROI',
+    rtip_roi_reg:'ROI based on the regional average CAC — a market benchmark independent of your specific bonus parameters. Formula: (Cohort LTV − 3 × pl × cac) / (3 × pl × cac).',
+    rtip_roi_camp:'ROI based on the actual cost of this campaign. Updates when bonus parameters change. Formula: (Cohort LTV − 3 × campaign_cost_usd) / (3 × campaign_cost_usd).',
     p_breakeven:'Breakeven', p_ggr_rate:'GGR Rate (Typical)',
     p_mo_on_player:' mo per player', p_ggr_val:'3–5% of bets',
     sec_bonus_cost:'Bonus Cost Analysis',
@@ -387,7 +407,15 @@ const LANG = {
     lbl_license:'Лиценз / харьяалал',
     lbl_rtp:'Слотын дунд. RTP',
     plat_both:'Десктоп + Мобайл', plat_mobile:'Зөвхөн мобайл', plat_desk:'Зөвхөн десктоп',
-    lic_mga:'MGA', lic_ukgc:'UKGC', lic_curacao:'Curaçao', lic_none:'Байхгүй / Офшор',
+    lic_mga:'MGA', lic_ukgc:'UKGC', lic_dga:'DGA', lic_curacao:'Curaçao', lic_none:'Байхгүй / Офшор',
+    lbl_country:'EU улс',
+    hint_de:'Германид ердийн', hint_fr:'Францад ердийн', hint_es:'Испанид ердийн',
+    hint_it:'Италид ердийн', hint_nl:'Нидерландад ердийн',
+    hint_uk:'Их Британид ердийн', hint_dk:'Данид ердийн',
+    eu_ctry_hint_de:'MGA · EUR · дунд. хадг. €50', eu_ctry_hint_fr:'MGA · EUR · дунд. хадг. €45',
+    eu_ctry_hint_es:'MGA · EUR · дунд. хадг. €40', eu_ctry_hint_it:'MGA · EUR · дунд. хадг. €40',
+    eu_ctry_hint_nl:'MGA · EUR · дунд. хадг. €55', eu_ctry_hint_uk:'UKGC · GBP · дунд. хадг. £45',
+    eu_ctry_hint_dk:'DGA · DKK · дунд. хадг. 700 DKK',
     btn_gen:'⚡ Тохиргоо үүсгэх',
     ph_t:'Бүс нутгаа сонгоод параметрүүдийг бөглөнө үү',
     ph_s:'«Тохиргоо үүсгэх» товчийг дарж казиногийн бүх тохиргоог авна уу',
@@ -433,7 +461,9 @@ const LANG = {
     p_arpu:'ARPU / сард', p_ltv3:'LTV 3 сар', p_cac:'CAC (бонус)',
     p_arpu_sub:'идэвхтэй тоглогч тус бүрд', p_ltv3_sub:'тооцоолол', p_cac_sub:'элсэлт тус бүрд',
     p_bonus_cost:'Bonus Cost % GGR', p_monthly_budget:'Сарын бонусын төсөв',
-    p_cohort_ltv:'Когортын нийт LTV 3 сар', p_roi:'ROI 3 сарын дотор',
+    p_cohort_ltv:'Когортын нийт LTV 3 сар', p_roi:'Бүсийн ROI (бенчмарк)', p_roi_campaign:'Кампанийн ROI',
+    rtip_roi_reg:'Бүсийн дундаж CAC дээр үндэслэсэн ROI — тодорхой бонусын параметрээс үл хамаарах зах зээлийн бенчмарк.',
+    rtip_roi_camp:'Энэ кампанийн бодит зардал дээр үндэслэсэн ROI. Бонусын параметр өөрчлөгдөхөд шинэчлэгдэнэ.',
     p_breakeven:'Зардал нөхөх цэг', p_ggr_rate:'GGR түвшин (ердийн)',
     p_mo_on_player:' сар/тоглогч', p_ggr_val:'Бооцооны 3–5%',
     sec_bonus_cost:'Бонусын зардлын шинжилгээ',
@@ -565,7 +595,15 @@ const LANG = {
     lbl_license:'Licencia / jurisdicción',
     lbl_rtp:'RTP promedio de slots',
     plat_both:'Escritorio + Móvil', plat_mobile:'Solo móvil', plat_desk:'Solo escritorio',
-    lic_mga:'MGA', lic_ukgc:'UKGC', lic_curacao:'Curaçao', lic_none:'Sin licencia / Offshore',
+    lic_mga:'MGA', lic_ukgc:'UKGC', lic_dga:'DGA', lic_curacao:'Curaçao', lic_none:'Sin licencia / Offshore',
+    lbl_country:'País EU',
+    hint_de:'típico para Alemania', hint_fr:'típico para Francia', hint_es:'típico para España',
+    hint_it:'típico para Italia', hint_nl:'típico para Países Bajos',
+    hint_uk:'típico para Reino Unido', hint_dk:'típico para Dinamarca',
+    eu_ctry_hint_de:'MGA · EUR · dep. prom. €50', eu_ctry_hint_fr:'MGA · EUR · dep. prom. €45',
+    eu_ctry_hint_es:'MGA · EUR · dep. prom. €40', eu_ctry_hint_it:'MGA · EUR · dep. prom. €40',
+    eu_ctry_hint_nl:'MGA · EUR · dep. prom. €55', eu_ctry_hint_uk:'UKGC · GBP · dep. prom. £45',
+    eu_ctry_hint_dk:'DGA · DKK · dep. prom. 700 DKK',
     btn_gen:'⚡ Generar configuración',
     ph_t:'Selecciona una región y completa los parámetros',
     ph_s:'Haz clic en «Generar configuración» para obtener todos los ajustes del panel de administración',
@@ -610,7 +648,9 @@ const LANG = {
     p_arpu:'ARPU / mes', p_ltv3:'LTV 3 meses', p_cac:'CAC (Bono)',
     p_arpu_sub:'por jugador activo', p_ltv3_sub:'estimado', p_cac_sub:'por adquisición',
     p_bonus_cost:'Costo de bonos % GGR', p_monthly_budget:'Presupuesto mensual de bonos',
-    p_cohort_ltv:'LTV total de cohorte 3 meses', p_roi:'ROI 3 meses',
+    p_cohort_ltv:'LTV total de cohorte 3 meses', p_roi:'ROI regional (benchmark)', p_roi_campaign:'ROI de campaña',
+    rtip_roi_reg:'ROI basado en el CAC promedio regional — un benchmark de mercado independiente de los parámetros del bono.',
+    rtip_roi_camp:'ROI basado en el costo real de esta campaña. Se actualiza al cambiar los parámetros del bono.',
     p_breakeven:'Punto de equilibrio', p_ggr_rate:'Tasa GGR (típica)',
     p_mo_on_player:' mes por jugador', p_ggr_val:'3–5% de las apuestas',
     sec_bonus_cost:'Análisis de costo del bono',
@@ -761,8 +801,53 @@ function relabel(){
 // ═════════════════════════════════════════════════════════════════════════════
 // UI HELPERS
 // ═════════════════════════════════════════════════════════════════════════════
+// ── EU country config (country → lic, currencies, avgdep)
+const EU_COUNTRY = {
+  de: { lic:'mga',  sitecur:'EUR', depcur:'EUR', avgdep:50  },
+  fr: { lic:'mga',  sitecur:'EUR', depcur:'EUR', avgdep:45  },
+  es: { lic:'mga',  sitecur:'EUR', depcur:'EUR', avgdep:40  },
+  it: { lic:'mga',  sitecur:'EUR', depcur:'EUR', avgdep:40  },
+  nl: { lic:'mga',  sitecur:'EUR', depcur:'EUR', avgdep:55  },
+  uk: { lic:'ukgc', sitecur:'GBP', depcur:'GBP', avgdep:45  },
+  dk: { lic:'dga',  sitecur:'DKK', depcur:'DKK', avgdep:700 },
+};
+
+function pickCountry(el) {
+  const code = typeof el === 'string' ? el : el.dataset.v;
+  const cfg  = EU_COUNTRY[code];
+  if (!cfg) return;
+
+  // Highlight chip
+  document.querySelectorAll('.chip[data-g="country"]').forEach(c => c.classList.remove('on'));
+  const chip = typeof el === 'string'
+    ? document.querySelector(`.chip[data-g="country"][data-v="${code}"]`)
+    : el;
+  if (chip) chip.classList.add('on');
+  S.country = code;
+
+  // Auto-set license
+  setChip('lic', cfg.lic);
+
+  // Auto-set currencies
+  const sc = document.getElementById('sitecur');
+  const dc = document.getElementById('depcur');
+  if (sc) { sc.value = cfg.sitecur; S.sitecur = cfg.sitecur; }
+  if (dc) { dc.value = cfg.depcur;  S.depcur  = cfg.depcur;  }
+
+  // Auto-set avgdep
+  const ad = document.getElementById('avgdep');
+  if (ad) { ad.value = cfg.avgdep; S.avgdep = cfg.avgdep; }
+
+  // Update hints
+  const hintEl = document.getElementById('dephint');
+  if (hintEl) hintEl.textContent = '— ' + t('hint_' + code);
+  const euHint = document.getElementById('eu-country-hint');
+  if (euHint) euHint.textContent = t('eu_ctry_hint_' + code);
+}
+
 function pickRegion(r){
   S.region = r;
+  S.country = null;
   document.querySelectorAll('.rcard').forEach(c=>c.classList.remove('active'));
   document.getElementById('rc-'+r).classList.add('active');
   const D = {
@@ -782,6 +867,15 @@ function pickRegion(r){
   // Hide license for CIS and Sweep (no licensed ops); show for others
   document.getElementById('lic-wrap').style.display =
     (r==='cis'||r==='sweep') ? 'none' : 'block';
+  // Show EU country picker only for EU; reset chips
+  const euWrap = document.getElementById('eu-country-wrap');
+  if (euWrap) {
+    euWrap.style.display = r === 'eu' ? 'block' : 'none';
+    // Reset country chips selection
+    document.querySelectorAll('.chip[data-g="country"]').forEach(c => c.classList.remove('on'));
+    const euHint = document.getElementById('eu-country-hint');
+    if (euHint) euHint.textContent = '';
+  }
   const hintKey = {cis:'hint_cis',eu:'hint_eu',crypto:'hint_crypto',sweep:'hint_sweep',mn:'hint_mn',latam:'hint_latam'};
   document.getElementById('dephint').textContent = '— ' + t(hintKey[r]);
   document.getElementById('plbl').textContent = '';
@@ -873,6 +967,7 @@ async function generate(){
   document.getElementById('ph').style.display='none';
   document.getElementById('out').style.display='block';
   window._lastCfg = cfg;
+  window._lastCfg._country = S.country || null;
   document.getElementById('out').innerHTML = render(cfg);
   recalcEcon();
   // On mobile: auto-scroll to results after generation
@@ -888,6 +983,14 @@ let _recalcTimer = null;
 function recalcEcon(){
   const cfg = window._lastCfg;
   if(!cfg || cfg.r==='sweep') return;
+
+  // ── Sync update: wager display values don't need API response
+  // Keeps "Wager on Bonus" and "Wagering Conditions" in sync with override inputs
+  // Sync update: keep Wagering Conditions summary in step with ov_w_wager override
+  const readNum = (id, def) => { const v = parseFloat(document.getElementById(id)?.value); return (isNaN(v) || v <= 0) ? def : v; };
+  const wWDisp = readNum('ov_w_wager', cfg.econ.wagerX);
+  const elWW = document.getElementById('wg_display_wW'); if (elWW) elWW.textContent = wWDisp + '× bonus';
+
   clearTimeout(_recalcTimer);
   _recalcTimer = setTimeout(async () => {
     const E = cfg.econ;
@@ -946,6 +1049,62 @@ function recalcEcon(){
     if(elCR) elCR.textContent = (data.ratio*100).toFixed(1)+'% ('+data.ratio.toFixed(3)+')';
     const elMR = document.getElementById('econ_max_risk');
     if(elMR) elMR.textContent = fBC(data.maxRisk);
+
+    // ── Update stress test (P90 cost)
+    const elST = document.getElementById('econ_stress_test');
+    if(elST) elST.textContent = fBC(data.costs.w_p90);
+
+    // ── Update model label (breakeven indicator) with current wager override
+    const newWager  = gv('ov_w_wager', E.wagerX);
+    const overBe    = newWager > E.breakeven_wager;
+    const elML = document.getElementById('econ_model_label');
+    if (elML) {
+      elML.style.color      = overBe ? '#F59E0B' : '#10b981';
+      elML.style.background = overBe ? 'rgba(245,158,11,0.12)' : 'rgba(16,185,129,0.12)';
+      elML.textContent      = overBe
+        ? `⚠️ Wager ${newWager}× > breakeven ${E.breakeven_wager}× — Truncated Normal (variance tail, decaying)`
+        : `✅ Wager ${newWager}× ≤ breakeven ${E.breakeven_wager}× — Truncated Normal (linear mean + variance)`;
+    }
+
+    // ── Update CG card sub-metrics (cost per bonus, deposit load %)
+    const base = E.costRatio > 0 ? E.sP50.cost / E.costRatio : (E.pl > 0 ? E.pl * 100 : 1);
+    const scenCosts = { p10: data.costs.w_p10, p50: data.costs.w_p50, p90: data.costs.w_p90 };
+    const scenConvs = { p10: E.sP10.conv, p50: E.sP50.conv, p90: E.sP90.conv };
+    for (const k of ['p10','p50','p90']) {
+      const cost  = scenCosts[k];
+      const conv  = scenConvs[k];
+      const cpb   = (E.pl > 0 && conv > 0) ? Math.round(cost / (E.pl * conv)) : 0;
+      const dl    = base > 0 ? cost / base : 0;
+      const dlCls = dl > 0.35 ? 'rd' : dl > 0.20 ? 'yw' : 'gn';
+      const elCpb = document.getElementById(`econ_cpb_${k}`);
+      const elDl  = document.getElementById(`econ_dl_${k}`);
+      if (elCpb) elCpb.textContent = fBC(cpb);
+      if (elDl)  { elDl.textContent = (dl * 100).toFixed(1) + '%'; elDl.className = `pv ${dlCls}`; }
+    }
+
+    // ── Campaign ROI: scale regional CAC by (new_ratio / initial_ratio) → USD-comparable
+    // campaign_cac_usd = cac × (data.ratio / initial_costRatio)
+    // campaign_roi     = round((totLTV − 3×pl×campaign_cac_usd) / (3×pl×campaign_cac_usd) × 100)
+    const elCampROI = document.getElementById('econ_campaign_roi');
+    if (elCampROI && E.costRatio > 0) {
+      const campCacUsd   = E.cac * (data.ratio / E.costRatio);
+      const campBudget3  = 3 * E.pl * campCacUsd;
+      const campROI      = campBudget3 > 0 ? Math.round((E.totLTV - campBudget3) / campBudget3 * 100) : 0;
+      const campCls      = campROI > 50 ? 'gn' : campROI > 0 ? 'gd' : 'rd';
+      elCampROI.textContent = campROI + '%';
+      elCampROI.className   = `pv ${campCls}`;
+    }
+
+    // ── Update range bar labels and gradient position
+    const mn = data.costs.w_p10, md = data.costs.w_p50, mx = data.costs.w_p90;
+    const rng = mx > mn ? mx - mn : 1;
+    const pct = (((md - mn) / rng) * 100).toFixed(1);
+    const elMn = document.getElementById('econ_range_mn');
+    const elMd = document.getElementById('econ_range_md');
+    const elMx = document.getElementById('econ_range_mx');
+    if(elMn) elMn.textContent = fBC(mn);
+    if(elMd) elMd.textContent = fBC(md);
+    if(elMx) elMx.textContent = fBC(mx);
   }, 300);
 }
 
@@ -1026,7 +1185,6 @@ function render(c){
   } else if(N.type==='fs_restricted'){
     nBody=`<div style="font-size:11px;color:#F59E0B;background:rgba(245,158,11,0.12);padding:8px 10px;border-radius:6px;margin-bottom:8px">⚠️ ${N.note}</div>`
          +pre(t('p_fs_count'),'ov_ndb_fs',N.fs,'FS','',1,1,999)
-         +pr(t('p_fs_wager'),N.wager+'×')
          +pr(t('p_fs_maxw'),N.maxW_x+'× '+t('p_spin_val').toLowerCase())
          +pr(t('p_validity'),N.days+t('p_days'))
          +pr(t('p_limit'),'1 / account / IP')
@@ -1038,7 +1196,6 @@ function render(c){
     nBody=pr(t('p_type'),'Cash + Free Spins','hi')
          +pre(t('p_cash_amt')||'Cash','ov_ndb_amt',N.amt,N.ndCur,'',1,0,99999)
          +pre(t('p_fs_count'),'ov_ndb_fs',N.fs,'FS','',1,0,999)
-         +pr(t('p_wager_ndb'),N.wager+'× bonus','gd')
          +pr(t('p_fs_maxw'),N.maxW_x+'× bonus')
          +pr(t('p_validity'),N.days+t('p_days'))
          +pr(t('p_trigger'),t('v_reg_verify'))
@@ -1050,7 +1207,6 @@ function render(c){
   } else {
     nBody=pr(t('p_type'),N.type==='crypto'?'Crypto Bonus':'Free Spins')
          +pre(t('p_size'),'ov_ndb_amt',N.amt,N.ndCur,'',1,1,99999)
-         +pr(t('p_wager_ndb'),N.wager+'× bonus','gd')
          +pr(t('p_fs_maxw'),N.maxW_x+'× bonus')
          +pr(t('p_validity'),N.days+t('p_days'))
          +pr(t('p_trigger'),t('v_reg_verify'))
@@ -1108,7 +1264,6 @@ function render(c){
           +pre(t('p_fs_count'),'ov_d2_fs',D2.fs||0,'FS','',1,0,999)
           +pr(t('p_validity'),D2.days+t('p_days'))
           +pr(t('p_dep_trigger'),t('sec_dep2'))
-          +pr(t('p_dep_wager'),D2.wager+'× bonus','gd')
           +pr(t('p_promo'),D2.code)
           +pr(t('p_optin'),t('v_required_short'))
           +'<div class="ov-sep"></div>'
@@ -1135,7 +1290,6 @@ function render(c){
           +pre(t('p_fs_count'),'ov_d3_fs',D3.fs||0,'FS','',1,0,999)
           +pr(t('p_validity'),D3.days+t('p_days'))
           +pr(t('p_dep_trigger'),t(D3.trigger))
-          +pr(t('p_dep_wager'),D3.wager+'× bonus','gd')
           +pr(t('p_promo'),D3.code)
           +pr(t('p_optin'),t('v_required_short'))
           +'<div class="ov-sep"></div>'
@@ -1177,7 +1331,7 @@ function render(c){
   if(r==='sweep'){
     wgBody=`<div style="padding:16px;text-align:center;font-size:14px;font-weight:700;color:var(--green)">${t('v_sweep_no_wager')}<br><span style="font-size:11px;font-weight:400;color:var(--muted)">${t('v_sweep_freeplay')}</span></div>`;
   } else {
-    wgBody=prt(t('p_wager_welcome'),WG.wW+'× bonus','hi',t('rtip_wager'))
+    wgBody=prt(t('p_wager_welcome'),WG.wW+'× bonus','hi',t('rtip_wager'),'wg_display_wW')
           +pr(t('p_wager_ndb'),WG.wN+'× bonus')
           +pr(t('p_wager_reload'),WG.wR+'× bonus')
           +pr(t('p_wager_fs'),WG.wF+'× winnings')
@@ -1254,8 +1408,8 @@ function render(c){
 
   // Метка модели: Truncated Normal (единая модель) + авто-подбор вейджера
   const modelLabel = E.over_breakeven
-    ? `<div style="font-size:10px;padding:4px 14px 2px;color:#F59E0B;background:rgba(245,158,11,0.12)">⚠️ Wager ${E.wagerX}× > breakeven ${E.breakeven_wager}× — Truncated Normal (variance tail, decaying)</div>`
-    : `<div style="font-size:10px;padding:4px 14px 2px;color:#10b981;background:rgba(16,185,129,0.12)">✅ Wager ${E.wagerX}× ≤ breakeven ${E.breakeven_wager}× — Truncated Normal (linear mean + variance)</div>`;
+    ? `<div id="econ_model_label" style="font-size:10px;padding:4px 14px 2px;color:#F59E0B;background:rgba(245,158,11,0.12)">⚠️ Wager ${E.wagerX}× > breakeven ${E.breakeven_wager}× — Truncated Normal (variance tail, decaying)</div>`
+    : `<div id="econ_model_label" style="font-size:10px;padding:4px 14px 2px;color:#10b981;background:rgba(16,185,129,0.12)">✅ Wager ${E.wagerX}× ≤ breakeven ${E.breakeven_wager}× — Truncated Normal (linear mean + variance)</div>`;
   const autoWagerLabel = ``; // removed: wager now uses market-standard regional defaults
 
   // ── Model label (breakeven indicator, no scenario cards here — moved to CG section below)
@@ -1266,7 +1420,7 @@ function render(c){
     <div style="font-size:12px;padding:7px 10px;border-radius:6px;margin-bottom:6px;font-weight:600;color:${{gn:'#10b981',gd:'#F59E0B',yw:'#F59E0B',rd:'#EF4444'}[E.verdictCls]||'#8892a4'};background:${{gn:'rgba(16,185,129,0.15)',gd:'rgba(245,158,11,0.15)',yw:'rgba(245,158,11,0.2)',rd:'rgba(239,68,68,0.15)'}[E.verdictCls]||'#1e2740'}">${t(E.verdictKey)}</div>
     ${prt(t('p_cost_ratio'), fmtRatio(E.costRatio)+' ('+E.costRatio.toFixed(3)+')', E.verdictCls, t('rtip_cost_ratio'), 'econ_cost_ratio')}
     ${prt(t('p_max_risk'), fmtBonusCur(E.maxRisk), 'rd', t('rtip_max_risk'), 'econ_max_risk')}
-    ${pr(t('p_stress_test'), fmtBonusCur(E.stressTest), E.sP50.cost<E.stressTest?'yw':'gn')}
+    ${pr(t('p_stress_test'), fmtBonusCur(E.stressTest), E.sP50.cost<E.stressTest?'yw':'gn', 'econ_stress_test')}
     ${pr(t('p_grand_total'), '—', 'hi', 'cost_total_all')}
   </div>`;
 
@@ -1280,8 +1434,12 @@ function render(c){
     </div>
     ${pr(t('p_monthly_budget')+' (×'+E.pl.toLocaleString('ru')+')', fmtUSD(E.mBudget)+' ~USD / mo','hi')}
     ${pr(t('p_cohort_ltv'), fmtUSD(E.totLTV)+' ~USD','gn')}
-    ${pr(t('p_roi'),E.roi3+'%', E.roi3>50?'gn':E.roi3>0?'gd':'rd')}
+    ${prt(t('p_roi'), E.roi3+'%', E.roi3>50?'gn':E.roi3>0?'gd':'rd', t('rtip_roi_reg'))}
     ${pr(t('p_breakeven'),E.be+t('p_mo_on_player'), E.be<=2?'gn':'gd')}
+  </div>
+  <div style="border-top:1px solid var(--border);padding:10px 14px;background:rgba(79,110,247,0.04)">
+    <div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-style:italic">⚡ ${L==='ru'?'Кампанийный ROI — обновляется при изменении параметров':'Campaign ROI — updates with parameter changes'}</div>
+    ${prt(t('p_roi_campaign'), E.roi3+'%', E.roi3>50?'gn':E.roi3>0?'gd':'rd', t('rtip_roi_camp'), 'econ_campaign_roi')}
   </div>`;
 
   h += `<div class="sec fw">${shdr('#1E1B4B','📊',t('sec_econ'),E.pl.toLocaleString('ru')+' '+t('players_mo'))}<div>${econBody}</div></div>`;
@@ -1338,23 +1496,24 @@ function renderCGEconCards(E, cur, r) {
   const base = E.costRatio > 0 ? E.sP50.cost / E.costRatio : (pl > 0 ? pl * 100 : 1);
 
   // costId: retain econ_cost_p10/p50/p90 IDs so recalcEcon() can update them
-  function cgCard(label, sP, col, costId) {
+  // suf: p10 / p50 / p90 — used for sub-metric IDs (econ_cpb_p10, econ_dl_p10, etc.)
+  function cgCard(label, sP, col, costId, suf) {
     const cpb   = (pl > 0 && sP.conv > 0) ? Math.round(sP.cost / (pl * sP.conv)) : 0;
     const ratio = base > 0 ? sP.cost / base : 0;
     const rCol  = ratio > 0.35 ? 'rd' : ratio > 0.20 ? 'yw' : 'gn';
     return `<div class="ei" style="border:1px solid ${col}40;border-radius:10px;padding:10px 12px;background:${col}0a;flex:1;min-width:0">
       <div style="font-size:10px;font-weight:700;color:${col};text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">${label}</div>
       <div style="font-size:19px;font-weight:800;color:${col};margin-bottom:8px;line-height:1.1" id="${costId}">${fmtBCur(sP.cost)}</div>
-      ${prt(t('cg_cost_per_bonus'), fmtBCur(cpb), '', t('rtip_cg_cpb'))}
-      ${prt(t('cg_dep_load'), fmtPct(ratio), rCol, t('rtip_cg_dl'))}
+      ${prt(t('cg_cost_per_bonus'), fmtBCur(cpb), '', t('rtip_cg_cpb'), `econ_cpb_${suf}`)}
+      ${prt(t('cg_dep_load'), fmtPct(ratio), rCol, t('rtip_cg_dl'), `econ_dl_${suf}`)}
       ${prt(t('cg_wager_compl'), (sP.conv * 100).toFixed(0) + '%', '', t('rtip_cg_wc'))}
     </div>`;
   }
 
   const cards = `<div class="eg" style="padding:10px 14px 8px;gap:8px;align-items:stretch">
-    ${cgCard(t('cg_best'),     E.sP10, '#64748B', 'econ_cost_p10')}
-    ${cgCard(t('cg_expected'), E.sP50, '#2563EB', 'econ_cost_p50')}
-    ${cgCard(t('cg_worst'),    E.sP90, '#DC2626', 'econ_cost_p90')}
+    ${cgCard(t('cg_best'),     E.sP10, '#64748B', 'econ_cost_p10', 'p10')}
+    ${cgCard(t('cg_expected'), E.sP50, '#2563EB', 'econ_cost_p50', 'p50')}
+    ${cgCard(t('cg_worst'),    E.sP90, '#DC2626', 'econ_cost_p90', 'p90')}
   </div>`;
 
   const mn = E.sP10.cost, mx = E.sP90.cost, md = E.sP50.cost;
@@ -1365,7 +1524,7 @@ function renderCGEconCards(E, cur, r) {
       <div style="position:absolute;top:-3px;left:${pct}%;transform:translateX(-50%);width:10px;height:10px;border-radius:50%;background:#2563EB;border:2px solid var(--bg)"></div>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:3px">
-      <span>${fmtBCur(mn)}</span><span style="color:#2563EB">${fmtBCur(md)}</span><span>${fmtBCur(mx)}</span>
+      <span id="econ_range_mn">${fmtBCur(mn)}</span><span id="econ_range_md" style="color:#2563EB">${fmtBCur(md)}</span><span id="econ_range_mx">${fmtBCur(mx)}</span>
     </div>
   </div>`;
 
@@ -1743,8 +1902,9 @@ async function runConfiguratorAudit(btn) {
   resultEl.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:6px 0">${t('cfg_audit_running')}</div>`;
 
   // Map region → representative country code (audit prompt uses geo for context)
+  // Use specific EU country if selected (e.g. dk for DGA, uk for UKGC), otherwise fall back to region default
   const geoMap = { eu:'de', cis:'ru', crypto:'us', sweep:'us', mn:'mn', latam:'mx' };
-  const geo = geoMap[cfg.r] || cfg.r;
+  const geo = (cfg._country && cfg._country.length === 2) ? cfg._country : (geoMap[cfg.r] || cfg.r);
   const lic = (cfg.lic || 'mga').toUpperCase();
 
   const payload = {

@@ -221,6 +221,23 @@
       </div>
     </div>
 
+    <!-- EU Country Picker (shown only when EU region is active) -->
+    <div class="fg" id="eu-country-wrap" style="display:none">
+      <div class="fl">
+        <span data-i18n="lbl_country">Страна</span>
+        <em id="eu-country-hint" style="font-size:11px;color:var(--muted);margin-left:6px"></em>
+      </div>
+      <div class="chips" style="flex-wrap:wrap">
+        <div class="chip" data-g="country" data-v="de" onclick="pickCountry(this)">🇩🇪 DE</div>
+        <div class="chip" data-g="country" data-v="fr" onclick="pickCountry(this)">🇫🇷 FR</div>
+        <div class="chip" data-g="country" data-v="es" onclick="pickCountry(this)">🇪🇸 ES</div>
+        <div class="chip" data-g="country" data-v="it" onclick="pickCountry(this)">🇮🇹 IT</div>
+        <div class="chip" data-g="country" data-v="nl" onclick="pickCountry(this)">🇳🇱 NL</div>
+        <div class="chip" data-g="country" data-v="uk" onclick="pickCountry(this)">🇬🇧 UK</div>
+        <div class="chip" data-g="country" data-v="dk" onclick="pickCountry(this)">🇩🇰 DK</div>
+      </div>
+    </div>
+
     <!-- Players -->
     <div class="fg">
       <div class="fl">
@@ -300,10 +317,11 @@
           <div class="tip-box" data-i18n="tip_license"></div>
         </span>
       </div>
-      <div class="chips">
+      <div class="chips" style="flex-wrap:wrap">
         <div class="chip" data-g="lic" data-v="mga" onclick="pickChip(this)" data-i18n="lic_mga">MGA</div>
-        <div class="chip on" data-g="lic" data-v="ukgc" onclick="pickChip(this)" data-i18n="lic_ukgc">UKGC</div>
-        <div class="chip" data-g="lic" data-v="curacao" onclick="pickChip(this)" data-i18n="lic_curacao">Curaçao</div>
+        <div class="chip" data-g="lic" data-v="ukgc" onclick="pickChip(this)" data-i18n="lic_ukgc">UKGC</div>
+        <div class="chip" data-g="lic" data-v="dga" onclick="pickChip(this)" data-i18n="lic_dga">DGA</div>
+        <div class="chip on" data-g="lic" data-v="curacao" onclick="pickChip(this)" data-i18n="lic_curacao">Curaçao</div>
         <div class="chip" data-g="lic" data-v="none" onclick="pickChip(this)" data-i18n="lic_none">Нет / Офшор</div>
       </div>
     </div>
