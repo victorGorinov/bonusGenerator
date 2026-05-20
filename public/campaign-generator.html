@@ -1503,10 +1503,22 @@ async function _cgRunOptimize(btn) {
     const impactLbl = isRu
       ? { high: 'Высокий', med: 'Средний', low: 'Низкий' }
       : { high: 'High',    med: 'Medium',  low: 'Low'    };
+    const factorLbl = isRu
+      ? { F1:'Вейджер', F2:'Матч-бонус', F3:'Механики', F4:'RTP игр', F5:'Платформа' }
+      : { F1:'Wagering', F2:'Match Bonus', F3:'Mechanics', F4:'Game RTP', F5:'Platform' };
+    const paramLbl = isRu
+      ? { wager:'Размер вейджера', matchPct:'Процент матча', addNDB:'Добавить НДБ',
+          addReload:'Добавить Reload', addCashback:'Добавить кэшбэк',
+          addDep2:'Бонус 2-го депозита', addFS:'Добавить фриспины',
+          rtp:'RTP слотов', plat:'Устройство' }
+      : { wager:'Wager multiplier', matchPct:'Match %', addNDB:'Add No-Dep Bonus',
+          addReload:'Add Reload', addCashback:'Add Cashback',
+          addDep2:'2nd Deposit Bonus', addFS:'Add Free Spins',
+          rtp:'Slots RTP', plat:'Platform' };
     const cards = (data.recommendations || []).map(rec => `
       <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:8px 10px;margin-top:6px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-          <span style="font-size:11px;font-weight:700;color:#a5b4fc">${rec.factor} · ${rec.param}</span>
+          <span style="font-size:11px;font-weight:700;color:#a5b4fc">${factorLbl[rec.factor]||rec.factor} · ${paramLbl[rec.param]||rec.param}</span>
           <span style="font-size:10px;font-weight:600;color:${impactClr[rec.impact]||'#8892a4'}">${impactLbl[rec.impact]||rec.impact}</span>
         </div>
         <div style="font-size:11px;color:#8892a4;margin-bottom:3px">${rec.current} → <strong style="color:var(--text)">${rec.target}</strong></div>

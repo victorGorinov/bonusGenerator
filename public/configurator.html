@@ -292,6 +292,22 @@
       <input type="number" id="avgdep" value="100" min="1" step="1" oninput="S.avgdep=parseFloat(this.value)||100"/>
     </div>
 
+    <!-- Segment -->
+    <div class="fg">
+      <div class="fl">
+        <span class="tip-wrap">
+          <span data-i18n="lbl_segment">Сегмент игроков</span>
+          <span class="tip-btn" onclick="toggleTip(this)">?</span>
+          <div class="tip-box" data-i18n="tip_segment"></div>
+        </span>
+      </div>
+      <div class="chips">
+        <div class="chip" data-g="segment" data-v="new" onclick="pickChip(this)" data-i18n="seg_new">🆕 Новые</div>
+        <div class="chip on" data-g="segment" data-v="mid" onclick="pickChip(this)" data-i18n="seg_mid">👤 Средние</div>
+        <div class="chip" data-g="segment" data-v="vip" onclick="pickChip(this)" data-i18n="seg_vip">👑 VIP</div>
+      </div>
+    </div>
+
     <!-- Platform -->
     <div class="fg">
       <div class="fl">
@@ -648,6 +664,7 @@ function saveCampaignToStorage(name) {
       lic:      S.lic,
       plat:     S.plat,
       rtp:      S.rtp,
+      segment:  S.segment || 'mid',
       lang:     typeof L !== 'undefined' ? L : 'ru',
     },
     // key mechanics from generated config
@@ -709,8 +726,9 @@ function _applyParamsFromCampaign(campaign) {
     if (dsp) dsp.textContent = Number(p.players).toLocaleString('ru');
     S.players = p.players;
   }
-  if (p.lic)  setChip('lic',  p.lic);
-  if (p.plat) setChip('plat', p.plat);
+  if (p.lic)     setChip('lic',     p.lic);
+  if (p.plat)    setChip('plat',    p.plat);
+  if (p.segment) setChip('segment', p.segment);
   if (p.rtp  != null) syncRtp(p.rtp);
   if (p.lang && typeof setLang === 'function') setLang(p.lang);
 }
@@ -961,15 +979,16 @@ function updateSavedCampaign() {
     ...arr[idx],
     updatedAt: new Date().toISOString(),
     params: {
-      region:  S.region,
-      players: S.players,
-      avgdep:  S.avgdep,
-      sitecur: S.sitecur,
-      depcur:  S.depcur,
-      lic:     S.lic,
-      plat:    S.plat,
-      rtp:     S.rtp,
-      lang:    typeof L !== 'undefined' ? L : 'ru',
+      region:   S.region,
+      players:  S.players,
+      avgdep:   S.avgdep,
+      sitecur:  S.sitecur,
+      depcur:   S.depcur,
+      lic:      S.lic,
+      plat:     S.plat,
+      rtp:      S.rtp,
+      segment:  S.segment || 'mid',
+      lang:     typeof L !== 'undefined' ? L : 'ru',
     },
     mechanics: cfg.welcome ? {
       type:  cfg.welcome.type,

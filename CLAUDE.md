@@ -163,16 +163,16 @@ Active licenses: `mga` (EU default), `ukgc` (UK), `dga` (Denmark), `none` (CIS/l
 
 **CIS config note** (`src/config/geo/cis.ts`) — `reload.maxBMax` is `Infinity` (not an absolute cap). The bonus ceiling is enforced exclusively via `maxBMulti: 1.5` (1.5× avgdep), which is currency-agnostic. An earlier absolute cap of 200 RUB was incorrect and has been removed.
 
-**`calcScenario` payout fallback (added 2026-05-19)** — `truncNormalPayout` is not scale-invariant: its z-score scales as `√B`, so for large-denomination currencies (RUB 5000, KZT 20000, MNT 100000) z ≈ −8 to −40, driving all Gaussian terms to zero and returning 0. `calcScenario` now falls back to a deterministic estimate when `payoutStat = 0`:
+**`calcScenario` payout fallback** — `truncNormalPayout` is not scale-invariant. For large-denomination currencies (RUB, KZT, MNT) z = mu/sigma falls in the range −20 to −43, causing a floating-point problem: `_Phi(z)` (computed via `_erf`) underflows to exactly 0, while `_phi(z)` (computed as `exp(-z²/2)/√(2π)`) remains representable as a tiny positive. This leaves a spurious `payoutStat` like `1.8e-200` that passes `payoutStat > 0` but rounds to 0 in the final cost. Fix: use a relative threshold — if `payoutStat < bonusSize × 1e-6` it is a numerical artifact; fall back to the deterministic breakeven-efficiency estimate:
 
 ```typescript
 const payoutStat = truncNormalPayout(bonusSize, wagerX, adjWCR, adjRTP);
 const adjBe  = adjWCR / (1 - adjRTP);
 const adjEff = wagerX > 0 ? Math.min(1, adjBe / Math.max(adjBe, wagerX)) : 1;
-const payout = payoutStat > 0 ? payoutStat : bonusSize * adjEff;
+const payout = payoutStat > bonusSize * 1e-6 ? payoutStat : bonusSize * adjEff;
 ```
 
-This is consistent with `_effW` used in `totalBonusCost`. EUR/GBP/USD geos are unaffected (their `payoutStat > 0`). Sweep geos (wagerX=0) now get `adjEff=1` (full bonus passes through, no wagering).
+EUR/GBP/USD geos unaffected (their `payoutStat` is in the range of the bonus size, far above the threshold). Sweep geos (wagerX=0) get `adjEff=1` (full bonus passes through). MN sP10 (z≈-43) underflows completely to 0; sP50/sP90 (z≈-30 to -23) hit the spurious-tiny-positive range — all three now correctly use the fallback.
 
 ### `recalcCosts(cfg, overrides)` — `src/domain/bonus/recalcCosts.ts`
 
@@ -414,7 +414,7 @@ Two new functions added before `render(c)`:
 
 Called from `render(c)` via `_buildIncrRevBody(c, _calcRetentionV2(c))`, rendered inside a new `<div>` section at the bottom of `econBody` with green tint background.
 
-**`recalcEcon()` incremental update** — when override wager changes, only F1 changes; F2–F5 stay from last generate. The `campCost3` in recalc currently uses `3 × mBudget × (data.ratio / E.costRatio)` (**pending fix** — see tech debt, task #5).
+**`recalcEcon()` incremental update** — when override wager changes, only F1 changes; F2–F5 stay from last generate. `campCost3` uses `3 × (data.ratio || E.costRatio) × pl × arpu` (updated cost ratio from recalc response).
 
 ### `public/campaign-generator.html` — AI Campaign Generator SPA
 
@@ -461,7 +461,7 @@ When `netIncr < 0`, the IIFE stores lift + economics in `window._lastCGIncrData`
 
 **`_cgRunOptimize(btn)`** — global function in `campaign-generator.html`. Reads `window._lastCGIncrData`, POSTs to `/api/campaign/optimize`, renders recommendation cards (factor badge, param change, reason, impact colour) into `#cg_incr_ai_result`.
 
-**Campaign cost in incremental model (`campCost3`)** — currently uses `3 × econ.mBudget` in both Configurator and Campaign Generator. **This is a known issue** (task #5, pending): `mBudget = pl × cac` (total CAC-based budget, USD) makes breakeven structurally unreachable at realistic lift levels (need lift > CAC/ARPU ≈ 42% for MN). Planned fix: replace with `3 × costRatio × pl × arpu` (actual bonus cost in USD).
+**Campaign cost in incremental model (`campCost3`)** — `3 × costRatio × pl × arpu` in both Configurator and Campaign Generator. Uses dimensionless `costRatio` × USD-denominated `arpu` — currency-safe. Previous formula `3 × mBudget = 3 × pl × cac` was incorrect (made breakeven structurally unreachable, required lift > CAC/ARPU ≈ 42%).
 
 **Tooltip CSS** — `.tip` class with `::after` pseudo-element. `position:absolute; bottom:calc(100% + 6px)`. Requires parent to have `overflow:visible` (all econ card parents do). `z-index:50`.
 
@@ -671,17 +671,120 @@ Returns 2–4 parameter-change recommendations when incremental net result is ne
 
 **Route**: `POST /api/campaign/optimize` — `aiLimiter`, `validate(OptimizeSchema)`
 
-**Files**:
+**Files** (all implemented):
 - `src/validation/optimize.schema.ts` — `OptimizeSchema` (geo, segment, lift object, economics object)
 - `src/ai/prompts/optimize.prompt.ts` — `buildOptimizePrompt(data: OptimizeInput)` — RU/EN prompt with 5-factor table + economics
 - `src/controllers/campaign.controller.ts` — `optimize()` handler — calls prompt → aiGenerate (600 tokens) → `parseOptimizeResponse()`
 - `src/ai/parser.ts` — `OptimizeResponseSchema`, `parseOptimizeResponse()`, `OptimizeResponse` type
 
-**Response shape**: `{ recommendations: [{ factor, param, current, target, reason, impact }] }`
+**Request shape**:
+```typescript
+{
+  geo:       string,
+  segment:   'new' | 'mid' | 'vip',
+  lift: {
+    wagFactor, wagerX, beW,
+    genFactor, matchPct,
+    mechFactor, hasNDB, hasReload, hasDep2, hasFS, hasCB,
+    rtpFactor, rtp,
+    platFactor, plat,
+    base, lift
+  },
+  economics: { net, campCost3, incrRev, incrPl, pl },
+  uiLang?:   string
+}
+```
 
-**UI — Configurator (`app.js`)**: `_runOptimize(btn)` — reads `_calcRetentionV2(_lastCfg)`, POSTs to `/api/campaign/optimize`, renders cards into `#incr_ai_result`. Button shown in `_buildIncrRevBody` only when `netIncr < 0`.
+**Response shape**: `{ recommendations: [{ factor, param, current, target, reason, impact: 'high'|'med'|'low' }] }`
 
-**UI — Campaign Generator (`campaign-generator.html`)**: IIFE stores lift+economics in `window._lastCGIncrData` at render time; `_cgRunOptimize(btn)` (global function) reads it and POSTs. Button rendered into `#cg_incr_ai_result`. Shown only when `netIncr < 0`.
+**UI — Configurator (`app.js`)** ✅ **implemented**:
+- `_runOptimize(btn)` — reads `_calcRetentionV2(_lastCfg)`, recomputes economics, POSTs to `/api/campaign/optimize`, renders recommendation cards into `#incr_ai_result`
+- Button `🤖 Рекомендации AI` rendered in `_buildIncrRevBody` inside `#incr_ai_btn_wrap` only when `netIncr < 0`
+- i18n keys: `btn_ai_optimize`, `ai_opt_loading`, `ai_opt_title`, `ai_opt_impact_high`, `ai_opt_impact_med`, `ai_opt_impact_low`, `ai_opt_err` (all 4 languages)
+- Card style: indigo button → on click shows loading state → renders cards with factor badge, `current → target`, reason text, impact colour (`high`=#10b981, `med`=#f59e0b, `low`=#8892a4)
+
+**UI — Campaign Generator (`campaign-generator.html`)** ⏳ **pending**:
+
+Location: inside the Incremental Revenue IIFE at the end of `renderEconScenarios`, after the net result row, when `netIncr < 0`.
+
+Step 1 — save state at render time:
+```js
+if (netIncr < 0) {
+  window._lastCGIncrData = {
+    geo:       draft?.params?.geo,
+    segment:   seg,
+    lift: {
+      wagFactor: wagF, wagerX, beW,
+      genFactor: genF, matchPct,
+      mechFactor: mechF, hasNDB, hasReload: hasRL, hasDep2: hasD2, hasFS, hasCB,
+      rtpFactor: rtpF, rtp,
+      platFactor: platF, plat: platKey,
+      base, lift,
+    },
+    economics: { net: netIncr, campCost3, incrRev, incrPl, pl },
+    uiLang: currentLang,
+  };
+}
+```
+
+Step 2 — render button + result container (append to IIFE return string when `netIncr < 0`):
+```html
+<div id="cg_incr_ai_btn_wrap" style="margin-top:10px">
+  <button onclick="_cgRunOptimize(this)"
+    style="width:100%;padding:7px 12px;background:rgba(99,102,241,.18);border:1px solid rgba(99,102,241,.45);
+           border-radius:8px;color:#a5b4fc;font-size:12px;cursor:pointer;font-weight:600">
+    🤖 ${isRu ? 'Рекомендации AI' : 'AI Recommendations'}
+  </button>
+</div>
+<div id="cg_incr_ai_result"></div>
+```
+
+Step 3 — global function `_cgRunOptimize(btn)` (defined in the `<script>` block after `renderEconScenarios`):
+```js
+async function _cgRunOptimize(btn) {
+  const d = window._lastCGIncrData;
+  if (!d) return;
+  const resultEl = document.getElementById('cg_incr_ai_result');
+  const isRu = d.uiLang === 'ru';
+  btn.disabled = true;
+  btn.textContent = isRu ? 'AI анализирует параметры…' : 'AI is analysing parameters…';
+  resultEl.innerHTML = '';
+  try {
+    const resp = await fetch('/api/campaign/optimize', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(d),
+    });
+    if (!resp.ok) throw new Error(await resp.text());
+    const data = await resp.json();
+    const impactClr = { high:'#10b981', med:'#f59e0b', low:'#8892a4' };
+    const impactLbl = isRu
+      ? { high:'Высокий', med:'Средний', low:'Низкий' }
+      : { high:'High',    med:'Medium',  low:'Low'    };
+    const cards = (data.recommendations || []).map(rec => `
+      <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);
+                  border-radius:8px;padding:8px 10px;margin-top:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-size:11px;font-weight:700;color:#a5b4fc">${rec.factor} · ${rec.param}</span>
+          <span style="font-size:10px;font-weight:600;color:${impactClr[rec.impact]||'#8892a4'}">${impactLbl[rec.impact]||rec.impact}</span>
+        </div>
+        <div style="font-size:11px;color:#8892a4;margin-bottom:3px">${rec.current} → <strong style="color:#f1f5f9">${rec.target}</strong></div>
+        <div style="font-size:11px;color:#f1f5f9">${rec.reason}</div>
+      </div>`).join('');
+    resultEl.innerHTML = `
+      <div style="font-size:11px;font-weight:700;color:#a5b4fc;margin-top:10px;margin-bottom:2px">
+        ${isRu ? 'Рекомендации по оптимизации' : 'Optimisation Recommendations'}
+      </div>${cards}`;
+    btn.textContent = isRu ? '🤖 Рекомендации AI' : '🤖 AI Recommendations';
+    btn.disabled = false;
+  } catch (e) {
+    resultEl.innerHTML = `<div style="color:#EF4444;font-size:11px;margin-top:6px">
+      ${isRu ? 'Не удалось получить рекомендации. Попробуйте ещё раз.' : 'Could not get recommendations. Please try again.'}
+    </div>`;
+    btn.textContent = isRu ? '🤖 Рекомендации AI' : '🤖 AI Recommendations';
+    btn.disabled = false;
+  }
+}
+```
 
 ---
 
