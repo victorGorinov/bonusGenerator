@@ -43,9 +43,15 @@ describe('recalcCosts — overrides', () => {
     expect(low.maxRisk).toBeLessThan(base.maxRisk);
   });
 
-  it('invalid override (0) falls back to default', () => {
+  it('override 0 is accepted: not treated as missing (differs from default)', () => {
+    const base  = recalcCosts(cfg, {});
+    const noPct = recalcCosts(cfg, { w_pct: 0 });
+    expect(noPct.costs.w_p50).not.toBe(base.costs.w_p50);
+  });
+
+  it('negative override falls back to default', () => {
     const base = recalcCosts(cfg, {});
-    const same = recalcCosts(cfg, { w_pct: 0 });
+    const same = recalcCosts(cfg, { w_pct: -10 });
     expect(same.costs.w_p50).toBe(base.costs.w_p50);
   });
 });

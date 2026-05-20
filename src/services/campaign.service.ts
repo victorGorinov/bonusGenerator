@@ -60,16 +60,18 @@ export function generateCampaign({ scenario, params }: { scenario?: ScenarioRef 
   const selectedMechanics: Record<string, unknown> = {};
   finalTypes.forEach(t => { if (allMechanics[t]) selectedMechanics[t] = allMechanics[t]; });
 
+  const uiLang: 'ru' | 'en' = params.lang === 'ru' ? 'ru' : 'en';
+
   return {
     mechanic:          selectedMechanics[primaryType],
     mechanicType:      primaryType,
     requestedTypes:    finalTypes,
     selectedMechanics,
     allMechanics,
-    explanation:       campaignExplanation(id, primaryType, cfg, finalTypes, 'ru'),
+    explanation:       campaignExplanation(id, primaryType, cfg, finalTypes, uiLang),
     explanationRu:     campaignExplanation(id, primaryType, cfg, finalTypes, 'ru'),
     explanationEn:     campaignExplanation(id, primaryType, cfg, finalTypes, 'en'),
-    alternatives:      campaignAlternatives(cfg, finalTypes, 'ru'),
+    alternatives:      campaignAlternatives(cfg, finalTypes, uiLang),
     alternativesRu:    campaignAlternatives(cfg, finalTypes, 'ru'),
     alternativesEn:    campaignAlternatives(cfg, finalTypes, 'en'),
     econ:              cfg['econ'],

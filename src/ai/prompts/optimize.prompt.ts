@@ -30,6 +30,9 @@ export interface OptimizeInput {
   uiLang?: string;
 }
 
+const _fmtNum = new Intl.NumberFormat('en-US');
+const fmtN = (n: number) => _fmtNum.format(Math.round(n));
+
 export function buildOptimizePrompt(data: OptimizeInput): string {
   const isRu = (data.uiLang ?? 'en') === 'ru';
   const { lift: v, economics: eco } = data;
@@ -46,10 +49,10 @@ Total lift: ${(v.lift * 100).toFixed(1)}% (base: ${(v.base * 100).toFixed(1)}%)
 `.trim();
 
   const econSummary = `
-Incremental players: ${eco.incrPl} (out of ${eco.pl})
-Incremental revenue (3 mo): $${eco.incrRev.toLocaleString()} USD
-Bonus payouts (3 mo): $${eco.campCost3.toLocaleString()} USD
-Net result: $${eco.net.toLocaleString()} USD — NEGATIVE
+Incremental players: ${fmtN(eco.incrPl)} (out of ${fmtN(eco.pl)})
+Incremental revenue (3 mo): $${fmtN(eco.incrRev)} USD
+Bonus payouts (3 mo): $${fmtN(eco.campCost3)} USD
+Net result: $${fmtN(eco.net)} USD — NEGATIVE
 `.trim();
 
   const factorFormulas = `

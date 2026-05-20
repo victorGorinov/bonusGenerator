@@ -161,7 +161,10 @@ export function buildConfig(params: BuildConfigParams): Record<string, unknown> 
   const r       = region;
   const cur     = sitecur;
   const sc      = sitecur;
-  const license = lic || 'mga';
+  const GEO_DEFAULT_LICENSE: Record<string, string> = {
+    eu: 'mga', cis: 'none', crypto: 'none', sweep: 'none', mn: 'none', latam: 'none',
+  };
+  const license = lic || GEO_DEFAULT_LICENSE[r] || 'mga';
   const rt      = Number(rtp)     || 96;
 
   const geo = GEO[r as keyof typeof GEO];
