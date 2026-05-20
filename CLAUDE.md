@@ -1,6 +1,19 @@
 # CLAUDE.md — Bonus Engine Configurator
 
-Complete architecture reference for Claude Code sessions. Updated: 2026-05-19.
+Complete architecture reference for Claude Code sessions. Updated: 2026-05-20.
+
+---
+
+## Session rules
+
+**ОБЯЗАТЕЛЬНО перед любым кодингом** — запросить явное подтверждение у пользователя.
+
+Порядок работы:
+1. Проанализировать задачу, описать план (что и где будет изменено).
+2. Дождаться явного "да" / "go" / "реализуй" от пользователя.
+3. Только после подтверждения начинать вносить изменения в файлы.
+
+Это правило действует всегда — даже если задача очевидна, хорошо задокументирована или была подтверждена в предыдущей сессии.
 
 ---
 
@@ -72,7 +85,7 @@ Entry point: `server.ts` → imports `src/server/app.ts` → starts Express.
 │   │   ├── validate.ts              # validate(schema) middleware — Zod parse, throws ValidationError
 │   │   └── errors.ts                # errorMiddleware — maps AppError/ValidationError/AIProviderError to HTTP
 │   ├── validation/
-│   │   ├── generate.schema.ts       # GenerateSchema: region, players, sitecur, depcur, avgdep, plat, lic, rtp
+│   │   ├── generate.schema.ts       # GenerateSchema: region, players, sitecur, depcur, avgdep, plat, lic, rtp, segment (optional)
 │   │   ├── recalc.schema.ts         # RecalcSchema: cfg + overrides object
 │   │   ├── campaign.schema.ts       # CampaignGenerateSchema: scenario + params (geo, segment, tone, etc.)
 │   │   ├── texts.schema.ts          # TextsSchema — mechanic: .nullable().optional() (null allowed)
@@ -180,9 +193,20 @@ Uses `truncNormalPayout` (payout.ts) for statistical modelling. P10 = optimistic
 ### `econ` object (inside buildConfig output)
 
 Key fields used in the frontend and recalc:
-`arpu`, `cac`, `ltv3`, `roi`, `wagerX`, `costRatio`, `breakeven_wager`, `sP10.cost`, `sP50.cost`, `sP90.cost`, `mixedRTP`, `mixedWCR`.
+`arpu`, `cac`, `bpct`, `ltv3`, `mBudget`, `roi3`, `be`, `wagerX`, `costRatio`, `breakeven_wager`, `bonusSize`, `sP10`, `sP50`, `sP90`, `mixedRTP`, `mixedWCR`, `pl`, `dep`.
 
-Each `sP{n}` object: `{ conv, wcr, rtp, turnover, payout, cost }`. `conv` is the conversion rate (0.10/0.20/0.40 for P10/P50/P90). `cost` is TOTAL campaign cost (already multiplied by `pl`). After the 2026-05-19 fix, `sP{n}.cost` is always non-zero for any geo with a real bonus (including RU/KZ/MN).
+- `arpu` — average revenue per user per month, **USD** (from geo config; e.g. EU=65, CIS=22, MN=12)
+- `cac` — customer acquisition cost per player, **USD** (e.g. EU=25, CIS=8, MN=5)
+- `bpct` — bonus cost as % of GGR (e.g. 22 for MN = 22%)
+- `mBudget` — `pl × cac`, total monthly marketing benchmark budget, **USD**
+- `ltv3` — `arpu × 3`, 3-month LTV per player, **USD**
+- `dep` — `avgdep` in **sitecur** (local currency)
+- `costRatio` — `totalBonusCost / (pl × dep)`, dimensionless ratio of bonus payouts to deposit volume
+- `bonusSize` — calculated welcome bonus size in sitecur
+
+Each `sP{n}` object: `{ conv, wcr, rtp, turnover, payout, cost }`. `conv` is the conversion rate (0.10/0.20/0.40 for P10/P50/P90). `cost` is TOTAL campaign cost (already multiplied by `pl`), **in sitecur**. After the 2026-05-19 fix, `sP{n}.cost` is always non-zero for any geo with a real bonus (including RU/KZ/MN).
+
+**Currency note** — `arpu`, `cac`, `ltv3`, `mBudget` are in **USD** (geo config benchmarks). `dep`, `sP{n}.cost`, `bonusSize` are in **sitecur** (local currency). Do not mix them without conversion.
 
 ---
 
@@ -348,6 +372,50 @@ const EU_COUNTRY = {
 - `rtip_cg_cpb`, `rtip_cg_dl`, `rtip_cg_wc` — tooltip hint texts for econ metrics
 - `mech_exp_welcome`, `mech_exp_ndb`, `mech_exp_reload`, `mech_exp_below_be`, `mech_exp_above_be` — mechanic explanation labels
 
+**i18n keys added (2026-05-20) — Segment + Incremental Revenue v2:**
+- `lbl_segment`, `tip_segment` — segment field label and tooltip (all 4 languages)
+- `seg_new`, `seg_mid`, `seg_vip` — segment chip labels (🆕 / 👤 / 👑)
+- `sec_incr_rev` — "Прогноз Incremental Revenue" section header
+- `p_ret_lift`, `p_incr_players`, `p_incr_rev`, `p_camp_cost_3`, `p_incr_net` — metric row labels
+- `rtip_ret_lift`, `rtip_incr_rev`, `rtip_incr_net` — tooltip texts for incremental metrics
+- `incr_disclaimer` — disclaimer footer text
+- `incr_base`, `incr_f_wager`, `incr_f_gen`, `incr_f_mech`, `incr_f_rtp`, `incr_f_plat`, `incr_lift_total` — factor breakdown labels
+
+**Segment picker — Configurator (`configurator.html`)**
+
+Added before the Platform field in the configuration form:
+```html
+<div class="chips">
+  <div class="chip" data-g="segment" data-v="new" onclick="pickChip(this)">🆕 Новые</div>
+  <div class="chip on" data-g="segment" data-v="mid" onclick="pickChip(this)">👤 Средние</div>
+  <div class="chip" data-g="segment" data-v="vip" onclick="pickChip(this)">👑 VIP</div>
+</div>
+```
+
+`pickChip(el)` uses `S[g] = el.dataset.v` generically — no extra code needed. Default: `mid`. State: `S.segment`. Sent to `/api/generate` as `segment: S.segment || 'mid'`. Also stored in `savedCampaigns` localStorage entry. Restored in `_applyParamsFromCampaign` via `setChip('segment', p.segment)`.
+
+**Incremental Revenue v2 — Configurator (`app.js`)**
+
+Two new functions added before `render(c)`:
+
+`_calcRetentionV2(cfg, overrideWager)` — computes all 5 lift factors from the full config object:
+```javascript
+// Returns: { base, wagFactor, genFactor, mechFactor, rtpFactor, platFactor, lift,
+//            wagerX, beW, matchPct, hasNDB, hasReload, hasDep2, hasFS, hasCB, rtp, plat, seg }
+```
+
+`_buildIncrRevBody(cfg, v)` — renders the full incremental revenue HTML block. Element IDs for live recalc:
+- `incr_fw_val` — F1 wager factor value (updated by `recalcEcon`)
+- `incr_ret_lift` — total lift %
+- `incr_players` — incremental player count
+- `incr_rev` — incremental 3-month revenue
+- `incr_camp_cost3` — campaign cost (3 months)
+- `incr_net` — net incremental result
+
+Called from `render(c)` via `_buildIncrRevBody(c, _calcRetentionV2(c))`, rendered inside a new `<div>` section at the bottom of `econBody` with green tint background.
+
+**`recalcEcon()` incremental update** — when override wager changes, only F1 changes; F2–F5 stay from last generate. The `campCost3` in recalc currently uses `3 × mBudget × (data.ratio / E.costRatio)` (**pending fix** — see tech debt, task #5).
+
 ### `public/campaign-generator.html` — AI Campaign Generator SPA
 
 Fully self-contained (no app.js). All logic inline.
@@ -372,7 +440,12 @@ Key i18n helpers:
 - `mid` (blue) — wager unchanged, market standard
 - `high` (amber) — wager −8×, higher conversion but higher payout risk
 
-**Step 3 — Economics panel** — `renderEconScenarios(econ, _unused, _unused2, cur, lang)`:
+**Step 3 — Economics panel** — `renderEconScenarios(econ, _unused, _unused2, cur, lang, fullData)`:
+
+Signature updated 2026-05-20 to accept a 6th `fullData` parameter (the full `/api/campaign/generate` response). Required by the v2 incremental model to access mechanic fields (`welcome`, `ndb`, `reload`, `dep2`, `fsSpec`, `cashback`) for the F3 mechanics factor.
+
+Call site: `renderEconScenarios(E, data.pl ?? E.pl, data.dep, cur, currentLang, data)`
+
 - Three scenario cards: Best case / Expected / Worst case (no P10/P50/P90 labels shown)
 - Card cost formatted as `cur + ' ' + amount` (e.g. `EUR 1 234`)
 - `pl` taken from `econ.pl`; base (`pl × avgdep`) derived as `econ.sP50.cost / econ.costRatio` to avoid needing `dep` (not returned by campaign API)
@@ -381,6 +454,14 @@ Key i18n helpers:
 - `conv` values come from `econ.sP10.conv / sP50.conv / sP90.conv` (0.10 / 0.20 / 0.40)
 - Range bar sits below the grid; `econCard` is full-width outside `res-grid`
 - `econCard` rendering wrapped in `try/catch` — errors display inline as red text rather than silently leaving the card empty
+
+**Incremental Revenue v2 — Campaign Generator** — appended inside `renderEconScenarios` return value as `${(()=>{ try { ... } catch(e) { return ''; } })()}`. Self-contained IIFE, no external function calls. Uses `fullData` for mechanics, `draft?.params?.segment` for segment, `draft?.params?.plat` for platform (defaults to `'both'` if unset). Outputs same factor breakdown table + outcome metrics as Configurator version.
+
+When `netIncr < 0`, the IIFE stores lift + economics in `window._lastCGIncrData` and renders an AI recommendations button that calls `_cgRunOptimize(btn)` (global function defined in the same script block).
+
+**`_cgRunOptimize(btn)`** — global function in `campaign-generator.html`. Reads `window._lastCGIncrData`, POSTs to `/api/campaign/optimize`, renders recommendation cards (factor badge, param change, reason, impact colour) into `#cg_incr_ai_result`.
+
+**Campaign cost in incremental model (`campCost3`)** — currently uses `3 × econ.mBudget` in both Configurator and Campaign Generator. **This is a known issue** (task #5, pending): `mBudget = pl × cac` (total CAC-based budget, USD) makes breakeven structurally unreachable at realistic lift levels (need lift > CAC/ARPU ≈ 42% for MN). Planned fix: replace with `3 × costRatio × pl × arpu` (actual bonus cost in USD).
 
 **Tooltip CSS** — `.tip` class with `::after` pseudo-element. `position:absolute; bottom:calc(100% + 6px)`. Requires parent to have `overflow:visible` (all econ card parents do). `z-index:50`.
 
@@ -546,14 +627,69 @@ tests/integration/security.headers.test.js
 
 ---
 
+## Incremental Revenue v2 — model reference
+
+### Formula
+
+```
+lift = min(0.40, base × F1 × F2 × F3 × F4 × F5)
+```
+
+| Factor | Variable | Formula | Notes |
+|--------|----------|---------|-------|
+| Base | `base` | `SEG_LIFT[seg]` | new=0.15, mid=0.10, vip=0.08 |
+| F1 Wager | `wagFactor` | `clamp(0.7 + 0.3 × clamp(beW/wagerX, 0.3, 2.0), 0.65, 1.35)` | Continuous. Score>1 when beW>wagerX (player-friendly) |
+| F2 Generosity | `genFactor` | `clamp(0.85 + 0.30 × min(matchPct/100, 1.0), 0.85, 1.15)` | Neutral at ~50% match |
+| F3 Mechanics | `mechFactor` | `1 + hasNDB×0.06 + hasRL×0.08 + hasDep2×0.04 + hasFS×0.04 + hasCB×0.07` | Max ≈ 1.29 (all active) |
+| F4 RTP | `rtpFactor` | `clamp(0.94 + 0.12 × ((rtp − 0.85) / 0.14), 0.94, 1.06)` | Range 85%–99% RTP |
+| F5 Platform | `platFactor` | `{ mobile:1.05, desk:0.97, both:1.0 }` | — |
+
+Mechanics flags: `hasNDB = N.amt>0 or N.fs>0`, `hasRL = RL.pct>0`, `hasDep2 = D2.pct>0`, `hasFS = FS && FS.count>20`, `hasCB = CB.pct>=5 or CB.model==='tier'`.
+
+### Incremental economics
+
+```
+incrPl    = round(pl × lift)
+incrRev   = incrPl × ltv3                          // USD
+campCost3 = 3 × costRatio × pl × arpu              // USD — actual bonus payout cost
+net       = incrRev − campCost3
+```
+
+### Live recalc (Configurator only)
+
+`recalcEcon()` updates only the **F1-sensitive** elements after wager override:
+- Reads `overrideWager = gv('ov_w_wager', E.wagerX)`
+- Calls `_calcRetentionV2(cfg, overrideWager)` — full 5-factor calc with new wager
+- Updates DOM elements: `incr_fw_val`, `incr_ret_lift`, `incr_players`, `incr_rev`, `incr_camp_cost3`, `incr_net`
+- F2–F5 are static per-generate (only change when user clicks Generate again)
+
+---
+
+## POST /api/campaign/optimize — AI optimization endpoint
+
+Returns 2–4 parameter-change recommendations when incremental net result is negative.
+
+**Route**: `POST /api/campaign/optimize` — `aiLimiter`, `validate(OptimizeSchema)`
+
+**Files**:
+- `src/validation/optimize.schema.ts` — `OptimizeSchema` (geo, segment, lift object, economics object)
+- `src/ai/prompts/optimize.prompt.ts` — `buildOptimizePrompt(data: OptimizeInput)` — RU/EN prompt with 5-factor table + economics
+- `src/controllers/campaign.controller.ts` — `optimize()` handler — calls prompt → aiGenerate (600 tokens) → `parseOptimizeResponse()`
+- `src/ai/parser.ts` — `OptimizeResponseSchema`, `parseOptimizeResponse()`, `OptimizeResponse` type
+
+**Response shape**: `{ recommendations: [{ factor, param, current, target, reason, impact }] }`
+
+**UI — Configurator (`app.js`)**: `_runOptimize(btn)` — reads `_calcRetentionV2(_lastCfg)`, POSTs to `/api/campaign/optimize`, renders cards into `#incr_ai_result`. Button shown in `_buildIncrRevBody` only when `netIncr < 0`.
+
+**UI — Campaign Generator (`campaign-generator.html`)**: IIFE stores lift+economics in `window._lastCGIncrData` at render time; `_cgRunOptimize(btn)` (global function) reads it and POSTs. Button rendered into `#cg_incr_ai_result`. Shown only when `netIncr < 0`.
+
+---
+
 ## Known tech debt / pending work
 
 See `REFACTORING_PLAN.md` for full 12-phase plan.
 
 **Immediate (P0/P1):**
-- `GenerateSchema.lic` (Configurator) still only allows `mga / ukgc / dga / curacao / anjouan / kahnawake / gibraltar / isle_of_man / none` — global licenses work in Campaign Generator but Configurator UI has its own chip set and does not yet expose them
-- Add `reg_dga_1..4` strings to `app.js` LANG dictionary (currently unresolved keys in Configurator)
-- Add `v_dga_max_bet` i18n key to `app.js`
 - Add `dk` country to `buildConfig.test.js` snapshot
 - Add RU/KZ/MN snapshots to `buildConfig.test.js` to cover the payout fallback path — should confirm `sP10.cost > 0` for all high-denomination geos
 

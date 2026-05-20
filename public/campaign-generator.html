@@ -1070,7 +1070,7 @@ function runProgress() {
 }
 
 // ── STEP 3 RENDER ─────────────────────────────────────────────────────────────
-function renderEconScenarios(econ, _unused, _unused2, cur, lang) {
+function renderEconScenarios(econ, _unused, _unused2, cur, lang, fullData) {
   const isRu = lang === 'ru';
   const fmt  = v => cur + ' ' + Math.round(v).toLocaleString();
   const pct  = v => (v * 100).toFixed(1) + '%';
@@ -1172,7 +1172,160 @@ function renderEconScenarios(econ, _unused, _unused2, cur, lang) {
         <span class="mp90">${isRu ? 'Худший' : 'Worst'} ${pct(p90r)}</span>
         <span>50%</span>
       </div>
-    </div>`;
+    </div>
+    ${(()=>{
+      try {
+        // ── V2 MULTI-FACTOR RETENTION LIFT MODEL ──────────────────────────
+        const fd  = fullData || {};
+        const W   = fd.mechanic || fd.welcome || {};
+        const N   = fd.ndb      || {};
+        const RL  = fd.reload   || {};
+        const D2  = fd.dep2     || {};
+        const FS  = fd.fsSpec   || null;
+        const CB  = fd.cashback || {};
+        const seg = draft?.params?.segment || 'mid';
+
+        const SEG_LIFT = { new:0.15, mid:0.10, vip:0.08 };
+        const base = SEG_LIFT[seg] || 0.10;
+
+        // F1: Wager achievability — ratio of breakeven to actual wager
+        const wagerX   = econ.wagerX || 30;
+        const beW      = econ.breakeven_wager || wagerX;
+        const wagScore = Math.min(2.0, Math.max(0.3, beW / Math.max(wagerX, 1)));
+        const wagF     = Math.min(1.35, Math.max(0.65, 0.7 + 0.3 * wagScore));
+
+        // F2: Bonus generosity — match %, neutral at 50%
+        const matchPct = W.pct || (fd.econ ? 100 : 100);
+        const genF     = Math.min(1.15, Math.max(0.85, 0.85 + 0.30 * Math.min(matchPct / 100, 1.0)));
+
+        // F3: Mechanics breadth
+        const hasNDB = (N.amt > 0) || (N.fs > 0);
+        const hasRL  = (RL.pct || 0) > 0;
+        const hasD2  = (D2.pct || 0) > 0;
+        const hasFS  = FS && (FS.count || 0) > 20;
+        const hasCB  = (CB.pct >= 5) || CB.model === 'tier';
+        const mechF  = 1.0
+          + (hasNDB ? 0.06 : 0)
+          + (hasRL  ? 0.08 : 0)
+          + (hasD2  ? 0.04 : 0)
+          + (hasFS  ? 0.04 : 0)
+          + (hasCB  ? 0.07 : 0);
+
+        // F4: RTP quality
+        const rtp  = econ.mixedRTP || 0.96;
+        const rtpF = Math.min(1.06, Math.max(0.94, 0.94 + 0.12 * ((rtp - 0.85) / 0.14)));
+
+        // F5: Platform
+        const platKey = draft?.params?.plat || 'both';
+        const platF   = { mobile:1.05, desk:0.97, both:1.0 }[platKey] || 1.0;
+
+        const lift    = Math.min(0.40, base * wagF * genF * mechF * rtpF * platF);
+        const incrPl  = Math.round(pl * lift);
+        const incrRev = Math.round(incrPl * (econ.ltv3 || 0));
+        const campCost3 = Math.round(3 * (econ.costRatio || 0) * pl * econ.arpu);
+        const netIncr   = incrRev - campCost3;
+
+        const fmtU    = v => '$' + Math.abs(Math.round(v)).toLocaleString();
+        const fmtF    = f => '×' + f.toFixed(2);
+        const fClr    = f => f > 1.015 ? '#10b981' : f < 0.985 ? '#EF4444' : '#8892a4';
+        const netCol  = netIncr > 0 ? '#10b981' : '#EF4444';
+        const segLbl  = { new: isRu?'Новые':'New', mid: isRu?'Средние':'Mid', vip:'VIP' }[seg] || seg;
+
+        const mechParts = [
+          hasNDB && 'NDB', hasRL && 'Reload',
+          hasD2  && (isRu ? '2й деп' : '2nd dep'),
+          hasFS  && 'FS>20',
+          hasCB  && (isRu ? 'Кэшбэк' : 'Cashback'),
+        ].filter(Boolean);
+        const mechNote = mechParts.length ? '+' + mechParts.join(' +') : (isRu ? 'только Welcome' : 'Welcome only');
+        const wagNote  = wagF > 1.01
+          ? `be ${beW}× > w ${wagerX}× ▲`
+          : `be ${beW}× ≤ w ${wagerX}× ▼`;
+        const rtpNote  = `${(rtp*100).toFixed(0)}% ${rtp >= 0.96 ? '▲' : rtp <= 0.92 ? '▼' : ''}`;
+
+        // Labels
+        const L2 = isRu ? {
+          title:'📈 Прогноз Incremental Revenue',
+          base:'Базовый лифт', fw:'F1 Вейджер', fg:'F2 Щедрость',
+          fm:'F3 Механики', fr:'F4 RTP', fp:'F5 Платформа',
+          total:'Итоговый лифт', players:'Доп. игроков (3 мес)',
+          rev:'Доп. выручка (3 мес)', revTip:'Incremental_players × LTV 3 мес.',
+          cost:'Бонусные выплаты (3 мес)', net:'Чистый прирост',
+          netTip:'Доп. выручка − затраты за 3 мес.',
+          disc:'Оценка на основе бенчмарков. Реальные результаты зависят от продукта, CRM и аудитории.',
+        } : {
+          title:'📈 Incremental Revenue Forecast',
+          base:'Base lift', fw:'F1 Wager', fg:'F2 Generosity',
+          fm:'F3 Mechanics', fr:'F4 RTP', fp:'F5 Platform',
+          total:'Total lift', players:'Addl. players (3 mo)',
+          rev:'Addl. revenue (3 mo)', revTip:'Incremental_players × LTV 3 mo.',
+          cost:'Bonus payouts (3 mo)', net:'Net incremental',
+          netTip:'Addl. revenue − campaign cost over 3 months.',
+          disc:'Estimate based on industry benchmarks. Actual results depend on product quality, CRM and audience.',
+        };
+
+        const fRow = (lbl, val, valCol, note) => `
+          <div style="display:flex;align-items:baseline;gap:4px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:10.5px">
+            <span style="color:#8892a4;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lbl}</span>
+            <span style="font-family:monospace;font-weight:700;color:${valCol};white-space:nowrap">${val}</span>
+            <span style="color:#8892a4;font-size:9px;white-space:nowrap;min-width:80px;text-align:right">${note||''}</span>
+          </div>`;
+        const mRow = (lbl, val, valCol, tip) => `
+          <div class="mech-row" style="border-bottom:1px solid rgba(255,255,255,.05)">
+            <span class="mr-l">${tip?`<span class="tip" data-tip="${tip}">${lbl}</span>`:lbl}</span>
+            <span class="mr-v" style="color:${valCol||'var(--text)'}">${val}</span>
+          </div>`;
+
+        return `
+          <div style="margin-top:14px;padding:12px;background:rgba(16,185,129,0.05);border-radius:10px;border:1px solid rgba(16,185,129,0.18)">
+            <div style="font-size:11px;font-weight:700;color:#10b981;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+              ${L2.title}
+              <span style="padding:1px 7px;border-radius:4px;font-size:9px;background:rgba(79,110,247,.18);color:#a0b0ff;font-weight:700">${segLbl}</span>
+            </div>
+            <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:6px 8px;margin-bottom:8px">
+              ${fRow(L2.base + ` (${(base*100).toFixed(0)}%)`, '', '#a0b0ff', '')}
+              ${fRow(L2.fw, fmtF(wagF), fClr(wagF), wagNote)}
+              ${fRow(L2.fg, fmtF(genF), fClr(genF), matchPct+'% match')}
+              ${fRow(L2.fm, fmtF(mechF), fClr(mechF), mechNote)}
+              ${fRow(L2.fr, fmtF(rtpF), fClr(rtpF), rtpNote)}
+              ${platKey !== 'both' ? fRow(L2.fp, fmtF(platF), fClr(platF), platKey) : ''}
+              <div style="border-top:1px solid rgba(255,255,255,.1);margin-top:3px;padding-top:5px;display:flex;justify-content:space-between;align-items:baseline">
+                <span style="font-size:11px;color:#8892a4;font-weight:600">${L2.total}</span>
+                <span style="font-size:14px;font-weight:800;color:#10b981">${(lift*100).toFixed(1)}%</span>
+              </div>
+            </div>
+            ${mRow(L2.players, '+'+incrPl.toLocaleString(), '#10b981', null)}
+            ${mRow(L2.rev, fmtU(incrRev)+' ~USD', '#10b981', L2.revTip)}
+            ${mRow(L2.cost, fmtU(campCost3)+' ~USD', '#EF4444', null)}
+            <div class="mech-row" style="border-bottom:none;margin-top:4px;border-top:1px solid rgba(255,255,255,.1);padding-top:6px">
+              <span class="mr-l" style="font-weight:700">${L2.net}</span>
+              <span class="mr-v" style="color:${netCol};font-weight:700;font-size:13px">${netIncr>=0?'+':'−'}${fmtU(netIncr)} ~USD</span>
+            </div>
+            <div style="font-size:9.5px;color:#8892a4;margin-top:6px;font-style:italic">* ${L2.disc}</div>
+            ${netIncr < 0 ? (() => {
+              window._lastCGIncrData = {
+                geo: draft?.params?.geo || 'de',
+                segment: seg,
+                lift: { wagFactor: wagF, wagerX, beW, genFactor: genF, matchPct,
+                        mechFactor: mechF, hasNDB, hasReload: hasRL, hasDep2: hasD2,
+                        hasFS, hasCB, rtpFactor: rtpF, rtp, platFactor: platF,
+                        plat: platKey, base, lift },
+                economics: { net: netIncr, campCost3, incrRev, incrPl, pl },
+                isRu,
+              };
+              return `<div id="cg_incr_ai_btn_wrap" style="margin-top:10px">
+                <button onclick="_cgRunOptimize(this)"
+                  style="width:100%;padding:7px 12px;background:rgba(99,102,241,.18);border:1px solid rgba(99,102,241,.45);
+                         border-radius:8px;color:#a5b4fc;font-size:12px;cursor:pointer;font-weight:600;transition:background .2s"
+                  onmouseover="this.style.background='rgba(99,102,241,.32)'" onmouseout="this.style.background='rgba(99,102,241,.18)'">
+                  ${isRu ? '🤖 Рекомендации AI' : '🤖 AI Recommendations'}
+                </button>
+              </div>
+              <div id="cg_incr_ai_result"></div>`;
+            })() : ''}
+          </div>`;
+      } catch(e) { return ''; }
+    })()}`;
 }
 
 function mechRows(mech, type, data) {
@@ -1304,7 +1457,7 @@ function renderMechanicResults(data) {
     } else {
       document.getElementById('econCard').innerHTML =
         `<div class="rc-title">${t('rc_econ')}</div>
-         ${renderEconScenarios(E, data.pl ?? E.pl, data.dep, cur, currentLang)}`;
+         ${renderEconScenarios(E, data.pl ?? E.pl, data.dep, cur, currentLang, data)}`;
     }
   } catch(ex) {
     document.getElementById('econCard').innerHTML =
@@ -1328,6 +1481,45 @@ function renderAltCard(alts, data) {
           </div>`
        ).join('')}
      </div>`;
+}
+
+async function _cgRunOptimize(btn) {
+  const resultEl = document.getElementById('cg_incr_ai_result');
+  const d = window._lastCGIncrData;
+  if (!resultEl || !d) return;
+  const isRu = d.isRu;
+  btn.disabled = true;
+  btn.textContent = isRu ? 'AI анализирует параметры…' : 'AI is analysing parameters…';
+  resultEl.innerHTML = '';
+  try {
+    const resp = await fetch('/api/campaign/optimize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ geo: d.geo, segment: d.segment, lift: d.lift, economics: d.economics, uiLang: isRu ? 'ru' : 'en' }),
+    });
+    if (!resp.ok) throw new Error(await resp.text());
+    const data = await resp.json();
+    const impactClr = { high: '#10b981', med: '#f59e0b', low: '#8892a4' };
+    const impactLbl = isRu
+      ? { high: 'Высокий', med: 'Средний', low: 'Низкий' }
+      : { high: 'High',    med: 'Medium',  low: 'Low'    };
+    const cards = (data.recommendations || []).map(rec => `
+      <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:8px 10px;margin-top:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-size:11px;font-weight:700;color:#a5b4fc">${rec.factor} · ${rec.param}</span>
+          <span style="font-size:10px;font-weight:600;color:${impactClr[rec.impact]||'#8892a4'}">${impactLbl[rec.impact]||rec.impact}</span>
+        </div>
+        <div style="font-size:11px;color:#8892a4;margin-bottom:3px">${rec.current} → <strong style="color:var(--text)">${rec.target}</strong></div>
+        <div style="font-size:11px;color:var(--text)">${rec.reason}</div>
+      </div>`).join('');
+    resultEl.innerHTML = `<div style="font-size:11px;font-weight:700;color:#a5b4fc;margin-top:10px;margin-bottom:2px">${isRu?'Рекомендации по оптимизации':'Optimisation Recommendations'}</div>${cards}`;
+    btn.textContent = isRu ? '🤖 Рекомендации AI' : '🤖 AI Recommendations';
+    btn.disabled = false;
+  } catch(e) {
+    resultEl.innerHTML = `<div style="color:#EF4444;font-size:11px;margin-top:6px">${isRu?'Не удалось получить рекомендации. Попробуйте ещё раз.':'Could not get recommendations. Please try again.'}</div>`;
+    btn.textContent = isRu ? '🤖 Рекомендации AI' : '🤖 AI Recommendations';
+    btn.disabled = false;
+  }
 }
 
 function switchMechTab(type, el) {
