@@ -18,6 +18,7 @@ const ParamsShape = z.object({
   risk:       z.enum(['low', 'mid', 'high']).optional(),
   bonusTypes: z.array(z.string().max(20)).max(6).optional(),
   lic:        z.enum(['auto','mga','ukgc','dga','curacao','anjouan','kahnawake','gibraltar','isle_of_man','none']).optional().default('auto'),
+  players:    z.number().int().min(100).max(200000).optional(),
 });
 
 export const CampaignGenerateSchema = z.object({

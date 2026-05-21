@@ -13,6 +13,7 @@ interface CampaignParams {
   lang?: string;
   tone?: string;
   lic?: string;
+  players?: number;
 }
 
 export function generateCampaign({ scenario, params }: { scenario?: ScenarioRef | null; params?: CampaignParams | null }): Record<string, unknown> {
@@ -26,7 +27,8 @@ export function generateCampaign({ scenario, params }: { scenario?: ScenarioRef 
   const segAvgdep = geoCfg.avgdep ?? BASE_AVGDEP;
   const seg = params.segment ?? 'mid';
   const avgdep  = segAvgdep[seg as keyof typeof segAvgdep] ?? BASE_AVGDEP[seg] ?? 100;
-  const players = ({ low: 1000, mid: 5000, high: 10000 } as Record<string, number>)[params.agg ?? ''] ?? 5000;
+  const aggPlayers = ({ low: 1000, mid: 5000, high: 10000 } as Record<string, number>)[params.agg ?? ''] ?? 5000;
+  const players = (params.players && params.players >= 100) ? params.players : aggPlayers;
   const rtp     = ({ slots: 96, table: 98, live: 99 } as Record<string, number>)[params.games ?? ''] ?? 96;
 
   const RISK_ADJ: Record<string, number> = { low: 10, mid: 0, high: -8 };
