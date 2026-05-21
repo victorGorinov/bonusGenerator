@@ -652,14 +652,14 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
         <div class="step-title" data-i18n="s4_title">Тексты и аудит кампании</div>
         <div class="step-sub" data-i18n="s4_sub">AI генерирует тексты для каждого канала и проводит аудит рисков</div>
         <div class="ch-tabs" id="s4tabs">
-          <button class="ch-tab active" onclick="switchS4('texts',this)">📝 Тексты</button>
-          <button class="ch-tab" onclick="switchS4('audit',this)">🔍 Аудит</button>
+          <button class="ch-tab active" onclick="switchS4('texts',this)" data-i18n="s4_tab_texts">📝 Тексты</button>
+          <button class="ch-tab" onclick="switchS4('audit',this)" data-i18n="s4_tab_audit">🔍 Аудит</button>
         </div>
 
         <!-- Texts -->
         <div id="s4-texts" class="ch-content active">
           <div id="s4t-loading" style="display:flex;align-items:center;gap:12px;padding:32px 0;color:var(--muted)">
-            <div class="spinner"></div><span>AI генерирует тексты для всех 5 каналов...</span>
+            <div class="spinner"></div><span data-i18n="s4_loading_texts">AI генерирует тексты для всех 5 каналов...</span>
           </div>
           <div id="s4t-content" style="display:none">
             <div class="ch-tabs" id="chTabs">
@@ -681,7 +681,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
         <!-- Audit -->
         <div id="s4-audit" class="ch-content">
           <div id="s4a-loading" style="display:flex;align-items:center;gap:12px;padding:32px 0;color:var(--muted)">
-            <div class="spinner"></div><span>AI проводит аудит кампании...</span>
+            <div class="spinner"></div><span data-i18n="s4_loading_audit">AI проводит аудит кампании...</span>
           </div>
           <div id="s4a-content"></div>
           <div id="s4a-error" style="display:none;color:#EF4444;font-size:.83rem;padding:16px 0"></div>
@@ -700,24 +700,24 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
           <div class="step-sub" data-i18n="s5_sub">Скачайте или скопируйте конфигурацию в нужном формате</div>
           <div class="exp-layout">
             <div class="exp-formats">
-              <button class="exp-btn" onclick="doExport('json')"><span class="exp-btn-ico">📄</span><div><div class="exp-btn-name">JSON</div><div class="exp-btn-desc">Полная конфигурация для разработчиков</div></div><span style="margin-left:auto;color:var(--muted);font-size:12px">↓</span></button>
-              <button class="exp-btn" onclick="doExport('csv')"><span class="exp-btn-ico">📊</span><div><div class="exp-btn-name">CSV / Excel</div><div class="exp-btn-desc">Для импорта в CRM-систему</div></div><span style="margin-left:auto;color:var(--muted);font-size:12px">↓</span></button>
-              <button class="exp-btn" onclick="doExport('copy')"><span class="exp-btn-ico">📋</span><div><div class="exp-btn-name">Копировать в буфер</div><div class="exp-btn-desc">Все параметры и тексты одним блоком</div></div><span style="margin-left:auto;color:var(--muted);font-size:12px">⎘</span></button>
-              <button class="exp-btn" onclick="doExport('email')"><span class="exp-btn-ico">📧</span><div><div class="exp-btn-name">Email в CRM</div><div class="exp-btn-desc">Отправить спецификацию команде</div></div><span style="margin-left:auto;color:var(--muted);font-size:12px">→</span></button>
-              <button class="exp-btn" onclick="doExport('api')"><span class="exp-btn-ico">🔗</span><div><div class="exp-btn-name">API / curl</div><div class="exp-btn-desc">Интеграция через REST API</div></div><span style="margin-left:auto;color:var(--muted);font-size:12px">{ }</span></button>
-              <button class="exp-btn" id="admincfg-btn" onclick="doExport('adminconfig')"><span class="exp-btn-ico">⚙️</span><div><div class="exp-btn-name">Admin Config</div><div class="exp-btn-desc">Полный конфиг бонусной программы для разработчика</div></div><span style="margin-left:auto;color:var(--muted);font-size:12px">↓</span></button>
+              <button class="exp-btn" onclick="doExport('json')"><span class="exp-btn-ico">📄</span><div><div class="exp-btn-name">JSON</div><div class="exp-btn-desc" data-i18n="s5_exp_json_desc">Полная конфигурация для разработчиков</div></div><span style="margin-left:auto;color:var(--muted);font-size:12px">↓</span></button>
+              <button class="exp-btn" onclick="doExport('csv')"><span class="exp-btn-ico">📊</span><div><div class="exp-btn-name">CSV / Excel</div><div class="exp-btn-desc" data-i18n="s5_exp_csv_desc">Для импорта в CRM-систему</div></div><span style="margin-left:auto;color:var(--muted);font-size:12px">↓</span></button>
+              <button class="exp-btn" onclick="doExport('copy')"><span class="exp-btn-ico">📋</span><div><div class="exp-btn-name" data-i18n="s5_exp_copy_name">Копировать в буфер</div><div class="exp-btn-desc" data-i18n="s5_exp_copy_desc">Все параметры и тексты одним блоком</div></div><span style="margin-left:auto;color:var(--muted);font-size:12px">⎘</span></button>
+              <button class="exp-btn" onclick="doExport('email')"><span class="exp-btn-ico">📧</span><div><div class="exp-btn-name" data-i18n="s5_exp_email_name">Email в CRM</div><div class="exp-btn-desc" data-i18n="s5_exp_email_desc">Отправить спецификацию команде</div></div><span style="margin-left:auto;color:var(--muted);font-size:12px">→</span></button>
+              <button class="exp-btn" onclick="doExport('api')"><span class="exp-btn-ico">🔗</span><div><div class="exp-btn-name">API / curl</div><div class="exp-btn-desc" data-i18n="s5_exp_api_desc">Интеграция через REST API</div></div><span style="margin-left:auto;color:var(--muted);font-size:12px">{ }</span></button>
+              <button class="exp-btn" id="admincfg-btn" onclick="doExport('adminconfig')"><span class="exp-btn-ico">⚙️</span><div><div class="exp-btn-name">Admin Config</div><div class="exp-btn-desc" data-i18n="s5_exp_admin_desc">Полный конфиг бонусной программы для разработчика</div></div><span style="margin-left:auto;color:var(--muted);font-size:12px">↓</span></button>
             </div>
             <div>
               <div class="sum-card">
-                <div class="sum-title">📋 Сводка кампании</div>
-                <div class="sum-row"><span class="sr-l">Сценарий</span><span class="sr-v" id="sum-sc">—</span></div>
-                <div class="sum-row"><span class="sr-l">Гео</span><span class="sr-v" id="sum-geo">—</span></div>
-                <div class="sum-row"><span class="sr-l">Сегмент</span><span class="sr-v" id="sum-seg">—</span></div>
-                <div class="sum-row"><span class="sr-l">Механика</span><span class="sr-v" id="sum-mech">—</span></div>
-                <div class="sum-row"><span class="sr-l">Макс. бонус</span><span class="sr-v" id="sum-maxb">—</span></div>
-                <div class="sum-row"><span class="sr-l">Вейджер</span><span class="sr-v" id="sum-wager">—</span></div>
-                <div class="sum-row"><span class="sr-l">Бюджет</span><span class="sr-v" id="sum-bud">—</span></div>
-                <div class="sum-row"><span class="sr-l">Каналы</span><span class="sr-v">Push · Email · SMS</span></div>
+                <div class="sum-title" data-i18n="s5_sum_title">📋 Сводка кампании</div>
+                <div class="sum-row"><span class="sr-l" data-i18n="s5_sum_scenario">Сценарий</span><span class="sr-v" id="sum-sc">—</span></div>
+                <div class="sum-row"><span class="sr-l" data-i18n="s5_sum_geo">Гео</span><span class="sr-v" id="sum-geo">—</span></div>
+                <div class="sum-row"><span class="sr-l" data-i18n="s5_sum_segment">Сегмент</span><span class="sr-v" id="sum-seg">—</span></div>
+                <div class="sum-row"><span class="sr-l" data-i18n="s5_sum_mech">Механика</span><span class="sr-v" id="sum-mech">—</span></div>
+                <div class="sum-row"><span class="sr-l" data-i18n="s5_sum_maxb">Макс. бонус</span><span class="sr-v" id="sum-maxb">—</span></div>
+                <div class="sum-row"><span class="sr-l" data-i18n="s5_sum_wager">Вейджер</span><span class="sr-v" id="sum-wager">—</span></div>
+                <div class="sum-row"><span class="sr-l" data-i18n="s5_sum_budget">Бюджет</span><span class="sr-v" id="sum-bud">—</span></div>
+                <div class="sum-row"><span class="sr-l" data-i18n="s5_sum_channels">Каналы</span><span class="sr-v">Push · Email · SMS</span></div>
                 <div style="margin-top:13px">
                   <button class="btn btn-primary" style="width:100%" onclick="finishCampaign()" data-i18n="btn_create_camp">✓ Создать кампанию</button>
                 </div>
@@ -730,8 +730,8 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
                 <div class="rc-title" style="margin-bottom:0">Admin Panel Config</div>
                 <div style="display:flex;gap:8px">
-                  <button class="btn btn-outline btn-sm" onclick="copyAdminCfg()">⎘ Копировать</button>
-                  <button class="btn btn-outline btn-sm" onclick="saveAdminCfg()">↓ Сохранить .txt</button>
+                  <button class="btn btn-outline btn-sm" onclick="copyAdminCfg()" data-i18n="s5_admin_copy">⎘ Копировать</button>
+                  <button class="btn btn-outline btn-sm" onclick="saveAdminCfg()" data-i18n="s5_admin_save">↓ Сохранить .txt</button>
                   <button class="btn btn-ghost btn-sm" onclick="document.getElementById('admin-cfg-panel').style.display='none'">✕</button>
                 </div>
               </div>
@@ -748,8 +748,8 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
         <div id="s5-done" style="display:none">
           <div class="done-screen">
             <div class="done-emoji">🎉</div>
-            <div class="done-title">Кампания создана!</div>
-            <div class="done-sub" id="done-sub">Кампания успешно сохранена. Найдите её в разделе «Кампании».</div>
+            <div class="done-title" data-i18n="s5_done_title">Кампания создана!</div>
+            <div class="done-sub" id="done-sub" data-i18n="s5_done_sub">Кампания успешно сохранена. Найдите её в разделе «Кампании».</div>
             <div class="done-acts">
               <button class="btn btn-primary btn-lg" onclick="showView('campaigns')" data-i18n="btn_go_camp">Перейти к кампании →</button>
               <button class="btn btn-outline btn-lg" onclick="startWizard()" data-i18n="btn_create_more">+ Создать ещё</button>
@@ -1687,7 +1687,7 @@ function varCardsHTML(ch, variants, limit) {
     if (ch === 'email') {
       const subj = typeof v === 'object' ? (v.subject || '') : '';
       const b    = typeof v === 'object' ? (v.body || '') : String(v);
-      body = `<div style="font-size:.72rem;color:var(--muted);margin-bottom:5px">Тема: <strong style="color:var(--text)">${esc(subj)}</strong></div>
+      body = `<div style="font-size:.72rem;color:var(--muted);margin-bottom:5px">${t('s4_email_subject_lbl')}: <strong style="color:var(--text)">${esc(subj)}</strong></div>
               <div class="var-text">${esc(b)}</div>`;
     } else if (ch === 'popup') {
       const hl  = typeof v === 'object' ? (v.headline || '') : String(v);
@@ -1697,18 +1697,18 @@ function varCardsHTML(ch, variants, limit) {
     } else {
       const txt  = typeof v === 'object' ? JSON.stringify(v) : String(v);
       const lim  = ch === 'sms' ? 160 : ch === 'push' ? 100 : null;
-      const meta = lim ? `${txt.length}/${lim} симв.` : '';
+      const meta = lim ? `${txt.length}/${lim} ${t('s4_chars')}` : '';
       body = `${meta ? `<div style="font-size:.7rem;color:var(--muted);margin-bottom:4px">${meta}</div>` : ''}
               <div class="var-text">${esc(txt)}</div>`;
     }
     return `<div class="var-card">
       <div class="var-hd">
-        <span class="var-lbl">Вариант ${i+1}</span>
-        <span class="var-meta">${ch==='sms'?'≤160 симв.':ch==='push'?'≤100 симв.':''}</span>
+        <span class="var-lbl">${t('s4_variant')} ${i+1}</span>
+        <span class="var-meta">${ch==='sms'?`≤160 ${t('s4_chars')}`:ch==='push'?`≤100 ${t('s4_chars')}`:''}</span>
       </div>
       ${body}
       <div class="var-acts">
-        <button class="btn btn-outline btn-sm" onclick="copyText(this)">⎘ Копировать</button>
+        <button class="btn btn-outline btn-sm" onclick="copyText(this)">${t('s4_copy_btn')}</button>
       </div>
     </div>`;
   }).join('');
@@ -1719,7 +1719,7 @@ function renderChannelTexts(ch, variants, limit) {
   if (!el) return;
   el.innerHTML = `<div class="var-cards">${varCardsHTML(ch, variants, limit)}</div>
     <div style="margin-top:12px">
-      <button class="btn btn-outline btn-sm" onclick="generateMore('${ch}',this)">+ Ещё варианты</button>
+      <button class="btn btn-outline btn-sm" onclick="generateMore('${ch}',this)">${t('s4_more_variants')}</button>
     </div>`;
 }
 
@@ -1735,7 +1735,7 @@ function renderTexts(data) {
 
 function generateMore(channel, btn) {
   btn.disabled = true;
-  btn.textContent = '⏳ Генерирую...';
+  btn.textContent = t('s4_generating');
   fetch('/api/campaign/texts', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
@@ -1750,13 +1750,13 @@ function generateMore(channel, btn) {
     newVariants.forEach((v, i) => {
       const wrapper = document.createElement('div');
       wrapper.innerHTML = varCardsHTML(channel, [v], 1)
-        .replace('Вариант 1', 'Вариант '+(base+i+1));
+        .replace(t('s4_variant')+' 1', t('s4_variant')+' '+(base+i+1));
       cards.appendChild(wrapper.firstElementChild);
     });
     btn.disabled = false;
-    btn.textContent = '+ Ещё варианты';
+    btn.textContent = t('s4_more_variants');
   })
-  .catch(() => { btn.disabled = false; btn.textContent = '+ Ещё варианты'; });
+  .catch(() => { btn.disabled = false; btn.textContent = t('s4_more_variants'); });
 }
 
 function renderAudit(data) {
@@ -1775,7 +1775,7 @@ function fillSummary() {
   if (draft.mechanicType && draft.mechanics) {
     const mech = draft.mechanics;
     const cur  = draft._apiResult?.cur || '';
-    const lbl  = { welcome:'1-й депозит', ndb:'Welcome', dep2:'2-й депозит', dep3:'3-й депозит', cashback:'Cashback', reload:'Reload' }[draft.mechanicType] || draft.mechanicType;
+    const lbl  = { welcome:t('mt_welcome'), ndb:t('mt_ndb'), dep2:t('mt_dep2'), dep3:t('mt_dep3'), cashback:t('mt_cashback'), reload:t('mt_reload') }[draft.mechanicType] || draft.mechanicType;
     const pct  = mech.pct ? ` ${mech.pct}%` : (mech.model === 'tier' ? ' Tiered' : '');
     const sEl = document.getElementById('sum-mech');  if (sEl) sEl.textContent = lbl + pct;
     const mEl = document.getElementById('sum-maxb');
@@ -1783,7 +1783,7 @@ function fillSummary() {
     const wEl = document.getElementById('sum-wager');
     if (wEl) {
       const w = mech.wager != null ? mech.wager : (draft._apiResult?.wager?.wW || '—');
-      wEl.textContent = draft.mechanicType === 'cashback' ? 'Без вейджера' : w + '×';
+      wEl.textContent = draft.mechanicType === 'cashback' ? t('det_no_wager') : w + '×';
     }
   }
 }
@@ -1965,7 +1965,10 @@ function finishCampaign() {
   renderCampaignViews();
   document.getElementById('s5-export').style.display='none';
   document.getElementById('s5-done').style.display='';
-  document.getElementById('done-sub').textContent = `«${draft.scenario?.lbl||'Кампания'}» успешно сохранена. Найдите её в разделе «Кампании».`;
+  const _campName = draft.scenario?.lbl || (currentLang==='ru' ? 'Кампания' : 'Campaign');
+  document.getElementById('done-sub').textContent = currentLang==='ru'
+    ? `«${_campName}» успешно сохранена. Найдите её в разделе «Кампании».`
+    : `«${_campName}» saved successfully. Find it in the Campaigns section.`;
   updateProg(6);
 }
 
@@ -2298,7 +2301,26 @@ const I18N = {
     chip_btype_welcome:'💰 1-й депозит', chip_btype_dep2:'💰 2-й депозит', chip_btype_dep3:'🎁 3-й депозит',
     s4_title:'Тексты и аудит кампании',
     s4_sub:'AI генерирует тексты для каждого канала и проводит аудит рисков',
+    s4_tab_texts:'📝 Тексты', s4_tab_audit:'🔍 Аудит',
+    s4_loading_texts:'AI генерирует тексты для всех 5 каналов...',
+    s4_loading_audit:'AI проводит аудит кампании...',
+    s4_variant:'Вариант', s4_copy_btn:'⎘ Копировать',
+    s4_more_variants:'+ Ещё варианты', s4_generating:'⏳ Генерирую...',
+    s4_email_subject_lbl:'Тема', s4_chars:'симв.',
     s5_title:'Экспорт кампании', s5_sub:'Скачайте или скопируйте конфигурацию в нужном формате',
+    s5_exp_json_desc:'Полная конфигурация для разработчиков',
+    s5_exp_csv_desc:'Для импорта в CRM-систему',
+    s5_exp_copy_name:'Копировать в буфер', s5_exp_copy_desc:'Все параметры и тексты одним блоком',
+    s5_exp_email_name:'Email в CRM', s5_exp_email_desc:'Отправить спецификацию команде',
+    s5_exp_api_desc:'Интеграция через REST API',
+    s5_exp_admin_desc:'Полный конфиг бонусной программы для разработчика',
+    s5_sum_title:'📋 Сводка кампании',
+    s5_sum_scenario:'Сценарий', s5_sum_geo:'Гео', s5_sum_segment:'Сегмент',
+    s5_sum_mech:'Механика', s5_sum_maxb:'Макс. бонус', s5_sum_wager:'Вейджер',
+    s5_sum_budget:'Бюджет', s5_sum_channels:'Каналы',
+    s5_admin_copy:'⎘ Копировать', s5_admin_save:'↓ Сохранить .txt',
+    s5_done_title:'Кампания создана!',
+    s5_done_sub:'Кампания успешно сохранена. Найдите её в разделе «Кампании».',
     wpl_1:'Сценарий', wpl_2:'Параметры', wpl_3:'Генерация', wpl_4:'Тексты', wpl_5:'Экспорт',
     badge_draft:'Черновик', badge_active:'Активна', badge_done:'Завершена',
     camp_empty:'Нет кампаний. Создайте первую!',
@@ -2397,7 +2419,26 @@ const I18N = {
     chip_btype_welcome:'💰 1st Deposit', chip_btype_dep2:'💰 2nd Deposit', chip_btype_dep3:'🎁 3rd Deposit',
     s4_title:'Texts & Campaign Audit',
     s4_sub:'AI generates texts for each channel and audits risks',
+    s4_tab_texts:'📝 Texts', s4_tab_audit:'🔍 Audit',
+    s4_loading_texts:'AI is generating texts for all 5 channels...',
+    s4_loading_audit:'AI is auditing the campaign...',
+    s4_variant:'Variant', s4_copy_btn:'⎘ Copy',
+    s4_more_variants:'+ More variants', s4_generating:'⏳ Generating...',
+    s4_email_subject_lbl:'Subject', s4_chars:'chars',
     s5_title:'Export Campaign', s5_sub:'Download or copy the configuration in your preferred format',
+    s5_exp_json_desc:'Full configuration for developers',
+    s5_exp_csv_desc:'For import into your CRM',
+    s5_exp_copy_name:'Copy to clipboard', s5_exp_copy_desc:'All parameters and texts in one block',
+    s5_exp_email_name:'Email to CRM', s5_exp_email_desc:'Send spec to the team',
+    s5_exp_api_desc:'REST API integration',
+    s5_exp_admin_desc:'Full bonus config for developers',
+    s5_sum_title:'📋 Campaign Summary',
+    s5_sum_scenario:'Scenario', s5_sum_geo:'Geo', s5_sum_segment:'Segment',
+    s5_sum_mech:'Mechanic', s5_sum_maxb:'Max Bonus', s5_sum_wager:'Wager',
+    s5_sum_budget:'Budget', s5_sum_channels:'Channels',
+    s5_admin_copy:'⎘ Copy', s5_admin_save:'↓ Save .txt',
+    s5_done_title:'Campaign Created!',
+    s5_done_sub:'Campaign saved successfully. Find it in the Campaigns section.',
     wpl_1:'Scenario', wpl_2:'Parameters', wpl_3:'Generate', wpl_4:'Texts', wpl_5:'Export',
     badge_draft:'Draft', badge_active:'Active', badge_done:'Done',
     camp_empty:'No campaigns yet. Create your first one!',
