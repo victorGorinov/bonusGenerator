@@ -385,7 +385,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 
       <div class="section-hd"><div class="section-title" data-i18n="dash_quickstart">Быстрый старт</div></div>
       <div class="quick-grid">
-        <div class="qcard" onclick="startWizardWith('first_launch')" style="border-color:rgba(245,158,11,.35);background:linear-gradient(135deg,rgba(245,158,11,.07) 0%,transparent 60%);grid-column:1/-1"><div class="qcard-icon">🚀</div><div class="qcard-name" data-i18n="qc_launch_n" style="color:var(--warn)">Первый запуск казино</div><div class="qcard-desc" data-i18n="qc_launch_d">Полный бонусный пакет: 1-й депозит + Welcome + Reload + 2-й/3-й депозит + Cashback — все механики для старта</div><div class="qcard-arr" style="color:var(--warn)">→</div></div>
+        <div class="qcard" onclick="startWizardWith('first_launch')" style="border-color:rgba(245,158,11,.35);background:linear-gradient(135deg,rgba(245,158,11,.07) 0%,transparent 60%);grid-column:1/-1"><div class="qcard-icon">🚀</div><div class="qcard-name" data-i18n="qc_launch_n" style="color:var(--warn)">Первый запуск казино</div><div class="qcard-desc" data-i18n="qc_launch_d">Полный бонусный пакет: 1-й депозит + Welcome + 2-й/3-й депозит + Cashback — все механики для старта</div><div class="qcard-arr" style="color:var(--warn)">→</div></div>
         <div class="qcard" onclick="startWizardWith('inactive_7')"><div class="qcard-icon">🔄</div><div class="qcard-name" data-i18n="qc_react_n">Реактивация</div><div class="qcard-desc" data-i18n="qc_react_d">Вернуть неактивных 7+ дней</div><div class="qcard-arr">→</div></div>
         <div class="qcard" onclick="startWizardWith('second_dep')"><div class="qcard-icon">💰</div><div class="qcard-name" data-i18n="qc_reload_n">Reload кампания</div><div class="qcard-desc" data-i18n="qc_reload_d">Бонус на повторный депозит</div><div class="qcard-arr">→</div></div>
         <div class="qcard" onclick="startWizardWith('cashback')"><div class="qcard-icon">💳</div><div class="qcard-name" data-i18n="qc_cashback_n">Cashback</div><div class="qcard-desc" data-i18n="qc_cashback_d">Возврат % от проигрышей</div><div class="qcard-arr">→</div></div>
@@ -790,6 +790,17 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 </div><!-- /main -->
 
 <!-- Exit confirmation modal — must be before <script> so setUILang finds it in the DOM -->
+<div id="new-camp-modal" class="exit-overlay" style="display:none" onclick="if(event.target===this)closeNewCampModal()">
+  <div class="exit-box">
+    <h3 data-i18n="nc_title">Начать новую кампанию?</h3>
+    <p data-i18n="nc_body">Прогресс текущей кампании будет потерян без сохранения.</p>
+    <div class="exit-actions">
+      <button class="btn btn-outline" onclick="closeNewCampModal()" data-i18n="nc_stay">Продолжить редактирование</button>
+      <button class="btn btn-primary" onclick="closeNewCampModal();startWizard()" data-i18n="nc_confirm">Начать новую</button>
+    </div>
+  </div>
+</div>
+
 <div id="exit-modal" class="exit-overlay" style="display:none" onclick="if(event.target===this)closeExitModal()">
   <div class="exit-box">
     <h3 data-i18n="exit_title">Выйти из приложения?</h3>
@@ -834,7 +845,7 @@ function showView(name) {
   });
   updateTopbar(name);
   document.getElementById('tb-right').innerHTML = (name === 'dashboard' || name === 'configurator') ? '' :
-    `<button class="btn btn-primary btn-sm" onclick="startWizard()">${t('btn_new_camp')}</button>`;
+    `<button class="btn btn-primary btn-sm" onclick="confirmNewCampaign()">${t('btn_new_camp')}</button>`;
   document.querySelectorAll('.nav-item:not(.off)').forEach(el => {
     const onclick = el.getAttribute('onclick') || '';
     el.classList.toggle('active',
@@ -923,8 +934,15 @@ function renderScenarios() {
     </div>`).join('');
 }
 
+const SEGMENT_PRESETS = {
+  first_launch:     'new',
+  first_dep:        'new',
+  vip_retention:    'vip',
+  vip_reactivation: 'vip',
+};
+
 const BTYPE_PRESETS = {
-  first_launch:     ['welcome','ndb','reload','dep2','dep3','cashback'],
+  first_launch:     ['welcome','ndb','dep2','dep3','cashback'],
   inactive_3:       ['reload'],
   inactive_7:       ['reload','cashback'],
   inactive_30:      ['reload','cashback','dep2'],
@@ -948,6 +966,12 @@ function preselectBtypes(scenarioId) {
     c.classList.toggle('active', types.includes(c.dataset.btype));
   });
   draft.params.bonusTypes = [...types];
+
+  const seg = SEGMENT_PRESETS[scenarioId] || 'mid';
+  document.querySelectorAll('[data-g="segment"]').forEach(c => {
+    c.classList.toggle('active', c.dataset.v === seg);
+  });
+  draft.params.segment = seg;
 }
 
 function toggleBtype(el) {
@@ -1211,15 +1235,16 @@ function renderEconScenarios(econ, _unused, _unused2, cur, lang, fullData) {
       try {
         // ── V2 MULTI-FACTOR RETENTION LIFT MODEL ──────────────────────────
         const fd  = fullData || {};
-        const W   = fd.mechanic || fd.welcome || {};
-        const N   = fd.ndb      || {};
-        const RL  = fd.reload   || {};
-        const D2  = fd.dep2     || {};
+        const sel = fd.selectedMechanics || {};
+        const W   = fd.mechanic || sel.welcome || {};
+        const N   = sel.ndb      || {};
+        const RL  = sel.reload   || {};
+        const D2  = sel.dep2     || {};
         const FS  = fd.fsSpec   || null;
-        const CB  = fd.cashback || {};
+        const CB  = sel.cashback || {};
         const seg = draft?.params?.segment || 'mid';
 
-        const SEG_LIFT = { new:0.15, mid:0.10, vip:0.08 };
+        const SEG_LIFT = { new:0.25, mid:0.18, vip:0.12 };
         const base = SEG_LIFT[seg] || 0.10;
 
         // F1: Wager achievability — ratio of breakeven to actual wager
@@ -1254,9 +1279,11 @@ function renderEconScenarios(econ, _unused, _unused2, cur, lang, fullData) {
         const platF   = { mobile:1.05, desk:0.97, both:1.0 }[platKey] || 1.0;
 
         const lift    = Math.min(0.40, base * wagF * genF * mechF * rtpF * platF);
-        const incrPl  = Math.round(pl * lift);
-        const incrRev = Math.round(incrPl * (econ.ltv3 || 0));
-        const campCost3 = Math.round(3 * (econ.costRatio || 0) * pl * econ.arpu);
+        // Use slider value if user changed it since last generate; fall back to econ.pl
+        const activePl  = (draft?.params?.players && draft.params.players >= 100) ? draft.params.players : (econ.pl || pl);
+        const incrPl    = Math.round(activePl * lift);
+        const incrRev   = Math.round(incrPl * (econ.ltv3 || 0));
+        const campCost3 = Math.round(3 * (econ.acqCostRatio ?? econ.costRatio ?? 0) * activePl * econ.arpu);
         const netIncr   = incrRev - campCost3;
 
         const fmtU    = v => '$' + Math.abs(Math.round(v)).toLocaleString();
@@ -1284,7 +1311,7 @@ function renderEconScenarios(econ, _unused, _unused2, cur, lang, fullData) {
           fm:'F3 Механики', fr:'F4 RTP', fp:'F5 Платформа',
           total:'Итоговый лифт', players:'Доп. игроков (3 мес)',
           rev:'Доп. выручка (3 мес)', revTip:'Incremental_players × LTV 3 мес.',
-          cost:'Бонусные выплаты (3 мес)', net:'Чистый прирост',
+          cost:'Затраты на бонусы: Welcome+NDB (3 мес)', net:'Чистый прирост',
           netTip:'Доп. выручка − затраты за 3 мес.',
           disc:'Оценка на основе бенчмарков. Реальные результаты зависят от продукта, CRM и аудитории.',
         } : {
@@ -1293,7 +1320,7 @@ function renderEconScenarios(econ, _unused, _unused2, cur, lang, fullData) {
           fm:'F3 Mechanics', fr:'F4 RTP', fp:'F5 Platform',
           total:'Total lift', players:'Addl. players (3 mo)',
           rev:'Addl. revenue (3 mo)', revTip:'Incremental_players × LTV 3 mo.',
-          cost:'Bonus payouts (3 mo)', net:'Net incremental',
+          cost:'Bonus cost: Welcome+NDB (3 mo)', net:'Net incremental',
           netTip:'Addl. revenue − campaign cost over 3 months.',
           disc:'Estimate based on industry benchmarks. Actual results depend on product quality, CRM and audience.',
         };
@@ -1330,7 +1357,7 @@ function renderEconScenarios(econ, _unused, _unused2, cur, lang, fullData) {
             </div>
             ${mRow(L2.players, '+'+incrPl.toLocaleString(), '#10b981', null)}
             ${mRow(L2.rev, fmtU(incrRev)+' ~USD', '#10b981', L2.revTip)}
-            ${mRow(L2.cost, fmtU(campCost3)+' ~USD', '#EF4444', null)}
+            ${mRow(L2.cost, fmtU(campCost3)+' ~USD', '#8892a4', null)}
             <div class="mech-row" style="border-bottom:none;margin-top:4px;border-top:1px solid rgba(255,255,255,.1);padding-top:6px">
               <span class="mr-l" style="font-weight:700">${L2.net}</span>
               <span class="mr-v" style="color:${netCol};font-weight:700;font-size:13px">${netIncr>=0?'+':'−'}${fmtU(netIncr)} ~USD</span>
@@ -1344,7 +1371,7 @@ function renderEconScenarios(econ, _unused, _unused2, cur, lang, fullData) {
                         mechFactor: mechF, hasNDB, hasReload: hasRL, hasDep2: hasD2,
                         hasFS, hasCB, rtpFactor: rtpF, rtp, platFactor: platF,
                         plat: platKey, base, lift },
-                economics: { net: netIncr, campCost3, incrRev, incrPl, pl },
+                economics: { net: netIncr, campCost3, incrRev, incrPl, pl: activePl },
                 isRu,
               };
               return `<div id="cg_incr_ai_btn_wrap" style="margin-top:10px">
@@ -1558,13 +1585,96 @@ async function _cgRunOptimize(btn) {
         <div style="font-size:11px;color:#8892a4;margin-bottom:3px">${rec.current} → <strong style="color:var(--text)">${rec.target}</strong></div>
         <div style="font-size:11px;color:var(--text)">${rec.reason}</div>
       </div>`).join('');
-    resultEl.innerHTML = `<div style="font-size:11px;font-weight:700;color:#a5b4fc;margin-top:10px;margin-bottom:2px">${isRu?'Рекомендации по оптимизации':'Optimisation Recommendations'}</div>${cards}`;
+    window._lastCGIncrData._recs = data.recommendations;
+    resultEl.innerHTML = `
+      <div style="font-size:11px;font-weight:700;color:#a5b4fc;margin-top:10px;margin-bottom:2px">${isRu?'Рекомендации по оптимизации':'Optimisation Recommendations'}</div>
+      ${cards}
+      <button onclick="_cgApplyRecs(window._lastCGIncrData?._recs)"
+        style="width:100%;margin-top:8px;padding:7px 12px;background:rgba(16,185,129,.18);
+               border:1px solid rgba(16,185,129,.45);border-radius:8px;color:#6ee7b7;
+               font-size:12px;cursor:pointer;font-weight:600;transition:background .2s"
+        onmouseover="this.style.background='rgba(16,185,129,.32)'" onmouseout="this.style.background='rgba(16,185,129,.18)'">
+        ⚡ ${isRu ? 'Применить и пересчитать' : 'Apply & Recalculate'}
+      </button>`;
     btn.textContent = isRu ? '🤖 Рекомендации AI' : '🤖 AI Recommendations';
     btn.disabled = false;
   } catch(e) {
     resultEl.innerHTML = `<div style="color:#EF4444;font-size:11px;margin-top:6px">${isRu?'Не удалось получить рекомендации. Попробуйте ещё раз.':'Could not get recommendations. Please try again.'}</div>`;
     btn.textContent = isRu ? '🤖 Рекомендации AI' : '🤖 AI Recommendations';
     btn.disabled = false;
+  }
+}
+
+async function _cgApplyRecs(recs) {
+  if (!recs || !recs.length) return;
+  const d = window._lastCGIncrData;
+  const isRu = d?.isRu;
+
+  // Map recommendations → draft.params updates
+  const manualParams = [];
+  const newTypes = [...(draft.params.bonusTypes || ['reload'])];
+
+  for (const rec of recs) {
+    const p = rec.param;
+    if      (p === 'addNDB')      { if (!newTypes.includes('ndb'))      newTypes.push('ndb'); }
+    else if (p === 'addReload')   { if (!newTypes.includes('reload'))   newTypes.push('reload'); }
+    else if (p === 'addCashback') { if (!newTypes.includes('cashback')) newTypes.push('cashback'); }
+    else if (p === 'addDep2')     { if (!newTypes.includes('dep2'))     newTypes.push('dep2'); }
+    else if (p === 'addFS')       { if (!newTypes.includes('welcome'))  newTypes.push('welcome'); }
+    else if (p === 'rtp') {
+      const rtpVal = parseFloat(rec.target);
+      if (!isNaN(rtpVal)) {
+        draft.params.games = rtpVal >= 99 ? 'live' : rtpVal >= 97 ? 'table' : 'slots';
+      }
+    }
+    else if (p === 'plat') { draft.params.plat = rec.target; }
+    else if (p === 'wager' || p === 'matchPct') { manualParams.push(rec.param); }
+  }
+
+  draft.params.bonusTypes = [...new Set(newTypes)];
+
+  // Silently sync step 2 chips to match updated params
+  document.querySelectorAll('#btypeGroup .chip-multi').forEach(c =>
+    c.classList.toggle('active', draft.params.bonusTypes.includes(c.dataset.btype)));
+  document.querySelectorAll('[data-g="games"]').forEach(c =>
+    c.classList.toggle('active', c.dataset.v === draft.params.games));
+
+  // Show loading in mechCard — it's immediately visible and gets replaced by renderMechanicResults on success.
+  // Do NOT touch resultEl/econCard here: renderMechanicResults will re-render the full step 3 output.
+  const mechCard = document.getElementById('mechCard');
+  if (mechCard) {
+    mechCard.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 0;color:var(--muted);font-size:.85rem">
+        <div class="spinner"></div>
+        ${isRu ? 'Пересчёт кампании…' : 'Recalculating campaign…'}
+      </div>
+      ${manualParams.length ? `<div style="font-size:11px;color:#f59e0b;margin-top:4px">
+        ⚠️ ${isRu ? 'Wager и matchPct — настройте вручную на шаге 2' : 'Wager & matchPct — adjust manually in Step 2'}
+      </div>` : ''}`;
+  }
+
+  try {
+    const resp = await fetch('/api/campaign/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scenario: draft.scenario, params: draft.params }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.message || resp.statusText);
+    }
+    const data = await resp.json();
+    draft._apiResult = data;
+    // Full Step 3 re-render: mechCard + whyCard + altCard + econCard (incl. incremental revenue).
+    // If netIncr ≥ 0 after recalc the optimize button won't be re-rendered.
+    renderMechanicResults(data);
+  } catch (e) {
+    if (mechCard) {
+      mechCard.innerHTML = `
+        <div style="color:#EF4444;font-size:.83rem;padding:8px 0">
+          ⚠️ ${isRu ? 'Ошибка пересчёта. Попробуйте ещё раз.' : 'Recalculation failed. Please try again.'}
+        </div>`;
+    }
   }
 }
 
@@ -2272,6 +2382,21 @@ function doExit() {
   window.location.href = '/';
 }
 
+// ── NEW CAMPAIGN MODAL ────────────────────────────────────────────────────────
+function confirmNewCampaign() {
+  const wizardEl = document.getElementById('view-wizard');
+  const inWizard = wizardEl && wizardEl.style.display !== 'none';
+  const hasProgress = inWizard && (draft._step > 1 || draft.scenario !== null);
+  if (hasProgress) {
+    document.getElementById('new-camp-modal').style.display = 'flex';
+  } else {
+    startWizard();
+  }
+}
+function closeNewCampModal() {
+  document.getElementById('new-camp-modal').style.display = 'none';
+}
+
 // ── I18N ──────────────────────────────────────────────────────────────────────
 const I18N = {
   ru: {
@@ -2341,7 +2466,7 @@ const I18N = {
     view_configurator:'Конфигуратор', view_wizard:'Новая кампания',
     // Quick start cards
     qc_launch_n:'Первый запуск казино',
-    qc_launch_d:'Полный бонусный пакет: 1-й депозит + Welcome + Reload + 2-й/3-й депозит + Cashback — все механики для старта',
+    qc_launch_d:'Полный бонусный пакет: 1-й депозит + Welcome + 2-й/3-й депозит + Cashback — все механики для старта',
     qc_react_n:'Реактивация', qc_react_d:'Вернуть неактивных 7+ дней',
     qc_reload_n:'Reload кампания', qc_reload_d:'Бонус на повторный депозит',
     qc_cashback_n:'Cashback', qc_cashback_d:'Возврат % от проигрышей',
@@ -2391,6 +2516,10 @@ const I18N = {
     det_no_data:'Нет данных',
     det_no_texts:'Тексты не сохранены. Пересоздайте кампанию через мастер для генерации текстов.',
     det_no_audit:'Аудит не сохранён. Пересоздайте кампанию через мастер для запуска аудита.',
+    nc_title:'Начать новую кампанию?',
+    nc_body:'Прогресс текущей кампании будет потерян без сохранения.',
+    nc_stay:'Продолжить редактирование',
+    nc_confirm:'Начать новую',
   },
   en: {
     wb_back:'← Home',
@@ -2459,7 +2588,7 @@ const I18N = {
     view_configurator:'Configurator', view_wizard:'New Campaign',
     // Quick start cards
     qc_launch_n:'Casino First Launch',
-    qc_launch_d:'Full bonus package: 1st Deposit + Welcome + Reload + 2nd/3rd Deposit + Cashback — all mechanics for launch',
+    qc_launch_d:'Full bonus package: 1st Deposit + Welcome + 2nd/3rd Deposit + Cashback — all mechanics for launch',
     qc_react_n:'Reactivation', qc_react_d:'Re-engage players inactive 7+ days',
     qc_reload_n:'Reload Campaign', qc_reload_d:'Bonus on repeat deposit',
     qc_cashback_n:'Cashback', qc_cashback_d:'Return % of losses',
@@ -2509,6 +2638,10 @@ const I18N = {
     det_no_data:'No data',
     det_no_texts:'Texts not saved. Recreate the campaign via wizard to generate texts.',
     det_no_audit:'Audit not saved. Recreate the campaign via wizard to run the audit.',
+    nc_title:'Start a new campaign?',
+    nc_body:'Progress of the current campaign will be lost without saving.',
+    nc_stay:'Continue editing',
+    nc_confirm:'Start new',
   },
 };
 

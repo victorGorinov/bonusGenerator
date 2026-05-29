@@ -253,8 +253,10 @@ export function buildConfig(params: BuildConfigParams): Record<string, unknown> 
   const rlMaxB = (reload['maxB'] as number) || 0;
   const rlFs   = (reload['fs']   as number) || 0;
   const _rlBase  = rlPct ? Math.min(dep * (rlPct / 100), rlMaxB || dep) + rlFs * _sv : 0;
-  const totalBonusCost = ((bonusSize * _effW * sP50.conv) + (_ndbSize * _effN * 0.40) + (_rlBase * _effR * 0.05 * 2)) * pl;
-  const costRatio = pl * dep > 0 ? totalBonusCost / (pl * dep) : 0;
+  const acqBonusCost   = ((bonusSize * _effW * sP50.conv) + (_ndbSize * _effN * 0.40)) * pl;
+  const totalBonusCost = acqBonusCost + (_rlBase * _effR * 0.05 * 2) * pl;
+  const acqCostRatio   = pl * dep > 0 ? acqBonusCost   / (pl * dep) : 0;
+  const costRatio      = pl * dep > 0 ? totalBonusCost  / (pl * dep) : 0;
 
   let verdictKey = 'verdict_warn';
   if      (costRatio < 0.10) verdictKey = 'verdict_cheap';
@@ -269,7 +271,7 @@ export function buildConfig(params: BuildConfigParams): Record<string, unknown> 
       arpu, bpct: +(bpct * 100).toFixed(0), cac, ltv3, mBudget, totLTV, roi3, be, pl,
       bonusSize, mixedWCR: +mixedWCR.toFixed(3), mixedRTP: +mixedRTP.toFixed(4),
       breakeven_wager, over_breakeven, wagerX, sP10, sP50, sP90,
-      maxRisk, stressTest, costRatio: +costRatio.toFixed(3), verdictKey,
+      maxRisk, stressTest, costRatio: +costRatio.toFixed(3), acqCostRatio: +acqCostRatio.toFixed(3), verdictKey,
     },
     reg,
   };

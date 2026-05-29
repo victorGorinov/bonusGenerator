@@ -72,3 +72,33 @@ export function parseOptimizeResponse(raw: string): OptimizeResponse {
   if (!result.success) throw new AIProviderError('AI optimize response failed schema validation');
   return result.data;
 }
+
+const TournamentTextsResponseSchema = z.object({
+  push:     z.array(z.string()).min(1),
+  email:    z.array(z.object({ subject: z.string(), body: z.string() })).min(1),
+  sms:      z.array(z.string()).min(1),
+  telegram: z.array(z.string()).min(1),
+  popup:    z.array(z.object({ headline: z.string(), subtext: z.string(), cta: z.string() })).min(1),
+});
+
+const TournamentAuditResponseSchema = z.object({
+  checks:          z.array(z.object({ label: z.string(), status: z.enum(['ok', 'warn']), note: z.string() })).min(1),
+  recommendations: z.array(z.object({ text: z.string(), impact: z.string() })).min(1),
+});
+
+export type TournamentTextsResponse = z.infer<typeof TournamentTextsResponseSchema>;
+export type TournamentAuditResponse = z.infer<typeof TournamentAuditResponseSchema>;
+
+export function parseTournamentTextsResponse(raw: string): TournamentTextsResponse {
+  const parsed = parseRaw(raw);
+  const result = TournamentTextsResponseSchema.safeParse(parsed);
+  if (!result.success) throw new AIProviderError('AI tournament texts response failed schema validation');
+  return result.data;
+}
+
+export function parseTournamentAuditResponse(raw: string): TournamentAuditResponse {
+  const parsed = parseRaw(raw);
+  const result = TournamentAuditResponseSchema.safeParse(parsed);
+  if (!result.success) throw new AIProviderError('AI tournament audit response failed schema validation');
+  return result.data;
+}

@@ -202,7 +202,7 @@ const LANG = {
     lbl_segment:'Сегмент игроков', tip_segment:'Сегмент влияет на прогноз incremental revenue: у новых игроков выше потенциал удержания бонусом, у VIP — ниже (они и так лояльны). Также задаёт контекст при интерпретации unit-экономики.',
     seg_new:'🆕 Новые', seg_mid:'👤 Средние', seg_vip:'👑 VIP',
     sec_incr_rev:'Прогноз Incremental Revenue',
-    p_ret_lift:'Итоговый лифт', p_incr_players:'Доп. игроков (3 мес)', p_incr_rev:'Доп. выручка (3 мес)', p_camp_cost_3:'Бонусные выплаты (3 мес)', p_incr_net:'Чистый прирост',
+    p_ret_lift:'Итоговый лифт', p_incr_players:'Доп. игроков (3 мес)', p_incr_rev:'Доп. выручка (3 мес)', p_camp_cost_3:'Затраты на бонусы: Welcome+NDB (3 мес)', p_incr_net:'Чистый прирост',
     rtip_ret_lift:'Совокупный прирост удержания с учётом всех факторов. Бенчмарк базы: Новые 15%, Средние 10%, VIP 8%. Затем корректируется пятью факторами ниже.',
     rtip_incr_rev:'Дополнительная выручка за 3 месяца от игроков, которых удержал бонус: incremental_players × LTV 3 мес. Региональный бенчмарк в USD.',
     rtip_incr_net:'Чистый доход от кампании: доп. выручка минус бонусные выплаты за 3 месяца (costRatio × игроков × ARPU). Положительное значение = кампания окупается.',
@@ -406,7 +406,7 @@ const LANG = {
     lbl_segment:'Player Segment', tip_segment:'Segment affects the incremental revenue forecast: new players have higher bonus-driven retention potential; VIPs are already loyal. Also provides context for unit economics interpretation.',
     seg_new:'🆕 New', seg_mid:'👤 Mid', seg_vip:'👑 VIP',
     sec_incr_rev:'Incremental Revenue Forecast',
-    p_ret_lift:'Total lift', p_incr_players:'Addl. players (3 mo)', p_incr_rev:'Addl. revenue (3 mo)', p_camp_cost_3:'Bonus payouts (3 mo)', p_incr_net:'Net incremental',
+    p_ret_lift:'Total lift', p_incr_players:'Addl. players (3 mo)', p_incr_rev:'Addl. revenue (3 mo)', p_camp_cost_3:'Bonus cost: Welcome+NDB (3 mo)', p_incr_net:'Net incremental',
     rtip_ret_lift:'Combined retention lift across all five factors. Base benchmarks: New 15%, Mid 10%, VIP 8%, then adjusted by five multipliers below.',
     rtip_incr_rev:'Additional revenue over 3 months from players retained by the bonus: incremental_players × LTV 3 mo. Regional USD benchmark.',
     rtip_incr_net:'Net campaign return: additional revenue minus 3-month bonus payouts (costRatio × players × ARPU). Positive = campaign pays off.',
@@ -609,7 +609,7 @@ const LANG = {
     lbl_segment:'Тоглогчийн сегмент', tip_segment:'Сегмент нь нэмэгдсэн орлогын урьдчилсан мэдээнд нөлөөлнө: шинэ тоглогчдод бонусоор тогтвортой байдлыг нэмэгдүүлэх боломж өндөр.',
     seg_new:'🆕 Шинэ', seg_mid:'👤 Дунд', seg_vip:'👑 VIP',
     sec_incr_rev:'Нэмэлт орлогын урьдчилсан мэдээ',
-    p_ret_lift:'Нийт лифт', p_incr_players:'Нэмэлт тоглогч (3 сар)', p_incr_rev:'Нэмэлт орлого (3 сар)', p_camp_cost_3:'Бонус олговор (3 сар)', p_incr_net:'Цэвэр нэмэлт',
+    p_ret_lift:'Нийт лифт', p_incr_players:'Нэмэлт тоглогч (3 сар)', p_incr_rev:'Нэмэлт орлого (3 сар)', p_camp_cost_3:'Бонусын зардал: Welcome+NDB (3 сар)', p_incr_net:'Цэвэр нэмэлт',
     rtip_ret_lift:'Таван хүчин зүйлийг харгалзан тооцсон нийт өсөлт. Бенчмарк: Шинэ 15%, Дунд 10%, VIP 8%.',
     rtip_incr_rev:'Бонусоор тогтворсон тоглогчдын 3 сарын нэмэлт орлого: нэмэлт тоглогч × LTV 3 сар.',
     rtip_incr_net:'Кампанийн цэвэр орлого: нэмэлт орлого − 3 сарын кампанийн зардал.',
@@ -811,7 +811,7 @@ const LANG = {
     lbl_segment:'Segmento de Jugadores', tip_segment:'El segmento afecta la previsión de ingresos incrementales: los jugadores nuevos tienen mayor potencial de retención por bono; los VIP ya son leales.',
     seg_new:'🆕 Nuevos', seg_mid:'👤 Medios', seg_vip:'👑 VIP',
     sec_incr_rev:'Previsión de Ingresos Incrementales',
-    p_ret_lift:'Lift total', p_incr_players:'Jugadores adic. (3 meses)', p_incr_rev:'Ingresos adic. (3 meses)', p_camp_cost_3:'Pagos de bonos (3 meses)', p_incr_net:'Incremento neto',
+    p_ret_lift:'Lift total', p_incr_players:'Jugadores adic. (3 meses)', p_incr_rev:'Ingresos adic. (3 meses)', p_camp_cost_3:'Costo bonos: Welcome+NDB (3 meses)', p_incr_net:'Incremento neto',
     rtip_ret_lift:'Lift de retención combinado usando cinco factores. Benchmarks base: Nuevos 15%, Medios 10%, VIP 8%.',
     rtip_incr_rev:'Ingresos adicionales en 3 meses de jugadores retenidos por el bono: jugadores_incrementales × LTV 3 meses. Benchmark USD regional.',
     rtip_incr_net:'Retorno neto de la campaña: ingresos adicionales menos el costo de la campaña en 3 meses.',
@@ -1160,8 +1160,8 @@ function recalcEcon(){
     {
       const overrideWager = gv('ov_w_wager', E.wagerX);
       const v = _calcRetentionV2(cfg, overrideWager);
-      // campaign cost scales with updated cost ratio from API
-      const campCost3 = Math.round(3 * (data.ratio || E.costRatio) * E.pl * E.arpu);
+      // Use acqCostRatio (welcome+NDB only) — reload is ongoing loyalty cost, not acquisition
+      const campCost3 = Math.round(3 * (data.ratio || E.acqCostRatio ?? E.costRatio) * E.pl * E.arpu);
       const incrPl  = Math.round(E.pl * v.lift);
       const incrRev = Math.round(incrPl * (E.ltv3 || 0));
       const netIncr = incrRev - campCost3;
@@ -1216,7 +1216,7 @@ function _calcRetentionV2(cfg, overrideWager) {
   const seg  = S.segment || 'mid';
   const plat = S.plat    || 'both';
 
-  const SEG_LIFT = { new: 0.15, mid: 0.10, vip: 0.08 };
+  const SEG_LIFT = { new: 0.25, mid: 0.18, vip: 0.12 };
   const base = SEG_LIFT[seg] || 0.10;
 
   // F1: Wager achievability — ratio of breakeven to actual wager
@@ -1265,7 +1265,7 @@ async function _runOptimize(btn) {
   const E   = _lastCfg.econ || {};
   const incrPl    = Math.round(E.pl * v.lift);
   const incrRev   = Math.round(incrPl * (E.ltv3 || 0));
-  const campCost3 = Math.round(3 * (E.costRatio || 0) * E.pl * E.arpu);
+  const campCost3 = Math.round(3 * (E.acqCostRatio ?? E.costRatio ?? 0) * E.pl * E.arpu);
   const net       = incrRev - campCost3;
 
   btn.disabled = true;
@@ -1343,7 +1343,7 @@ function _buildIncrRevBody(cfg, v) {
 
   const incrPl    = Math.round(E.pl * v.lift);
   const incrRev   = Math.round(incrPl * (E.ltv3 || 0));
-  const campCost3 = Math.round(3 * (E.costRatio || 0) * E.pl * E.arpu);
+  const campCost3 = Math.round(3 * (E.acqCostRatio ?? E.costRatio ?? 0) * E.pl * E.arpu);
   const netIncr   = incrRev - campCost3;
   const netCls    = netIncr > 0 ? 'gn' : netIncr < 0 ? 'rd' : 'gd';
   const fmtU      = n => '$' + Math.abs(n).toLocaleString('ru') + ' ~USD';
@@ -1395,7 +1395,7 @@ function _buildIncrRevBody(cfg, v) {
     </div>
     ${pr(t('p_incr_players'), '+'+incrPl.toLocaleString('ru')+' '+t('players_mo').replace('/мес','').replace('/mo','').trim(), 'gn', 'incr_players')}
     ${prt(t('p_incr_rev'), fmtU(incrRev), 'gn', t('rtip_incr_rev'), 'incr_rev')}
-    ${pr(t('p_camp_cost_3'), fmtU(campCost3), 'rd', 'incr_camp_cost3')}
+    ${pr(t('p_camp_cost_3'), fmtU(campCost3), 'gd', 'incr_camp_cost3')}
     ${prt(t('p_incr_net'), (netIncr>=0?'+':'−')+fmtU(netIncr), netCls, t('rtip_incr_net'), 'incr_net')}
     <div style="font-size:9.5px;color:var(--muted);margin-top:5px;font-style:italic">* ${t('incr_disclaimer')}</div>
     ${netIncr < 0 ? `

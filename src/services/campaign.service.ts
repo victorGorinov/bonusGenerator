@@ -56,26 +56,33 @@ export function generateCampaign({ scenario, params }: { scenario?: ScenarioRef 
   const requestedTypes = Array.isArray(params.bonusTypes) && params.bonusTypes.length > 0
     ? params.bonusTypes.filter(t => validTypes.has(t) && allMechanics[t])
     : [scenarioType];
-  const finalTypes  = requestedTypes.length ? requestedTypes : [scenarioType];
-  const primaryType = finalTypes[0];
+  const finalTypes = requestedTypes.length ? requestedTypes : [scenarioType];
+
+  // Reload is a retention mechanic — strip it from acquisition scenarios
+  const isFirstLaunch = ['first_dep', 'first_launch'].includes(id);
+  const effectiveTypes = isFirstLaunch
+    ? (finalTypes.filter(t => t !== 'reload').length ? finalTypes.filter(t => t !== 'reload') : finalTypes)
+    : finalTypes;
+
+  const primaryType = effectiveTypes[0];
 
   const selectedMechanics: Record<string, unknown> = {};
-  finalTypes.forEach(t => { if (allMechanics[t]) selectedMechanics[t] = allMechanics[t]; });
+  effectiveTypes.forEach(t => { if (allMechanics[t]) selectedMechanics[t] = allMechanics[t]; });
 
   const uiLang: 'ru' | 'en' = params.lang === 'ru' ? 'ru' : 'en';
 
   return {
     mechanic:          selectedMechanics[primaryType],
     mechanicType:      primaryType,
-    requestedTypes:    finalTypes,
+    requestedTypes:    effectiveTypes,
     selectedMechanics,
     allMechanics,
-    explanation:       campaignExplanation(id, primaryType, cfg, finalTypes, uiLang),
-    explanationRu:     campaignExplanation(id, primaryType, cfg, finalTypes, 'ru'),
-    explanationEn:     campaignExplanation(id, primaryType, cfg, finalTypes, 'en'),
-    alternatives:      campaignAlternatives(cfg, finalTypes, uiLang),
-    alternativesRu:    campaignAlternatives(cfg, finalTypes, 'ru'),
-    alternativesEn:    campaignAlternatives(cfg, finalTypes, 'en'),
+    explanation:       campaignExplanation(id, primaryType, cfg, effectiveTypes, uiLang),
+    explanationRu:     campaignExplanation(id, primaryType, cfg, effectiveTypes, 'ru'),
+    explanationEn:     campaignExplanation(id, primaryType, cfg, effectiveTypes, 'en'),
+    alternatives:      campaignAlternatives(cfg, effectiveTypes, uiLang),
+    alternativesRu:    campaignAlternatives(cfg, effectiveTypes, 'ru'),
+    alternativesEn:    campaignAlternatives(cfg, effectiveTypes, 'en'),
     econ:              cfg['econ'],
     wager:             cfg['wager'],
     fsSpec:            cfg['fsSpec'],

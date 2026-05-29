@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tournament Generator — BonusEngine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+:root{--bg:#0a0d14;--bg2:#0f1420;--bg3:#141926;--card:#161c2d;--border:#1e2740;--accent:#4f6ef7;--accent2:#7c3aed;--text:#e8eaf0;--muted:#8892a4;--success:#10b981;--warn:#f59e0b;--sidebar-w:220px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);font-size:14px;display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar-w);min-height:100vh;background:#1E1B4B;border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50}
+.sb-logo{padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px}
+.sb-logo-icon{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.sb-logo-text{font-weight:800;font-size:.9rem;color:#fff;letter-spacing:-.3px}.sb-logo-text span{color:#F59E0B}
+.sb-logo-tag{font-size:9px;font-weight:700;color:#1E1B4B;background:#F59E0B;padding:1px 6px;border-radius:8px;letter-spacing:.4px;margin-left:2px;align-self:center}
+.sb-nav{flex:1;padding:10px 0;overflow-y:auto}
+.nav-lbl{padding:8px 16px 3px;font-size:.65rem;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.08em}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;color:rgba(255,255,255,.5);font-size:.83rem;font-weight:500;position:relative;transition:background .15s,color .15s;text-decoration:none;border:none;background:none;width:100%;font-family:inherit}
+.nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
+.nav-item.active{background:rgba(79,110,247,.25);color:#a0b0ff}
+.nav-item.active::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
+.nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.sb-foot{padding:12px 16px;border-top:1px solid rgba(255,255,255,.06)}
+.sb-back{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.4);font-size:.78rem;text-decoration:none;transition:color .15s;cursor:pointer;background:none;border:none;font-family:inherit;padding:0;width:100%;text-align:left}
+.sb-back:hover{color:#fff}
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{height:54px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:10px;position:sticky;top:0;z-index:40}
+.topbar-title{font-weight:600;font-size:.92rem}
+.topbar-sep,.topbar-sub{color:var(--muted);font-size:.8rem}
+.content{flex:1;padding:26px 30px;max-width:820px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:8px;font-size:.83rem;font-weight:600;cursor:pointer;border:none;transition:all .2s;font-family:inherit;text-decoration:none}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 2px 12px rgba(79,110,247,.3)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(79,110,247,.45)}
+.btn-outline{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+.btn-ghost{background:transparent;color:var(--muted);border:none}
+.btn-ghost:hover{color:var(--text)}
+.btn-sm{padding:5px 11px;font-size:.76rem}
+.btn-lg{padding:11px 26px;font-size:.92rem;border-radius:10px}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+/* STEPS */
+.step-header{margin-bottom:28px}
+.step-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(79,110,247,.15);border:1px solid rgba(79,110,247,.3);color:#a0b0ff;font-size:.7rem;font-weight:700;padding:4px 12px;border-radius:100px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em}
+.step-title{font-size:1.35rem;font-weight:700;margin-bottom:4px}
+.step-sub{color:var(--muted);font-size:.85rem}
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+.card-title{font-weight:600;font-size:.88rem;margin-bottom:12px;color:#a0b0ff}
+/* FORM */
+.form-row{margin-bottom:16px}
+.form-label{display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.form-input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;transition:border-color .2s}
+.form-input:focus{border-color:var(--accent)}
+select.form-input{cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{padding:5px 13px;border-radius:100px;border:1px solid var(--border);font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s;color:var(--muted);background:transparent}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip.on{background:rgba(79,110,247,.2);border-color:rgba(79,110,247,.6);color:#a0b0ff}
+.chip.type-card{border-radius:10px;padding:8px 16px;display:flex;flex-direction:column;gap:3px;align-items:flex-start;min-width:130px}
+.chip.type-card .tc-icon{font-size:1.3rem}
+.chip.type-card .tc-name{font-weight:700;font-size:.83rem}
+.chip.type-card .tc-desc{font-size:.7rem;color:var(--muted);font-weight:400}
+/* NAV FOOTER */
+.nav-footer{display:flex;justify-content:space-between;align-items:center;margin-top:28px;padding-top:18px;border-top:1px solid var(--border)}
+/* ECON */
+.econ-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.econ-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;text-align:center}
+.econ-label{font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.econ-val{font-size:1.25rem;font-weight:700}
+.econ-val.pos{color:var(--success)}
+.econ-val.neg{color:#ef4444}
+.econ-val.neu{color:var(--warn)}
+.econ-sub{font-size:.68rem;color:var(--muted);margin-top:2px}
+.prize-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)}
+.prize-row:last-child{border-bottom:none}
+.prize-place{font-size:.75rem;font-weight:700;color:var(--muted);width:28px}
+.prize-bar-wrap{flex:1;background:var(--bg);border-radius:4px;height:6px}
+.prize-bar{background:linear-gradient(90deg,var(--accent),var(--accent2));height:6px;border-radius:4px}
+.prize-amt{font-size:.8rem;font-weight:700;width:90px;text-align:right}
+.prize-pct{font-size:.7rem;color:var(--muted);width:40px;text-align:right}
+/* TEXTS */
+.tab-row{display:flex;gap:2px;background:var(--bg3);border-radius:8px;padding:3px;margin-bottom:16px}
+.tab{padding:6px 14px;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;color:var(--muted);transition:all .15s;border:none;background:transparent;font-family:inherit}
+.tab.active{background:var(--card);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.text-variant{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;position:relative}
+.text-variant-label{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.text-variant-body{font-size:.83rem;line-height:1.55;color:var(--text)}
+.copy-btn{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.06);border:none;color:var(--muted);padding:3px 8px;border-radius:5px;font-size:.7rem;cursor:pointer;transition:all .15s}
+.copy-btn:hover{background:rgba(255,255,255,.12);color:var(--text)}
+.audit-check{display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border)}
+.audit-check:last-child{border-bottom:none}
+.audit-status{flex-shrink:0;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;margin-top:1px}
+.audit-status.ok{background:rgba(16,185,129,.2);color:var(--success)}
+.audit-status.warn{background:rgba(245,158,11,.2);color:var(--warn)}
+.audit-label{font-weight:600;font-size:.82rem;margin-bottom:2px}
+.audit-note{font-size:.77rem;color:var(--muted);line-height:1.4}
+.rec-card{background:rgba(79,110,247,.07);border:1px solid rgba(79,110,247,.2);border-radius:8px;padding:10px 12px;margin-top:8px}
+.rec-text{font-size:.82rem;margin-bottom:4px}
+.rec-impact{font-size:.72rem;color:var(--muted)}
+.loader{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.85rem;padding:20px 0}
+.spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.alert{border-radius:8px;padding:10px 14px;font-size:.82rem;margin-bottom:12px}
+.alert-warn{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);color:var(--warn)}
+.alert-info{background:rgba(79,110,247,.08);border:1px solid rgba(79,110,247,.2);color:#a0b0ff}
+@media(max-width:600px){.econ-grid{grid-template-columns:1fr 1fr}.content{padding:16px 14px}}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-icon">🎰</div>
+    <div><div class="sb-logo-text">Bonus<span>Engine</span></div></div>
+    <div class="sb-logo-tag">AI</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="nav-lbl">Tools</div>
+    <a href="/configurator.html" class="nav-item"><span class="nav-icon">⚙️</span> Configurator</a>
+    <a href="/campaign-generator.html" class="nav-item"><span class="nav-icon">🚀</span> Campaign Gen</a>
+    <a href="/tournament-generator.html" class="nav-item active"><span class="nav-icon">🏆</span> Tournament Gen</a>
+  </nav>
+  <div class="sb-foot">
+    <a href="/" class="sb-back">← Back to home</a>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <span class="topbar-title">Tournament Generator</span>
+    <span class="topbar-sep">/</span>
+    <span class="topbar-sub" id="topbar-step">Step 1 of 4</span>
+  </div>
+  <div class="content" id="content"></div>
+</main>
+
+<script>
+const GEO_OPTIONS = [
+  { val:'de', lbl:'🇩🇪 Germany (EUR)' },
+  { val:'fr', lbl:'🇫🇷 France (EUR)' },
+  { val:'es', lbl:'🇪🇸 Spain (EUR)' },
+  { val:'it', lbl:'🇮🇹 Italy (EUR)' },
+  { val:'nl', lbl:'🇳🇱 Netherlands (EUR)' },
+  { val:'dk', lbl:'🇩🇰 Denmark (DKK)' },
+  { val:'uk', lbl:'🇬🇧 UK (GBP)' },
+  { val:'ru', lbl:'🇷🇺 Russia (RUB)' },
+  { val:'kz', lbl:'🇰🇿 Kazakhstan (KZT)' },
+  { val:'mn', lbl:'🇲🇳 Mongolia (MNT)' },
+  { val:'us', lbl:'🇺🇸 USA Sweepstakes' },
+  { val:'mx', lbl:'🇲🇽 Mexico (USD)' },
+  { val:'br', lbl:'🇧🇷 Brazil (USD)' },
+];
+
+const TOURNAMENT_TYPES = [
+  { val:'slot',       icon:'🎰', name:'Slots',      desc:'Leaderboard based on slot performance' },
+  { val:'live',       icon:'🃏', name:'Live Casino',desc:'Live table game tournament' },
+  { val:'mixed',      icon:'🎲', name:'Mixed',      desc:'Slots + live games combined' },
+  { val:'prize_drop', icon:'💎', name:'Prize Drop', desc:'Random prizes during gameplay' },
+];
+
+const ENTRY_MODELS = [
+  { val:'freeroll', lbl:'Freeroll' },
+  { val:'buyin',    lbl:'Buy-in' },
+  { val:'ticket',   lbl:'Ticket' },
+];
+
+const SCORING = [
+  { val:'total_wins',         lbl:'Total Wins' },
+  { val:'highest_multiplier', lbl:'Highest Multiplier' },
+  { val:'most_spins',         lbl:'Most Spins' },
+  { val:'mission_based',      lbl:'Mission-Based' },
+];
+
+const DURATIONS = [
+  { val:'flash',       lbl:'Flash (< 1h)' },
+  { val:'daily',       lbl:'Daily' },
+  { val:'weekly',      lbl:'Weekly' },
+  { val:'monthly',     lbl:'Monthly' },
+  { val:'multi_round', lbl:'Multi-Round' },
+];
+
+const POOL_MODELS = [
+  { val:'fixed',   lbl:'Fixed', desc:'Guaranteed pool, operator bears risk' },
+  { val:'dynamic', lbl:'Dynamic', desc:'Pool grows from player rake/fees' },
+  { val:'hybrid',  lbl:'Hybrid', desc:'Guaranteed base + rake contribution' },
+];
+
+const DISTRIBUTIONS = [
+  { val:'top_n',        lbl:'Top N' },
+  { val:'linear_decay', lbl:'Linear Decay' },
+  { val:'flat_tier',    lbl:'Flat Tier' },
+  { val:'prize_drop',   lbl:'Prize Drop' },
+];
+
+const REENTRY = [
+  { val:'single',    lbl:'Single Entry' },
+  { val:'rebuy',     lbl:'Rebuy Allowed' },
+  { val:'unlimited', lbl:'Unlimited' },
+];
+
+const SEGMENTS = [
+  { val:'all',        lbl:'All Players' },
+  { val:'depositors', lbl:'Depositors' },
+  { val:'new',        lbl:'New Players' },
+  { val:'vip',        lbl:'VIP' },
+  { val:'dormant',    lbl:'Dormant' },
+];
+
+let step = 1;
+const draft = {
+  type: 'slot',
+  params: {
+    geo:          'de',
+    lic:          'auto',
+    segment:      'all',
+    entryModel:   'freeroll',
+    scoring:      'total_wins',
+    duration:     'weekly',
+    prizePool:    1000,
+    poolModel:    'fixed',
+    rake:         10,
+    distribution: 'top_n',
+    reentry:      'single',
+    lang:         'en',
+    tone:         'professional',
+  },
+};
+let lastResult  = null;
+let lastTexts   = null;
+let lastAudit   = null;
+let activeTab   = 'push';
+let activeAudit = false;
+
+function goStep(n) {
+  step = n;
+  document.getElementById('topbar-step').textContent = `Step ${n} of 4`;
+  renderStep();
+}
+
+function renderStep() {
+  const c = document.getElementById('content');
+  if      (step === 1) c.innerHTML = renderStep1();
+  else if (step === 2) c.innerHTML = renderStep2();
+  else if (step === 3) c.innerHTML = renderStep3();
+  else if (step === 4) c.innerHTML = renderStep4();
+}
+
+// ── STEP 1: Tournament type ──────────────────────────────────────────────────
+function renderStep1() {
+  return `
+<div class="step-header">
+  <div class="step-badge">Step 1</div>
+  <div class="step-title">Select Tournament Type</div>
+  <div class="step-sub">Choose the game type for your tournament</div>
+</div>
+<div class="chips" style="gap:12px;margin-bottom:28px">
+  ${TOURNAMENT_TYPES.map(t => `
+    <div class="chip type-card${draft.type===t.val?' on':''}" onclick="draft.type='${t.val}';renderStep()">
+      <span class="tc-icon">${t.icon}</span>
+      <span class="tc-name">${t.name}</span>
+      <span class="tc-desc">${t.desc}</span>
+    </div>`).join('')}
+</div>
+<div class="nav-footer">
+  <span></span>
+  <button class="btn btn-primary btn-lg" onclick="goStep(2)">Configure Parameters →</button>
+</div>`;
+}
+
+// ── STEP 2: Parameters ───────────────────────────────────────────────────────
+function renderStep2() {
+  const p = draft.params;
+  return `
+<div class="step-header">
+  <div class="step-badge">Step 2</div>
+  <div class="step-title">Tournament Parameters</div>
+  <div class="step-sub">Configure geo, mechanics, and prize pool</div>
+</div>
+
+<div class="card">
+  <div class="card-title">Geography & Audience</div>
+  <div class="form-row">
+    <label class="form-label">Market / GEO</label>
+    <select class="form-input" id="f-geo" onchange="draft.params.geo=this.value">
+      ${GEO_OPTIONS.map(g => `<option value="${g.val}"${p.geo===g.val?' selected':''}>${g.lbl}</option>`).join('')}
+    </select>
+  </div>
+  <div class="form-row">
+    <label class="form-label">Segment</label>
+    <div class="chips">
+      ${SEGMENTS.map(s => `<div class="chip${p.segment===s.val?' on':''}" onclick="draft.params.segment='${s.val}';renderStep()">${s.lbl}</div>`).join('')}
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Entry & Scoring</div>
+  <div class="form-row">
+    <label class="form-label">Entry Model</label>
+    <div class="chips">
+      ${ENTRY_MODELS.map(e => `<div class="chip${p.entryModel===e.val?' on':''}" onclick="draft.params.entryModel='${e.val}';renderStep()">${e.lbl}</div>`).join('')}
+    </div>
+  </div>
+  <div class="form-row">
+    <label class="form-label">Scoring Method</label>
+    <div class="chips">
+      ${SCORING.map(s => `<div class="chip${p.scoring===s.val?' on':''}" onclick="draft.params.scoring='${s.val}';renderStep()">${s.lbl}</div>`).join('')}
+    </div>
+  </div>
+  <div class="form-row">
+    <label class="form-label">Re-entry</label>
+    <div class="chips">
+      ${REENTRY.map(r => `<div class="chip${p.reentry===r.val?' on':''}" onclick="draft.params.reentry='${r.val}';renderStep()">${r.lbl}</div>`).join('')}
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Prize Pool & Duration</div>
+  <div class="form-row">
+    <label class="form-label">Duration</label>
+    <div class="chips">
+      ${DURATIONS.map(d => `<div class="chip${p.duration===d.val?' on':''}" onclick="draft.params.duration='${d.val}';renderStep()">${d.lbl}</div>`).join('')}
+    </div>
+  </div>
+  <div class="form-row">
+    <label class="form-label">Prize Pool Amount</label>
+    <input class="form-input" type="number" min="100" id="f-pp" value="${p.prizePool}" onchange="draft.params.prizePool=Math.max(100,+this.value)">
+  </div>
+  <div class="form-row">
+    <label class="form-label">Pool Model</label>
+    <div class="chips">
+      ${POOL_MODELS.map(m => `<div class="chip${p.poolModel===m.val?' on':''}" onclick="draft.params.poolModel='${m.val}';renderStep()" title="${m.desc}">${m.lbl}</div>`).join('')}
+    </div>
+  </div>
+  ${p.poolModel==='dynamic'?`
+  <div class="form-row">
+    <label class="form-label">Rake % (player contributions)</label>
+    <input class="form-input" type="number" min="0" max="40" value="${p.rake||10}" onchange="draft.params.rake=+this.value" style="max-width:120px">
+  </div>`:''}
+  <div class="form-row">
+    <label class="form-label">Prize Distribution</label>
+    <div class="chips">
+      ${DISTRIBUTIONS.map(d => `<div class="chip${p.distribution===d.val?' on':''}" onclick="draft.params.distribution='${d.val}';renderStep()">${d.lbl}</div>`).join('')}
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Language & Tone</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div class="form-row" style="margin:0">
+      <label class="form-label">Language</label>
+      <select class="form-input" onchange="draft.params.lang=this.value">
+        <option value="en"${p.lang==='en'?' selected':''}>English</option>
+        <option value="ru"${p.lang==='ru'?' selected':''}>Russian</option>
+        <option value="de"${p.lang==='de'?' selected':''}>German</option>
+        <option value="da"${p.lang==='da'?' selected':''}>Danish</option>
+        <option value="es"${p.lang==='es'?' selected':''}>Spanish</option>
+        <option value="mn"${p.lang==='mn'?' selected':''}>Mongolian</option>
+      </select>
+    </div>
+    <div class="form-row" style="margin:0">
+      <label class="form-label">Tone</label>
+      <select class="form-input" onchange="draft.params.tone=this.value">
+        <option value="professional"${p.tone==='professional'?' selected':''}>Professional</option>
+        <option value="casual"${p.tone==='casual'?' selected':''}>Casual</option>
+        <option value="hype"${p.tone==='hype'?' selected':''}>Hype / FOMO</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="nav-footer">
+  <button class="btn btn-outline" onclick="goStep(1)">← Back</button>
+  <button class="btn btn-primary btn-lg" id="btn-generate" onclick="runGenerate()">Generate Tournament Spec →</button>
+</div>`;
+}
+
+// ── STEP 3: Economics & Spec ─────────────────────────────────────────────────
+function renderStep3() {
+  if (!lastResult) { goStep(2); return ''; }
+  const r    = lastResult;
+  const e    = r.econ;
+  const spec = r.spec;
+  const cur  = r.cur || 'EUR';
+
+  function fmtCur(n) {
+    return cur + ' ' + Math.abs(Math.round(n)).toLocaleString();
+  }
+
+  const scenarios = [
+    { label:'Best Case (5% participation)',  lift:e.ggrLiftLow,  net:e.netMarginLow,  pl:e.participantsLow,  cpp:e.costPerActiveLow  },
+    { label:'Expected (10% participation)',  lift:e.ggrLiftMid,  net:e.netMarginMid,  pl:e.participantsMid,  cpp:e.costPerActiveMid  },
+    { label:'Worst Case (15% participation)',lift:e.ggrLiftHigh, net:e.netMarginHigh, pl:e.participantsHigh, cpp:e.costPerActiveHigh },
+  ];
+
+  const prizeRows = (spec.prizes||[]).map((pr,i) => {
+    const pct = pr.pct;
+    return `<div class="prize-row">
+      <span class="prize-place">${pr.place === 1 ? '🥇' : pr.place === 2 ? '🥈' : pr.place === 3 ? '🥉' : '#' + pr.place}</span>
+      <div class="prize-bar-wrap"><div class="prize-bar" style="width:${Math.min(pct*3,100)}%"></div></div>
+      <span class="prize-pct">${pct}%</span>
+      <span class="prize-amt">${cur} ${pr.amount.toLocaleString()}</span>
+    </div>`;
+  }).join('');
+
+  const econCards = scenarios.map(s => {
+    const netClass = s.net >= 0 ? 'pos' : 'neg';
+    return `<div class="econ-card">
+      <div class="econ-label">${s.label}</div>
+      <div class="econ-val ${netClass}">${s.net>=0?'+':''}${fmtCur(s.net)}</div>
+      <div class="econ-sub">${s.pl} players · GGR lift: +${fmtCur(s.lift)}</div>
+      <div class="econ-sub">Cost/active: ${fmtCur(s.cpp)}</div>
+    </div>`;
+  }).join('');
+
+  return `
+<div class="step-header">
+  <div class="step-badge">Step 3</div>
+  <div class="step-title">Tournament Spec & Economics</div>
+  <div class="step-sub">Prize distribution and projected ROI</div>
+</div>
+
+<div class="card">
+  <div class="card-title">Tournament Summary</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-size:.82rem">
+    <div><span style="color:var(--muted)">Type:</span> ${spec.type}</div>
+    <div><span style="color:var(--muted)">Duration:</span> ${spec.duration}</div>
+    <div><span style="color:var(--muted)">Entry:</span> ${spec.entryModel}</div>
+    <div><span style="color:var(--muted)">Scoring:</span> ${spec.scoring}</div>
+    <div><span style="color:var(--muted)">Pool model:</span> ${spec.poolModel}</div>
+    <div><span style="color:var(--muted)">Re-entry:</span> ${spec.reentry}</div>
+    <div><span style="color:var(--muted)">Prize pool:</span> <strong>${fmtCur(spec.prizePool)}</strong></div>
+    <div><span style="color:var(--muted)">Distribution:</span> ${spec.distribution}</div>
+    <div><span style="color:var(--muted)">ROI:</span> <strong style="color:${e.roi>=0?'var(--success)':'#ef4444'}">${e.roi}%</strong></div>
+  </div>
+  ${e.breakEvenParticipants > 0 ? `<div style="margin-top:10px;font-size:.78rem;color:var(--muted)">Break-even: <strong style="color:var(--text)">${e.breakEvenParticipants} participants</strong> at 30% GGR lift</div>` : ''}
+</div>
+
+<div class="card">
+  <div class="card-title">Prize Distribution (${cur} ${spec.prizePool.toLocaleString()} pool)</div>
+  ${prizeRows}
+</div>
+
+<div class="card">
+  <div class="card-title">Economic Scenarios</div>
+  <div class="econ-grid">${econCards}</div>
+  <div style="font-size:.73rem;color:var(--muted)">Based on ${e.eligible} eligible ${draft.params.segment} players · ARPU ${e.arpu} USD/mo</div>
+</div>
+
+<div class="nav-footer">
+  <button class="btn btn-outline" onclick="goStep(2)">← Reconfigure</button>
+  <button class="btn btn-primary btn-lg" onclick="goStep(4)">Generate AI Texts →</button>
+</div>`;
+}
+
+// ── STEP 4: AI Texts & Audit ─────────────────────────────────────────────────
+function renderStep4() {
+  const hasTexts = !!lastTexts;
+  const hasAudit = !!lastAudit;
+
+  return `
+<div class="step-header">
+  <div class="step-badge">Step 4</div>
+  <div class="step-title">AI Texts & Compliance</div>
+  <div class="step-sub">Generate CRM copy and compliance audit for your tournament</div>
+</div>
+
+<div style="display:flex;gap:10px;margin-bottom:20px">
+  <button class="btn btn-primary" onclick="runTexts()" id="btn-texts">${hasTexts ? '↺ Regenerate Texts' : '🤖 Generate CRM Texts'}</button>
+  <button class="btn btn-outline" onclick="runAudit()" id="btn-audit">${hasAudit ? '↺ Re-run Audit' : '🔍 Compliance Audit'}</button>
+</div>
+
+<div id="texts-area">${hasTexts ? renderTextsHTML(lastTexts) : ''}</div>
+<div id="audit-area">${hasAudit ? renderAuditHTML(lastAudit) : ''}</div>
+
+<div class="nav-footer">
+  <button class="btn btn-outline" onclick="goStep(3)">← Back to Spec</button>
+  <button class="btn btn-ghost" onclick="goStep(1)">Start Over</button>
+</div>`;
+}
+
+function renderTextsHTML(texts) {
+  const channels = ['push','email','sms','telegram','popup'];
+  const tabs = channels.map(ch => `<button class="tab${activeTab===ch?' active':''}" onclick="activeTab='${ch}';document.getElementById('texts-area').innerHTML=renderTextsHTML(lastTexts)">${ch.charAt(0).toUpperCase()+ch.slice(1)}</button>`).join('');
+
+  let body = '';
+  const variants = texts[activeTab] || [];
+  if (activeTab === 'email') {
+    body = variants.map((v,i) => `
+      <div class="text-variant">
+        <div class="text-variant-label">Variant ${i+1}</div>
+        <div style="font-weight:600;font-size:.82rem;margin-bottom:4px">${v.subject||''}</div>
+        <div class="text-variant-body">${v.body||''}</div>
+        <button class="copy-btn" onclick="navigator.clipboard.writeText(${JSON.stringify((v.subject||'')+'\n\n'+(v.body||''))})">⎘ Copy</button>
+      </div>`).join('');
+  } else if (activeTab === 'popup') {
+    body = variants.map((v,i) => `
+      <div class="text-variant">
+        <div class="text-variant-label">Variant ${i+1}</div>
+        <div style="font-weight:700;font-size:.95rem;margin-bottom:3px">${v.headline||''}</div>
+        <div style="color:var(--muted);font-size:.82rem;margin-bottom:6px">${v.subtext||''}</div>
+        <div style="display:inline-block;background:var(--accent);color:#fff;padding:4px 12px;border-radius:6px;font-size:.78rem;font-weight:700">${v.cta||''}</div>
+        <button class="copy-btn" onclick="navigator.clipboard.writeText(${JSON.stringify((v.headline||'')+'\n'+(v.subtext||'')+'\nCTA: '+(v.cta||''))})">⎘ Copy</button>
+      </div>`).join('');
+  } else {
+    body = variants.map((v,i) => `
+      <div class="text-variant">
+        <div class="text-variant-label">Variant ${i+1}</div>
+        <div class="text-variant-body">${typeof v === 'string' ? v : JSON.stringify(v)}</div>
+        <button class="copy-btn" onclick="navigator.clipboard.writeText(${JSON.stringify(typeof v === 'string' ? v : '')})">⎘ Copy</button>
+      </div>`).join('');
+  }
+
+  return `<div class="card" style="margin-bottom:16px">
+    <div class="card-title">CRM Copy</div>
+    <div class="tab-row">${tabs}</div>
+    ${body}
+  </div>`;
+}
+
+function renderAuditHTML(audit) {
+  const checks = (audit.checks||[]).map(c => `
+    <div class="audit-check">
+      <div class="audit-status ${c.status}">${c.status==='ok'?'✓':'!'}</div>
+      <div><div class="audit-label">${c.label}</div><div class="audit-note">${c.note}</div></div>
+    </div>`).join('');
+  const recs = (audit.recommendations||[]).map(r => `
+    <div class="rec-card">
+      <div class="rec-text">${r.text}</div>
+      <div class="rec-impact">→ ${r.impact}</div>
+    </div>`).join('');
+
+  return `<div class="card">
+    <div class="card-title">Compliance Audit</div>
+    ${checks}
+    ${recs ? `<div style="margin-top:14px;font-size:.8rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Recommendations</div>${recs}` : ''}
+  </div>`;
+}
+
+// ── API calls ────────────────────────────────────────────────────────────────
+async function runGenerate() {
+  const btn = document.getElementById('btn-generate');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Generating…'; }
+
+  try {
+    const resp = await fetch('/api/tournament/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: draft.type, params: draft.params }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ message: resp.statusText }));
+      throw new Error(err.message || resp.statusText);
+    }
+    lastResult = await resp.json();
+    lastTexts  = null;
+    lastAudit  = null;
+    goStep(3);
+  } catch (e) {
+    alert('Error: ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = 'Generate Tournament Spec →'; }
+  }
+}
+
+async function runTexts() {
+  const btn = document.getElementById('btn-texts');
+  const area = document.getElementById('texts-area');
+  if (!btn || !area) return;
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating texts…';
+  area.innerHTML = '<div class="loader"><div class="spinner"></div> AI is writing tournament copy…</div>';
+
+  try {
+    const resp = await fetch('/api/tournament/texts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: draft.type, params: draft.params, spec: lastResult?.spec || {} }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ message: resp.statusText }));
+      throw new Error(err.message || resp.statusText);
+    }
+    lastTexts = await resp.json();
+    activeTab = 'push';
+    area.innerHTML = renderTextsHTML(lastTexts);
+    btn.textContent = '↺ Regenerate Texts';
+  } catch (e) {
+    area.innerHTML = `<div class="alert alert-warn">Could not generate texts: ${e.message}</div>`;
+    btn.textContent = '🤖 Generate CRM Texts';
+  }
+  btn.disabled = false;
+}
+
+async function runAudit() {
+  const btn  = document.getElementById('btn-audit');
+  const area = document.getElementById('audit-area');
+  if (!btn || !area) return;
+  btn.disabled = true;
+  btn.textContent = '⏳ Auditing…';
+  area.innerHTML = '<div class="loader"><div class="spinner"></div> AI compliance officer is reviewing…</div>';
+
+  try {
+    const resp = await fetch('/api/tournament/audit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: draft.type, params: draft.params, spec: lastResult?.spec || {}, uiLang: draft.params.lang }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ message: resp.statusText }));
+      throw new Error(err.message || resp.statusText);
+    }
+    lastAudit = await resp.json();
+    area.innerHTML = renderAuditHTML(lastAudit);
+    btn.textContent = '↺ Re-run Audit';
+  } catch (e) {
+    area.innerHTML = `<div class="alert alert-warn">Could not run audit: ${e.message}</div>`;
+    btn.textContent = '🔍 Compliance Audit';
+  }
+  btn.disabled = false;
+}
+
+// Init
+renderStep();
+</script>
+</body>
+</html>
