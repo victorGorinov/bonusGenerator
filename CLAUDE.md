@@ -1,6 +1,6 @@
 # CLAUDE.md — Bonus Engine Configurator
 
-Complete architecture reference for Claude Code sessions. Updated: 2026-05-20.
+Complete architecture reference for Claude Code sessions. Updated: 2026-05-21.
 
 ---
 
@@ -57,6 +57,8 @@ Entry point: `server.ts` → imports `src/server/app.ts` → starts Express.
 │   │   ├── campaign/
 │   │   │   ├── scenarios.ts         # GEO_CFG, TONE_DESC, LANG_NAME, SEG_DESC, SCENARIO_MSG (RU+EN)
 │   │   │   └── explanation.ts       # campaignExplanation(), campaignAlternatives() — text logic
+│   │   ├── tournament/
+│   │   │   └── calcEconomics.ts     # calcTournamentEconomics() — pure economics for tournaments
 │   │   └── ai/
 │   │       └── parser.ts            # tryRepairJSON — JSON repair utility for AI responses
 │   ├── ai/
@@ -69,15 +71,18 @@ Entry point: `server.ts` → imports `src/server/app.ts` → starts Express.
 │   │   └── anthropic.ts             # generate(prompt, opts) — calls claude-haiku-4-5, retries ×2
 │   ├── controllers/
 │   │   ├── generate.controller.ts   # POST /api/generate, POST /api/recalc
-│   │   ├── campaign.controller.ts   # POST /api/campaign/generate, /texts, /audit
+│   │   ├── campaign.controller.ts   # POST /api/campaign/generate, /texts, /audit, /optimize
+│   │   ├── tournament.controller.ts # POST /api/tournament/generate, /texts, /audit
 │   │   └── signup.controller.ts     # POST /api/signup (Resend email)
 │   ├── services/
 │   │   ├── bonus.service.ts         # Thin wrapper: calls buildConfig, recalcCosts
 │   │   ├── campaign.service.ts      # generateCampaign(): maps geo+scenario → bonus config + explanations
+│   │   ├── tournament.service.ts    # generateTournament(): maps type+params → spec+econ+prize distribution
 │   │   └── ai.service.ts            # Re-exports generate from anthropic provider
 │   ├── routes/
 │   │   ├── generate.routes.ts       # POST /api/generate, /api/recalc (apiLimiter)
 │   │   ├── campaign.routes.ts       # POST /api/campaign/* (campaignLimiter, aiLimiter)
+│   │   ├── tournament.routes.ts     # POST /api/tournament/* (campaignLimiter, aiLimiter)
 │   │   ├── signup.routes.ts         # POST /api/signup (signupLimiter)
 │   │   └── health.routes.ts         # GET /api/health
 │   ├── middleware/
@@ -90,6 +95,8 @@ Entry point: `server.ts` → imports `src/server/app.ts` → starts Express.
 │   │   ├── campaign.schema.ts       # CampaignGenerateSchema: scenario + params (geo, segment, tone, etc.)
 │   │   ├── texts.schema.ts          # TextsSchema — mechanic: .nullable().optional() (null allowed)
 │   │   ├── audit.schema.ts          # AuditSchema: scenario, mechanic (.nullable().optional()), mechanicType, params, uiLang
+│   │   ├── optimize.schema.ts       # OptimizeSchema: geo, segment, lift object, economics object
+│   │   ├── tournament.schema.ts     # TournamentGenerateSchema, TournamentTextsSchema, TournamentAuditSchema
 │   │   └── signup.schema.ts         # SignupSchema: email, role, name
 │   ├── errors/
 │   │   ├── AppError.ts              # Base error with statusCode
@@ -103,19 +110,20 @@ Entry point: `server.ts` → imports `src/server/app.ts` → starts Express.
 │   ├── configurator.html            # Bonus Configurator SPA (~1250 lines, loads app.js)
 │   ├── app.js                       # Configurator frontend logic + i18n (RU/EN/MN/ES)
 │   ├── campaign-generator.html      # AI Campaign Generator SPA (self-contained, no app.js)
+│   ├── tournament-generator.html    # Tournament Generator SPA — 4-step wizard (self-contained)
 │   ├── generator.html               # Legacy — redirected 301 → /campaign-generator.html
 │   ├── privacy.html                 # Privacy Policy (EN/RU, GDPR)
 │   └── terms.html                   # Terms of Service (EN/RU)
 ├── tests/
 │   ├── domain/buildConfig.test.js
 │   ├── domain/recalcCosts.test.js
+│   ├── domain/calcEconomics.test.js  # Tournament economics — 20 tests
 │   ├── domain/payout.test.js
 │   ├── ai/parser.test.js
 │   └── integration/
 │       ├── api.generate.test.js
 │       └── security.headers.test.js
 ├── CLAUDE.md                        # This file
-├── REFACTORING_PLAN.md              # 12-phase refactoring roadmap
 ├── FEATURE_EDIT_CAMPAIGN.md         # Edit campaign feature spec (fully implemented)
 ├── AI_CAMPAIGN_GENERATOR_PLAN.md    # AI Campaign Generator original spec
 ├── package.json                     # tsx runtime, no build step
@@ -135,6 +143,10 @@ Entry point: `server.ts` → imports `src/server/app.ts` → starts Express.
 | POST | `/api/campaign/generate` | 20/min | CampaignGenerateSchema | `campaign.controller.generate` |
 | POST | `/api/campaign/texts` | 15/min | TextsSchema | `campaign.controller.texts` |
 | POST | `/api/campaign/audit` | 15/min | AuditSchema | `campaign.controller.audit` |
+| POST | `/api/campaign/optimize` | 15/min | OptimizeSchema | `campaign.controller.optimize` |
+| POST | `/api/tournament/generate` | 20/min | TournamentGenerateSchema | `tournament.controller.generate` |
+| POST | `/api/tournament/texts` | 15/min | TournamentTextsSchema | `tournament.controller.texts` |
+| POST | `/api/tournament/audit` | 15/min | TournamentAuditSchema | `tournament.controller.audit` |
 | POST | `/api/signup` | 5/hr | SignupSchema | `signup.controller` |
 | GET | `/api/health` | — | — | `{ status: 'ok' }` |
 | GET | `/privacy` | — | — | `public/privacy.html` |
@@ -163,16 +175,16 @@ Active licenses: `mga` (EU default), `ukgc` (UK), `dga` (Denmark), `none` (CIS/l
 
 **CIS config note** (`src/config/geo/cis.ts`) — `reload.maxBMax` is `Infinity` (not an absolute cap). The bonus ceiling is enforced exclusively via `maxBMulti: 1.5` (1.5× avgdep), which is currency-agnostic. An earlier absolute cap of 200 RUB was incorrect and has been removed.
 
-**`calcScenario` payout fallback (added 2026-05-19)** — `truncNormalPayout` is not scale-invariant: its z-score scales as `√B`, so for large-denomination currencies (RUB 5000, KZT 20000, MNT 100000) z ≈ −8 to −40, driving all Gaussian terms to zero and returning 0. `calcScenario` now falls back to a deterministic estimate when `payoutStat = 0`:
+**`calcScenario` payout fallback** — `truncNormalPayout` is not scale-invariant. For large-denomination currencies (RUB, KZT, MNT) z = mu/sigma falls in the range −20 to −43, causing a floating-point problem: `_Phi(z)` (computed via `_erf`) underflows to exactly 0, while `_phi(z)` (computed as `exp(-z²/2)/√(2π)`) remains representable as a tiny positive. This leaves a spurious `payoutStat` like `1.8e-200` that passes `payoutStat > 0` but rounds to 0 in the final cost. Fix: use a relative threshold — if `payoutStat < bonusSize × 1e-6` it is a numerical artifact; fall back to the deterministic breakeven-efficiency estimate:
 
 ```typescript
 const payoutStat = truncNormalPayout(bonusSize, wagerX, adjWCR, adjRTP);
 const adjBe  = adjWCR / (1 - adjRTP);
 const adjEff = wagerX > 0 ? Math.min(1, adjBe / Math.max(adjBe, wagerX)) : 1;
-const payout = payoutStat > 0 ? payoutStat : bonusSize * adjEff;
+const payout = payoutStat > bonusSize * 1e-6 ? payoutStat : bonusSize * adjEff;
 ```
 
-This is consistent with `_effW` used in `totalBonusCost`. EUR/GBP/USD geos are unaffected (their `payoutStat > 0`). Sweep geos (wagerX=0) now get `adjEff=1` (full bonus passes through, no wagering).
+EUR/GBP/USD geos unaffected (their `payoutStat` is in the range of the bonus size, far above the threshold). Sweep geos (wagerX=0) get `adjEff=1` (full bonus passes through). MN sP10 (z≈-43) underflows completely to 0; sP50/sP90 (z≈-30 to -23) hit the spurious-tiny-positive range — all three now correctly use the fallback.
 
 ### `recalcCosts(cfg, overrides)` — `src/domain/bonus/recalcCosts.ts`
 
@@ -414,7 +426,7 @@ Two new functions added before `render(c)`:
 
 Called from `render(c)` via `_buildIncrRevBody(c, _calcRetentionV2(c))`, rendered inside a new `<div>` section at the bottom of `econBody` with green tint background.
 
-**`recalcEcon()` incremental update** — when override wager changes, only F1 changes; F2–F5 stay from last generate. The `campCost3` in recalc currently uses `3 × mBudget × (data.ratio / E.costRatio)` (**pending fix** — see tech debt, task #5).
+**`recalcEcon()` incremental update** — when override wager changes, only F1 changes; F2–F5 stay from last generate. `campCost3` uses `3 × (data.ratio || E.costRatio) × pl × arpu` (updated cost ratio from recalc response).
 
 ### `public/campaign-generator.html` — AI Campaign Generator SPA
 
@@ -461,7 +473,7 @@ When `netIncr < 0`, the IIFE stores lift + economics in `window._lastCGIncrData`
 
 **`_cgRunOptimize(btn)`** — global function in `campaign-generator.html`. Reads `window._lastCGIncrData`, POSTs to `/api/campaign/optimize`, renders recommendation cards (factor badge, param change, reason, impact colour) into `#cg_incr_ai_result`.
 
-**Campaign cost in incremental model (`campCost3`)** — currently uses `3 × econ.mBudget` in both Configurator and Campaign Generator. **This is a known issue** (task #5, pending): `mBudget = pl × cac` (total CAC-based budget, USD) makes breakeven structurally unreachable at realistic lift levels (need lift > CAC/ARPU ≈ 42% for MN). Planned fix: replace with `3 × costRatio × pl × arpu` (actual bonus cost in USD).
+**Campaign cost in incremental model (`campCost3`)** — `3 × costRatio × pl × arpu` in both Configurator and Campaign Generator. Uses dimensionless `costRatio` × USD-denominated `arpu` — currency-safe. Previous formula `3 × mBudget = 3 × pl × cac` was incorrect (made breakeven structurally unreachable, required lift > CAC/ARPU ≈ 42%).
 
 **Tooltip CSS** — `.tip` class with `::after` pseudo-element. `position:absolute; bottom:calc(100% + 6px)`. Requires parent to have `overflow:visible` (all econ card parents do). `z-index:50`.
 
@@ -545,6 +557,36 @@ campaign-generator.html
   → POST /api/campaign/audit { scenario, mechanic, mechanicType, params, uiLang }
   → buildAuditPrompt() [+ DGA rules if lic=DGA]
   → aiGenerate(prompt, { maxTokens: 900 }) → parseAuditResponse()
+  ← { checks[5], recommendations[2-4] }
+
+  → POST /api/campaign/optimize { geo, segment, lift, economics, uiLang? }
+  → buildOptimizePrompt(data) [mode:'optimize' or 'review']
+  → aiGenerate(prompt, { maxTokens: 600 }) → parseOptimizeResponse()
+  ← { recommendations[2-4]{factor, param, current, target, reason, impact} }
+```
+
+### Tournament Generator
+
+```
+tournament-generator.html
+  → POST /api/tournament/generate { type, params: {geo, segment, entry, scoring, duration,
+      prizePool, poolModel, rake, distribution, reentry, lang, tone} }
+  → tournament.service.generateTournament()
+  → GEO_CFG[geo] → { region, lic, sitecur }
+  → calcTournamentEconomics({ region, segment, duration, prizePool, poolModel, rake })
+  ← { spec, econ, params, cur, region, lic }
+     econ: { arpu, eligible, durationDays, participantsLow/Mid/High,
+             ggrLiftLow/Mid/High, prizePoolCost, netMarginLow/Mid/High,
+             costPerActiveLow/Mid/High, roi, breakEvenParticipants }
+
+  → POST /api/tournament/texts { type, spec, params, econ }
+  → buildTournamentTextsPrompt()
+  → aiGenerate(prompt, { maxTokens: 4096 }) → parseTournamentTextsResponse()
+  ← { push[3], email[3], sms[3], telegram[3], popup[3] }
+
+  → POST /api/tournament/audit { type, spec, params, econ }
+  → buildTournamentAuditPrompt() [+ license-specific rules]
+  → aiGenerate(prompt, { maxTokens: 900 }) → parseTournamentAuditResponse()
   ← { checks[5], recommendations[2-4] }
 ```
 
@@ -637,7 +679,7 @@ lift = min(0.40, base × F1 × F2 × F3 × F4 × F5)
 
 | Factor | Variable | Formula | Notes |
 |--------|----------|---------|-------|
-| Base | `base` | `SEG_LIFT[seg]` | new=0.15, mid=0.10, vip=0.08 |
+| Base | `base` | `SEG_LIFT[seg]` | new=0.25, mid=0.18, vip=0.12 |
 | F1 Wager | `wagFactor` | `clamp(0.7 + 0.3 × clamp(beW/wagerX, 0.3, 2.0), 0.65, 1.35)` | Continuous. Score>1 when beW>wagerX (player-friendly) |
 | F2 Generosity | `genFactor` | `clamp(0.85 + 0.30 × min(matchPct/100, 1.0), 0.85, 1.15)` | Neutral at ~50% match |
 | F3 Mechanics | `mechFactor` | `1 + hasNDB×0.06 + hasRL×0.08 + hasDep2×0.04 + hasFS×0.04 + hasCB×0.07` | Max ≈ 1.29 (all active) |
@@ -671,31 +713,297 @@ Returns 2–4 parameter-change recommendations when incremental net result is ne
 
 **Route**: `POST /api/campaign/optimize` — `aiLimiter`, `validate(OptimizeSchema)`
 
-**Files**:
+**Files** (all implemented):
 - `src/validation/optimize.schema.ts` — `OptimizeSchema` (geo, segment, lift object, economics object)
 - `src/ai/prompts/optimize.prompt.ts` — `buildOptimizePrompt(data: OptimizeInput)` — RU/EN prompt with 5-factor table + economics
 - `src/controllers/campaign.controller.ts` — `optimize()` handler — calls prompt → aiGenerate (600 tokens) → `parseOptimizeResponse()`
 - `src/ai/parser.ts` — `OptimizeResponseSchema`, `parseOptimizeResponse()`, `OptimizeResponse` type
 
-**Response shape**: `{ recommendations: [{ factor, param, current, target, reason, impact }] }`
+**Request shape**:
+```typescript
+{
+  geo:       string,
+  segment:   'new' | 'mid' | 'vip',
+  lift: {
+    wagFactor, wagerX, beW,
+    genFactor, matchPct,
+    mechFactor, hasNDB, hasReload, hasDep2, hasFS, hasCB,
+    rtpFactor, rtp,
+    platFactor, plat,
+    base, lift
+  },
+  economics: { net, campCost3, incrRev, incrPl, pl },
+  uiLang?:   string
+}
+```
 
-**UI — Configurator (`app.js`)**: `_runOptimize(btn)` — reads `_calcRetentionV2(_lastCfg)`, POSTs to `/api/campaign/optimize`, renders cards into `#incr_ai_result`. Button shown in `_buildIncrRevBody` only when `netIncr < 0`.
+**Response shape**: `{ recommendations: [{ factor, param, current, target, reason, impact: 'high'|'med'|'low' }] }`
 
-**UI — Campaign Generator (`campaign-generator.html`)**: IIFE stores lift+economics in `window._lastCGIncrData` at render time; `_cgRunOptimize(btn)` (global function) reads it and POSTs. Button rendered into `#cg_incr_ai_result`. Shown only when `netIncr < 0`.
+**UI — Configurator (`app.js`)** ✅ **implemented**:
+- `_runOptimize(btn)` — reads `_calcRetentionV2(_lastCfg)`, recomputes economics, POSTs to `/api/campaign/optimize`, renders recommendation cards into `#incr_ai_result`
+- Button `🤖 Рекомендации AI` rendered in `_buildIncrRevBody` inside `#incr_ai_btn_wrap` only when `netIncr < 0`
+- i18n keys: `btn_ai_optimize`, `ai_opt_loading`, `ai_opt_title`, `ai_opt_impact_high`, `ai_opt_impact_med`, `ai_opt_impact_low`, `ai_opt_err` (all 4 languages)
+- Card style: indigo button → on click shows loading state → renders cards with factor badge, `current → target`, reason text, impact colour (`high`=#10b981, `med`=#f59e0b, `low`=#8892a4)
+
+**UI — Campaign Generator (`campaign-generator.html`)** ⏳ **pending**:
+
+Location: inside the Incremental Revenue IIFE at the end of `renderEconScenarios`, after the net result row, when `netIncr < 0`.
+
+Step 1 — save state at render time:
+```js
+if (netIncr < 0) {
+  window._lastCGIncrData = {
+    geo:       draft?.params?.geo,
+    segment:   seg,
+    lift: {
+      wagFactor: wagF, wagerX, beW,
+      genFactor: genF, matchPct,
+      mechFactor: mechF, hasNDB, hasReload: hasRL, hasDep2: hasD2, hasFS, hasCB,
+      rtpFactor: rtpF, rtp,
+      platFactor: platF, plat: platKey,
+      base, lift,
+    },
+    economics: { net: netIncr, campCost3, incrRev, incrPl, pl },
+    uiLang: currentLang,
+  };
+}
+```
+
+Step 2 — render button + result container (append to IIFE return string when `netIncr < 0`):
+```html
+<div id="cg_incr_ai_btn_wrap" style="margin-top:10px">
+  <button onclick="_cgRunOptimize(this)"
+    style="width:100%;padding:7px 12px;background:rgba(99,102,241,.18);border:1px solid rgba(99,102,241,.45);
+           border-radius:8px;color:#a5b4fc;font-size:12px;cursor:pointer;font-weight:600">
+    🤖 ${isRu ? 'Рекомендации AI' : 'AI Recommendations'}
+  </button>
+</div>
+<div id="cg_incr_ai_result"></div>
+```
+
+Step 3 — global function `_cgRunOptimize(btn)` (defined in the `<script>` block after `renderEconScenarios`):
+```js
+async function _cgRunOptimize(btn) {
+  const d = window._lastCGIncrData;
+  if (!d) return;
+  const resultEl = document.getElementById('cg_incr_ai_result');
+  const isRu = d.uiLang === 'ru';
+  btn.disabled = true;
+  btn.textContent = isRu ? 'AI анализирует параметры…' : 'AI is analysing parameters…';
+  resultEl.innerHTML = '';
+  try {
+    const resp = await fetch('/api/campaign/optimize', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(d),
+    });
+    if (!resp.ok) throw new Error(await resp.text());
+    const data = await resp.json();
+    const impactClr = { high:'#10b981', med:'#f59e0b', low:'#8892a4' };
+    const impactLbl = isRu
+      ? { high:'Высокий', med:'Средний', low:'Низкий' }
+      : { high:'High',    med:'Medium',  low:'Low'    };
+    const cards = (data.recommendations || []).map(rec => `
+      <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);
+                  border-radius:8px;padding:8px 10px;margin-top:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-size:11px;font-weight:700;color:#a5b4fc">${rec.factor} · ${rec.param}</span>
+          <span style="font-size:10px;font-weight:600;color:${impactClr[rec.impact]||'#8892a4'}">${impactLbl[rec.impact]||rec.impact}</span>
+        </div>
+        <div style="font-size:11px;color:#8892a4;margin-bottom:3px">${rec.current} → <strong style="color:#f1f5f9">${rec.target}</strong></div>
+        <div style="font-size:11px;color:#f1f5f9">${rec.reason}</div>
+      </div>`).join('');
+    resultEl.innerHTML = `
+      <div style="font-size:11px;font-weight:700;color:#a5b4fc;margin-top:10px;margin-bottom:2px">
+        ${isRu ? 'Рекомендации по оптимизации' : 'Optimisation Recommendations'}
+      </div>${cards}`;
+    btn.textContent = isRu ? '🤖 Рекомендации AI' : '🤖 AI Recommendations';
+    btn.disabled = false;
+  } catch (e) {
+    resultEl.innerHTML = `<div style="color:#EF4444;font-size:11px;margin-top:6px">
+      ${isRu ? 'Не удалось получить рекомендации. Попробуйте ещё раз.' : 'Could not get recommendations. Please try again.'}
+    </div>`;
+    btn.textContent = isRu ? '🤖 Рекомендации AI' : '🤖 AI Recommendations';
+    btn.disabled = false;
+  }
+}
+```
 
 ---
 
 ## Known tech debt / pending work
 
-See `REFACTORING_PLAN.md` for full 12-phase plan.
+---
 
-**Immediate (P0/P1):**
+### Pending features — Incremental Revenue AI analysis
+
+#### Task A — Projected result per recommendation (frontend recalc)
+
+After AI returns recommendations, the frontend applies each param-change to the 5-factor formula and shows the projected outcome.
+
+**How it works:**
+Each recommendation has a `param` field (`wager`, `matchPct`, `addNDB`, `addReload`, `addCashback`, `addDep2`, `addFS`, `rtp`, `plat`). The frontend maps each to its factor formula and computes a new lift:
+
+```javascript
+function _applyRecsToLift(v, recs) {
+  // v = current lift factors from _calcRetentionV2 or _lastCGIncrData.lift
+  let { wagFactor, genFactor, mechFactor, rtpFactor, platFactor } = v;
+  for (const rec of recs) {
+    const tgt = rec.target; // e.g. "15×", "75%", "mobile"
+    if (rec.param === 'wager') {
+      const newW = parseFloat(tgt);
+      if (!isNaN(newW) && newW > 0)
+        wagFactor = Math.min(1.35, Math.max(0.65, 0.7 + 0.3 * Math.min(2.0, Math.max(0.3, v.beW / newW))));
+    } else if (rec.param === 'matchPct') {
+      const newM = parseFloat(tgt);
+      if (!isNaN(newM))
+        genFactor = Math.min(1.15, Math.max(0.85, 0.85 + 0.30 * Math.min(1.0, newM / 100)));
+    } else if (rec.param === 'addNDB')      mechFactor = Math.min(mechFactor + 0.06, 1.29);
+      else if (rec.param === 'addReload')   mechFactor = Math.min(mechFactor + 0.08, 1.29);
+      else if (rec.param === 'addCashback') mechFactor = Math.min(mechFactor + 0.07, 1.29);
+      else if (rec.param === 'addDep2')     mechFactor = Math.min(mechFactor + 0.04, 1.29);
+      else if (rec.param === 'addFS')       mechFactor = Math.min(mechFactor + 0.04, 1.29);
+    else if (rec.param === 'rtp') {
+      const newRtp = parseFloat(tgt) / 100;
+      if (!isNaN(newRtp))
+        rtpFactor = Math.min(1.06, Math.max(0.94, 0.94 + 0.12 * ((newRtp - 0.85) / 0.14)));
+    } else if (rec.param === 'plat') {
+      platFactor = { mobile: 1.05, desk: 0.97, both: 1.0 }[tgt] ?? platFactor;
+    }
+  }
+  return Math.min(0.40, v.base * wagFactor * genFactor * mechFactor * rtpFactor * platFactor);
+}
+```
+
+**Where to add:**
+- `app.js` `_runOptimize`: after rendering cards, call `_applyRecsToLift(v, data.recommendations)` and append a summary block showing `lift: X% → Y%` and `net: $A → $B`.
+- `campaign-generator.html` `_cgRunOptimize`: same, using `window._lastCGIncrData.lift` and recomputing `incrRev` and `net` with new lift.
+
+**Summary block HTML** (append after cards in result container):
+```html
+<div style="margin-top:10px;padding:8px 10px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:8px">
+  <div style="font-size:11px;color:#a5b4fc;font-weight:700;margin-bottom:4px">
+    ${isRu ? 'Прогноз после изменений' : 'Projected after changes'}
+  </div>
+  <div style="display:flex;gap:16px;font-size:11px">
+    <span>Lift: <strong>${(curLift*100).toFixed(1)}% → ${(newLift*100).toFixed(1)}%</strong></span>
+    <span style="color:${newNet>0?'#10b981':'#f59e0b'}">
+      Net: ${isRu?'':''}${newNet>=0?'+':'−'}$${Math.abs(newNet).toLocaleString()} ~USD
+    </span>
+  </div>
+</div>
+```
+
+---
+
+#### Task B — AI campaign review when net result is positive
+
+Show a `📊 Анализ кампании` button when `netIncr > 0` (same location as the optimize button for negative results).
+
+**Two sub-cases:**
+- `netIncr > 0` but margin thin (< 15% of campCost3): show amber button, prompt focuses on risk + strengthening
+- `netIncr > 0` and margin solid (≥ 15%): show green button, prompt focuses on growth opportunities
+
+**New prompt mode in `optimize.prompt.ts`** — add `mode: 'review'` to `OptimizeInput`:
+
+```typescript
+// In OptimizeInput interface:
+mode?: 'optimize' | 'review';
+```
+
+In `buildOptimizePrompt`, when `mode === 'review'`:
+- Change task description from "make net positive" to "identify what's working and how to push further"
+- Ask for 2–3 `opportunities` instead of `recommendations` (same response shape, different framing)
+- Include a `summary` field: 1–2 sentence explanation of why the campaign works
+
+**Response schema addition** — `OptimizeResponseSchema` already works; just the `summary` field needs adding:
+```typescript
+const OptimizeResponseSchema = z.object({
+  summary:         z.string().optional(),        // ← new: 1-2 sentence campaign verdict
+  recommendations: z.array(OptimizeRecommendationSchema).min(1).max(4),
+});
+```
+
+**UI** (both Configurator and Campaign Generator):
+- Positive result → show `📊 Анализ кампании` / `📊 Campaign Analysis` button below net row
+- If `netIncr / campCost3 < 0.15`: amber style (`rgba(245,158,11,.18)`, border amber)
+- If `netIncr / campCost3 >= 0.15`: green style (`rgba(16,185,129,.18)`, border green)
+- On click: same `_runOptimize` / `_cgRunOptimize` flow with `mode: 'review'` appended to POST body
+- Result: show `summary` text first (grey italic), then opportunity cards
+
+**i18n keys needed** (all 4 languages):
+- `btn_ai_review` — "📊 Анализ кампании" / "📊 Campaign Analysis"
+- `ai_rev_title` — "Возможности для роста" / "Growth Opportunities"
+- `ai_rev_summary_title` — "Оценка кампании" / "Campaign Assessment"
+
+---
+
+### Tournament Generator — `public/tournament-generator.html`
+
+Self-contained 4-step SPA at `/tournament-generator.html`. No `app.js` dependency.
+
+**Steps:**
+1. Tournament type — slot / live / mixed / prize_drop
+2. Parameters — geo (same as Campaign Generator, EU grouped), segment, entry model (free/paid), scoring, duration (flash/daily/weekly/monthly/multi_round), prize pool, pool model (fixed/dynamic/hybrid), distribution schema, reentry, lang, tone
+3. Economics + prize distribution table
+4. AI texts (5 channels) + compliance audit
+
+**Backend files:**
+- `src/domain/tournament/calcEconomics.ts` — pure economics function
+  - `ARPU_BY_REGION: { eu:65, cis:22, mn:12, sweep:30, crypto:80, latam:18 }`
+  - `ELIGIBLE_BY_SEGMENT: { all:5000, new:1000, vip:500, dormant:2000, depositors:3000 }`
+  - `DURATION_DAYS: { flash:0.03, daily:1, weekly:7, monthly:30, multi_round:10 }`
+  - Participation rates: Low=5%, Mid=10%, High=15%
+  - prizePoolCost: fixed=prizePool, dynamic=prizePool×(1−rake/100), hybrid=prizePool×0.6
+  - Returns: `{ arpu, eligible, durationDays, participantsLow/Mid/High, ggrLiftLow/Mid/High, prizePoolCost, netMarginLow/Mid/High, costPerActiveLow/Mid/High, roi, breakEvenParticipants }`
+- `src/services/tournament.service.ts` — `generateTournament({type, params})` → `{ spec, econ, params, cur, region, lic }`
+  - Prize distribution schemas: `top_n`, `linear_decay`, `flat_tier`, `prize_drop`
+- `src/controllers/tournament.controller.ts` — `generate`, `texts`, `audit` handlers
+- `src/routes/tournament.routes.ts` — mounted at `/api/tournament`
+- `src/ai/prompts/tournament-texts.prompt.ts` — 5-channel CRM copy for tournaments
+- `src/ai/prompts/tournament-audit.prompt.ts` — compliance audit (DGA, UKGC, MGA rules)
+- `src/ai/parser.ts` — `parseTournamentTextsResponse()`, `parseTournamentAuditResponse()`
+
+**Tests:** `tests/domain/calcEconomics.test.js` — 20 tests: defaults, poolModel variants, segments, durations, regions.
+
+---
+
+### Campaign Generator — completed features (2026-05-21)
+
+**Task C (✅ done) — Reload excluded from first-launch scenarios**
+
+`src/services/campaign.service.ts` strips `reload` from `effectiveTypes` when `scenarioId` is `first_dep` or `first_launch`. `allMechanics` still contains reload (for alternatives display). The F3 mechanics factor in the frontend IIFE reads `hasRL` from `selectedMechanics.reload` (not `allMechanics.reload`).
+
+**Task D (✅ done) — AI recommendations + Quick Apply & Recalculate**
+
+- `_cgRunOptimize(btn)` — stores `_recs` on `window._lastCGIncrData`, renders recommendation cards, then an Apply button
+- `_cgApplyRecs(recs)` — maps `rec.param` → `draft.params` updates, shows loading in `mechCard`, calls `renderMechanicResults(data)` for full Step 3 re-render on success
+- `BTYPE_PRESETS['first_launch']` — removed `reload` from preset chips
+
+**Confirmation modal for "New Campaign" button (✅ done)**
+
+`#new-camp-modal` — shown when clicking the "+ New Campaign" topbar button while wizard is active (step > 1 or scenario selected). Functions: `confirmNewCampaign()`, `closeNewCampModal()`. i18n: `nc_title`, `nc_body`, `nc_stay`, `nc_confirm` (RU + EN).
+
+**Segment presets per scenario (✅ done)**
+
+`SEGMENT_PRESETS` map in `campaign-generator.html`:
+- `first_launch`, `first_dep` → segment `'new'`
+- `vip_retention`, `vip_reactivation` → segment `'vip'`
+- All others → default `'mid'`
+
+Applied inside `preselectBtypes(scenarioId)` — updates both DOM chips and `draft.params.segment`.
+
+---
+
+**P0/P1:**
 - Add `dk` country to `buildConfig.test.js` snapshot
-- Add RU/KZ/MN snapshots to `buildConfig.test.js` to cover the payout fallback path — should confirm `sP10.cost > 0` for all high-denomination geos
+- Add RU/KZ/MN snapshots to `buildConfig.test.js` to cover payout fallback path
 
 **P2:**
-- Move inline `<script>` blocks from HTML files to external `.js` files → then remove CSP `'unsafe-inline'` from both `scriptSrc` and `scriptSrcAttr`
+- Move inline `<script>` blocks from HTML files to external `.js` files → remove CSP `'unsafe-inline'`
+- Task A: after AI returns recommendations, apply each param-change to 5-factor formula and show projected lift + net delta in the UI (both Configurator and Campaign Generator)
+- Task B: AI campaign review when `netIncr > 0` — "📊 Campaign Analysis" button with `mode:'review'` in optimize prompt
 
 **P3:**
 - Test DK scenario in campaign.service integration test
-- `truncNormalPayout` model is not scale-invariant (z ~ √B). Long-term: replace with a properly normalised model or add a EUR-equivalent cap on B before passing to `truncNormalPayout`. Current deterministic fallback is pragmatic but underestimates variance for high-denomination currencies.
+- `truncNormalPayout` is not scale-invariant. Long-term: replace or add EUR-equivalent cap before calling. Current deterministic fallback is pragmatic.
+- **Stale econ data UX**: in the Configurator, `econ.pl` in the incremental block reflects the last Generate call, NOT the current slider value. Changing players without re-generating shows outdated incrPl. Fix: show a visual "stale — click Generate" indicator when any generate-relevant param changes after the last generate.

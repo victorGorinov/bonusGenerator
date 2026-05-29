@@ -20,8 +20,9 @@ export function recalcCosts(cfg: BonusCfg, overrides: Record<string, unknown>): 
   const ov      = overrides || {};
 
   const gv = (key: string, def: number): number => {
+    if (!(key in ov)) return def;
     const v = parseFloat(String(ov[key]));
-    return (isNaN(v) || v <= 0) ? def : v;
+    return (isNaN(v) || v < 0) ? def : v;
   };
   const spinV = fsSpec ? fsSpec['val'] : 0.10;
 

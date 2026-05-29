@@ -13,6 +13,7 @@ interface CampaignParams {
   lang?: string;
   tone?: string;
   lic?: string;
+  players?: number;
 }
 
 export function generateCampaign({ scenario, params }: { scenario?: ScenarioRef | null; params?: CampaignParams | null }): Record<string, unknown> {
@@ -26,7 +27,8 @@ export function generateCampaign({ scenario, params }: { scenario?: ScenarioRef 
   const segAvgdep = geoCfg.avgdep ?? BASE_AVGDEP;
   const seg = params.segment ?? 'mid';
   const avgdep  = segAvgdep[seg as keyof typeof segAvgdep] ?? BASE_AVGDEP[seg] ?? 100;
-  const players = ({ low: 1000, mid: 5000, high: 10000 } as Record<string, number>)[params.agg ?? ''] ?? 5000;
+  const aggPlayers = ({ low: 1000, mid: 5000, high: 10000 } as Record<string, number>)[params.agg ?? ''] ?? 5000;
+  const players = (params.players && params.players >= 100) ? params.players : aggPlayers;
   const rtp     = ({ slots: 96, table: 98, live: 99 } as Record<string, number>)[params.games ?? ''] ?? 96;
 
   const RISK_ADJ: Record<string, number> = { low: 10, mid: 0, high: -8 };
@@ -54,24 +56,33 @@ export function generateCampaign({ scenario, params }: { scenario?: ScenarioRef 
   const requestedTypes = Array.isArray(params.bonusTypes) && params.bonusTypes.length > 0
     ? params.bonusTypes.filter(t => validTypes.has(t) && allMechanics[t])
     : [scenarioType];
-  const finalTypes  = requestedTypes.length ? requestedTypes : [scenarioType];
-  const primaryType = finalTypes[0];
+  const finalTypes = requestedTypes.length ? requestedTypes : [scenarioType];
+
+  // Reload is a retention mechanic — strip it from acquisition scenarios
+  const isFirstLaunch = ['first_dep', 'first_launch'].includes(id);
+  const effectiveTypes = isFirstLaunch
+    ? (finalTypes.filter(t => t !== 'reload').length ? finalTypes.filter(t => t !== 'reload') : finalTypes)
+    : finalTypes;
+
+  const primaryType = effectiveTypes[0];
 
   const selectedMechanics: Record<string, unknown> = {};
-  finalTypes.forEach(t => { if (allMechanics[t]) selectedMechanics[t] = allMechanics[t]; });
+  effectiveTypes.forEach(t => { if (allMechanics[t]) selectedMechanics[t] = allMechanics[t]; });
+
+  const uiLang: 'ru' | 'en' = params.lang === 'ru' ? 'ru' : 'en';
 
   return {
     mechanic:          selectedMechanics[primaryType],
     mechanicType:      primaryType,
-    requestedTypes:    finalTypes,
+    requestedTypes:    effectiveTypes,
     selectedMechanics,
     allMechanics,
-    explanation:       campaignExplanation(id, primaryType, cfg, finalTypes, 'ru'),
-    explanationRu:     campaignExplanation(id, primaryType, cfg, finalTypes, 'ru'),
-    explanationEn:     campaignExplanation(id, primaryType, cfg, finalTypes, 'en'),
-    alternatives:      campaignAlternatives(cfg, finalTypes, 'ru'),
-    alternativesRu:    campaignAlternatives(cfg, finalTypes, 'ru'),
-    alternativesEn:    campaignAlternatives(cfg, finalTypes, 'en'),
+    explanation:       campaignExplanation(id, primaryType, cfg, effectiveTypes, uiLang),
+    explanationRu:     campaignExplanation(id, primaryType, cfg, effectiveTypes, 'ru'),
+    explanationEn:     campaignExplanation(id, primaryType, cfg, effectiveTypes, 'en'),
+    alternatives:      campaignAlternatives(cfg, effectiveTypes, uiLang),
+    alternativesRu:    campaignAlternatives(cfg, effectiveTypes, 'ru'),
+    alternativesEn:    campaignAlternatives(cfg, effectiveTypes, 'en'),
     econ:              cfg['econ'],
     wager:             cfg['wager'],
     fsSpec:            cfg['fsSpec'],

@@ -161,7 +161,10 @@ export function buildConfig(params: BuildConfigParams): Record<string, unknown> 
   const r       = region;
   const cur     = sitecur;
   const sc      = sitecur;
-  const license = lic || 'mga';
+  const GEO_DEFAULT_LICENSE: Record<string, string> = {
+    eu: 'mga', cis: 'none', crypto: 'none', sweep: 'none', mn: 'none', latam: 'none',
+  };
+  const license = lic || GEO_DEFAULT_LICENSE[r] || 'mga';
   const rt      = Number(rtp)     || 96;
 
   const geo = GEO[r as keyof typeof GEO];
@@ -212,13 +215,14 @@ export function buildConfig(params: BuildConfigParams): Record<string, unknown> 
     const adjWCR = Math.max(0.01, mixedWCR + dWCR);
     const adjRTP = Math.min(0.999, Math.max(0.5, mixedRTP + dRTP));
     const payoutStat = truncNormalPayout(bonusSize, wagerX, adjWCR, adjRTP);
-    // For large-denomination currencies (RUB, KZT, MNT), the truncated-normal model
-    // breaks down because z = sqrt(B) × constant becomes extremely negative, driving
-    // all Gaussian terms to zero. Fall back to a deterministic linear payout estimate
-    // based on wager efficiency: payout ≈ bonusSize × (breakeven / wager).
+    // For large-denomination currencies (RUB, KZT, MNT) z = mu/sigma falls in the range
+    // -20 to -39 where _Phi(z) underflows to exactly 0 while _phi(z) remains representable,
+    // leaving a spurious tiny positive payoutStat (e.g. 1.8e-200). The check payoutStat > 0
+    // would be true but cost rounds to 0. Use a relative threshold: payoutStat < 1 ppm of
+    // bonusSize is a numerical artifact — fall back to the deterministic breakeven estimate.
     const adjBe  = adjWCR / (1 - adjRTP);
     const adjEff = wagerX > 0 ? Math.min(1, adjBe / Math.max(adjBe, wagerX)) : 1;
-    const payout = payoutStat > 0 ? payoutStat : bonusSize * adjEff;
+    const payout = payoutStat > bonusSize * 1e-6 ? payoutStat : bonusSize * adjEff;
     const cost   = Math.round(payout * conv * pl);
     return { conv, wcr: +adjWCR.toFixed(3), rtp: +adjRTP.toFixed(3), turnover: Math.round(bonusSize * wagerX / adjWCR), payout: +payout.toFixed(2), cost };
   };
@@ -249,8 +253,10 @@ export function buildConfig(params: BuildConfigParams): Record<string, unknown> 
   const rlMaxB = (reload['maxB'] as number) || 0;
   const rlFs   = (reload['fs']   as number) || 0;
   const _rlBase  = rlPct ? Math.min(dep * (rlPct / 100), rlMaxB || dep) + rlFs * _sv : 0;
-  const totalBonusCost = ((bonusSize * _effW * sP50.conv) + (_ndbSize * _effN * 0.40) + (_rlBase * _effR * 0.05 * 2)) * pl;
-  const costRatio = pl * dep > 0 ? totalBonusCost / (pl * dep) : 0;
+  const acqBonusCost   = ((bonusSize * _effW * sP50.conv) + (_ndbSize * _effN * 0.40)) * pl;
+  const totalBonusCost = acqBonusCost + (_rlBase * _effR * 0.05 * 2) * pl;
+  const acqCostRatio   = pl * dep > 0 ? acqBonusCost   / (pl * dep) : 0;
+  const costRatio      = pl * dep > 0 ? totalBonusCost  / (pl * dep) : 0;
 
   let verdictKey = 'verdict_warn';
   if      (costRatio < 0.10) verdictKey = 'verdict_cheap';
@@ -265,7 +271,7 @@ export function buildConfig(params: BuildConfigParams): Record<string, unknown> 
       arpu, bpct: +(bpct * 100).toFixed(0), cac, ltv3, mBudget, totLTV, roi3, be, pl,
       bonusSize, mixedWCR: +mixedWCR.toFixed(3), mixedRTP: +mixedRTP.toFixed(4),
       breakeven_wager, over_breakeven, wagerX, sP10, sP50, sP90,
-      maxRisk, stressTest, costRatio: +costRatio.toFixed(3), verdictKey,
+      maxRisk, stressTest, costRatio: +costRatio.toFixed(3), acqCostRatio: +acqCostRatio.toFixed(3), verdictKey,
     },
     reg,
   };

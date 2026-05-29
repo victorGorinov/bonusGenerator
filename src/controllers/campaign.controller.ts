@@ -1,8 +1,9 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { buildTextsPrompt }              from '../ai/prompts/texts.prompt.js';
 import { buildAuditPrompt }              from '../ai/prompts/audit.prompt.js';
+import { buildOptimizePrompt }           from '../ai/prompts/optimize.prompt.js';
 import { generate as aiGenerate }        from '../ai/providers/anthropic.js';
-import { parseTextsResponse, parseAuditResponse } from '../ai/parser.js';
+import { parseTextsResponse, parseAuditResponse, parseOptimizeResponse } from '../ai/parser.js';
 import * as campaignService              from '../services/campaign.service.js';
 import { AIProviderError }               from '../errors/AIProviderError.js';
 
@@ -45,5 +46,15 @@ export async function audit(req: Request, res: Response, next: NextFunction): Pr
     res.json(parseAuditResponse(raw));
   } catch (err) {
     next(err instanceof AIProviderError ? err : new AIProviderError((err instanceof Error ? err.message : String(err)) || 'Audit failed'));
+  }
+}
+
+export async function optimize(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const prompt = buildOptimizePrompt(req.body);
+    const raw = await aiGenerate(prompt, { maxTokens: 1000 });
+    res.json(parseOptimizeResponse(raw));
+  } catch (err) {
+    next(err instanceof AIProviderError ? err : new AIProviderError((err instanceof Error ? err.message : String(err)) || 'Optimize failed'));
   }
 }

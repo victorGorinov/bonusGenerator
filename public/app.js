@@ -198,6 +198,21 @@ const LANG = {
     mech_exp_welcome:'Welcome Bonus', mech_exp_ndb:'No Deposit Bonus', mech_exp_reload:'Reload Bonus',
     mech_exp_below_be:'✅ Вейджер ниже breakeven — хороший профиль конверсии.',
     mech_exp_above_be:'⚠️ Вейджер выше breakeven — ожидается давление на конверсию.',
+    // ── Сегмент + Incremental Revenue
+    lbl_segment:'Сегмент игроков', tip_segment:'Сегмент влияет на прогноз incremental revenue: у новых игроков выше потенциал удержания бонусом, у VIP — ниже (они и так лояльны). Также задаёт контекст при интерпретации unit-экономики.',
+    seg_new:'🆕 Новые', seg_mid:'👤 Средние', seg_vip:'👑 VIP',
+    sec_incr_rev:'Прогноз Incremental Revenue',
+    p_ret_lift:'Итоговый лифт', p_incr_players:'Доп. игроков (3 мес)', p_incr_rev:'Доп. выручка (3 мес)', p_camp_cost_3:'Затраты на бонусы: Welcome+NDB (3 мес)', p_incr_net:'Чистый прирост',
+    rtip_ret_lift:'Совокупный прирост удержания с учётом всех факторов. Бенчмарк базы: Новые 15%, Средние 10%, VIP 8%. Затем корректируется пятью факторами ниже.',
+    rtip_incr_rev:'Дополнительная выручка за 3 месяца от игроков, которых удержал бонус: incremental_players × LTV 3 мес. Региональный бенчмарк в USD.',
+    rtip_incr_net:'Чистый доход от кампании: доп. выручка минус бонусные выплаты за 3 месяца (costRatio × игроков × ARPU). Положительное значение = кампания окупается.',
+    incr_disclaimer:'Оценка на основе бенчмарков. Реальные результаты зависят от качества продукта, CRM и аудитории.',
+    btn_ai_optimize:'🤖 Рекомендации AI', ai_opt_loading:'AI анализирует параметры…',
+    ai_opt_title:'Рекомендации по оптимизации', ai_opt_impact_high:'Высокий', ai_opt_impact_med:'Средний', ai_opt_impact_low:'Низкий',
+    ai_opt_err:'Не удалось получить рекомендации. Попробуйте ещё раз.',
+    incr_base:'Базовый лифт (сегмент)', incr_f_wager:'F1 Вейджер', incr_f_gen:'F2 Щедрость бонуса',
+    incr_f_mech:'F3 Ширина механик', incr_f_rtp:'F4 RTP опыт', incr_f_plat:'F5 Платформа',
+    incr_lift_total:'Итоговый лифт',
   },
 
   en: {
@@ -387,6 +402,21 @@ const LANG = {
     mech_exp_welcome:'Welcome Bonus', mech_exp_ndb:'No Deposit Bonus', mech_exp_reload:'Reload Bonus',
     mech_exp_below_be:'✅ Wager is below breakeven — healthy conversion profile.',
     mech_exp_above_be:'⚠️ Wager exceeds breakeven — conversion pressure expected.',
+    // ── Segment + Incremental Revenue
+    lbl_segment:'Player Segment', tip_segment:'Segment affects the incremental revenue forecast: new players have higher bonus-driven retention potential; VIPs are already loyal. Also provides context for unit economics interpretation.',
+    seg_new:'🆕 New', seg_mid:'👤 Mid', seg_vip:'👑 VIP',
+    sec_incr_rev:'Incremental Revenue Forecast',
+    p_ret_lift:'Total lift', p_incr_players:'Addl. players (3 mo)', p_incr_rev:'Addl. revenue (3 mo)', p_camp_cost_3:'Bonus cost: Welcome+NDB (3 mo)', p_incr_net:'Net incremental',
+    rtip_ret_lift:'Combined retention lift across all five factors. Base benchmarks: New 15%, Mid 10%, VIP 8%, then adjusted by five multipliers below.',
+    rtip_incr_rev:'Additional revenue over 3 months from players retained by the bonus: incremental_players × LTV 3 mo. Regional USD benchmark.',
+    rtip_incr_net:'Net campaign return: additional revenue minus 3-month bonus payouts (costRatio × players × ARPU). Positive = campaign pays off.',
+    incr_disclaimer:'Estimate based on industry benchmarks. Actual results depend on product quality, CRM execution, and audience profile.',
+    btn_ai_optimize:'🤖 AI Recommendations', ai_opt_loading:'AI is analysing parameters…',
+    ai_opt_title:'Optimisation Recommendations', ai_opt_impact_high:'High', ai_opt_impact_med:'Medium', ai_opt_impact_low:'Low',
+    ai_opt_err:'Could not get recommendations. Please try again.',
+    incr_base:'Base lift (segment)', incr_f_wager:'F1 Wager achievability', incr_f_gen:'F2 Bonus generosity',
+    incr_f_mech:'F3 Mechanics breadth', incr_f_rtp:'F4 RTP quality', incr_f_plat:'F5 Platform',
+    incr_lift_total:'Total lift',
   },
 
   mn: {
@@ -575,6 +605,21 @@ const LANG = {
     mech_exp_welcome:'Тавтай морилсны бонус', mech_exp_ndb:'Хадгаламжгүй бонус', mech_exp_reload:'Дахин хадгаламжийн бонус',
     mech_exp_below_be:'✅ Вейжер breakeven-ээс доош — сайн конверсийн профиль.',
     mech_exp_above_be:'⚠️ Вейжер breakeven-ийг хэтэрсэн — конверст дарамт хүлээгдэж байна.',
+    // ── Сегмент + Incremental Revenue
+    lbl_segment:'Тоглогчийн сегмент', tip_segment:'Сегмент нь нэмэгдсэн орлогын урьдчилсан мэдээнд нөлөөлнө: шинэ тоглогчдод бонусоор тогтвортой байдлыг нэмэгдүүлэх боломж өндөр.',
+    seg_new:'🆕 Шинэ', seg_mid:'👤 Дунд', seg_vip:'👑 VIP',
+    sec_incr_rev:'Нэмэлт орлогын урьдчилсан мэдээ',
+    p_ret_lift:'Нийт лифт', p_incr_players:'Нэмэлт тоглогч (3 сар)', p_incr_rev:'Нэмэлт орлого (3 сар)', p_camp_cost_3:'Бонусын зардал: Welcome+NDB (3 сар)', p_incr_net:'Цэвэр нэмэлт',
+    rtip_ret_lift:'Таван хүчин зүйлийг харгалзан тооцсон нийт өсөлт. Бенчмарк: Шинэ 15%, Дунд 10%, VIP 8%.',
+    rtip_incr_rev:'Бонусоор тогтворсон тоглогчдын 3 сарын нэмэлт орлого: нэмэлт тоглогч × LTV 3 сар.',
+    rtip_incr_net:'Кампанийн цэвэр орлого: нэмэлт орлого − 3 сарын кампанийн зардал.',
+    incr_disclaimer:'Салбарын бенчмаркт суурилсан тооцоо. Бодит үр дүн нь бүтээгдэхүүний чанар, CRM-ээс хамаарна.',
+    btn_ai_optimize:'🤖 AI Зөвлөмж', ai_opt_loading:'AI параметрүүдийг шинжилж байна…',
+    ai_opt_title:'Оновчлолын зөвлөмжүүд', ai_opt_impact_high:'Өндөр', ai_opt_impact_med:'Дунд', ai_opt_impact_low:'Бага',
+    ai_opt_err:'Зөвлөмж авах боломжгүй байна. Дахин оролдоно уу.',
+    incr_base:'Үндсэн лифт (сегмент)', incr_f_wager:'F1 Вейжер', incr_f_gen:'F2 Бонусын өгөмж',
+    incr_f_mech:'F3 Механикийн өргөн', incr_f_rtp:'F4 RTP чанар', incr_f_plat:'F5 Платформ',
+    incr_lift_total:'Нийт лифт',
   },
 
   es: {
@@ -762,6 +807,21 @@ const LANG = {
     mech_exp_welcome:'Bono de Bienvenida', mech_exp_ndb:'Bono Sin Depósito', mech_exp_reload:'Bono de Recarga',
     mech_exp_below_be:'✅ Wagering por debajo del breakeven — buen perfil de conversión.',
     mech_exp_above_be:'⚠️ Wagering supera el breakeven — presión en conversión esperada.',
+    // ── Segmento + Incremental Revenue
+    lbl_segment:'Segmento de Jugadores', tip_segment:'El segmento afecta la previsión de ingresos incrementales: los jugadores nuevos tienen mayor potencial de retención por bono; los VIP ya son leales.',
+    seg_new:'🆕 Nuevos', seg_mid:'👤 Medios', seg_vip:'👑 VIP',
+    sec_incr_rev:'Previsión de Ingresos Incrementales',
+    p_ret_lift:'Lift total', p_incr_players:'Jugadores adic. (3 meses)', p_incr_rev:'Ingresos adic. (3 meses)', p_camp_cost_3:'Costo bonos: Welcome+NDB (3 meses)', p_incr_net:'Incremento neto',
+    rtip_ret_lift:'Lift de retención combinado usando cinco factores. Benchmarks base: Nuevos 15%, Medios 10%, VIP 8%.',
+    rtip_incr_rev:'Ingresos adicionales en 3 meses de jugadores retenidos por el bono: jugadores_incrementales × LTV 3 meses. Benchmark USD regional.',
+    rtip_incr_net:'Retorno neto de la campaña: ingresos adicionales menos el costo de la campaña en 3 meses.',
+    incr_disclaimer:'Estimación basada en benchmarks del sector. Los resultados reales dependen de la calidad del producto, CRM y perfil de audiencia.',
+    btn_ai_optimize:'🤖 Recomendaciones AI', ai_opt_loading:'La IA analiza los parámetros…',
+    ai_opt_title:'Recomendaciones de optimización', ai_opt_impact_high:'Alto', ai_opt_impact_med:'Medio', ai_opt_impact_low:'Bajo',
+    ai_opt_err:'No se pudieron obtener recomendaciones. Inténtelo de nuevo.',
+    incr_base:'Lift base (segmento)', incr_f_wager:'F1 Alcanzabilidad wager', incr_f_gen:'F2 Generosidad del bono',
+    incr_f_mech:'F3 Amplitud mecánicas', incr_f_rtp:'F4 Calidad RTP', incr_f_plat:'F5 Plataforma',
+    incr_lift_total:'Lift total',
   }
 };
 
@@ -769,7 +829,7 @@ const LANG = {
 // STATE & i18n
 // ═════════════════════════════════════════════════════════════════════════════
 let L = 'ru';
-const S = { region:null, players:5000, sitecur:'USD', depcur:'USD', avgdep:100, plat:'both', lic:'mga', rtp:96 };
+const S = { region:null, players:5000, sitecur:'USD', depcur:'USD', avgdep:100, plat:'both', lic:'mga', rtp:96, segment:'mid' };
 
 function t(k){ return (LANG[L] && LANG[L][k]) || (LANG.ru && LANG.ru[k]) || k; }
 
@@ -946,6 +1006,7 @@ async function generate(){
     plat: S.plat,
     lic: S.lic,
     rtp: S.rtp,
+    segment: S.segment || 'mid',
   };
 
   let cfg;
@@ -1095,6 +1156,39 @@ function recalcEcon(){
       elCampROI.className   = `pv ${campCls}`;
     }
 
+    // ── Incremental Revenue v2: recalc all wager-sensitive factors
+    {
+      const overrideWager = gv('ov_w_wager', E.wagerX);
+      const v = _calcRetentionV2(cfg, overrideWager);
+      // Use acqCostRatio (welcome+NDB only) — reload is ongoing loyalty cost, not acquisition
+      const campCost3 = Math.round(3 * (data.ratio || E.acqCostRatio ?? E.costRatio) * E.pl * E.arpu);
+      const incrPl  = Math.round(E.pl * v.lift);
+      const incrRev = Math.round(incrPl * (E.ltv3 || 0));
+      const netIncr = incrRev - campCost3;
+      const netCls  = netIncr > 0 ? 'gn' : netIncr < 0 ? 'rd' : 'gd';
+      const fmtU    = n => '$' + Math.abs(n).toLocaleString('ru') + ' ~USD';
+      const factClr = f => f > 1.015 ? '#10b981' : f < 0.985 ? '#EF4444' : '#8892a4';
+
+      // Wager factor note (updates since wager changed)
+      const wagNote = v.wagFactor > 1.01
+        ? `be ${v.beW}× > w ${overrideWager}× ▲`
+        : `be ${v.beW}× ≤ w ${overrideWager}× ▼`;
+
+      const elFW = document.getElementById('incr_fw_val');
+      const elRL = document.getElementById('incr_ret_lift');
+      const elIP = document.getElementById('incr_players');
+      const elIR = document.getElementById('incr_rev');
+      const elCC = document.getElementById('incr_camp_cost3');
+      const elIN = document.getElementById('incr_net');
+
+      if (elFW) { elFW.textContent = '×' + v.wagFactor.toFixed(2); elFW.style.color = factClr(v.wagFactor); }
+      if (elRL) elRL.textContent = (v.lift * 100).toFixed(1) + '%';
+      if (elIP) elIP.textContent = '+' + incrPl.toLocaleString('ru') + ' ' + t('players_mo').replace('/мес','').replace('/mo','').trim();
+      if (elIR) elIR.textContent = fmtU(incrRev);
+      if (elCC) elCC.textContent = fmtU(campCost3);
+      if (elIN) { elIN.textContent = (netIncr >= 0 ? '+' : '−') + fmtU(netIncr); elIN.className = `pv ${netCls}`; }
+    }
+
     // ── Update range bar labels and gradient position
     const mn = data.costs.w_p10, md = data.costs.w_p50, mx = data.costs.w_p90;
     const rng = mx > mn ? mx - mn : 1;
@@ -1106,6 +1200,215 @@ function recalcEcon(){
     if(elMd) elMd.textContent = fBC(md);
     if(elMx) elMx.textContent = fBC(mx);
   }, 300);
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// INCREMENTAL REVENUE — V2 MULTI-FACTOR MODEL
+// ═════════════════════════════════════════════════════════════════════════════
+function _calcRetentionV2(cfg, overrideWager) {
+  const E  = cfg.econ     || {};
+  const W  = cfg.welcome  || {};
+  const N  = cfg.ndb      || {};
+  const RL = cfg.reload   || {};
+  const D2 = cfg.dep2     || {};
+  const FS = cfg.fsSpec   || null;
+  const CB = cfg.cashback || {};
+  const seg  = S.segment || 'mid';
+  const plat = S.plat    || 'both';
+
+  const SEG_LIFT = { new: 0.25, mid: 0.18, vip: 0.12 };
+  const base = SEG_LIFT[seg] || 0.10;
+
+  // F1: Wager achievability — ratio of breakeven to actual wager
+  // wagScore > 1 → player-friendly (below breakeven); < 1 → above breakeven (costly)
+  const wagerX    = (overrideWager > 0 ? overrideWager : null) || E.wagerX || 30;
+  const beW       = E.breakeven_wager || wagerX;
+  const wagScore  = Math.min(2.0, Math.max(0.3, beW / Math.max(wagerX, 1)));
+  const wagFactor = Math.min(1.35, Math.max(0.65, 0.7 + 0.3 * wagScore));
+
+  // F2: Bonus generosity — match %, neutral at ~50%, max at 100%
+  const matchPct  = W.pct || 100;
+  const genFactor = Math.min(1.15, Math.max(0.85, 0.85 + 0.30 * Math.min(matchPct / 100, 1.0)));
+
+  // F3: Mechanics breadth — each ongoing retention mechanic adds lift
+  const hasNDB    = (N.amt > 0) || (N.fs > 0);
+  const hasReload = (RL.pct || 0) > 0;
+  const hasDep2   = (D2.pct || 0) > 0;
+  const hasFS     = FS && (FS.count || 0) > 20;
+  const hasCB     = (CB.pct >= 5) || CB.model === 'tier';
+  const mechFactor = 1.0
+    + (hasNDB    ? 0.06 : 0)   // acquisition hook
+    + (hasReload ? 0.08 : 0)   // strongest return trigger
+    + (hasDep2   ? 0.04 : 0)   // retention chain
+    + (hasFS     ? 0.04 : 0)   // immediate engagement (>20 FS)
+    + (hasCB     ? 0.07 : 0);  // ongoing VIP retention
+
+  // F4: RTP quality — higher RTP = wagering feels better = more likely to return
+  const rtp       = E.mixedRTP || 0.96;
+  const rtpFactor = Math.min(1.06, Math.max(0.94, 0.94 + 0.12 * ((rtp - 0.85) / 0.14)));
+
+  // F5: Platform — mobile users are impulse-driven, stronger short-term retention
+  const platFactor = { mobile: 1.05, desk: 0.97, both: 1.0 }[plat] || 1.0;
+
+  const lift = Math.min(0.40, base * wagFactor * genFactor * mechFactor * rtpFactor * platFactor);
+
+  return { base, wagFactor, genFactor, mechFactor, rtpFactor, platFactor, lift,
+           wagerX, beW, matchPct, hasNDB, hasReload, hasDep2, hasFS, hasCB, rtp, plat,
+           seg };
+}
+
+async function _runOptimize(btn) {
+  const resultEl = document.getElementById('incr_ai_result');
+  if (!resultEl || !_lastCfg) return;
+
+  const v   = _calcRetentionV2(_lastCfg);
+  const E   = _lastCfg.econ || {};
+  const incrPl    = Math.round(E.pl * v.lift);
+  const incrRev   = Math.round(incrPl * (E.ltv3 || 0));
+  const campCost3 = Math.round(3 * (E.acqCostRatio ?? E.costRatio ?? 0) * E.pl * E.arpu);
+  const net       = incrRev - campCost3;
+
+  btn.disabled = true;
+  btn.textContent = t('ai_opt_loading');
+  resultEl.innerHTML = '';
+
+  try {
+    const resp = await fetch('/api/campaign/optimize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        geo:      _lastCfg.r,
+        segment:  S.segment || 'mid',
+        lift: {
+          wagFactor:  v.wagFactor,  wagerX:    v.wagerX,   beW:      v.beW,
+          genFactor:  v.genFactor,  matchPct:  v.matchPct,
+          mechFactor: v.mechFactor,
+          hasNDB:     v.hasNDB,     hasReload: v.hasReload, hasDep2: v.hasDep2,
+          hasFS:      v.hasFS,      hasCB:     v.hasCB,
+          rtpFactor:  v.rtpFactor,  rtp:       v.rtp,
+          platFactor: v.platFactor, plat:      v.plat,
+          base:       v.base,       lift:      v.lift,
+        },
+        economics: { net, campCost3, incrRev, incrPl, pl: E.pl },
+        uiLang: L,
+      }),
+    });
+
+    if (!resp.ok) throw new Error(await resp.text());
+    const data = await resp.json();
+
+    const impactClr = { high: '#10b981', med: '#f59e0b', low: '#8892a4' };
+    const impactLbl = { high: t('ai_opt_impact_high'), med: t('ai_opt_impact_med'), low: t('ai_opt_impact_low') };
+    const isRuLang = L === 'ru';
+    const factorLbl = isRuLang
+      ? { F1:'Вейджер', F2:'Матч-бонус', F3:'Механики', F4:'RTP игр', F5:'Платформа' }
+      : { F1:'Wagering', F2:'Match Bonus', F3:'Mechanics', F4:'Game RTP', F5:'Platform' };
+    const paramLbl = isRuLang
+      ? { wager:'Размер вейджера', matchPct:'Процент матча', addNDB:'Добавить НДБ',
+          addReload:'Добавить Reload', addCashback:'Добавить кэшбэк',
+          addDep2:'Бонус 2-го депозита', addFS:'Добавить фриспины',
+          rtp:'RTP слотов', plat:'Устройство' }
+      : { wager:'Wager multiplier', matchPct:'Match %', addNDB:'Add No-Dep Bonus',
+          addReload:'Add Reload', addCashback:'Add Cashback',
+          addDep2:'2nd Deposit Bonus', addFS:'Add Free Spins',
+          rtp:'Slots RTP', plat:'Platform' };
+
+    const cards = (data.recommendations || []).map(rec => `
+      <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:8px 10px;margin-top:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-size:11px;font-weight:700;color:#a5b4fc">${factorLbl[rec.factor]||rec.factor} · ${paramLbl[rec.param]||rec.param}</span>
+          <span style="font-size:10px;font-weight:600;color:${impactClr[rec.impact] || '#8892a4'}">${impactLbl[rec.impact] || rec.impact}</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:3px">${rec.current} → <strong style="color:var(--fg)">${rec.target}</strong></div>
+        <div style="font-size:11px;color:var(--fg)">${rec.reason}</div>
+      </div>`).join('');
+
+    resultEl.innerHTML = `
+      <div style="font-size:11px;font-weight:700;color:#a5b4fc;margin-top:10px;margin-bottom:2px">${t('ai_opt_title')}</div>
+      ${cards}`;
+
+    btn.textContent = t('btn_ai_optimize');
+    btn.disabled = false;
+
+  } catch (e) {
+    resultEl.innerHTML = `<div style="color:#EF4444;font-size:11px;margin-top:6px">${t('ai_opt_err')}</div>`;
+    btn.textContent = t('btn_ai_optimize');
+    btn.disabled = false;
+  }
+}
+
+function _buildIncrRevBody(cfg, v) {
+  const E   = cfg.econ || {};
+  const segLbl  = { new: t('seg_new'), mid: t('seg_mid'), vip: t('seg_vip') }[v.seg] || v.seg;
+
+  const incrPl    = Math.round(E.pl * v.lift);
+  const incrRev   = Math.round(incrPl * (E.ltv3 || 0));
+  const campCost3 = Math.round(3 * (E.acqCostRatio ?? E.costRatio ?? 0) * E.pl * E.arpu);
+  const netIncr   = incrRev - campCost3;
+  const netCls    = netIncr > 0 ? 'gn' : netIncr < 0 ? 'rd' : 'gd';
+  const fmtU      = n => '$' + Math.abs(n).toLocaleString('ru') + ' ~USD';
+  const fmtFact   = f => '×' + f.toFixed(2);
+  const factClr   = f => f > 1.015 ? '#10b981' : f < 0.985 ? '#EF4444' : '#8892a4';
+
+  // Wager factor note
+  const wagNote = v.wagFactor > 1.01
+    ? (L==='ru' ? `be ${v.beW}× > w ${v.wagerX}× ▲` : `be ${v.beW}× > w ${v.wagerX}× ▲`)
+    : (L==='ru' ? `be ${v.beW}× ≤ w ${v.wagerX}× ▼` : `be ${v.beW}× ≤ w ${v.wagerX}× ▼`);
+
+  // Mechanics note: list active ones
+  const mechParts = [
+    v.hasNDB    && 'NDB',
+    v.hasReload && 'Reload',
+    v.hasDep2   && (L==='ru' ? '2й деп' : '2nd dep'),
+    v.hasFS     && 'FS>20',
+    v.hasCB     && (L==='ru' ? 'Кэшбэк' : 'Cashback'),
+  ].filter(Boolean);
+  const mechNote = mechParts.length ? '+' + mechParts.join(' +') : (L==='ru' ? 'только Welcome' : 'Welcome only');
+
+  const platNote = { mobile: 'mobile ▲', desk: 'desktop ▼', both: '' }[v.plat] || '';
+  const rtpNote  = `${(v.rtp*100).toFixed(0)}% ${v.rtp >= 0.96 ? '▲' : v.rtp <= 0.92 ? '▼' : ''}`;
+
+  // Factor breakdown row
+  const fRow = (label, valStr, valColor, note, id) => `
+    <div style="display:flex;align-items:baseline;gap:4px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.035);font-size:10.5px">
+      <span style="color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</span>
+      <span style="font-family:monospace;font-weight:700;color:${valColor};white-space:nowrap"${id?` id="${id}"`:''}>${valStr}</span>
+      ${note ? `<span style="color:var(--muted);font-size:9px;white-space:nowrap;min-width:90px;text-align:right">${note}</span>` : '<span style="min-width:90px"></span>'}
+    </div>`;
+
+  return `
+    <div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-style:italic;display:flex;align-items:center;gap:6px">
+      📈 ${t('sec_incr_rev')}
+      <span style="padding:1px 7px;border-radius:4px;font-size:9px;font-weight:700;background:rgba(79,110,247,0.15);color:#a0b0ff">${segLbl}</span>
+    </div>
+    <div style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07);border-radius:7px;padding:7px 9px;margin-bottom:8px">
+      ${fRow(t('incr_base'), (v.base*100).toFixed(0)+'%', '#a0b0ff', '', '')}
+      ${fRow(t('incr_f_wager'), fmtFact(v.wagFactor), factClr(v.wagFactor), wagNote, 'incr_fw_val')}
+      ${fRow(t('incr_f_gen'), fmtFact(v.genFactor), factClr(v.genFactor), v.matchPct+'% match', '')}
+      ${fRow(t('incr_f_mech'), fmtFact(v.mechFactor), factClr(v.mechFactor), mechNote, '')}
+      ${fRow(t('incr_f_rtp'), fmtFact(v.rtpFactor), factClr(v.rtpFactor), rtpNote, '')}
+      ${v.plat !== 'both' ? fRow(t('incr_f_plat'), fmtFact(v.platFactor), factClr(v.platFactor), platNote, '') : ''}
+      <div style="border-top:1px solid rgba(255,255,255,.1);margin-top:3px;padding-top:5px;display:flex;justify-content:space-between;align-items:baseline">
+        <span style="font-size:11px;color:var(--muted);font-weight:600">${t('incr_lift_total')}</span>
+        <span id="incr_ret_lift" style="font-size:14px;font-weight:800;color:#10b981">${(v.lift*100).toFixed(1)}%</span>
+      </div>
+    </div>
+    ${pr(t('p_incr_players'), '+'+incrPl.toLocaleString('ru')+' '+t('players_mo').replace('/мес','').replace('/mo','').trim(), 'gn', 'incr_players')}
+    ${prt(t('p_incr_rev'), fmtU(incrRev), 'gn', t('rtip_incr_rev'), 'incr_rev')}
+    ${pr(t('p_camp_cost_3'), fmtU(campCost3), 'gd', 'incr_camp_cost3')}
+    ${prt(t('p_incr_net'), (netIncr>=0?'+':'−')+fmtU(netIncr), netCls, t('rtip_incr_net'), 'incr_net')}
+    <div style="font-size:9.5px;color:var(--muted);margin-top:5px;font-style:italic">* ${t('incr_disclaimer')}</div>
+    ${netIncr < 0 ? `
+    <div id="incr_ai_btn_wrap" style="margin-top:10px">
+      <button onclick="_runOptimize(this)"
+        style="width:100%;padding:7px 12px;background:rgba(99,102,241,.18);border:1px solid rgba(99,102,241,.45);
+               border-radius:8px;color:#a5b4fc;font-size:12px;cursor:pointer;font-weight:600;transition:background .2s"
+        onmouseover="this.style.background='rgba(99,102,241,.32)'" onmouseout="this.style.background='rgba(99,102,241,.18)'">
+        ${t('btn_ai_optimize')}
+      </button>
+    </div>
+    <div id="incr_ai_result"></div>` : ''}
+  `;
 }
 
 function render(c){
@@ -1440,6 +1743,9 @@ function render(c){
   <div style="border-top:1px solid var(--border);padding:10px 14px;background:rgba(79,110,247,0.04)">
     <div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-style:italic">⚡ ${L==='ru'?'Кампанийный ROI — обновляется при изменении параметров':'Campaign ROI — updates with parameter changes'}</div>
     ${prt(t('p_roi_campaign'), E.roi3+'%', E.roi3>50?'gn':E.roi3>0?'gd':'rd', t('rtip_roi_camp'), 'econ_campaign_roi')}
+  </div>
+  <div style="border-top:1px solid var(--border);padding:10px 14px;background:rgba(16,185,129,0.03)">
+    ${_buildIncrRevBody(c, _calcRetentionV2(c))}
   </div>`;
 
   h += `<div class="sec fw">${shdr('#1E1B4B','📊',t('sec_econ'),E.pl.toLocaleString('ru')+' '+t('players_mo'))}<div>${econBody}</div></div>`;

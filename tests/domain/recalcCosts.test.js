@@ -43,10 +43,33 @@ describe('recalcCosts — overrides', () => {
     expect(low.maxRisk).toBeLessThan(base.maxRisk);
   });
 
-  it('invalid override (0) falls back to default', () => {
+  it('override 0 is accepted: not treated as missing (differs from default)', () => {
+    const base  = recalcCosts(cfg, {});
+    const noPct = recalcCosts(cfg, { w_pct: 0 });
+    expect(noPct.costs.w_p50).not.toBe(base.costs.w_p50);
+  });
+
+  it('negative override falls back to default', () => {
     const base = recalcCosts(cfg, {});
-    const same = recalcCosts(cfg, { w_pct: 0 });
+    const same = recalcCosts(cfg, { w_pct: -10 });
     expect(same.costs.w_p50).toBe(base.costs.w_p50);
+  });
+
+  it('w_fs: 0 accepted — changes cost vs default (FS component removed)', () => {
+    const withFs    = recalcCosts(cfg, {});
+    const withoutFs = recalcCosts(cfg, { w_fs: 0 });
+    // EU/MGA has 100 FS — removing them changes the bonus size and cost
+    expect(withoutFs.costs.w_p50).not.toBe(withFs.costs.w_p50);
+  });
+
+  it('rl_fs: 0 accepted — cost differs from default when rl has FS configured', () => {
+    const cfgWithRlFs = buildConfig({
+      region: 'eu', lic: 'mga', sitecur: 'EUR', depcur: 'EUR',
+      avgdep: 100, players: 5000, plat: 'both', rtp: 96,
+    });
+    const base    = recalcCosts(cfgWithRlFs, { rl_fs: 50 });
+    const noRlFs  = recalcCosts(cfgWithRlFs, { rl_fs: 0 });
+    expect(noRlFs.costs.rl).not.toBe(base.costs.rl);
   });
 });
 

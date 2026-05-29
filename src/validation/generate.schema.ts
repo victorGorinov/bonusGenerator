@@ -10,6 +10,7 @@ export const GenerateSchema = z.object({
   lic:     z.enum(['mga', 'ukgc', 'dga', 'curacao', 'anjouan', 'kahnawake', 'gibraltar', 'isle_of_man', 'none']).optional(),
   rtp:     z.coerce.number().min(50).max(99.9),
   riskAdj: z.coerce.number().optional(),
+  segment: z.enum(['new', 'mid', 'vip']).optional(),
 }).passthrough();
 
 export type GenerateInput = z.infer<typeof GenerateSchema>;
