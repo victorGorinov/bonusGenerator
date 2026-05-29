@@ -60,14 +60,14 @@ Segment: ${String(params['segment'] || 'all')}
 ${licRules}
 IMPORTANT: Write ALL text fields (label, note, text, impact) in ${lang}.
 
-Audit 5 aspects specific to tournaments. Return ONLY valid JSON, no markdown:
+Audit 5 aspects specific to tournaments. For each check include a "rule" field citing the specific regulation (e.g. "MGA CRP/2016 §5 – prize transparency", "UKGC LCCP SR Code 5.1.1 – no countdown timers", "DGA – ROFUS check mandatory"). Return ONLY valid JSON, no markdown:
 {
   "checks": [
-    {"label": "<aspect in ${lang}>", "status": "ok|warn", "note": "<under 90 chars in ${lang}>"},
-    {"label": "<aspect in ${lang}>", "status": "ok|warn", "note": "<under 90 chars in ${lang}>"},
-    {"label": "<aspect in ${lang}>", "status": "ok|warn", "note": "<under 90 chars in ${lang}>"},
-    {"label": "<aspect in ${lang}>", "status": "ok|warn", "note": "<under 90 chars in ${lang}>"},
-    {"label": "<aspect in ${lang}>", "status": "ok|warn", "note": "<under 90 chars in ${lang}>"}
+    {"label": "<aspect in ${lang}>", "status": "ok|warn", "note": "<under 90 chars in ${lang}>", "rule": "<regulation reference>"},
+    {"label": "<aspect in ${lang}>", "status": "ok|warn", "note": "<under 90 chars in ${lang}>", "rule": "<regulation reference>"},
+    {"label": "<aspect in ${lang}>", "status": "ok|warn", "note": "<under 90 chars in ${lang}>", "rule": "<regulation reference>"},
+    {"label": "<aspect in ${lang}>", "status": "ok|warn", "note": "<under 90 chars in ${lang}>", "rule": "<regulation reference>"},
+    {"label": "<aspect in ${lang}>", "status": "ok|warn", "note": "<under 90 chars in ${lang}>", "rule": "<regulation reference>"}
   ],
   "recommendations": [
     {"text": "<specific actionable fix in ${lang}, under 95 chars>", "impact": "<expected benefit in ${lang}, under 55 chars>"}

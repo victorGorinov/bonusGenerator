@@ -190,6 +190,7 @@ const LANG = {
     cfg_audit_impact:'Влияние', cfg_audit_recs:'Рекомендации',
     cfg_audit_not_run:'Нажмите для запуска AI-аудита соответствия текущей конфигурации',
     cfg_audit_error:'Ошибка аудита: ',
+    cfg_hint:'Выберите регион и нажмите «Сгенерировать» — получите полную спеку бонуса с моделью затрат P10/P50/P90 и прогнозом инкрементального дохода.',
     cg_best:'Лучший случай', cg_expected:'Ожидаемый', cg_worst:'Худший случай',
     cg_cost_per_bonus:'Стоимость / игрок', cg_dep_load:'Нагрузка на деп.', cg_wager_compl:'Завершение вейджера',
     rtip_cg_cpb:'Средняя выплата на одного активировавшего игрока = бюджет кампании / (N × конверсия)',
@@ -393,6 +394,7 @@ const LANG = {
     cfg_audit_pass:'✅ Pass', cfg_audit_fail:'❌ Fail', cfg_audit_warn:'⚠️ Warning',
     cfg_audit_impact:'Impact', cfg_audit_recs:'Recommendations',
     cfg_audit_not_run:'Click to run an AI compliance audit on the current configuration',
+    cfg_hint:'Choose a region and click Generate to get a full bonus spec with P10/P50/P90 cost model and incremental revenue forecast.',
     cfg_audit_error:'Audit error: ',
     cg_best:'Best Case', cg_expected:'Expected', cg_worst:'Worst Case',
     cg_cost_per_bonus:'Cost / player', cg_dep_load:'Deposit load', cg_wager_compl:'Wager completion',
@@ -1376,11 +1378,21 @@ function _buildIncrRevBody(cfg, v) {
       ${note ? `<span style="color:var(--muted);font-size:9px;white-space:nowrap;min-width:90px;text-align:right">${note}</span>` : '<span style="min-width:90px"></span>'}
     </div>`;
 
+  const incrExpert = localStorage.getItem('cfg_incr_expert') === '1';
+  const incrToggleLbl = incrExpert
+    ? (L==='ru' ? 'Скрыть факторы ▴' : 'Hide factors ▴')
+    : (L==='ru' ? 'Показать разбивку факторов ▾' : 'Show factor breakdown ▾');
+
   return `
     <div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-style:italic;display:flex;align-items:center;gap:6px">
       📈 ${t('sec_incr_rev')}
       <span style="padding:1px 7px;border-radius:4px;font-size:9px;font-weight:700;background:rgba(79,110,247,0.15);color:#a0b0ff">${segLbl}</span>
+      <button onclick="(function(){var e=document.getElementById('cfg-incr-detail');if(!e)return;var open=e.style.display!=='none';e.style.display=open?'none':'';localStorage.setItem('cfg_incr_expert',open?'0':'1');this.textContent=open?'${L==='ru'?'Показать разбивку факторов ▾':'Show factor breakdown ▾'}':'${L==='ru'?'Скрыть факторы ▴':'Hide factors ▴'}';}).call(this)"
+        style="margin-left:auto;font-size:9px;color:var(--accent);background:none;border:none;cursor:pointer;padding:1px 5px;border-radius:4px;white-space:nowrap">
+        ${incrToggleLbl}
+      </button>
     </div>
+    <div id="cfg-incr-detail" style="display:${incrExpert?'':'none'}">
     <div style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07);border-radius:7px;padding:7px 9px;margin-bottom:8px">
       ${fRow(t('incr_base'), (v.base*100).toFixed(0)+'%', '#a0b0ff', '', '')}
       ${fRow(t('incr_f_wager'), fmtFact(v.wagFactor), factClr(v.wagFactor), wagNote, 'incr_fw_val')}
@@ -1392,6 +1404,7 @@ function _buildIncrRevBody(cfg, v) {
         <span style="font-size:11px;color:var(--muted);font-weight:600">${t('incr_lift_total')}</span>
         <span id="incr_ret_lift" style="font-size:14px;font-weight:800;color:#10b981">${(v.lift*100).toFixed(1)}%</span>
       </div>
+    </div>
     </div>
     ${pr(t('p_incr_players'), '+'+incrPl.toLocaleString('ru')+' '+t('players_mo').replace('/мес','').replace('/mo','').trim(), 'gn', 'incr_players')}
     ${prt(t('p_incr_rev'), fmtU(incrRev), 'gn', t('rtip_incr_rev'), 'incr_rev')}
@@ -2311,6 +2324,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Pre-fill configurator from campaign URL params
   initFromCampaignURL();
+
+  // First-use hint
+  const hint = document.getElementById('cfg-hint');
+  if (hint && !localStorage.getItem('cfg_hint_dismissed')) hint.style.display = 'flex';
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
