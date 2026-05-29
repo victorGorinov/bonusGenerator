@@ -124,6 +124,7 @@
     box-shadow: 0 10px 40px rgba(245,158,11,.65), 0 0 60px rgba(245,158,11,.2);
     animation: none;
   }
+  .nav-right .btn-gold { animation: none; box-shadow: 0 2px 12px rgba(245,158,11,.35); }
   @keyframes ctaPulse {
     0%, 70%, 100% { box-shadow: 0 4px 24px rgba(245,158,11,.45), 0 0 0 0 rgba(245,158,11,.0); }
     78%  { box-shadow: 0 4px 24px rgba(245,158,11,.55), 0 0 48px rgba(245,158,11,.25); }
@@ -403,12 +404,12 @@
   }
   .form-submit {
     width: 100%; padding: 15px; border-radius: 12px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border: none; color: #fff; font-weight: 700; font-size: 1rem;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border: none; color: #000; font-weight: 700; font-size: 1rem;
     cursor: pointer; transition: all .2s; font-family: inherit;
-    box-shadow: 0 4px 20px rgba(79,110,247,.4);
+    box-shadow: 0 4px 20px rgba(245,158,11,.4);
   }
-  .form-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(79,110,247,.55); }
+  .form-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(245,158,11,.55); }
   .form-note { font-size: 0.75rem; color: var(--muted); margin-top: 14px; }
 
   /* ── FOOTER ── */
@@ -761,7 +762,7 @@
       </div>
       <a href="/configurator.html" class="nav-tool-link" data-i18n="nav_cfg">⚙️ Configurator</a>
       <a href="/tournament-generator.html" class="nav-tool-link" data-i18n="nav_tourn">🏆 Tournaments</a>
-      <a href="/campaign-generator.html" class="btn btn-primary" data-i18n="nav_ai">🤖 AI Campaigns</a>
+      <a href="/campaign-generator.html" class="btn btn-gold" data-i18n="nav_ai">🤖 AI Campaigns</a>
     </div>
   </div>
 </nav>
@@ -792,7 +793,7 @@
         </p>
         <div class="hero-ctas">
           <a href="/campaign-generator.html" class="btn btn-gold btn-lg" data-i18n="hero_cta1">🤖 Generate My Campaign Free →</a>
-          <a href="/tournament-generator.html" class="btn btn-outline btn-lg" data-i18n="hero_cta2">🏆 Tournament Generator →</a>
+          <a href="/tournament-generator.html" class="btn btn-gold btn-lg" data-i18n="hero_cta2">🏆 Tournament Generator →</a>
         </div>
         <div class="trust-strip">
           <div class="trust-item">⚡ <span data-i18n="tr1">Ready in 2 min</span></div>
@@ -1159,7 +1160,7 @@
 
     </div>
     <div style="text-align:center;margin-top:40px">
-      <a href="/campaign-generator.html" class="btn btn-primary btn-lg" data-i18n="ex_cta">🤖 Generate Your Own Campaign →</a>
+      <a href="/campaign-generator.html" class="btn btn-gold btn-lg" data-i18n="ex_cta">🤖 Generate Your Own Campaign →</a>
     </div>
   </div>
 </section>
