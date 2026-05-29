@@ -86,14 +86,14 @@ Segment: ${SEG_DESC[params.segment ?? ''] || 'regular players'}, Risk: ${params.
 ${licRules}
 IMPORTANT: Write ALL text fields (label, note, text, impact) in ${lang}.
 
-Audit 5 aspects. Return ONLY valid JSON, no markdown:
+Audit 5 aspects. For each check include a "rule" field citing the specific regulation or standard being verified (e.g. "MGA/CRP/2016 §3.2 – wagering disclosure", "DGA – Spillemyndigheden bonus cap DKK 1,000", "UKGC LCCP SR Code 5.1.1 – no countdown timers"). Return ONLY valid JSON, no markdown:
 {
   "checks": [
-    {"label": "<aspect name in ${lang}>", "status": "ok",      "note": "<under 90 chars in ${lang}>"},
-    {"label": "<aspect name in ${lang}>", "status": "ok|warn", "note": "<under 90 chars in ${lang}>"},
-    {"label": "<aspect name in ${lang}>", "status": "ok|warn", "note": "<under 90 chars in ${lang}>"},
-    {"label": "<aspect name in ${lang}>", "status": "ok|warn", "note": "<under 90 chars in ${lang}>"},
-    {"label": "<aspect name in ${lang}>", "status": "ok|warn", "note": "<under 90 chars in ${lang}>"}
+    {"label": "<aspect name in ${lang}>", "status": "ok",      "note": "<under 90 chars in ${lang}>", "rule": "<regulation reference>"},
+    {"label": "<aspect name in ${lang}>", "status": "ok|warn", "note": "<under 90 chars in ${lang}>", "rule": "<regulation reference>"},
+    {"label": "<aspect name in ${lang}>", "status": "ok|warn", "note": "<under 90 chars in ${lang}>", "rule": "<regulation reference>"},
+    {"label": "<aspect name in ${lang}>", "status": "ok|warn", "note": "<under 90 chars in ${lang}>", "rule": "<regulation reference>"},
+    {"label": "<aspect name in ${lang}>", "status": "ok|warn", "note": "<under 90 chars in ${lang}>", "rule": "<regulation reference>"}
   ],
   "recommendations": [
     {"text": "<specific actionable fix in ${lang}, under 95 chars>", "impact": "<expected benefit in ${lang}, under 55 chars>"}

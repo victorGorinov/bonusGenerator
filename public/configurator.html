@@ -145,7 +145,51 @@
 .audit-btn-reset:hover{background:rgba(255,255,255,.12);color:#e8eaf0}
 </style>
 </head>
+<style>
+.cfg-sidebar{width:220px;min-height:100vh;background:#1E1B4B;border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:200}
+.cfg-sb-logo{padding:16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:8px}
+.cfg-sb-logo-icon{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,#4f6ef7,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.cfg-sb-logo-text{font-weight:800;font-size:.87rem;color:#fff;letter-spacing:-.3px}.cfg-sb-logo-text span{color:#F59E0B}
+.cfg-sb-tag{font-size:8px;font-weight:700;color:#1E1B4B;background:#F59E0B;padding:1px 5px;border-radius:7px;margin-left:2px;align-self:center}
+.cfg-sb-nav{flex:1;padding:8px 0;overflow-y:auto}
+.cfg-nav-lbl{padding:7px 14px 2px;font-size:.62rem;font-weight:600;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.08em}
+.cfg-nav-item{display:flex;align-items:center;gap:9px;padding:8px 14px;color:rgba(255,255,255,.5);font-size:.81rem;font-weight:500;text-decoration:none;transition:background .15s,color .15s;position:relative;border:none;background:none;width:100%;font-family:inherit;cursor:pointer}
+.cfg-nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
+.cfg-nav-item.active{background:rgba(79,110,247,.25);color:#a0b0ff}
+.cfg-nav-item.active::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:#4f6ef7;border-radius:0 2px 2px 0}
+.cfg-nav-item.off{opacity:.35;cursor:default;pointer-events:none}
+.cfg-nav-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0}
+.cfg-sb-foot{padding:10px 14px;border-top:1px solid rgba(255,255,255,.06)}
+.cfg-main{margin-left:220px}
+</style>
+
 <body>
+
+<aside class="cfg-sidebar">
+  <div class="cfg-sb-logo">
+    <div class="cfg-sb-logo-icon">🎰</div>
+    <div><div class="cfg-sb-logo-text">Bonus<span>Engine</span></div></div>
+    <div class="cfg-sb-tag">AI</div>
+  </div>
+  <nav class="cfg-sb-nav">
+    <div class="cfg-nav-lbl">Main</div>
+    <a href="/campaign-generator.html" class="cfg-nav-item"><span class="cfg-nav-icon">📊</span> Dashboard</a>
+    <a href="/campaign-generator.html#campaigns" class="cfg-nav-item"><span class="cfg-nav-icon">📁</span> Campaigns</a>
+    <a href="/tournament-generator.html" class="cfg-nav-item"><span class="cfg-nav-icon">🏆</span> Tournaments</a>
+    <div class="cfg-nav-lbl" style="margin-top:4px">Tools</div>
+    <a href="/configurator.html" class="cfg-nav-item active"><span class="cfg-nav-icon">⚙️</span> Configurator</a>
+    <a href="/campaign-generator.html" class="cfg-nav-item"><span class="cfg-nav-icon">🚀</span> Campaign Gen</a>
+    <a href="/tournament-generator.html" class="cfg-nav-item"><span class="cfg-nav-icon">🏆</span> Tournament Gen</a>
+    <div class="cfg-nav-lbl" style="margin-top:4px">Soon</div>
+    <a href="#" class="cfg-nav-item off"><span class="cfg-nav-icon">📈</span> Analytics</a>
+    <a href="#" class="cfg-nav-item off"><span class="cfg-nav-icon">⚙️</span> Settings</a>
+  </nav>
+  <div class="cfg-sb-foot">
+    <a href="/" style="display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.35);font-size:.75rem;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.35)'">← Back to home</a>
+  </div>
+</aside>
+
+<div class="cfg-main">
 
 <!-- ════ HEADER ════ -->
 <div class="hdr">
@@ -175,6 +219,14 @@
     <button class="edit-bar-btn edit-bar-reset" onclick="resetToOriginal()" data-i18n="edit_bar_reset">↺ Сбросить параметры</button>
     <button class="edit-bar-btn edit-bar-exit" onclick="exitEditMode()" data-i18n="edit_bar_exit">✕ Выйти</button>
   </div>
+</div>
+
+<!-- ════ FIRST-USE HINT ════ -->
+<div id="cfg-hint" style="display:none;align-items:center;gap:10px;background:rgba(79,110,247,.08);border-bottom:1px solid rgba(79,110,247,.2);padding:9px 20px;font-size:.8rem;color:#a0b0ff">
+  <span>ℹ️</span>
+  <span data-i18n="cfg_hint">Choose a region and click Generate to get a full bonus spec with P10/P50/P90 cost model and incremental revenue forecast.</span>
+  <button onclick="document.getElementById('cfg-hint').style.display='none';localStorage.setItem('cfg_hint_dismissed','1')"
+          style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 6px">✕</button>
 </div>
 
 <!-- ════ MAIN LAYOUT ════ -->
@@ -1276,5 +1328,6 @@ document.addEventListener('DOMContentLoaded', function() {
   _updateCampsCount();
 });
 </script>
+</div><!-- /cfg-main -->
 </body>
 </html>

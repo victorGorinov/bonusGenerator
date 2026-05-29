@@ -289,6 +289,8 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .econ-p50 .econ-scenario-cost{color:#4f6ef7}
 .econ-p90 .econ-scenario-cost{color:#f59e0b}
 .econ-scenario-sub{font-size:11px;color:#8892a4;margin-bottom:12px}
+#econ-wrap[data-expert="0"] .econ-expert-only{display:none}
+#econ-wrap[data-expert="1"] .econ-basic-only{display:none}
 .econ-scenario-rows{border-top:1px solid rgba(255,255,255,.08);padding-top:10px;display:flex;flex-direction:column;gap:6px}
 .econ-row{display:flex;justify-content:space-between;font-size:12px}
 .econ-row span:first-child{color:#8892a4}
@@ -338,13 +340,13 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   <nav class="sb-nav">
     <div class="nav-lbl" data-i18n="nav_main">Главное</div>
     <button class="nav-item active" onclick="showView('dashboard')"><span class="nav-icon">📊</span><span data-i18n="nav_dashboard">Дашборд</span></button>
-    <button class="nav-item" onclick="showView('campaigns')"><span class="nav-icon">📋</span><span data-i18n="nav_campaigns">Кампании</span><span class="nav-badge" id="camp-nav-badge">0</span></button>
+    <button class="nav-item" onclick="showView('campaigns')"><span class="nav-icon">📁</span><span data-i18n="nav_campaigns">Кампании</span><span class="nav-badge" id="camp-nav-badge" style="display:none"></span></button>
+    <a class="nav-item" href="/tournament-generator.html"><span class="nav-icon">🏆</span><span data-i18n="nav_tournament">Турниры</span></a>
     <div class="nav-lbl" data-i18n="nav_tools" style="margin-top:6px">Инструменты</div>
     <button class="nav-item" onclick="showView('configurator')"><span class="nav-icon">⚙️</span><span data-i18n="nav_configurator">Конфигуратор</span></button>
-    <button class="nav-item off"><span class="nav-icon">📚</span><span data-i18n="nav_templates">Шаблоны</span><span class="nav-badge">Soon</span></button>
-    <button class="nav-item off"><span class="nav-icon">🎯</span><span data-i18n="nav_scenarios">Сценарии</span><span class="nav-badge">Soon</span></button>
-    <button class="nav-item off"><span class="nav-icon">📅</span><span data-i18n="nav_calendar">Календарь</span><span class="nav-badge">Soon</span></button>
-    <button class="nav-item off"><span class="nav-icon">🤖</span><span data-i18n="nav_ai">AI Ассистент</span><span class="nav-badge">Soon</span></button>
+    <a class="nav-item" href="/campaign-generator.html"><span class="nav-icon">🚀</span><span data-i18n="nav_campaign_gen">Campaign Gen</span></a>
+    <a class="nav-item" href="/tournament-generator.html"><span class="nav-icon">🏆</span><span data-i18n="nav_tournament_gen">Tournament Gen</span></a>
+    <a class="nav-item" href="/tournament-generator.html#setup"><span class="nav-icon">📋</span><span data-i18n="nav_setup_guide">Setup Guide</span></a>
     <div class="nav-lbl" data-i18n="nav_soon" style="margin-top:6px">Скоро</div>
     <button class="nav-item off"><span class="nav-icon">📈</span><span data-i18n="nav_analytics">Аналитика</span></button>
     <button class="nav-item off"><span class="nav-icon">⚙️</span><span data-i18n="nav_settings">Настройки</span></button>
@@ -391,7 +393,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
         <div class="qcard" onclick="startWizardWith('cashback')"><div class="qcard-icon">💳</div><div class="qcard-name" data-i18n="qc_cashback_n">Cashback</div><div class="qcard-desc" data-i18n="qc_cashback_d">Возврат % от проигрышей</div><div class="qcard-arr">→</div></div>
         <div class="qcard" onclick="startWizardWith('vip_retention')"><div class="qcard-icon">👑</div><div class="qcard-name" data-i18n="qc_vip_n">VIP удержание</div><div class="qcard-desc" data-i18n="qc_vip_d">Персональные офферы для VIP</div><div class="qcard-arr">→</div></div>
         <div class="qcard" onclick="startWizardWith('sport_event')"><div class="qcard-icon">⚽</div><div class="qcard-name" data-i18n="qc_sport_n">Спортивное событие</div><div class="qcard-desc" data-i18n="qc_sport_d">Фрибет или бонус к матчу</div><div class="qcard-arr">→</div></div>
-        <div class="qcard" onclick="startWizardWith('tournament')"><div class="qcard-icon">🏆</div><div class="qcard-name" data-i18n="qc_tourn_n">Турнир / Ивент</div><div class="qcard-desc" data-i18n="qc_tourn_d">Механика слот-турнира</div><div class="qcard-arr">→</div></div>
+        <div class="qcard" onclick="window.location.href='/tournament-generator.html'" style="border-color:rgba(16,185,129,.3);background:linear-gradient(135deg,rgba(16,185,129,.06) 0%,transparent 60%)"><div class="qcard-icon">🏆</div><div class="qcard-name" data-i18n="qc_tourn_n" style="color:#6ee7b7">Турнир / Ивент</div><div class="qcard-desc" data-i18n="qc_tourn_d">Механика слот-турнира</div><div class="qcard-arr" style="color:#6ee7b7">→</div></div>
       </div>
 
       <div class="section-hd">
@@ -662,6 +664,9 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
             <div class="spinner"></div><span data-i18n="s4_loading_texts">AI генерирует тексты для всех 5 каналов...</span>
           </div>
           <div id="s4t-content" style="display:none">
+            <div style="background:rgba(79,110,247,.08);border:1px solid rgba(79,110,247,.2);border-radius:8px;padding:9px 14px;margin-bottom:12px;font-size:.78rem;color:#a0b0ff;display:flex;align-items:center;gap:8px">
+              <span>✦</span><span data-i18n="ai_draft_note">AI draft — review before sending. Verify regulatory strings match your platform's T&Cs.</span>
+            </div>
             <div class="ch-tabs" id="chTabs">
               <button class="ch-tab active" onclick="switchCh('push',this)">📲 Push</button>
               <button class="ch-tab" onclick="switchCh('email',this)">✉️ Email</button>
@@ -854,6 +859,7 @@ function showView(name) {
       (name==='configurator' && onclick.includes("'configurator'"))
     );
   });
+  if (name === 'campaigns') renderCampaignViews();
 }
 
 // ── WIZARD ────────────────────────────────────────────────────────────────────
@@ -1128,10 +1134,25 @@ function runProgress() {
 }
 
 // ── STEP 3 RENDER ─────────────────────────────────────────────────────────────
+function _toggleEconExpert() {
+  const wrap = document.getElementById('econ-wrap');
+  if (!wrap) return;
+  const isExpert = wrap.dataset.expert === '1';
+  wrap.dataset.expert = isExpert ? '0' : '1';
+  localStorage.setItem('cg_expert_mode', isExpert ? '0' : '1');
+  const btn = document.getElementById('econ-expert-toggle');
+  if (btn) btn.textContent = isExpert ? t('econ_show_analysis') : t('econ_collapse');
+}
+
 function renderEconScenarios(econ, _unused, _unused2, cur, lang, fullData) {
   const isRu = lang === 'ru';
   const fmt  = v => cur + ' ' + Math.round(v).toLocaleString();
   const pct  = v => (v * 100).toFixed(1) + '%';
+
+  const seg2        = draft?.params?.segment || 'mid';
+  const storedMode  = localStorage.getItem('cg_expert_mode');
+  const expertMode  = storedMode !== null ? storedMode === '1' : seg2 === 'vip';
+  const toggleLbl  = expertMode ? t('econ_collapse') : t('econ_show_analysis');
 
   const pl      = econ.pl;
   const p10cost = econ.sP10.cost;
@@ -1191,11 +1212,11 @@ function renderEconScenarios(econ, _unused, _unused2, cur, lang, fullData) {
       <div class="econ-scenario-cost">${fmt(cost)}</div>
       <div class="econ-scenario-sub">${L.total}</div>
       <div class="econ-scenario-rows">
-        <div class="econ-row">
+        <div class="econ-row econ-expert-only">
           <span class="tip" data-tip="${L.tip_cpp}">${L.perPlayer}</span>
           <span>${fmt(cpp)}</span>
         </div>
-        <div class="econ-row">
+        <div class="econ-row econ-expert-only">
           <span class="tip" data-tip="${L.tip_ratio}">${L.ratio}</span>
           <span>${pct(ratio)}</span>
         </div>
@@ -1204,11 +1225,24 @@ function renderEconScenarios(econ, _unused, _unused2, cur, lang, fullData) {
           <span>${Math.round(conv * 100)}%</span>
         </div>
       </div>
-      <div class="econ-scenario-note">${note}</div>
+      <div class="econ-scenario-note econ-expert-only">${note}</div>
     </div>`;
 
   return `
-    <div style="font-size:11px;color:#8892a4;line-height:1.6;margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid rgba(255,255,255,.06)">
+    <div id="econ-wrap" data-expert="${expertMode?'1':'0'}">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div class="econ-basic-only" style="font-size:.79rem;color:var(--muted)">
+        ${isRu?'Ожидаемые затраты':'Expected cost'}: <strong style="color:var(--text)">${fmt(p50cost)}</strong>
+        · ${isRu?'Конверсия':'Conv'}: <strong style="color:var(--text)">${Math.round(conv50*100)}%</strong>
+        · <span style="color:${p50cost < econ.pl*(econ.arpu||65)*0.2?'#10b981':'#f59e0b'}">${p50cost < econ.pl*(econ.arpu||65)*0.2 ? '✓ ROI positive':'⚠ Review budget'}</span>
+      </div>
+      <div class="econ-expert-only"></div>
+      <button id="econ-expert-toggle" onclick="_toggleEconExpert()"
+        style="font-size:.73rem;color:var(--accent);background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:5px;white-space:nowrap;margin-left:auto">
+        ${toggleLbl}
+      </button>
+    </div>
+    <div class="econ-expert-only" style="font-size:11px;color:#8892a4;line-height:1.6;margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid rgba(255,255,255,.06)">
       💡 ${L.legend}
     </div>
     <div class="econ-scenarios-grid">
@@ -1216,7 +1250,7 @@ function renderEconScenarios(econ, _unused, _unused2, cur, lang, fullData) {
       ${card('econ-p50', '→', L.p50, p50cost, p50r, conv50, cpp50, L.n50, true)}
       ${card('econ-p90', '↗', L.p90, p90cost, p90r, conv90, cpp90, L.n90, false)}
     </div>
-    <div class="econ-range-wrap">
+    <div class="econ-range-wrap econ-expert-only">
       <div class="econ-range-label">${L.range}</div>
       <div class="econ-range-track">
         <div class="rp10" style="width:${p10w}%"></div>
@@ -1386,7 +1420,8 @@ function renderEconScenarios(econ, _unused, _unused2, cur, lang, fullData) {
             })() : ''}
           </div>`;
       } catch(e) { return ''; }
-    })()}`;
+    })()}
+    </div>`;
 }
 
 function mechRows(mech, type, data) {
@@ -2250,14 +2285,20 @@ function auditHTML(audit) {
   const ICO = {ok:'✅',warn:'⚠️',fail:'❌'};
   const checks = (audit.checks||[]).map(ch =>
     `<div class="audit-item"><span class="audit-ico">${ICO[ch.status]||'•'}</span>
-     <div><div class="audit-lbl">${esc(ch.label)}</div><div class="audit-note">${esc(ch.note||'')}</div></div></div>`
+     <div>
+       <div class="audit-lbl">${esc(ch.label)}</div>
+       ${ch.rule ? `<div style="font-size:.7rem;color:var(--accent);opacity:.7;margin-bottom:2px">${esc(ch.rule)}</div>` : ''}
+       <div class="audit-note">${esc(ch.note||'')}</div>
+     </div></div>`
   ).join('') || `<div style="color:var(--muted);font-size:.82rem">${t('det_no_data')}</div>`;
   const recs = (audit.recommendations||[]).map(r =>
     `<div class="rec-item"><div class="rec-text">${esc(r.text)}</div>
      ${r.impact?`<span class="badge" style="background:rgba(79,110,247,.1);color:var(--accent)">${esc(r.impact)}</span>`:''}</div>`
   ).join('') || `<div style="color:var(--muted);font-size:.82rem">${t('det_no_data')}</div>`;
+  const ts = new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const tsLine = `<div style="font-size:.68rem;color:var(--muted);margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">Audited: ${ts}</div>`;
   return `<div class="audit-grid">
-    <div class="audit-card"><div class="rc-title" style="margin-bottom:10px">${t('rc_audit')}</div>${checks}</div>
+    <div class="audit-card"><div class="rc-title" style="margin-bottom:10px">${t('rc_audit')}</div>${checks}${tsLine}</div>
     <div class="audit-card"><div class="rc-title" style="margin-bottom:10px">${t('rc_recs')}</div>${recs}</div>
   </div>`;
 }
@@ -2429,6 +2470,9 @@ const I18N = {
     s4_tab_texts:'📝 Тексты', s4_tab_audit:'🔍 Аудит',
     s4_loading_texts:'AI генерирует тексты для всех 5 каналов...',
     s4_loading_audit:'AI проводит аудит кампании...',
+    ai_draft_note:'✦ AI-черновик — проверьте перед отправкой. Убедитесь, что регуляторные строки соответствуют T&C вашей платформы.',
+    econ_show_analysis:'Показать полный анализ ▾',
+    econ_collapse:'Свернуть ▴',
     s4_variant:'Вариант', s4_copy_btn:'⎘ Копировать',
     s4_more_variants:'+ Ещё варианты', s4_generating:'⏳ Генерирую...',
     s4_email_subject_lbl:'Тема', s4_chars:'симв.',
@@ -2458,7 +2502,7 @@ const I18N = {
     step_ctr:'Шаг {n} из 5',
     // Sidebar
     nav_main:'Главное', nav_dashboard:'Дашборд', nav_campaigns:'Кампании',
-    nav_tools:'Инструменты', nav_configurator:'Конфигуратор', nav_templates:'Шаблоны',
+    nav_tools:'Инструменты', nav_configurator:'Конфигуратор', nav_campaign_gen:'Campaign Gen', nav_tournament:'Турниры', nav_tournament_gen:'Tournament Gen', nav_setup_guide:'Setup Guide',
     nav_scenarios:'Сценарии', nav_calendar:'Календарь', nav_ai:'AI Ассистент',
     nav_soon:'Скоро', nav_analytics:'Аналитика', nav_settings:'Настройки',
     // Topbar view titles
@@ -2551,6 +2595,9 @@ const I18N = {
     s4_tab_texts:'📝 Texts', s4_tab_audit:'🔍 Audit',
     s4_loading_texts:'AI is generating texts for all 5 channels...',
     s4_loading_audit:'AI is auditing the campaign...',
+    ai_draft_note:'AI draft — review before sending. Verify regulatory strings match your platform\'s T&Cs.',
+    econ_show_analysis:'Show full analysis ▾',
+    econ_collapse:'Collapse ▴',
     s4_variant:'Variant', s4_copy_btn:'⎘ Copy',
     s4_more_variants:'+ More variants', s4_generating:'⏳ Generating...',
     s4_email_subject_lbl:'Subject', s4_chars:'chars',
@@ -2580,7 +2627,7 @@ const I18N = {
     step_ctr:'Step {n} of 5',
     // Sidebar
     nav_main:'Main', nav_dashboard:'Dashboard', nav_campaigns:'Campaigns',
-    nav_tools:'Tools', nav_configurator:'Configurator', nav_templates:'Templates',
+    nav_tools:'Tools', nav_configurator:'Configurator', nav_campaign_gen:'Campaign Gen', nav_tournament:'Tournaments', nav_tournament_gen:'Tournament Gen', nav_setup_guide:'Setup Guide',
     nav_scenarios:'Scenarios', nav_calendar:'Calendar', nav_ai:'AI Assistant',
     nav_soon:'Coming Soon', nav_analytics:'Analytics', nav_settings:'Settings',
     // Topbar view titles
@@ -2723,6 +2770,7 @@ function saveCampaign() {
     alternatives:  draft.alternatives  || null,
   });
   putCampaigns(camps);
+  renderCampaignViews();
   return id;
 }
 
@@ -2774,7 +2822,7 @@ function renderCampaignViews() {
   if (dash) dash.innerHTML = camps.length ? camps.slice(0,5).map(campaignRowHTML).join('') : empty;
   if (all)  all.innerHTML  = camps.length ? camps.map(campaignRowHTML).join('') : empty;
   const nb = document.getElementById('camp-nav-badge');
-  if (nb) nb.textContent = camps.length || '0';
+  if (nb) { nb.textContent = camps.length; nb.style.display = camps.length > 0 ? 'inline' : 'none'; }
 }
 
 // ── CONTEXT MENU ─────────────────────────────────────────────────────────────
@@ -2831,10 +2879,75 @@ function initCfgIframe(iframe) {
   } catch(e) {}
 }
 
+// ── ONBOARDING ────────────────────────────────────────────────────────────────
+function showOnboarding() {
+  const isRu = currentLang === 'ru';
+  const steps = isRu ? [
+    ['1 → Сценарий',    'Выберите из 8 типов кампаний'],
+    ['2 → Параметры',   'Гео, сегмент, тон, риск'],
+    ['3 → Экономика',   'Модель затрат + прогноз удержания'],
+    ['4 → AI-тексты',   'Push · Email · SMS · TG · Popup'],
+    ['5 → Аудит',       'Соответствие лицензии'],
+  ] : [
+    ['1 → Scenario',    'Choose from 8 campaign types'],
+    ['2 → Parameters',  'Geo, segment, tone, risk'],
+    ['3 → Economics',   'Cost model + retention lift'],
+    ['4 → AI Texts',    'Push · Email · SMS · TG · Popup'],
+    ['5 → Audit',       'Compliance per license'],
+  ];
+  const stepsHtml = steps.map(([lbl,desc]) =>
+    `<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+      <span style="font-size:.8rem;font-weight:700;color:#a0b0ff;min-width:130px">${lbl}</span>
+      <span style="font-size:.8rem;color:var(--muted)">${desc}</span>
+    </div>`
+  ).join('');
+  const modal = document.createElement('div');
+  modal.id = 'onb-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(10,13,20,.75);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML = `
+    <div style="background:#161c2d;border:1px solid rgba(79,110,247,.3);border-radius:16px;padding:28px 28px 24px;max-width:480px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,.6)">
+      <div style="font-size:1.15rem;font-weight:700;color:#e8eaf0;margin-bottom:4px">${isRu ? 'AI-генератор кампаний' : 'AI Campaign Generator'}</div>
+      <div style="font-size:.83rem;color:var(--muted);margin-bottom:18px">${isRu ? 'Что вы получите за ~2 минуты:' : 'What you\'ll get in ~2 minutes:'}</div>
+      ${stepsHtml}
+      <div style="margin-top:20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <label style="display:flex;align-items:center;gap:7px;font-size:.77rem;color:var(--muted);cursor:pointer">
+          <input type="checkbox" id="onb-skip-cb" style="accent-color:var(--accent)">
+          ${isRu ? 'Больше не показывать' : 'Don\'t show again'}
+        </label>
+        <button onclick="_closeOnboarding()" style="background:linear-gradient(135deg,#4f6ef7,#7c3aed);color:#fff;border:none;padding:9px 22px;border-radius:9px;font-size:.88rem;font-weight:700;cursor:pointer">
+          ${isRu ? 'Начать →' : 'Start →'}
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+function _closeOnboarding() {
+  const cb = document.getElementById('onb-skip-cb');
+  if (cb && cb.checked) localStorage.setItem('cg_onboarding_done', '1');
+  const m = document.getElementById('onb-modal');
+  if (m) m.remove();
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
-showView('dashboard');
+function syncInitialView() {
+  const name = window.location.hash === '#campaigns' ? 'campaigns' : 'dashboard';
+  showView(name);
+}
+
+showView(window.location.hash === '#campaigns' ? 'campaigns' : 'dashboard');
 renderScenarios();
 renderCampaignViews();
+if (!localStorage.getItem('cg_onboarding_done')) showOnboarding();
+
+window.addEventListener('pageshow', function() {
+  renderCampaignViews();
+  if (window.location.hash === '#campaigns') showView('campaigns');
+});
+
+window.addEventListener('hashchange', function() {
+  syncInitialView();
+});
+
 try {
   const saved = localStorage.getItem('bonusLang');
   if (saved && I18N[saved]) setUILang(saved);

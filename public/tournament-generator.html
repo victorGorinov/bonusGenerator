@@ -23,6 +23,8 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
 .nav-item.active{background:rgba(79,110,247,.25);color:#a0b0ff}
 .nav-item.active::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
+.nav-item.off{opacity:.38;cursor:default;pointer-events:none}
+.nav-badge{font-size:.66rem;padding:1px 6px;border-radius:20px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.4);margin-left:auto}
 .nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
 .sb-foot{padding:12px 16px;border-top:1px solid rgba(255,255,255,.06)}
 .sb-back{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.4);font-size:.78rem;text-decoration:none;transition:color .15s;cursor:pointer;background:none;border:none;font-family:inherit;padding:0;width:100%;text-align:left}
@@ -118,10 +120,18 @@ select.form-input{cursor:pointer}
     <div class="sb-logo-tag">AI</div>
   </div>
   <nav class="sb-nav">
-    <div class="nav-lbl">Tools</div>
+    <div class="nav-lbl">Main</div>
+    <a href="/campaign-generator.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+    <a href="/campaign-generator.html#campaigns" class="nav-item"><span class="nav-icon">📁</span> Campaigns</a>
+    <button class="nav-item" id="nav-tournament" onclick="showView('list')"><span class="nav-icon">🏆</span> Tournaments <span class="nav-badge" id="nav-tourn-badge" style="display:none"></span></button>
+    <div class="nav-lbl" style="margin-top:6px">Tools</div>
     <a href="/configurator.html" class="nav-item"><span class="nav-icon">⚙️</span> Configurator</a>
     <a href="/campaign-generator.html" class="nav-item"><span class="nav-icon">🚀</span> Campaign Gen</a>
-    <a href="/tournament-generator.html" class="nav-item active"><span class="nav-icon">🏆</span> Tournament Gen</a>
+    <a href="/tournament-generator.html" class="nav-item"><span class="nav-icon">🏆</span> Tournament Gen</a>
+    <button class="nav-item" id="nav-setup-guide" onclick="showSetupGuide()"><span class="nav-icon">📋</span> Setup Guide</button>
+    <div class="nav-lbl" style="margin-top:6px">Soon</div>
+    <a href="#" class="nav-item off"><span class="nav-icon">📈</span> Analytics</a>
+    <a href="#" class="nav-item off"><span class="nav-icon">⚙️</span> Settings</a>
   </nav>
   <div class="sb-foot">
     <a href="/" class="sb-back">← Back to home</a>
@@ -209,7 +219,8 @@ const SEGMENTS = [
   { val:'dormant',    lbl:'Dormant' },
 ];
 
-let step = 1;
+let step       = 1;
+let detailId   = null;
 const draft = {
   type: 'slot',
   params: {
@@ -234,9 +245,29 @@ let lastAudit   = null;
 let activeTab   = 'push';
 let activeAudit = false;
 
+// ── LOCALSTORAGE HELPERS ─────────────────────────────────────────────────────
+function loadTournaments() {
+  try { return JSON.parse(localStorage.getItem('savedTournaments') || '[]'); } catch { return []; }
+}
+function saveTournaments(list) {
+  localStorage.setItem('savedTournaments', JSON.stringify(list));
+}
+function genId() {
+  return (typeof crypto !== 'undefined' && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+function autoName(type, params) {
+  const typeLabel = { slot:'Slots', live:'Live Casino', mixed:'Mixed', prize_drop:'Prize Drop' };
+  const geo = (params.geo || '').toUpperCase();
+  const lic = (params.lic || 'none').toUpperCase();
+  return `${typeLabel[type] || type} · ${geo}/${lic}`;
+}
+
 function goStep(n) {
   step = n;
   document.getElementById('topbar-step').textContent = `Step ${n} of 4`;
+  setSidebarActive('nav-tournament');
   renderStep();
 }
 
@@ -246,6 +277,35 @@ function renderStep() {
   else if (step === 2) c.innerHTML = renderStep2();
   else if (step === 3) c.innerHTML = renderStep3();
   else if (step === 4) c.innerHTML = renderStep4();
+}
+
+function setSidebarActive(id) {
+  document.querySelectorAll('.sb-nav .nav-item').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+function showSetupGuide() { showView('setup'); }
+
+function showView(view, id) {
+  const c  = document.getElementById('content');
+  const tb = document.getElementById('topbar-step');
+  if (view === 'list') {
+    tb.textContent = 'Tournaments';
+    setSidebarActive('nav-tournament');
+    c.innerHTML = renderList();
+  } else if (view === 'detail') {
+    detailId = id;
+    const t = loadTournaments().find(t => t.id === id);
+    tb.textContent = t ? t.name : 'Tournament';
+    setSidebarActive('nav-tournament');
+    c.innerHTML = renderDetail(id);
+  } else if (view === 'setup') {
+    tb.textContent = 'Setup Guide';
+    setSidebarActive('nav-setup-guide');
+    c.innerHTML = renderSetupGuide();
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ── STEP 1: Tournament type ──────────────────────────────────────────────────
@@ -387,6 +447,7 @@ function renderStep3() {
   const e    = r.econ;
   const spec = r.spec;
   const cur  = r.cur || 'EUR';
+  const roi  = typeof e.roi === 'number' ? e.roi : Number(e.roi) || 0;
 
   function fmtCur(n) {
     return cur + ' ' + Math.abs(Math.round(n)).toLocaleString();
@@ -436,7 +497,7 @@ function renderStep3() {
     <div><span style="color:var(--muted)">Re-entry:</span> ${spec.reentry}</div>
     <div><span style="color:var(--muted)">Prize pool:</span> <strong>${fmtCur(spec.prizePool)}</strong></div>
     <div><span style="color:var(--muted)">Distribution:</span> ${spec.distribution}</div>
-    <div><span style="color:var(--muted)">ROI:</span> <strong style="color:${e.roi>=0?'var(--success)':'#ef4444'}">${e.roi}%</strong></div>
+    <div><span style="color:var(--muted)">ROI:</span> <strong style="color:${roi>=0?'var(--success)':'#ef4444'}">${roi}%</strong></div>
   </div>
   ${e.breakEvenParticipants > 0 ? `<div style="margin-top:10px;font-size:.78rem;color:var(--muted)">Break-even: <strong style="color:var(--text)">${e.breakEvenParticipants} participants</strong> at 30% GGR lift</div>` : ''}
 </div>
@@ -450,6 +511,26 @@ function renderStep3() {
   <div class="card-title">Economic Scenarios</div>
   <div class="econ-grid">${econCards}</div>
   <div style="font-size:.73rem;color:var(--muted)">Based on ${e.eligible} eligible ${draft.params.segment} players · ARPU ${e.arpu} USD/mo</div>
+</div>
+
+<div style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.25);border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:14px">
+  <span style="font-size:1.4rem;flex-shrink:0">📋</span>
+  <div style="flex:1;min-width:0">
+    <div style="font-size:.85rem;font-weight:600;color:#c4b5fd;margin-bottom:2px">Setup Guide ready</div>
+    <div style="font-size:.77rem;color:var(--muted)">Save this tournament to access it later from your library</div>
+  </div>
+  <div style="display:flex;gap:8px;flex-shrink:0">
+    <button id="btn-save-tournament" class="btn btn-outline btn-sm"
+            style="border-color:rgba(79,110,247,.4);color:#a0b0ff"
+            onclick="saveTournament()">
+      💾 Save
+    </button>
+    <button class="btn btn-outline btn-sm"
+            style="border-color:rgba(124,58,237,.4);color:#c4b5fd"
+            onclick="showSetupGuide()">
+      View Guide →
+    </button>
+  </div>
 </div>
 
 <div class="nav-footer">
@@ -624,8 +705,432 @@ async function runAudit() {
   btn.disabled = false;
 }
 
+// ── SETUP GUIDE ──────────────────────────────────────────────────────────────
+function buildTimeline(duration) {
+  const timelines = {
+    flash: [
+      {when:'T−2h',    action:'Announce via push notification',       channel:'Push'},
+      {when:'T−30m',   action:'Final reminder push',                  channel:'Push'},
+      {when:'T=0',     action:'Tournament opens',                     channel:'System'},
+      {when:'T+45m',   action:'Mid-tournament leaderboard update',    channel:'Email'},
+      {when:'T+1h',    action:'Tournament closes, scores freeze',     channel:'System'},
+      {when:'T+2h',    action:'Winner announcement + prize payouts',  channel:'Push + Email'},
+    ],
+    daily: [
+      {when:'T−1d',    action:'Announcement push + email',            channel:'Push + Email'},
+      {when:'T−4h',    action:'Reminder to active players',           channel:'Push'},
+      {when:'T=0',     action:'Tournament opens',                     channel:'System'},
+      {when:'T+12h',   action:'Mid-tournament leaderboard update',    channel:'Email'},
+      {when:'T+24h',   action:'Tournament closes',                    channel:'System'},
+      {when:'T+25h',   action:'Winner announcement + prize payouts',  channel:'Push + Email'},
+    ],
+    weekly: [
+      {when:'T−7d',    action:'Announce tournament',                  channel:'Email + Push'},
+      {when:'T−3d',    action:'CRM campaign to target segment',       channel:'Email + SMS'},
+      {when:'T−1d',    action:'Final reminder',                       channel:'Push'},
+      {when:'T=0',     action:'Tournament opens',                     channel:'System'},
+      {when:'T+4d',    action:'Mid-point leaderboard update',         channel:'Email'},
+      {when:'T+7d',    action:'Tournament closes',                    channel:'System'},
+      {when:'T+8d',    action:'Winner announcement + prize payouts',  channel:'Push + Email'},
+    ],
+    monthly: [
+      {when:'T−14d',   action:'Announce + teaser campaign',           channel:'Email'},
+      {when:'T−7d',    action:'CRM push to target segment',           channel:'Push + Email'},
+      {when:'T−3d',    action:'Pre-launch reminder',                  channel:'SMS + Push'},
+      {when:'T=0',     action:'Tournament opens',                     channel:'System'},
+      {when:'T+7d',    action:'Week 1 leaderboard update',            channel:'Email'},
+      {when:'T+14d',   action:'Mid-point leaderboard',                channel:'Push + Email'},
+      {when:'T+30d',   action:'Tournament closes',                    channel:'System'},
+      {when:'T+33d',   action:'Winner announcement + prize payouts',  channel:'Push + Email + Popup'},
+    ],
+    multi_round: [
+      {when:'T−7d',    action:'Announce multi-round structure',       channel:'Email + Push'},
+      {when:'T−3d',    action:'CRM campaign',                         channel:'Email'},
+      {when:'T=0',     action:'Round 1 opens',                        channel:'System'},
+      {when:'R1 end',  action:'Qualify top players → Round 2',        channel:'Push + Email'},
+      {when:'Final',   action:'Grand final round opens',              channel:'Push'},
+      {when:'Final+1d',action:'Grand winner announcement + payouts',  channel:'Push + Email + Popup'},
+    ],
+  };
+  return timelines[duration] || timelines['weekly'];
+}
+
+function buildChecklist(spec, params, result) {
+  const lic  = result.lic  || 'none';
+  const cur  = result.cur  || 'EUR';
+  const items = [];
+  // Basics
+  items.push({text:'Create tournament in backoffice / CMS platform', tag:'Required'});
+  items.push({text:'Set tournament name and promotional copy'});
+  items.push({text:'Configure start date and end date / time'});
+  items.push({text:`Set minimum bet size (house rules, e.g. ${cur} 0.20)`});
+  // Entry model
+  if (params.entry === 'buyin') {
+    items.push({text:'Configure buy-in amount and ticket issuance flow', tag:'Buy-in'});
+    items.push({text:'Set refund policy for cancelled tournaments'});
+  } else if (params.entry === 'ticket') {
+    items.push({text:'Set up ticket distribution via CRM / promotion engine', tag:'Ticket'});
+  }
+  // Eligible games
+  const gameLabel = spec.type === 'slot' ? 'slots' : spec.type === 'live' ? 'live tables' : 'slots + live games';
+  items.push({text:`Define eligible game list (${gameLabel})`});
+  items.push({text:`Set segment filter: ${params.segment || 'all'} players only`});
+  // Scoring
+  const scoringMap = {
+    total_wins:         'Enable total wins counter in leaderboard engine',
+    highest_multiplier: 'Configure per-spin / per-hand multiplier tracking',
+    most_spins:         'Enable spin count aggregation for leaderboard',
+    mission_based:      'Define mission objectives and progress tracking rules',
+  };
+  items.push({text: scoringMap[params.scoring] || 'Configure scoring algorithm', tag:'Leaderboard'});
+  items.push({text:'Set leaderboard refresh interval (recommended: 5 min)'});
+  items.push({text:'Define tiebreaker rule (e.g. first to reach score wins tie)'});
+  // Prize pool
+  if (params.poolModel === 'dynamic' || params.poolModel === 'hybrid') {
+    items.push({text:`Configure rake collection: ${params.rake || 5}% → prize pool`, tag:'Pool'});
+  }
+  items.push({text:'Fund prize pool account / escrow before launch'});
+  items.push({text:`Configure ${spec.distribution} prize distribution schema`});
+  items.push({text:'Set payout processing schedule (recommended: within 24h of end)'});
+  items.push({text:'Set prize validity period for winners (recommended: 30 days)'});
+  // Reentry
+  if (params.reentry === 'yes') {
+    items.push({text:'Configure re-entry limit and cooldown interval', tag:'Re-entry'});
+  }
+  // License compliance
+  if (lic === 'ukgc') {
+    items.push({text:'Confirm no countdown timer is visible to players', tag:'UKGC'});
+    items.push({text:'Gamstop self-exclusion check active for tournament opt-in', tag:'UKGC'});
+    items.push({text:'Add BeGambleAware link to tournament landing page', tag:'UKGC'});
+  } else if (lic === 'dga') {
+    items.push({text:'Verify prize cap ≤ 1,000 DKK per player per tournament', tag:'DGA'});
+    items.push({text:'ROFUS self-exclusion check on opt-in flow', tag:'DGA'});
+    items.push({text:'T&Cs displayed at same font size as promotional headline', tag:'DGA'});
+    items.push({text:'Add Stopspillet.dk link to tournament page', tag:'DGA'});
+  } else if (lic === 'mga') {
+    items.push({text:'Add Terms & Conditions URL to tournament page', tag:'MGA'});
+    items.push({text:'Display maximum prize amount prominently in promo copy', tag:'MGA'});
+  }
+  // QA / Notifications
+  items.push({text:'Schedule CRM notifications per launch timeline below'});
+  items.push({text:'Prepare winner announcement message (push + email)'});
+  items.push({text:'QA: test opt-in flow and leaderboard display before go-live'});
+  return items;
+}
+
+function renderSetupGuide() {
+  if (!lastResult) {
+    return `
+<div class="step-header">
+  <div class="step-badge">📋 Setup Guide</div>
+  <div class="step-title">Tournament Setup Guide</div>
+  <div class="step-sub">Generate a tournament first to see its setup guide</div>
+</div>
+<div class="card" style="text-align:center;padding:40px 20px">
+  <div style="font-size:2.5rem;margin-bottom:14px">🏆</div>
+  <div style="color:var(--muted);font-size:.88rem;margin-bottom:20px">No tournament has been generated yet.</div>
+  <button class="btn btn-primary" onclick="goStep(1)">Create a Tournament →</button>
+</div>`;
+  }
+
+  const r    = lastResult;
+  const spec = r.spec;
+  const p    = draft.params;
+  const cur  = r.cur || 'EUR';
+  const lic  = r.lic || 'none';
+
+  const checklist = buildChecklist(spec, p, r);
+  const timeline  = buildTimeline(p.duration || 'weekly');
+
+  const prizeRows = (spec.prizes || []).map(pr => `
+    <div class="prize-row">
+      <span class="prize-place">${pr.place===1?'🥇':pr.place===2?'🥈':pr.place===3?'🥉':'#'+pr.place}</span>
+      <div class="prize-bar-wrap"><div class="prize-bar" style="width:${Math.min(pr.pct*3,100)}%"></div></div>
+      <span class="prize-pct">${pr.pct}%</span>
+      <span class="prize-amt">${cur} ${pr.amount.toLocaleString()}</span>
+    </div>`).join('');
+
+  const checklistHtml = checklist.map(item => `
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <input type="checkbox" style="margin-top:2px;flex-shrink:0;accent-color:var(--accent)">
+      <span style="font-size:.82rem;flex:1">${item.text}</span>
+      ${item.tag ? `<span style="font-size:.68rem;padding:1px 7px;border-radius:6px;background:rgba(79,110,247,.15);color:#a0b0ff;white-space:nowrap">${item.tag}</span>` : ''}
+    </div>`).join('');
+
+  const timelineHtml = timeline.map(ev => `
+    <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:.73rem;font-weight:700;color:var(--accent);width:60px;flex-shrink:0">${ev.when}</span>
+      <span style="font-size:.82rem;flex:1">${ev.action}</span>
+      <span style="font-size:.73rem;color:var(--muted)">${ev.channel}</span>
+    </div>`).join('');
+
+  const licBadge = lic !== 'none' ? `<span style="font-size:.72rem;padding:1px 8px;border-radius:6px;background:rgba(245,158,11,.15);color:var(--warn);margin-left:6px">${lic.toUpperCase()}</span>` : '';
+
+  return `
+<div class="step-header">
+  <div class="step-badge">📋 Setup Guide</div>
+  <div class="step-title">${spec.type.charAt(0).toUpperCase()+spec.type.slice(1)} Tournament${licBadge}</div>
+  <div class="step-sub">${cur} ${spec.prizePool.toLocaleString()} prize pool · ${spec.distribution} · ${p.duration || 'weekly'} duration</div>
+</div>
+
+<div class="card">
+  <div class="card-title">Prize Table</div>
+  ${prizeRows}
+  <div style="margin-top:10px;font-size:.75rem;color:var(--muted)">Total pool: ${cur} ${spec.prizePool.toLocaleString()} · ${(spec.prizes||[]).length} prize places</div>
+</div>
+
+<div class="card">
+  <div class="card-title">Setup Checklist <span style="font-size:.72rem;color:var(--muted);font-weight:400">(${checklist.length} items)</span></div>
+  ${checklistHtml}
+  <div style="margin-top:10px;font-size:.75rem;color:var(--muted)">Check off items as you configure in your backoffice</div>
+</div>
+
+<div class="card">
+  <div class="card-title">Launch Timeline</div>
+  ${timelineHtml}
+</div>
+
+<div class="card" style="background:rgba(124,58,237,.06);border-color:rgba(124,58,237,.25)">
+  <div class="card-title" style="color:#c4b5fd">🤖 AI Brief</div>
+  <div style="font-size:.82rem;color:var(--muted);margin-bottom:14px">Get an AI-generated strategic analysis: key strengths, risks, operator notes, and A/B test ideas for this tournament.</div>
+  <button class="btn btn-outline btn-sm" style="border-color:rgba(124,58,237,.4);color:#c4b5fd;cursor:not-allowed;opacity:.6" disabled>
+    🤖 Generate AI Brief &nbsp;·&nbsp; Solo+ plan
+  </button>
+</div>
+
+<div class="nav-footer">
+  <button class="btn btn-outline" onclick="goStep(3)">← Back to Economics</button>
+  <button class="btn btn-primary" onclick="goStep(4)">Generate AI Texts →</button>
+</div>`;
+}
+
+// ── SAVE / DELETE ────────────────────────────────────────────────────────────
+function saveTournament() {
+  if (!lastResult) return;
+  const list = loadTournaments();
+  const existing = list.find(t =>
+    t.type === draft.type &&
+    JSON.stringify(t.params) === JSON.stringify(draft.params)
+  );
+  if (existing) { showToast('Already saved'); return; }
+  const entry = {
+    id:        genId(),
+    name:      autoName(draft.type, draft.params),
+    type:      draft.type,
+    params:    { ...draft.params },
+    spec:      lastResult.spec,
+    econ:      lastResult.econ,
+    cur:       lastResult.cur,
+    lic:       lastResult.lic,
+    region:    lastResult.region,
+    createdAt: new Date().toISOString(),
+  };
+  list.unshift(entry);
+  saveTournaments(list);
+  const btn = document.getElementById('btn-save-tournament');
+  if (btn) { btn.textContent = '✓ Saved'; btn.disabled = true; btn.style.opacity = '.5'; }
+  showToast('Tournament saved to your library');
+  updateNavBadge();
+}
+
+function deleteTournament(id) {
+  if (!confirm('Delete this tournament from your library?')) return;
+  saveTournaments(loadTournaments().filter(t => t.id !== id));
+  updateNavBadge();
+  showToast('Tournament deleted');
+  showView('list');
+}
+
+function updateNavBadge() {
+  const n  = loadTournaments().length;
+  const el = document.getElementById('nav-tourn-badge');
+  if (!el) return;
+  el.textContent = n;
+  el.style.display = n > 0 ? 'inline' : 'none';
+}
+
+function showToast(msg) {
+  let el = document.getElementById('toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'toast';
+    el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#161c2d;border:1px solid rgba(16,185,129,.35);border-radius:8px;padding:9px 16px;font-size:.83rem;color:#10b981;opacity:0;transition:opacity .25s,transform .25s;z-index:999;pointer-events:none;display:flex;align-items:center;gap:8px';
+    document.body.appendChild(el);
+  }
+  el.textContent = '✓  ' + msg;
+  el.style.opacity = '1';
+  el.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateX(-50%) translateY(20px)';
+  }, 2600);
+}
+
+// ── LIST VIEW ────────────────────────────────────────────────────────────────
+function renderList() {
+  const list = loadTournaments();
+  const typeIcon = { slot:'🎰', live:'🃏', mixed:'🎲', prize_drop:'💎' };
+  const roiColor = roi => roi >= 10 ? 'var(--success)' : roi >= 0 ? 'var(--warn)' : '#ef4444';
+
+  if (list.length === 0) {
+    return `
+<div class="step-header">
+  <div class="step-badge">🏆 Tournaments</div>
+  <div class="step-title">Your Tournament Library</div>
+  <div class="step-sub">No tournaments saved yet</div>
+</div>
+<div class="card" style="text-align:center;padding:40px 20px">
+  <div style="font-size:2.5rem;margin-bottom:14px">🏆</div>
+  <div style="color:var(--muted);font-size:.88rem;margin-bottom:20px">Generate a tournament and click "Save" to build your library.</div>
+  <button class="btn btn-primary" onclick="goStep(1)">Create a Tournament →</button>
+</div>`;
+  }
+
+  const cards = list.map(t => {
+    const roi    = t.econ?.roi ?? 0;
+    const roiStr = (roi >= 0 ? '+' : '') + roi + '%';
+    const cur    = t.cur || '';
+    const pool   = cur + ' ' + (t.spec?.prizePool || 0).toLocaleString();
+    const date   = new Date(t.createdAt).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+    const seg    = t.params?.segment || 'mid';
+    return `
+<div class="card" style="display:flex;align-items:center;gap:14px;padding:14px 16px;margin-bottom:10px">
+  <div style="width:38px;height:38px;border-radius:9px;background:rgba(79,110,247,.15);border:1px solid rgba(79,110,247,.25);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${typeIcon[t.type] || '🏆'}</div>
+  <div style="flex:1;min-width:0">
+    <div style="font-size:.88rem;font-weight:600;color:var(--text);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:.78rem;color:var(--muted)">${pool}</span>
+      <span style="font-size:.73rem;padding:1px 7px;border-radius:99px;background:rgba(16,185,129,.12);color:${roiColor(roi)}">${roiStr} ROI</span>
+      <span style="font-size:.73rem;padding:1px 7px;border-radius:99px;background:rgba(79,110,247,.12);color:#a0b0ff">${seg}</span>
+      <span style="font-size:.73rem;color:var(--muted);margin-left:auto">${date}</span>
+    </div>
+  </div>
+  <div style="display:flex;gap:7px;flex-shrink:0">
+    <button class="btn btn-outline btn-sm" onclick="showView('detail','${t.id}')">Details</button>
+    <button class="btn btn-outline btn-sm" style="border-color:rgba(124,58,237,.4);color:#c4b5fd" onclick="loadAndShowGuide('${t.id}')">📋 Guide</button>
+  </div>
+</div>`;
+  }).join('');
+
+  return `
+<div class="step-header">
+  <div class="step-badge">🏆 Tournaments</div>
+  <div class="step-title">Your Tournament Library</div>
+  <div class="step-sub">${list.length} saved tournament${list.length !== 1 ? 's' : ''}</div>
+</div>
+${cards}
+<div style="margin-top:16px;text-align:center">
+  <button class="btn btn-primary" onclick="goStep(1)">+ Create New Tournament</button>
+</div>`;
+}
+
+// ── DETAIL VIEW ──────────────────────────────────────────────────────────────
+function renderDetail(id) {
+  const t = loadTournaments().find(t => t.id === id);
+  if (!t) return `<div class="card">Tournament not found. <button class="btn btn-ghost" onclick="showView('list')">← Back</button></div>`;
+
+  const e      = t.econ || {};
+  const spec   = t.spec || {};
+  const cur    = t.cur || '';
+  const roi     = typeof e.roi === 'number' ? e.roi : Number(e.roi) || 0;
+  const roiPos  = roi >= 0;
+  const roiStr  = (roi >= 0 ? '+' : '') + roi + '%';
+
+  const prizeRows = (spec.prizes || []).map(pr => `
+    <div class="prize-row">
+      <span class="prize-place">${pr.place===1?'🥇':pr.place===2?'🥈':pr.place===3?'🥉':'#'+pr.place}</span>
+      <div class="prize-bar-wrap"><div class="prize-bar" style="width:${Math.min(pr.pct*3,100)}%"></div></div>
+      <span class="prize-pct">${pr.pct}%</span>
+      <span class="prize-amt">${cur} ${pr.amount.toLocaleString()}</span>
+    </div>`).join('');
+
+  const econRows = [
+    { label:'Expected participants', val: (e.participantsMid || 0).toLocaleString() },
+    { label:'GGR lift (expected)',   val: cur + ' ' + Math.round(e.ggrLiftMid || 0).toLocaleString() },
+    { label:'Net margin (expected)', val: (e.netMarginMid >= 0 ? '+' : '') + cur + ' ' + Math.round(Math.abs(e.netMarginMid || 0)).toLocaleString(), pos: roiPos },
+    { label:'ROI',                   val: roiStr, pos: roiPos },
+    { label:'Break-even players',    val: (e.breakEvenParticipants || '—').toLocaleString() },
+    { label:'Cost per active',       val: cur + ' ' + Math.round(e.costPerActiveMid || 0).toLocaleString() },
+  ].map(r => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:.8rem;color:var(--muted)">${r.label}</span>
+      <span style="font-size:.83rem;font-weight:600;color:${r.pos===false?'#ef4444':r.pos?'var(--success)':'var(--text)'}">${r.val}</span>
+    </div>`).join('');
+
+  const date = new Date(t.createdAt).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+
+  return `
+<div style="margin-bottom:18px">
+  <button class="btn btn-ghost btn-sm" onclick="showView('list')" style="padding:0;margin-bottom:10px">← Tournaments</button>
+  <div style="display:flex;align-items:flex-start;gap:14px">
+    <div style="width:46px;height:46px;border-radius:10px;background:rgba(79,110,247,.15);border:1px solid rgba(79,110,247,.3);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">
+      ${{ slot:'🎰', live:'🃏', mixed:'🎲', prize_drop:'💎' }[t.type] || '🏆'}
+    </div>
+    <div>
+      <div style="font-size:1.15rem;font-weight:700;color:var(--text);margin-bottom:4px">${t.name}</div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">
+        <span style="font-size:.75rem;padding:2px 8px;border-radius:99px;background:rgba(79,110,247,.15);color:#a0b0ff">${t.lic?.toUpperCase() || 'NONE'}</span>
+        <span style="font-size:.75rem;padding:2px 8px;border-radius:99px;background:rgba(79,110,247,.12);color:#a0b0ff">${t.params?.segment || 'mid'}</span>
+        <span style="font-size:.75rem;padding:2px 8px;border-radius:99px;background:rgba(79,110,247,.12);color:#a0b0ff">${t.params?.duration || ''}</span>
+        <span style="font-size:.75rem;color:var(--muted)">Saved ${date}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Economics</div>
+  ${econRows}
+</div>
+
+<div class="card">
+  <div class="card-title">Prize Distribution (${cur} ${(spec.prizePool||0).toLocaleString()} pool)</div>
+  ${prizeRows}
+</div>
+
+<div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap">
+  <button class="btn btn-outline" style="flex:1;border-color:rgba(124,58,237,.4);color:#c4b5fd" onclick="loadAndShowGuide('${t.id}')">📋 Setup Guide</button>
+  <button class="btn btn-outline" style="flex:1;border-color:rgba(79,110,247,.4);color:#a0b0ff" onclick="loadAndRegenTexts('${t.id}')">✦ AI Texts</button>
+  <button class="btn btn-outline btn-sm" style="color:var(--muted);border-color:var(--border)" onclick="deleteTournament('${t.id}')">🗑 Delete</button>
+</div>`;
+}
+
+// ── LOAD HELPERS ─────────────────────────────────────────────────────────────
+function loadAndShowGuide(id) {
+  const t = loadTournaments().find(t => t.id === id);
+  if (!t) return;
+  lastResult   = { spec: t.spec, econ: t.econ, cur: t.cur, lic: t.lic, region: t.region };
+  draft.type   = t.type;
+  draft.params = { ...t.params };
+  showView('setup');
+}
+
+function loadAndRegenTexts(id) {
+  const t = loadTournaments().find(t => t.id === id);
+  if (!t) return;
+  lastResult   = { spec: t.spec, econ: t.econ, cur: t.cur, lic: t.lic, region: t.region };
+  lastTexts    = null;
+  lastAudit    = null;
+  draft.type   = t.type;
+  draft.params = { ...t.params };
+  goStep(4);
+}
+
 // Init
-renderStep();
+updateNavBadge();
+const initialHash = window.location.hash;
+if (initialHash === '#setup') {
+  showView('setup');
+} else if (initialHash === '#list') {
+  showView('list');
+} else {
+  renderStep();
+}
+
+window.addEventListener('pageshow', function() {
+  updateNavBadge();
+});
 </script>
 </body>
 </html>

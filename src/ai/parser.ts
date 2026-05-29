@@ -17,6 +17,7 @@ const AuditCheckSchema = z.object({
   label:  z.string(),
   status: z.enum(['ok', 'warn']),
   note:   z.string(),
+  rule:   z.string().optional(),
 });
 
 const AuditResponseSchema = z.object({
@@ -82,7 +83,7 @@ const TournamentTextsResponseSchema = z.object({
 });
 
 const TournamentAuditResponseSchema = z.object({
-  checks:          z.array(z.object({ label: z.string(), status: z.enum(['ok', 'warn']), note: z.string() })).min(1),
+  checks:          z.array(z.object({ label: z.string(), status: z.enum(['ok', 'warn']), note: z.string(), rule: z.string().optional() })).min(1),
   recommendations: z.array(z.object({ text: z.string(), impact: z.string() })).min(1),
 });
 

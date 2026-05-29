@@ -102,6 +102,17 @@
   }
   .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
   .btn-lg { padding: 16px 36px; font-size: 1rem; border-radius: 12px; }
+  .nav-tool-link { font-size:.83rem;color:rgba(255,255,255,.55);text-decoration:none;padding:5px 10px;border-radius:7px;transition:all .15s;white-space:nowrap }
+  .nav-tool-link:hover { color:#fff;background:rgba(255,255,255,.08) }
+  .tools-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:0 }
+  .tool-card { background:rgba(22,28,45,.8);border:1px solid rgba(79,110,247,.2);border-radius:14px;padding:22px 20px;text-decoration:none;color:var(--text);display:flex;flex-direction:column;gap:6px;transition:all .2s;position:relative;overflow:hidden }
+  .tool-card::before { content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(79,110,247,.06),transparent 60%);pointer-events:none }
+  .tool-card:hover { border-color:rgba(79,110,247,.5);transform:translateY(-2px);box-shadow:0 8px 32px rgba(79,110,247,.15) }
+  .tool-card-icon { font-size:1.6rem;margin-bottom:4px }
+  .tool-card-name { font-weight:700;font-size:.95rem;color:#e8eaf0 }
+  .tool-card-desc { font-size:.82rem;color:var(--muted);line-height:1.5;flex:1 }
+  .tool-card-cta { font-size:.8rem;font-weight:600;color:var(--accent);margin-top:6px }
+  @media (max-width:760px) { .tools-grid{grid-template-columns:1fr} .nav-tool-link{display:none} }
   .btn-gold {
     background: linear-gradient(135deg, #f59e0b, #d97706);
     color: #000; font-weight: 700;
@@ -748,6 +759,8 @@
         <button class="lang-btn active" onclick="setLang('en')">EN</button>
         <button class="lang-btn" onclick="setLang('ru')">RU</button>
       </div>
+      <a href="/configurator.html" class="nav-tool-link" data-i18n="nav_cfg">⚙️ Configurator</a>
+      <a href="/tournament-generator.html" class="nav-tool-link" data-i18n="nav_tourn">🏆 Tournaments</a>
       <a href="/campaign-generator.html" class="btn btn-primary" data-i18n="nav_ai">🤖 AI Campaigns</a>
     </div>
   </div>
@@ -779,6 +792,7 @@
         </p>
         <div class="hero-ctas">
           <a href="/campaign-generator.html" class="btn btn-gold btn-lg" data-i18n="hero_cta1">🤖 Generate My Campaign Free →</a>
+          <a href="/tournament-generator.html" class="btn btn-outline btn-lg" data-i18n="hero_cta2">🏆 Tournament Generator →</a>
         </div>
         <div class="trust-strip">
           <div class="trust-item">⚡ <span data-i18n="tr1">Ready in 2 min</span></div>
@@ -943,6 +957,32 @@
       </div><!-- /hero-visual -->
 
     </div><!-- /hero-layout -->
+  </div>
+</section>
+
+<!-- ════ TOOLS HUB ════ -->
+<section id="tools" style="padding:48px 0 0">
+  <div class="container">
+    <div class="tools-grid">
+      <a href="/campaign-generator.html" class="tool-card">
+        <div class="tool-card-icon">🚀</div>
+        <div class="tool-card-name" data-i18n="t1_name">AI Campaign Generator</div>
+        <div class="tool-card-desc" data-i18n="t1_desc">5-channel CRM copy + economics in 2 min</div>
+        <div class="tool-card-cta" data-i18n="t_try">Try →</div>
+      </a>
+      <a href="/configurator.html" class="tool-card">
+        <div class="tool-card-icon">⚙️</div>
+        <div class="tool-card-name" data-i18n="t2_name">Bonus Configurator</div>
+        <div class="tool-card-desc" data-i18n="t2_desc">P10/P50/P90 cost model, live recalc</div>
+        <div class="tool-card-cta" data-i18n="t_try">Try →</div>
+      </a>
+      <a href="/tournament-generator.html" class="tool-card">
+        <div class="tool-card-icon">🏆</div>
+        <div class="tool-card-name" data-i18n="t3_name">Tournament Generator</div>
+        <div class="tool-card-desc" data-i18n="t3_desc">Prize structure, economics, setup guide</div>
+        <div class="tool-card-cta" data-i18n="t_try">Try →</div>
+      </a>
+    </div>
   </div>
 </section>
 
@@ -1519,6 +1559,12 @@
 const LANG = {
   en: {
     nav_ai: '🤖 AI Campaigns',
+    nav_cfg: '⚙️ Configurator', nav_tourn: '🏆 Tournaments',
+    hero_cta2: '🏆 Tournament Generator →',
+    t1_name: 'AI Campaign Generator', t1_desc: '5-channel CRM copy + economics in 2 min',
+    t2_name: 'Bonus Configurator',    t2_desc: 'P10/P50/P90 cost model, live recalc',
+    t3_name: 'Tournament Generator',  t3_desc: 'Prize structure, economics, setup guide',
+    t_try: 'Try →',
     badge: 'Compliance-Ready Bonus Platform for iGaming',
     hero_h1a: 'Stop Configuring Bonuses in Spreadsheets.',
     hero_h1b: 'AI Does It — Compliant, Costed, Ready to Start.',
@@ -1667,6 +1713,12 @@ const LANG = {
   },
   ru: {
     nav_ai: '🤖 AI Кампании',
+    nav_cfg: '⚙️ Конфигуратор', nav_tourn: '🏆 Турниры',
+    hero_cta2: '🏆 Генератор Турниров →',
+    t1_name: 'AI-генератор кампаний',  t1_desc: 'Тексты для 5 каналов + экономика за 2 мин',
+    t2_name: 'Конфигуратор бонусов',   t2_desc: 'Модель P10/P50/P90, пересчёт в реальном времени',
+    t3_name: 'Генератор турниров',     t3_desc: 'Структура призов, экономика, гайд по запуску',
+    t_try: 'Открыть →',
     badge: 'Compliance-Ready платформа бонусов для iGaming',
     hero_h1a: 'Хватит настраивать бонусы в таблицах.',
     hero_h1b: 'AI сделает это — соответствие, экономика, готово к старту.',
