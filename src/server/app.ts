@@ -10,12 +10,16 @@ import tournamentRoutes      from '../routes/tournament.routes.js';
 import signupRoutes          from '../routes/signup.routes.js';
 import healthRoutes          from '../routes/health.routes.js';
 import { errorMiddleware }   from '../middleware/errors.js';
+import { requestId }        from '../middleware/requestId.js';
 import { logger }            from '../utils/logger.js';
+import { ENV }               from '../config/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 
 const app = express();
+
+app.use(requestId);
 
 app.use(helmet({
   contentSecurityPolicy: {
@@ -41,7 +45,7 @@ const httpLogger = (_pinoHttp as unknown as (opts: unknown) => RequestHandler)({
 });
 app.use(httpLogger);
 
-if (process.env.NODE_ENV === 'staging') {
+if (ENV.NODE_ENV === 'staging') {
   app.use((_req, res, next) => {
     res.setHeader('X-Environment', 'staging');
     // Equivalent to <meta name="robots" content="noindex"> — prevents search engine indexing
