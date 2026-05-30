@@ -8,10 +8,10 @@ export interface ForecastSnapshot {
 }
 
 export interface ActualData {
-  cost:        number;  // actual campaign cost in sitecur
+  cost:        number;  // actual campaign cost — must be in the same currency as forecastSnapshot.sP50.cost (sitecur)
   activations: number;  // players who received bonus
   conversions: number;  // players who completed wagering
-  revenue3m:   number;  // actual 3-month incremental revenue in USD
+  revenue3m:   number;  // actual 3-month incremental revenue in USD (matches ltv3 benchmark currency)
 }
 
 export interface CampaignComparison {
@@ -29,10 +29,12 @@ export interface CampaignComparison {
   revVariance:    number;
   revVariancePct: number;
 
-  forecastRoi:    number;   // net / cost
+  // NOTE: ROI mixes cost (sitecur) and revenue (USD). Only meaningful for USD/EUR geos
+  // where the difference is negligible. For RUB/KZT/MNT treat as directional only.
+  forecastRoi:    number;   // (forecastRev_usd - forecastCost_sitecur) / forecastCost_sitecur
   actualRoi:      number;
 
-  accuracy: 'good' | 'ok' | 'poor';  // |costVariancePct| < 15% = good, < 30% = ok
+  accuracy: 'good' | 'ok' | 'poor';  // classified by |costVariancePct|: <15% good, <30% ok
 }
 
 export function compareCampaign(
