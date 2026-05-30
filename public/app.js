@@ -1163,7 +1163,7 @@ function recalcEcon(){
       const overrideWager = gv('ov_w_wager', E.wagerX);
       const v = _calcRetentionV2(cfg, overrideWager);
       // Use acqCostRatio (welcome+NDB only) — reload is ongoing loyalty cost, not acquisition
-      const campCost3 = Math.round(3 * (data.ratio || E.acqCostRatio ?? E.costRatio) * E.pl * E.arpu);
+      const campCost3 = Math.round(3 * (data.ratio || (E.acqCostRatio ?? E.costRatio)) * E.pl * E.arpu);
       const incrPl  = Math.round(E.pl * v.lift);
       const incrRev = Math.round(incrPl * (E.ltv3 || 0));
       const netIncr = incrRev - campCost3;

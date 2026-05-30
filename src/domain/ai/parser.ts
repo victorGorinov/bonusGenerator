@@ -21,7 +21,7 @@ export function tryRepairJSON(s: string): unknown {
     if (inStr) repaired += '"';
     for (let i = opens.length - 1; i >= 0; i--) repaired += opens[i];
     return JSON.parse(repaired) as unknown;
-  } catch (_) { return null; }
+  } catch { return null; }
 }
 
 export function parseAI(text: string): unknown {

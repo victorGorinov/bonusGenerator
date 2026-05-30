@@ -25,8 +25,9 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      // inline scripts and onclick handlers exist in HTML files; remove once migrated to external files
-      scriptSrc:     ["'self'", "'unsafe-inline'"],
+      // All JS is now in external files — 'unsafe-inline' no longer needed for scriptSrc.
+      // scriptSrcAttr kept for onclick="..." handlers; remove when converted to addEventListener.
+      scriptSrc:     ["'self'"],
       scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc:      ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       fontSrc:       ["'self'", 'https://fonts.gstatic.com'],
