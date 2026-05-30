@@ -33,3 +33,5 @@ export const TournamentAuditSchema = z.object({
 });
 
 export type TournamentGenerateInput = z.infer<typeof TournamentGenerateSchema>;
+export type TournamentTextsInput    = z.infer<typeof TournamentTextsSchema>;
+export type TournamentAuditInput    = z.infer<typeof TournamentAuditSchema>;

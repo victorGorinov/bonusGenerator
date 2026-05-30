@@ -35,3 +35,5 @@ export const OptimizeSchema = z.object({
   economics:  EconomicsSchema,
   uiLang:     z.string().optional(),
 });
+
+export type OptimizeInput = z.infer<typeof OptimizeSchema>;

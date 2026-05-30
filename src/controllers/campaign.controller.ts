@@ -1,4 +1,4 @@
-import { type Request, type Response, type NextFunction } from 'express';
+import { asyncHandler }                  from '../middleware/asyncHandler.js';
 import { buildTextsPrompt }              from '../ai/prompts/texts.prompt.js';
 import { buildAuditPrompt }              from '../ai/prompts/audit.prompt.js';
 import { buildOptimizePrompt }           from '../ai/prompts/optimize.prompt.js';
@@ -6,55 +6,40 @@ import { generate as aiGenerate }        from '../ai/providers/anthropic.js';
 import { parseTextsResponse, parseAuditResponse, parseOptimizeResponse } from '../ai/parser.js';
 import * as campaignService              from '../services/campaign.service.js';
 import { AIProviderError }               from '../errors/AIProviderError.js';
+import type { CampaignGenerateInput }    from '../validation/campaign.schema.js';
+import type { TextsInput }               from '../validation/texts.schema.js';
+import type { AuditInput }               from '../validation/audit.schema.js';
+import type { OptimizeInput }            from '../validation/optimize.schema.js';
 
-export function generate(req: Request, res: Response, next: NextFunction): void {
-  const { scenario, params } = req.body as { scenario?: Record<string, unknown>; params?: Record<string, unknown> };
-  try {
+export const generate = asyncHandler<Record<string, never>, unknown, CampaignGenerateInput>(
+  async (req, res) => {
+    const { scenario, params } = req.body;
     res.json(campaignService.generateCampaign({ scenario, params }));
-  } catch (err) {
-    next(err);
-  }
-}
+  },
+);
 
-export async function texts(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const { scenario, mechanic, mechanicType, params } = req.body as Record<string, unknown>;
-  try {
-    const prompt = buildTextsPrompt({
-      scenario: scenario as { lbl?: string } | null,
-      mechanic: mechanic as Record<string, unknown> | null,
-      mechanicType: mechanicType as string | undefined,
-      params: params as { geo: string; lang?: string; tone?: string; segment?: string; lic?: string },
-    });
+export const texts = asyncHandler<Record<string, never>, unknown, TextsInput>(
+  async (req, res) => {
+    const { scenario, mechanic, mechanicType, params } = req.body;
+    const prompt = buildTextsPrompt({ scenario, mechanic, mechanicType, params });
     const raw = await aiGenerate(prompt, { maxTokens: 4096 });
     res.json(parseTextsResponse(raw));
-  } catch (err) {
-    next(err instanceof AIProviderError ? err : new AIProviderError((err instanceof Error ? err.message : String(err)) || 'AI generation failed'));
-  }
-}
+  },
+);
 
-export async function audit(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const { scenario, mechanic, mechanicType, params, uiLang } = req.body as Record<string, unknown>;
-  try {
-    const prompt = buildAuditPrompt({
-      scenario: scenario as { lbl?: string } | null,
-      mechanic: mechanic as Record<string, unknown> | null,
-      mechanicType: mechanicType as string | undefined,
-      uiLang: uiLang as string | undefined,
-      params: params as { geo: string; lang?: string; segment?: string; risk?: string; lic?: string },
-    });
+export const audit = asyncHandler<Record<string, never>, unknown, AuditInput>(
+  async (req, res) => {
+    const { scenario, mechanic, mechanicType, uiLang, params } = req.body;
+    const prompt = buildAuditPrompt({ scenario, mechanic, mechanicType, uiLang, params });
     const raw = await aiGenerate(prompt, { maxTokens: 900 });
     res.json(parseAuditResponse(raw));
-  } catch (err) {
-    next(err instanceof AIProviderError ? err : new AIProviderError((err instanceof Error ? err.message : String(err)) || 'Audit failed'));
-  }
-}
+  },
+);
 
-export async function optimize(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
+export const optimize = asyncHandler<Record<string, never>, unknown, OptimizeInput>(
+  async (req, res) => {
     const prompt = buildOptimizePrompt(req.body);
     const raw = await aiGenerate(prompt, { maxTokens: 1000 });
     res.json(parseOptimizeResponse(raw));
-  } catch (err) {
-    next(err instanceof AIProviderError ? err : new AIProviderError((err instanceof Error ? err.message : String(err)) || 'Optimize failed'));
-  }
-}
+  },
+);
