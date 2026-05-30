@@ -367,6 +367,10 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     <span class="topbar-sep">·</span>
     <span class="topbar-sub" id="tb-sub">AI Campaign Generator</span>
     <div class="topbar-right" id="tb-right"></div>
+    <button onclick="toggleGlossary()" title="Glossary"
+      style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);width:28px;height:28px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s"
+      onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+      onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">?</button>
     <div class="lang-toggle">
       <button class="lt-btn active" id="lt-ru" onclick="setUILang('ru')">RU</button>
       <button class="lt-btn" id="lt-en" onclick="setUILang('en')">EN</button>
@@ -643,6 +647,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
           <div class="wiz-foot">
             <div class="wiz-foot-l"><button class="btn btn-outline" onclick="goStep(2)" data-i18n="btn_back">← Назад</button><span class="step-ctr" data-step="3">Шаг 3 из 5</span></div>
             <div class="wiz-foot-r">
+              <button class="btn btn-outline btn-sm" onclick="exportCampaignPDF()" data-i18n="btn_export_pdf">⬇ PDF</button>
               <button class="btn btn-primary" onclick="goStep(4)" data-i18n="btn_to_texts">Тексты и аудит →</button>
             </div>
           </div>
@@ -667,12 +672,20 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
             <div style="background:rgba(79,110,247,.08);border:1px solid rgba(79,110,247,.2);border-radius:8px;padding:9px 14px;margin-bottom:12px;font-size:.78rem;color:#a0b0ff;display:flex;align-items:center;gap:8px">
               <span>✦</span><span data-i18n="ai_draft_note">AI draft — review before sending. Verify regulatory strings match your platform's T&Cs.</span>
             </div>
-            <div class="ch-tabs" id="chTabs">
-              <button class="ch-tab active" onclick="switchCh('push',this)">📲 Push</button>
-              <button class="ch-tab" onclick="switchCh('email',this)">✉️ Email</button>
-              <button class="ch-tab" onclick="switchCh('sms',this)">💬 SMS</button>
-              <button class="ch-tab" onclick="switchCh('telegram',this)">✈️ Telegram</button>
-              <button class="ch-tab" onclick="switchCh('popup',this)">💡 Popup</button>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:0">
+              <div class="ch-tabs" id="chTabs" style="border-bottom:none;margin-bottom:0">
+                <button class="ch-tab active" onclick="switchCh('push',this)">📲 Push</button>
+                <button class="ch-tab" onclick="switchCh('email',this)">✉️ Email</button>
+                <button class="ch-tab" onclick="switchCh('sms',this)">💬 SMS</button>
+                <button class="ch-tab" onclick="switchCh('telegram',this)">✈️ Telegram</button>
+                <button class="ch-tab" onclick="switchCh('popup',this)">💡 Popup</button>
+              </div>
+              <button id="copy-all-btn" onclick="copyAllChannel()" data-ch="push"
+                style="font-size:.72rem;padding:3px 9px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0;margin-bottom:2px;transition:all .15s"
+                onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+                onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+                ⎘ <span data-i18n="copy_all">Copy all</span>
+              </button>
             </div>
             <div id="ch-push"     class="ch-content active"></div>
             <div id="ch-email"    class="ch-content"></div>
@@ -694,7 +707,10 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 
         <div class="wiz-foot">
           <div class="wiz-foot-l"><button class="btn btn-outline" onclick="goStep(3)" data-i18n="btn_back">← Назад</button><span class="step-ctr" data-step="4">Шаг 4 из 5</span></div>
-          <div class="wiz-foot-r"><button class="btn btn-primary" id="s4next" onclick="goStep(5)" disabled data-i18n="btn_to_export">Экспорт →</button></div>
+          <div class="wiz-foot-r">
+            <button class="btn btn-outline btn-sm" onclick="exportCampaignPDF()" data-i18n="btn_export_pdf">⬇ PDF</button>
+            <button class="btn btn-primary" id="s4next" onclick="goStep(5)" disabled data-i18n="btn_to_export">Экспорт →</button>
+          </div>
         </div>
       </div>
 
@@ -787,6 +803,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
         <button class="dtab" onclick="switchDTab('texts',this)" data-i18n="det_tab_texts">Тексты</button>
         <button class="dtab" onclick="switchDTab('audit',this)" data-i18n="det_tab_audit">Аудит</button>
         <button class="dtab" onclick="switchDTab('export',this)" data-i18n="det_tab_export">Экспорт</button>
+        <button class="dtab" onclick="switchDTab('analytics',this)" data-i18n="det_tab_analytics">📊 Факт</button>
       </div>
       <div class="det-body" id="det-body"></div>
     </div><!-- /view-campaign-detail -->

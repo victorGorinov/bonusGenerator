@@ -141,6 +141,10 @@ const LANG = {
     rtip_cost_ratio:'Стоимость бонусной кампании к сумме депозитов. < 0.10 — слишком дёшево. 0.10–0.20 — рабочий диапазон. 0.20–0.35 — риск. > 0.35 — нужно удешевить.',
     rtip_max_risk:'Потолок обязательств: если 100% игроков активируют бонус и никто не вейджерит. Это не ожидаемые затраты — это максимально возможный объём.',
     rtip_arpu:'Средняя выручка с активного игрока в месяц. Региональный бенчмарк в USD, не зависит от локальной валюты.',
+    rtip_p10:'P10 — оптимистичный сценарий: только 10% исходов лучше. Мало игроков доходит до конца вейджера.',
+    rtip_p50:'P50 — базовый сценарий (медиана). Используйте для бюджетного планирования.',
+    rtip_p90:'P90 — пессимистичный сценарий: только 10% исходов хуже. Максимальный риск выплат.',
+    rtip_breakeven_wager:'Вейджер, при котором ожидаемые выплаты равны размеру бонуса. Wager > breakeven = оператор в плюсе. Wager ≤ breakeven = повышенный риск.',
     rtip_ltv3:'Суммарная выручка с одного игрока за 3 месяца: LTV 3 мес = ARPU × 3. Показывает, сколько в среднем принесёт привлечённый игрок за первый квартал жизни в продукте. Используется для оценки окупаемости CAC и целесообразности бонусного бюджета.',
     rtip_cac:'Стоимость привлечения одного игрока через бонусный канал. Региональный бенчмарк в USD.',
     rtip_scenario:'E[max(0,X)], где X — банкролл игрока после отыгрыша. μ = B×(1 − W/BE) — ожидаемый остаток; σ = √(W×B/WCR) — дисперсия банкролла (ЦПТ). Стоимость кампании = E[payout]×conv×n. Ниже breakeven ≈ μ×conv×n; выше — плавно убывает к нулю без скачка.',
@@ -191,6 +195,8 @@ const LANG = {
     cfg_audit_not_run:'Нажмите для запуска AI-аудита соответствия текущей конфигурации',
     cfg_audit_error:'Ошибка аудита: ',
     cfg_hint:'Выберите регион и нажмите «Сгенерировать» — получите полную спеку бонуса с моделью затрат P10/P50/P90 и прогнозом инкрементального дохода.',
+    stale_banner:'Параметры изменились — нажмите «Сгенерировать» для обновления',
+    stale_btn:'Сгенерировать ↻',
     cg_best:'Лучший случай', cg_expected:'Ожидаемый', cg_worst:'Худший случай',
     cg_cost_per_bonus:'Стоимость / игрок', cg_dep_load:'Нагрузка на деп.', cg_wager_compl:'Завершение вейджера',
     rtip_cg_cpb:'Средняя выплата на одного активировавшего игрока = бюджет кампании / (N × конверсия)',
@@ -208,6 +214,13 @@ const LANG = {
     rtip_incr_rev:'Дополнительная выручка за 3 месяца от игроков, которых удержал бонус: incremental_players × LTV 3 мес. Региональный бенчмарк в USD.',
     rtip_incr_net:'Чистый доход от кампании: доп. выручка минус бонусные выплаты за 3 месяца (costRatio × игроков × ARPU). Положительное значение = кампания окупается.',
     incr_disclaimer:'Оценка на основе бенчмарков. Реальные результаты зависят от качества продукта, CRM и аудитории.',
+    model_assumptions_show:'Допущения модели ▾', model_assumptions_hide:'Скрыть ▴',
+    ma_base:'База: Новые 25% · Средние 18% · VIP 12%', ma_cap:'Потолок лифта: max 40%',
+    ma_f1:'F1 Вейджер: score>1 когда beW<wagerX (player-friendly)',
+    ma_f2:'F2 Щедрость: нейтрально при 50% match, +15% при 100%',
+    ma_f3:'F3 Механики: +6% NDB, +8% Reload, +7% Cashback, +4% Dep2, +4% FS',
+    ma_f4:'F4 RTP: диапазон 85%–99%, центр 92%', ma_f5:'F5 Платформа: Mobile +5%, Desktop −3%, Both 0%',
+    ma_arpu:'ARPU бенчмарк (гео):',
     btn_ai_optimize:'🤖 Рекомендации AI', ai_opt_loading:'AI анализирует параметры…',
     ai_opt_title:'Рекомендации по оптимизации', ai_opt_impact_high:'Высокий', ai_opt_impact_med:'Средний', ai_opt_impact_low:'Низкий',
     ai_opt_err:'Не удалось получить рекомендации. Попробуйте ещё раз.',
@@ -349,6 +362,10 @@ const LANG = {
     rtip_cost_ratio:'Bonus cost as a share of total deposits. <0.10 = too cheap. 0.10–0.20 = working range. 0.20–0.35 = risky. >0.35 = reduce the offer.',
     rtip_max_risk:'Max obligation if 100% of players activate and no one wagers. This is a ceiling exposure, not the expected actual cost.',
     rtip_arpu:'Average revenue per active player per month. Regional USD benchmark, independent of local currency.',
+    rtip_p10:'P10 — optimistic scenario: only 10% of outcomes are better. Few players complete wagering.',
+    rtip_p50:'P50 — base scenario (median). Use for budget planning.',
+    rtip_p90:'P90 — pessimistic scenario: only 10% of outcomes are worse. Maximum payout risk.',
+    rtip_breakeven_wager:'Wager at which expected payouts equal bonus size. Wager > breakeven = operator profitable. Wager ≤ breakeven = elevated risk.',
     rtip_ltv3:'Total revenue from one player over 3 months: LTV 3mo = ARPU × 3. Shows how much an acquired player brings on average during their first quarter. Used to assess CAC payback period and the viability of the bonus budget.',
     rtip_cac:'Cost to acquire one player through the bonus channel. Regional USD benchmark.',
     rtip_scenario:'E[max(0,X)] where X is the player bankroll after wagering. μ = B×(1 − W/BE) — expected balance; σ = √(W×B/WCR) — CLT bankroll volatility. Campaign cost = E[payout]×conv×n. Below breakeven ≈ μ×conv×n; above — decays smoothly to zero.',
@@ -395,6 +412,8 @@ const LANG = {
     cfg_audit_impact:'Impact', cfg_audit_recs:'Recommendations',
     cfg_audit_not_run:'Click to run an AI compliance audit on the current configuration',
     cfg_hint:'Choose a region and click Generate to get a full bonus spec with P10/P50/P90 cost model and incremental revenue forecast.',
+    stale_banner:'Parameters changed — click Generate to update economics',
+    stale_btn:'Generate ↻',
     cfg_audit_error:'Audit error: ',
     cg_best:'Best Case', cg_expected:'Expected', cg_worst:'Worst Case',
     cg_cost_per_bonus:'Cost / player', cg_dep_load:'Deposit load', cg_wager_compl:'Wager completion',
@@ -413,6 +432,13 @@ const LANG = {
     rtip_incr_rev:'Additional revenue over 3 months from players retained by the bonus: incremental_players × LTV 3 mo. Regional USD benchmark.',
     rtip_incr_net:'Net campaign return: additional revenue minus 3-month bonus payouts (costRatio × players × ARPU). Positive = campaign pays off.',
     incr_disclaimer:'Estimate based on industry benchmarks. Actual results depend on product quality, CRM execution, and audience profile.',
+    model_assumptions_show:'Model assumptions ▾', model_assumptions_hide:'Collapse ▴',
+    ma_base:'Base lift: New 25% · Mid 18% · VIP 12%', ma_cap:'Lift cap: max 40%',
+    ma_f1:'F1 Wager: score>1 when beW<wagerX (player-friendly)',
+    ma_f2:'F2 Generosity: neutral at 50% match, +15% at 100%',
+    ma_f3:'F3 Mechanics: +6% NDB, +8% Reload, +7% Cashback, +4% Dep2, +4% FS',
+    ma_f4:'F4 RTP: range 85%–99%, centred at 92%', ma_f5:'F5 Platform: Mobile +5%, Desktop −3%, Both 0%',
+    ma_arpu:'ARPU benchmark (geo):',
     btn_ai_optimize:'🤖 AI Recommendations', ai_opt_loading:'AI is analysing parameters…',
     ai_opt_title:'Optimisation Recommendations', ai_opt_impact_high:'High', ai_opt_impact_med:'Medium', ai_opt_impact_low:'Low',
     ai_opt_err:'Could not get recommendations. Please try again.',
@@ -905,6 +931,7 @@ function pickCountry(el) {
   if (hintEl) hintEl.textContent = '— ' + t('hint_' + code);
   const euHint = document.getElementById('eu-country-hint');
   if (euHint) euHint.textContent = t('eu_ctry_hint_' + code);
+  checkStale();
 }
 
 function pickRegion(r){
@@ -943,11 +970,26 @@ function pickRegion(r){
   document.getElementById('plbl').textContent = '';
 }
 
+function captureGenerateState(){
+  return JSON.stringify({
+    region: S.region, players: S.players, sitecur: S.sitecur,
+    depcur: S.depcur, avgdep: S.avgdep, plat: S.plat,
+    lic: S.lic, rtp: S.rtp, segment: S.segment,
+  });
+}
+window._lastGenerateState = null;
+function checkStale(){
+  if(!window._lastCfg || !window._lastGenerateState) return;
+  const banner = document.getElementById('stale-banner');
+  if(banner) banner.style.display = captureGenerateState() !== window._lastGenerateState ? 'flex' : 'none';
+}
+
 function syncR(k){
   const v = parseInt(document.getElementById(k+'range').value);
   document.getElementById(k+'num').value = v;
   document.getElementById(k+'dsp').textContent = v.toLocaleString('ru');
   S[k==='p'?'players':k] = v;
+  checkStale();
 }
 function syncN(k){
   const v = parseInt(document.getElementById(k+'num').value)||0;
@@ -955,6 +997,7 @@ function syncN(k){
   if(rng) rng.value = Math.min(v, parseInt(rng.max));
   document.getElementById(k+'dsp').textContent = v.toLocaleString('ru');
   S[k==='p'?'players':k] = v;
+  checkStale();
 }
 
 function pickChip(el){
@@ -962,6 +1005,7 @@ function pickChip(el){
   document.querySelectorAll(`.chip[data-g="${g}"]`).forEach(c=>c.classList.remove('on'));
   el.classList.add('on');
   S[g] = el.dataset.v;
+  checkStale();
 }
 function setChip(g, v){
   document.querySelectorAll(`.chip[data-g="${g}"]`).forEach(c=>{
@@ -1031,6 +1075,9 @@ async function generate(){
   document.getElementById('out').style.display='block';
   window._lastCfg = cfg;
   window._lastCfg._country = S.country || null;
+  window._lastGenerateState = captureGenerateState();
+  const staleBanner = document.getElementById('stale-banner');
+  if (staleBanner) staleBanner.style.display = 'none';
   document.getElementById('out').innerHTML = render(cfg);
   recalcEcon();
   // On mobile: auto-scroll to results after generation
@@ -1411,6 +1458,22 @@ function _buildIncrRevBody(cfg, v) {
     ${pr(t('p_camp_cost_3'), fmtU(campCost3), 'gd', 'incr_camp_cost3')}
     ${prt(t('p_incr_net'), (netIncr>=0?'+':'−')+fmtU(netIncr), netCls, t('rtip_incr_net'), 'incr_net')}
     <div style="font-size:9.5px;color:var(--muted);margin-top:5px;font-style:italic">* ${t('incr_disclaimer')}</div>
+    <div style="margin-top:8px">
+      <button onclick="(function(b){var d=document.getElementById('model-assumptions-cfg');if(!d)return;var open=d.style.display!=='none';d.style.display=open?'none':'';b.textContent=open?'ℹ '+t('model_assumptions_show'):'ℹ '+t('model_assumptions_hide');}).call(this)"
+        style="font-size:9px;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;font-family:inherit">
+        ℹ ${t('model_assumptions_show')}
+      </button>
+      <div id="model-assumptions-cfg" style="display:none;margin-top:6px;font-size:9px;color:var(--muted);background:rgba(255,255,255,.03);border-radius:6px;padding:7px 9px;line-height:1.7">
+        ${t('ma_base')}<br>
+        ${t('ma_cap')}<br>
+        ${t('ma_f1')}<br>
+        ${t('ma_f2')}<br>
+        ${t('ma_f3')}<br>
+        ${t('ma_f4')}<br>
+        ${t('ma_f5')}<br>
+        ${t('ma_arpu')} ${E.arpu} USD/mo
+      </div>
+    </div>
     ${netIncr < 0 ? `
     <div id="incr_ai_btn_wrap" style="margin-top:10px">
       <button onclick="_runOptimize(this)"
@@ -1719,7 +1782,7 @@ function render(c){
     ${pr(t('p_bonus_size'), fmtBonusCur(E.bonusSize), 'hi')}
     ${prt(t('p_mixed_rtp'), fmtRatio(E.mixedRTP), '', t('rtip_mixed_rtp'))}
     ${prt(t('p_mixed_wcr'), fmtRatio(E.mixedWCR), '', t('rtip_mixed_wcr'))}
-    ${pr('Breakeven wager', E.breakeven_wager+'× (admin: '+E.wagerX+'×)', E.over_breakeven?'rd':'gn')}
+    ${prt(t('p_breakeven'), E.breakeven_wager+'× (admin: '+E.wagerX+'×)', E.over_breakeven?'rd':'gn', t('rtip_breakeven_wager'))}
   </div>`;
 
   // Метка модели: Truncated Normal (единая модель) + авто-подбор вейджера
@@ -1830,9 +1893,9 @@ function renderCGEconCards(E, cur, r) {
   }
 
   const cards = `<div class="eg" style="padding:10px 14px 8px;gap:8px;align-items:stretch">
-    ${cgCard(t('cg_best'),     E.sP10, '#64748B', 'econ_cost_p10', 'p10')}
-    ${cgCard(t('cg_expected'), E.sP50, '#2563EB', 'econ_cost_p50', 'p50')}
-    ${cgCard(t('cg_worst'),    E.sP90, '#DC2626', 'econ_cost_p90', 'p90')}
+    ${cgCard(`<span class="tip" data-tip="${t('rtip_p10')}">${t('cg_best')}</span>`,     E.sP10, '#64748B', 'econ_cost_p10', 'p10')}
+    ${cgCard(`<span class="tip" data-tip="${t('rtip_p50')}">${t('cg_expected')}</span>`, E.sP50, '#2563EB', 'econ_cost_p50', 'p50')}
+    ${cgCard(`<span class="tip" data-tip="${t('rtip_p90')}">${t('cg_worst')}</span>`,    E.sP90, '#DC2626', 'econ_cost_p90', 'p90')}
   </div>`;
 
   const mn = E.sP10.cost, mx = E.sP90.cost, md = E.sP50.cost;

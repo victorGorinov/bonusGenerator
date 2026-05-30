@@ -387,7 +387,10 @@ function renderEconScenarios(econ, _unused, _unused2, cur, lang, fullData) {
       ${badge ? `<div class="econ-scenario-badge">${L.badge}</div>` : ''}
       <div class="econ-scenario-header">
         <span class="econ-scenario-icon">${icon}</span>
-        <span class="econ-scenario-label">${label}</span>
+        <div>
+          <span class="econ-scenario-label">${label}</span>
+          <div style="font-size:.65rem;color:var(--muted);margin-top:1px">${isRu?'конверсия':'conv.'} ${Math.round(conv * 100)}%</div>
+        </div>
       </div>
       <div class="econ-scenario-cost">${fmt(cost)}</div>
       <div class="econ-scenario-sub">${L.total}</div>
@@ -493,8 +496,8 @@ function renderEconScenarios(econ, _unused, _unused2, cur, lang, fullData) {
         const platF   = { mobile:1.05, desk:0.97, both:1.0 }[platKey] || 1.0;
 
         const lift    = Math.min(0.40, base * wagF * genF * mechF * rtpF * platF);
-        // Use slider value if user changed it since last generate; fall back to econ.pl
         const activePl  = (draft?.params?.players && draft.params.players >= 100) ? draft.params.players : (econ.pl || pl);
+        const isStale   = activePl !== (econ.pl || pl);
         const incrPl    = Math.round(activePl * lift);
         const incrRev   = Math.round(incrPl * (econ.ltv3 || 0));
         const campCost3 = Math.round(3 * (econ.acqCostRatio ?? econ.costRatio ?? 0) * activePl * econ.arpu);
@@ -553,9 +556,10 @@ function renderEconScenarios(econ, _unused, _unused2, cur, lang, fullData) {
 
         return `
           <div style="margin-top:14px;padding:12px;background:rgba(16,185,129,0.05);border-radius:10px;border:1px solid rgba(16,185,129,0.18)">
-            <div style="font-size:11px;font-weight:700;color:#10b981;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+            <div style="font-size:11px;font-weight:700;color:#10b981;margin-bottom:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
               ${L2.title}
               <span style="padding:1px 7px;border-radius:4px;font-size:9px;background:rgba(79,110,247,.18);color:#a0b0ff;font-weight:700">${segLbl}</span>
+              ${isStale ? `<span id="incr-stale" style="font-size:.7rem;padding:1px 7px;border-radius:99px;background:rgba(245,158,11,.15);color:#f59e0b">↻ ${isRu?'обновите прогноз':'regenerate for updated forecast'}</span>` : ''}
             </div>
             <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:6px 8px;margin-bottom:8px">
               ${fRow(L2.base + ` (${(base*100).toFixed(0)}%)`, '', '#a0b0ff', '')}
@@ -577,6 +581,22 @@ function renderEconScenarios(econ, _unused, _unused2, cur, lang, fullData) {
               <span class="mr-v" style="color:${netCol};font-weight:700;font-size:13px">${netIncr>=0?'+':'−'}${fmtU(netIncr)} ~USD</span>
             </div>
             <div style="font-size:9.5px;color:#8892a4;margin-top:6px;font-style:italic">* ${L2.disc}</div>
+            <div style="margin-top:8px">
+              <button onclick="(function(b){var d=document.getElementById('model-assumptions-cg');if(!d)return;var open=d.style.display!=='none';d.style.display=open?'none':'';b.textContent=open?'ℹ '+(${JSON.stringify(isRu?'Допущения модели ▾':'Model assumptions ▾')}): 'ℹ '+(${JSON.stringify(isRu?'Скрыть ▴':'Collapse ▴')});}).call(this)"
+                style="font-size:9px;color:#8892a4;background:none;border:none;cursor:pointer;padding:0;font-family:inherit">
+                ℹ ${isRu?'Допущения модели ▾':'Model assumptions ▾'}
+              </button>
+              <div id="model-assumptions-cg" style="display:none;margin-top:6px;font-size:9px;color:#8892a4;background:rgba(255,255,255,.03);border-radius:6px;padding:7px 9px;line-height:1.7">
+                ${isRu?'База: Новые 25% · Средние 18% · VIP 12%':'Base lift: New 25% · Mid 18% · VIP 12%'}<br>
+                ${isRu?'Потолок лифта: max 40%':'Lift cap: max 40%'}<br>
+                ${isRu?'F1 Вейджер: score>1 когда beW<wagerX':'F1 Wager: score>1 when beW<wagerX'}<br>
+                ${isRu?'F2 Щедрость: нейтрально при 50% match':'F2 Generosity: neutral at 50% match'}<br>
+                ${isRu?'F3 Механики: +6% NDB, +8% Reload, +7% Cashback':'F3 Mechanics: +6% NDB, +8% Reload, +7% Cashback'}<br>
+                ${isRu?'F4 RTP: диапазон 85%–99%':'F4 RTP: range 85%–99%'}<br>
+                ${isRu?'F5 Платформа: Mobile +5%, Desktop −3%':'F5 Platform: Mobile +5%, Desktop −3%'}<br>
+                ${isRu?'ARPU бенчмарк:':'ARPU benchmark:'} ${econ.arpu} USD/mo
+              </div>
+            </div>
             ${netIncr < 0 ? (() => {
               window._lastCGIncrData = {
                 geo: draft?.params?.geo || 'de',
@@ -926,12 +946,27 @@ function switchS4(panel, el) {
   document.getElementById('s4-texts').classList.toggle('active', panel==='texts');
   document.getElementById('s4-audit').classList.toggle('active', panel==='audit');
 }
+let _activeCh = 'push';
 function switchCh(ch, el) {
+  _activeCh = ch;
   document.querySelectorAll('#chTabs .ch-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
   ['push','email','sms','telegram','popup'].forEach(c => {
     document.getElementById('ch-'+c).classList.toggle('active', c===ch);
   });
+  const btn = document.getElementById('copy-all-btn');
+  if (btn) btn.dataset.ch = ch;
+}
+function copyAllChannel() {
+  const ch = _activeCh;
+  if (!draft.texts || !draft.texts[ch]) return;
+  const variants = draft.texts[ch];
+  const text = variants.map((v, i) => {
+    const prefix = `--- Variant ${i+1} ---`;
+    const body = typeof v === 'object' ? `Subject: ${v.subject}\n\n${v.body}` : (v.headline ? `${v.headline}\n${v.subtext}\n${v.cta}` : String(v));
+    return `${prefix}\n${body}`;
+  }).join('\n\n');
+  navigator.clipboard.writeText(text).then(() => showToast(currentLang === 'ru' ? 'Скопировано в буфер' : 'Copied to clipboard'));
 }
 function copyText(btn) {
   const text = btn.closest('.var-card').querySelector('.var-text').textContent;
@@ -1345,7 +1380,8 @@ function renderDetailTab(tab, c) {
   else if (tab === 'mechanic') body.innerHTML = renderDetailMechanic(c);
   else if (tab === 'texts')  { renderDetailTexts(c, body); }
   else if (tab === 'audit')  { renderDetailAudit(c, body); }
-  else if (tab === 'export')   body.innerHTML = renderDetailExport(c);
+  else if (tab === 'export')     body.innerHTML = renderDetailExport(c);
+  else if (tab === 'analytics')  body.innerHTML = renderDetailAnalytics(c);
 }
 
 function renderDetailOverview(c) {
@@ -1503,6 +1539,126 @@ function renderDetailAudit(c, body) {
   body.innerHTML = c.audit ? auditHTML(c.audit) : `<p style="color:var(--muted);font-size:.87rem">${t('det_no_audit')}</p>`;
 }
 
+function saveActuals() {
+  const c = getCampaigns().find(x => x.id === _detailId);
+  if (!c) return;
+  const cost        = parseFloat(document.getElementById('act-cost')?.value) || 0;
+  const activations = parseInt(document.getElementById('act-activations')?.value) || 0;
+  const conversions = parseInt(document.getElementById('act-conversions')?.value) || 0;
+  const revenue3m   = parseFloat(document.getElementById('act-revenue')?.value) || 0;
+  const actuals = { cost, activations, conversions, revenue3m, savedAt: new Date().toISOString() };
+  putCampaigns(getCampaigns().map(x => x.id === _detailId ? { ...x, actuals } : x));
+  renderDetailTab('analytics', getCampaigns().find(x => x.id === _detailId));
+}
+
+function renderDetailAnalytics(c) {
+  const isRu = currentLang === 'ru';
+  const fs   = c.forecastSnapshot;
+  const cur  = lastResult?.cur || c.econ?.cur || '';
+  const fmt  = v => cur + ' ' + Math.abs(Math.round(v)).toLocaleString();
+  const fmtU = v => '$' + Math.abs(Math.round(v)).toLocaleString();
+  const pct  = v => (v * 100).toFixed(1) + '%';
+  const sign = v => (v >= 0 ? '+' : '−');
+  const colV = v => v >= 0 ? 'var(--success)' : '#ef4444';
+
+  if (!fs) return `<div style="color:var(--muted);font-size:.87rem;padding:24px 0">
+    ${isRu ? 'Прогнозный снапшот недоступен — сохраните кампанию после генерации.' : 'Forecast snapshot not available — save the campaign after generating.'}
+  </div>`;
+
+  // Compute comparison if actuals exist
+  let compHTML = '';
+  if (c.actuals) {
+    const a = c.actuals;
+    const forecastCost = fs.sP50?.cost || 0;
+    const forecastConv = fs.sP50?.conv || 0;
+    const forecastRev  = Math.round(fs.pl * forecastConv * (fs.ltv3 || 0));
+    const actualConv   = a.activations > 0 ? a.conversions / a.activations : 0;
+    const costVar      = forecastCost > 0 ? ((a.cost - forecastCost) / forecastCost) * 100 : 0;
+    const revVar       = forecastRev > 0 ? ((a.revenue3m - forecastRev) / forecastRev) * 100 : 0;
+    const accuracy     = Math.abs(costVar) < 15 ? {label: isRu?'Точный прогноз':'Accurate', col:'var(--success)'}
+                       : Math.abs(costVar) < 30 ? {label: isRu?'Умеренное расхождение':'Moderate', col:'var(--warn)'}
+                       : {label: isRu?'Большое расхождение':'Off target', col:'#ef4444'};
+
+    const row = (label, fore, act, varV) => `
+      <tr>
+        <td style="padding:7px 10px;color:var(--muted);font-size:.78rem">${label}</td>
+        <td style="padding:7px 10px;text-align:right;font-size:.78rem">${fore}</td>
+        <td style="padding:7px 10px;text-align:right;font-size:.78rem;font-weight:600">${act}</td>
+        <td style="padding:7px 10px;text-align:right;font-size:.78rem;color:${colV(varV)}">${sign(varV)}${Math.abs(varV).toFixed(1)}%</td>
+      </tr>`;
+
+    compHTML = `
+      <div style="margin-bottom:12px;padding:8px 12px;background:rgba(79,110,247,.08);border-radius:8px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:.82rem;font-weight:600">${isRu?'Точность прогноза':'Forecast accuracy'}</span>
+        <span style="font-size:.8rem;font-weight:700;color:${accuracy.col}">${accuracy.label}</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
+        <thead><tr style="border-bottom:1px solid var(--border)">
+          <th style="padding:6px 10px;text-align:left;font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase">${isRu?'Метрика':'Metric'}</th>
+          <th style="padding:6px 10px;text-align:right;font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase">${isRu?'Прогноз':'Forecast'}</th>
+          <th style="padding:6px 10px;text-align:right;font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase">${isRu?'Факт':'Actual'}</th>
+          <th style="padding:6px 10px;text-align:right;font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase">Δ%</th>
+        </tr></thead>
+        <tbody>
+          ${row(isRu?'Затраты на кампанию':'Campaign cost', fmt(forecastCost), fmt(a.cost), costVar)}
+          ${row(isRu?'Конверсия (отыгрыш)':'Wager conversion', pct(forecastConv), pct(actualConv), (actualConv - forecastConv)*100)}
+          ${row(isRu?'Incremental revenue (3мес)':'Incremental revenue (3mo)', fmtU(forecastRev), fmtU(a.revenue3m), revVar)}
+        </tbody>
+      </table>`;
+  }
+
+  // Input form for actuals
+  const saved = c.actuals || {};
+  const inputStyle = 'width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:.82rem;font-family:inherit;outline:none';
+  const inputForm = `
+    <div style="font-size:.82rem;font-weight:600;color:var(--text);margin-bottom:10px">${isRu?'Введите фактические данные':'Enter actual results'}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div>
+        <label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:4px">${isRu?'Фактические затраты':'Actual cost'} (${cur})</label>
+        <input id="act-cost" type="number" value="${saved.cost||''}" style="${inputStyle}" placeholder="0">
+      </div>
+      <div>
+        <label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:4px">${isRu?'Получили бонус (игроков)':'Activations (players)'}</label>
+        <input id="act-activations" type="number" value="${saved.activations||''}" style="${inputStyle}" placeholder="0">
+      </div>
+      <div>
+        <label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:4px">${isRu?'Выполнили вейджер':'Completions (wager done)'}</label>
+        <input id="act-conversions" type="number" value="${saved.conversions||''}" style="${inputStyle}" placeholder="0">
+      </div>
+      <div>
+        <label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:4px">${isRu?'Incremental revenue 3мес (USD)':'Incremental revenue 3mo (USD)'}</label>
+        <input id="act-revenue" type="number" value="${saved.revenue3m||''}" style="${inputStyle}" placeholder="0">
+      </div>
+    </div>
+    <button onclick="saveActuals()" class="btn btn-primary btn-sm">${isRu?'Сохранить и сравнить':'Save & Compare'}</button>
+    ${c.actuals ? `<span style="font-size:.72rem;color:var(--muted);margin-left:10px">${isRu?'Обновлено':'Updated'}: ${new Date(c.actuals.savedAt).toLocaleDateString()}</span>` : ''}`;
+
+  // Forecast summary
+  const forecastSummary = fs.sP50 ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
+      ${[
+        [isRu?'Прогноз (P10)':'Forecast (P10)', fmt(fs.sP10?.cost||0), Math.round((fs.sP10?.conv||0)*100)+'%'],
+        [isRu?'Прогноз (P50)':'Forecast (P50)', fmt(fs.sP50?.cost||0), Math.round((fs.sP50?.conv||0)*100)+'%'],
+        [isRu?'Прогноз (P90)':'Forecast (P90)', fmt(fs.sP90?.cost||0), Math.round((fs.sP90?.conv||0)*100)+'%'],
+      ].map(([l,cost,conv]) => `
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px">
+          <div style="font-size:.7rem;color:var(--muted);margin-bottom:4px">${l}</div>
+          <div style="font-size:.95rem;font-weight:700">${cost}</div>
+          <div style="font-size:.7rem;color:var(--muted)">conv. ${conv}</div>
+        </div>`).join('')}
+    </div>` : '';
+
+  return `
+    <div style="padding:4px 0">
+      <div style="font-size:.88rem;font-weight:700;margin-bottom:12px">${isRu?'📊 Прогноз vs Факт':'📊 Forecast vs Actual'}</div>
+      ${forecastSummary}
+      ${compHTML}
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+        ${inputForm}
+      </div>
+    </div>`;
+}
+
 function renderDetailExport(c) {
   const isEN = currentLang === 'en';
   const items = [
@@ -1651,6 +1807,8 @@ const I18N = {
     s4_loading_texts:'AI генерирует тексты для всех 5 каналов...',
     s4_loading_audit:'AI проводит аудит кампании...',
     ai_draft_note:'✦ AI-черновик — проверьте перед отправкой. Убедитесь, что регуляторные строки соответствуют T&C вашей платформы.',
+    copy_all:'Скопировать все',
+    btn_export_pdf:'⬇ PDF',
     econ_show_analysis:'Показать полный анализ ▾',
     econ_collapse:'Свернуть ▴',
     s4_variant:'Вариант', s4_copy_btn:'⎘ Копировать',
@@ -1730,7 +1888,7 @@ const I18N = {
     sc_cashback:'Cashback кампания', sc_custom:'Кастомный сценарий',
     // Detail view
     det_back:'← Кампании', det_dup:'⎘ Дублировать', det_edit:'✏ Редактировать',
-    det_tab_ov:'Обзор', det_tab_mech:'Механика', det_tab_texts:'Тексты', det_tab_audit:'Аудит', det_tab_export:'Экспорт',
+    det_tab_ov:'Обзор', det_tab_mech:'Механика', det_tab_texts:'Тексты', det_tab_audit:'Аудит', det_tab_export:'Экспорт', det_tab_analytics:'📊 Факт',
     det_ov_scenario:'Сценарий', det_ov_geo:'Регион', det_ov_segment:'Сегмент',
     det_ov_budget:'Бюджет', det_ov_tone:'Тон', det_ov_lang:'Язык текстов',
     det_ov_status:'Статус', det_ov_created:'Создана',
@@ -1776,6 +1934,8 @@ const I18N = {
     s4_loading_texts:'AI is generating texts for all 5 channels...',
     s4_loading_audit:'AI is auditing the campaign...',
     ai_draft_note:'AI draft — review before sending. Verify regulatory strings match your platform\'s T&Cs.',
+    copy_all:'Copy all',
+    btn_export_pdf:'⬇ PDF',
     econ_show_analysis:'Show full analysis ▾',
     econ_collapse:'Collapse ▴',
     s4_variant:'Variant', s4_copy_btn:'⎘ Copy',
@@ -1855,7 +2015,7 @@ const I18N = {
     sc_cashback:'Cashback Campaign', sc_custom:'Custom Scenario',
     // Detail view
     det_back:'← Campaigns', det_dup:'⎘ Duplicate', det_edit:'✏ Edit',
-    det_tab_ov:'Overview', det_tab_mech:'Mechanics', det_tab_texts:'Texts', det_tab_audit:'Audit', det_tab_export:'Export',
+    det_tab_ov:'Overview', det_tab_mech:'Mechanics', det_tab_texts:'Texts', det_tab_audit:'Audit', det_tab_export:'Export', det_tab_analytics:'📊 Actuals',
     det_ov_scenario:'Scenario', det_ov_geo:'Region', det_ov_segment:'Segment',
     det_ov_budget:'Budget', det_ov_tone:'Tone', det_ov_lang:'Text Language',
     det_ov_status:'Status', det_ov_created:'Created',
@@ -1942,6 +2102,12 @@ function saveCampaign() {
     mechanic: draft.mechanics,
     mechanicType: draft.mechanicType,
     econ: draft.econ,
+    forecastSnapshot: draft.econ ? {
+      sP10: draft.econ.sP10, sP50: draft.econ.sP50, sP90: draft.econ.sP90,
+      costRatio: draft.econ.costRatio, pl: draft.econ.pl, arpu: draft.econ.arpu,
+      ltv3: draft.econ.ltv3, wagerX: draft.econ.wagerX,
+      capturedAt: new Date().toISOString(),
+    } : null,
     texts: draft.texts || null,
     audit: draft.audit || null,
     explanation:   draft.explanation   || null,
@@ -2106,6 +2272,121 @@ function _closeOnboarding() {
   if (cb && cb.checked) localStorage.setItem('cg_onboarding_done', '1');
   const m = document.getElementById('onb-modal');
   if (m) m.remove();
+}
+
+// ── PDF EXPORT ────────────────────────────────────────────────────────────────
+function exportCampaignPDF() {
+  const isRu = currentLang === 'ru';
+  const scen = draft.scenario?.lbl || '—';
+  const geo  = GEO_LBL[draft.params?.geo] || draft.params?.geo || '—';
+  const ts   = new Date().toLocaleString('en-GB', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const E    = lastResult?.econ || {};
+  const cur  = lastResult?.cur || '';
+  const fmt  = v => cur + ' ' + Math.round(v).toLocaleString();
+
+  // Economics section
+  const econHTML = E.sP50 ? `
+    <h3>${isRu?'Экономика кампании':'Campaign Economics'}</h3>
+    <table border="1" cellpadding="6" style="border-collapse:collapse;width:100%;font-size:12px">
+      <tr style="background:#f0f0f0"><th>${isRu?'Сценарий':'Scenario'}</th><th>${isRu?'Затраты':'Cost'}</th><th>${isRu?'Конверсия':'Conv.'}</th></tr>
+      <tr><td>${isRu?'Лучший (P10)':'Best case (P10)'}</td><td>${fmt(E.sP10?.cost||0)}</td><td>${Math.round((E.sP10?.conv||0)*100)}%</td></tr>
+      <tr><td>${isRu?'Ожидаемый (P50)':'Expected (P50)'}</td><td>${fmt(E.sP50?.cost||0)}</td><td>${Math.round((E.sP50?.conv||0)*100)}%</td></tr>
+      <tr><td>${isRu?'Худший (P90)':'Worst case (P90)'}</td><td>${fmt(E.sP90?.cost||0)}</td><td>${Math.round((E.sP90?.conv||0)*100)}%</td></tr>
+    </table>` : '';
+
+  // Texts section
+  let textsHTML = '';
+  if (draft.texts) {
+    const channels = ['push','email','sms','telegram','popup'];
+    textsHTML = `<h3>${isRu?'Тексты CRM':'CRM Texts'}</h3>`;
+    channels.forEach(ch => {
+      const variants = draft.texts[ch] || [];
+      if (!variants.length) return;
+      textsHTML += `<h4 style="margin:10px 0 4px;text-transform:uppercase;font-size:11px;color:#666">${ch}</h4>`;
+      variants.forEach((v, i) => {
+        const body = typeof v === 'object' ? (v.subject ? `<b>${v.subject}</b><br>${v.body}` : `${v.headline}<br>${v.subtext}<br>${v.cta}`) : v;
+        textsHTML += `<div style="margin-bottom:8px;padding:6px;border:1px solid #ddd;border-radius:4px;font-size:11px"><b>V${i+1}</b><br>${body}</div>`;
+      });
+    });
+  }
+
+  // Audit section
+  let auditHTML = '';
+  if (draft.audit) {
+    auditHTML = `<h3>${isRu?'Compliance Аудит':'Compliance Audit'}</h3>`;
+    (draft.audit.checks || []).forEach(ch => {
+      const ico = ch.status === 'ok' ? '✅' : '⚠️';
+      auditHTML += `<div style="margin-bottom:6px;font-size:11px">${ico} <b>${ch.label}</b>${ch.rule?`<br><span style="color:#666;font-size:10px">${ch.rule}</span>`:''}<br>${ch.note}</div>`;
+    });
+  }
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>${scen} — ${geo}</title>
+    <style>body{font-family:Arial,sans-serif;margin:28px;color:#111;font-size:13px}
+    h1{font-size:18px;margin-bottom:4px}h2{font-size:15px;color:#333;margin-top:20px}
+    h3{font-size:13px;color:#555;margin:16px 0 6px}table{font-size:11px}
+    .footer{margin-top:30px;padding-top:10px;border-top:1px solid #ddd;font-size:10px;color:#888}</style>
+    </head><body>
+    <h1>${scen}</h1><div style="color:#666;font-size:12px">${geo} · ${ts}</div>
+    ${econHTML}${textsHTML}${auditHTML}
+    <div class="footer">Generated by BonusEngine · ${ts} · bonusengine.io</div>
+    </body></html>`;
+
+  const win = window.open('', '_blank');
+  if (!win) { alert(isRu?'Разрешите всплывающие окна':'Allow popups to export PDF'); return; }
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => { win.print(); }, 300);
+}
+
+// ── GLOSSARY ──────────────────────────────────────────────────────────────────
+const GLOSSARY_TERMS = [
+  ['gl_wager',      {ru:'Вейджер — количество оборотов бонуса до вывода средств.',                         en:'Wager — times bonus must be turned over before withdrawal.'}],
+  ['gl_rtp',        {ru:'RTP — доля ставок, возвращаемых игрокам в виде выигрышей.',                      en:'RTP — % of total bets returned as winnings.'}],
+  ['gl_wcr',        {ru:'WCR — взвешенный RTP по реальной структуре ставок (учёт вклада каждого типа игр).', en:'WCR — weighted RTP across actual bet mix (accounts for game-type contribution).'}],
+  ['gl_p50',        {ru:'P50 — базовый сценарий (медиана). Используйте для планирования бюджета.',          en:'P50 — base scenario (median expected outcome). Use for budget planning.'}],
+  ['gl_p10',        {ru:'P10 — оптимистичный: только 10% исходов лучше. Мало игроков выполнят вейджер.',   en:'P10 — optimistic: only 10% of outcomes are better. Few players complete wagering.'}],
+  ['gl_p90',        {ru:'P90 — пессимистичный: только 10% исходов хуже. Максимальный риск выплат.',        en:'P90 — pessimistic: only 10% of outcomes are worse. Maximum payout risk.'}],
+  ['gl_lift',       {ru:'Retention lift — прирост доли активных игроков вследствие бонусной программы.',   en:'Retention lift — % increase in active player count from the bonus program.'}],
+  ['gl_cost_ratio', {ru:'Cost ratio — выплаты по бонусам ÷ общий депозитный оборот (безразмерная).',       en:'Cost ratio — bonus payouts ÷ total deposit volume (dimensionless).'}],
+  ['gl_breakeven',  {ru:'Breakeven wager — вейджер, при котором ожидаемые выплаты = размер бонуса.',       en:'Breakeven wager — wager at which expected payout equals bonus size.'}],
+  ['gl_arpu',       {ru:'ARPU — средняя выручка с игрока в месяц (USD бенчмарк, без зависимости от валюты).', en:'ARPU — Average Revenue Per User per month (USD benchmark, currency-independent).'}],
+  ['gl_cac',        {ru:'CAC — стоимость привлечения одного нового игрока (USD бенчмарк).',                en:'CAC — Customer Acquisition Cost per new player (USD benchmark).'}],
+];
+
+function toggleGlossary() {
+  let panel = document.getElementById('glossary-panel');
+  if (panel) { panel.remove(); return; }
+
+  const isRu = currentLang === 'ru';
+  const terms = GLOSSARY_TERMS.map(([, t]) =>
+    `<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)">
+      <div style="font-size:.8rem;font-weight:600;color:var(--text);margin-bottom:2px">${t[isRu?'ru':'en'].split(' — ')[0]}</div>
+      <div style="font-size:.75rem;color:var(--muted)">${t[isRu?'ru':'en'].split(' — ').slice(1).join(' — ')}</div>
+    </div>`
+  ).join('');
+
+  panel = document.createElement('div');
+  panel.id = 'glossary-panel';
+  panel.style.cssText = 'position:fixed;top:54px;right:0;width:320px;max-height:calc(100vh - 54px);background:#161c2d;border-left:1px solid var(--border);z-index:400;display:flex;flex-direction:column;box-shadow:-4px 0 24px rgba(0,0,0,.4);overflow:hidden';
+  panel.innerHTML = `
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <span style="font-size:.9rem;font-weight:700;color:var(--text)">${isRu?'Глоссарий':'Glossary'}</span>
+      <button onclick="document.getElementById('glossary-panel').remove()"
+        style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:0">&times;</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:4px 16px 16px">${terms}</div>`;
+  document.body.appendChild(panel);
+
+  // Close when clicking outside
+  setTimeout(() => {
+    const close = (e) => {
+      const p = document.getElementById('glossary-panel');
+      if (p && !p.contains(e.target)) { p.remove(); document.removeEventListener('click', close); }
+    };
+    document.addEventListener('click', close);
+  }, 50);
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
