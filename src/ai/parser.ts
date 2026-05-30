@@ -46,7 +46,7 @@ function parseRaw(raw: string): unknown {
   const sanitized = raw.replace(/```json\n?/g, '').replace(/```/g, '').trim();
   try {
     return JSON.parse(sanitized);
-  } catch (_) {
+  } catch {
     const repaired = tryRepairJSON(sanitized);
     if (repaired) return repaired;
     throw new AIProviderError('AI returned malformed JSON');
