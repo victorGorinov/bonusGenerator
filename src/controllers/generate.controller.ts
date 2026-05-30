@@ -1,22 +1,20 @@
-import { type Request, type Response, type NextFunction } from 'express';
-import * as bonusService   from '../services/bonus.service.js';
-import { ValidationError } from '../errors/ValidationError.js';
+import { asyncHandler }             from '../middleware/asyncHandler.js';
+import * as bonusService             from '../services/bonus.service.js';
+import { ValidationError }           from '../errors/ValidationError.js';
+import type { GenerateInput }        from '../validation/generate.schema.js';
+import type { RecalcInput }          from '../validation/recalc.schema.js';
 
-export function generate(req: Request, res: Response, next: NextFunction): void {
-  try {
-    const cfg = bonusService.generate(req.body || {});
+export const generate = asyncHandler<Record<string, never>, unknown, GenerateInput>(
+  async (req, res) => {
+    const cfg = bonusService.generate(req.body);
     res.json({ cfg });
-  } catch (err) {
-    next(err);
-  }
-}
+  },
+);
 
-export function recalc(req: Request, res: Response, next: NextFunction): void {
-  const { cfg, overrides } = req.body as { cfg?: Record<string, unknown>; overrides?: Record<string, unknown> } || {};
-  if (!cfg) { next(new ValidationError('cfg required')); return; }
-  try {
+export const recalc = asyncHandler<Record<string, never>, unknown, RecalcInput>(
+  async (req, res) => {
+    const { cfg, overrides } = req.body;
+    if (!cfg) throw new ValidationError('cfg required');
     res.json(bonusService.recalc(cfg, overrides ?? {}));
-  } catch (err) {
-    next(err);
-  }
-}
+  },
+);
