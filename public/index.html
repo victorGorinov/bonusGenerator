@@ -811,12 +811,16 @@
             <div class="stat-label" data-i18n="stat2">AI Text Channels</div>
           </div>
           <div class="stat-item">
-            <div class="stat-num">3</div>
-            <div class="stat-label" data-i18n="stat3">Cost Scenarios</div>
+            <div class="stat-num">4</div>
+            <div class="stat-label" data-i18n="stat5">Tournament Types</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num">9</div>
+            <div class="stat-label" data-i18n="stat3">Jurisdictions</div>
           </div>
           <div class="stat-item">
             <div class="stat-num">&lt;2 min</div>
-            <div class="stat-label" data-i18n="stat4">Campaign Ready</div>
+            <div class="stat-label" data-i18n="stat4">Any Promo Ready</div>
           </div>
         </div>
       </div>
@@ -1042,8 +1046,8 @@
       <div class="feature-card" style="border-color:rgba(16,185,129,.3);background:linear-gradient(135deg,rgba(16,185,129,.05) 0%,transparent 60%)">
         <div class="feature-icon icon-green">🏆</div>
         <h3 data-i18n="f7_h">Tournament Generator</h3>
-        <p data-i18n="f7_p">Design slot, live, and mixed tournaments in minutes. Configure prize pools, scoring mechanics, and prize distribution — then let AI write promotional copy and run a compliance audit.</p>
-        <span class="feature-tag">Slots · Live · Mixed · Prize Drop</span>
+        <p data-i18n="f7_p">Design Slot, Live, Mixed, and Prize Drop tournaments in minutes. Choose prize pool model, scoring, and distribution schema — get ROI projections, break-even analysis, and a full operator setup guide with checklist + launch timeline. AI writes promo copy for 5 channels and audits compliance.</p>
+        <span class="feature-tag">Slots · Live · Mixed · Prize Drop · Setup Guide</span>
       </div>
     </div>
   </div>
@@ -1493,6 +1497,7 @@
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap">
         <a href="/campaign-generator.html" class="btn btn-gold btn-lg" data-i18n="demo_btn">🤖 Launch AI Generator</a>
+        <a href="/tournament-generator.html" class="btn btn-outline btn-lg" data-i18n="demo_btn2">🏆 Try Tournament Generator</a>
       </div>
     </div>
   </div>
@@ -1564,21 +1569,22 @@ const LANG = {
     hero_cta2: '🏆 Tournament Generator →',
     t1_name: 'AI Campaign Generator', t1_desc: '5-channel CRM copy + economics in 2 min',
     t2_name: 'Bonus Configurator',    t2_desc: 'P10/P50/P90 cost model, live recalc',
-    t3_name: 'Tournament Generator',  t3_desc: 'Prize structure, economics, setup guide',
+    t3_name: 'Tournament Generator',  t3_desc: 'ROI model, prize distribution, setup guide + AI texts',
     t_try: 'Try →',
     badge: 'Compliance-Ready Bonus Platform for iGaming',
     hero_h1a: 'Stop Configuring Bonuses in Spreadsheets.',
     hero_h1b: 'AI Does It — Compliant, Costed, Ready to Start.',
-    hero_sub: 'Pick a scenario, set your geo — AI selects the right bonus mechanic, writes ready-to-send copy for 5 channels, models the cost, and flags compliance issues. Full campaign spec in under 2 minutes. No spreadsheets, no guesswork.',
+    hero_sub: 'Pick a scenario, set your geo — AI selects the right bonus mechanic, writes ready-to-send copy for 5 channels, models the cost, and flags compliance issues. Or design a full tournament: prize structure, economics, setup guide, AI texts. Everything in under 2 minutes.',
     hero_cta1: '🤖 Generate My Campaign Free →',
     tr1: 'Ready in 2 min', tr2: 'No signup required', tr3: 'Free during beta', tr4: '9 jurisdictions',
     stat1: 'CRM Scenarios',
     stat2: 'AI Text Channels',
-    stat3: 'Cost Scenarios',
-    stat4: 'Campaign Ready',
+    stat5: 'Tournament Types',
+    stat3: 'Jurisdictions',
+    stat4: 'Any Promo Ready',
     feat_tag: 'Core Features',
-    feat_h2: 'Everything a Bonus Manager Needs.',
-    feat_sub: 'AI campaign generation for CRM teams + a compliance-ready bonus engine for admins — mechanics, texts, economics, and regulatory audit in one place.',
+    feat_h2: 'Campaigns. Tournaments. Compliance.',
+    feat_sub: 'One platform for your entire promo operation: AI campaign generation, tournament design with setup guide, P10/P50/P90 cost modelling, 5-channel CRM copy, and regulatory audit — all in one place.',
     f1_h: 'AI Campaign Generator',
     f1_p: '5-step wizard: pick a scenario (reactivation, first deposit, VIP, sport event…), set geo and segment — AI selects the optimal mechanic, explains the reasoning, and shows alternatives.',
     f2_h: '5-Channel Text Generation',
@@ -1592,7 +1598,7 @@ const LANG = {
     f6_h: 'Admin-Ready Export',
     f6_p: 'Export as JSON, CSV, curl snippet, or full Admin Config text with all wager rules, free spin specs, and game contributions — ready for your dev team.',
     f7_h: 'Tournament Generator',
-    f7_p: 'Design slot, live, and mixed tournaments in minutes. Configure prize pools, scoring mechanics, and prize distribution — then let AI write promotional copy and run a compliance audit.',
+    f7_p: 'Design Slot, Live, Mixed, and Prize Drop tournaments in minutes. Choose prize pool model, scoring, and distribution schema — get ROI projections, break-even analysis, and a full operator setup guide with checklist + launch timeline. AI writes promo copy for 5 channels and audits compliance.',
     reg_tag: 'Markets',
     reg_h2: 'Works Across Your Markets',
     reg_sub: 'Each region ships pre-configured — correct wager caps, local currencies, and regulatory strings out of the box. New geos are added on an ongoing basis.',
@@ -1707,10 +1713,11 @@ const LANG = {
     ex_cc3: '✓ Cost modeled',
     ex_cta: '🤖 Generate Your Own Campaign →',
     sticky_cta: '🤖 Generate My Campaign Free →',
-    demo_h: 'Your Next Campaign Is 2 Minutes Away.',
-    demo_p: 'Pick a scenario, set your geo — get bonus mechanics, texts for 5 channels, cost model, and compliance audit. Free, instant, no login required.',
+    demo_h: 'Your Next Campaign or Tournament Is 2 Minutes Away.',
+    demo_p: 'Pick a scenario, set your geo — get bonus mechanics, texts for 5 channels, cost model, and compliance audit. Or build a full tournament with economics, setup guide, and AI copy. Free, instant, no login required.',
     demo_btn: '🤖 Generate My Campaign Free →',
-    marquee: ['AI Campaign Generator', 'Compliance-Ready Config', '5 Channel Texts', 'Push · Email · SMS · TG · Popup', 'Best / Expected / Worst-Case Cost', 'UKGC · MGA · DGA · Curaçao', 'Auto-Applied License Rules', 'Welcome + D2 + D3 + NDB', 'Reload & Cashback', 'AI Compliance Audit', 'Admin Config Export', 'Multi-Geo Support', '15+ CRM Scenarios', 'No Spreadsheets'],
+    demo_btn2: '🏆 Try Tournament Generator',
+    marquee: ['AI Campaign Generator', 'Tournament Generator', 'Compliance-Ready Config', '5 Channel Texts', 'Push · Email · SMS · TG · Popup', 'Slot · Live · Mixed · Prize Drop', 'Best / Expected / Worst-Case Cost', 'UKGC · MGA · DGA · Curaçao', 'Auto-Applied License Rules', 'Welcome + D2 + D3 + NDB', 'Reload & Cashback', 'AI Compliance Audit', 'Tournament Setup Guide', 'ROI & Break-Even Model', 'Prize Distribution Engine', 'Multi-Geo Support', '15+ CRM Scenarios', 'No Spreadsheets'],
   },
   ru: {
     nav_ai: '🤖 AI Кампании',
@@ -1718,21 +1725,22 @@ const LANG = {
     hero_cta2: '🏆 Генератор Турниров →',
     t1_name: 'AI-генератор кампаний',  t1_desc: 'Тексты для 5 каналов + экономика за 2 мин',
     t2_name: 'Конфигуратор бонусов',   t2_desc: 'Модель P10/P50/P90, пересчёт в реальном времени',
-    t3_name: 'Генератор турниров',     t3_desc: 'Структура призов, экономика, гайд по запуску',
+    t3_name: 'Генератор турниров',     t3_desc: 'ROI-модель, призовая таблица, гайд по запуску + AI-тексты',
     t_try: 'Открыть →',
     badge: 'Compliance-Ready платформа бонусов для iGaming',
     hero_h1a: 'Хватит настраивать бонусы в таблицах.',
     hero_h1b: 'AI сделает это — соответствие, экономика, готово к старту.',
-    hero_sub: 'Выберите сценарий, задайте гео — AI подберёт правильную механику, напишет тексты для 5 каналов, рассчитает стоимость и проверит комплаенс. Полная спека кампании за 2 минуты. Без таблиц, без догадок.',
+    hero_sub: 'Выберите сценарий, задайте гео — AI подберёт правильную механику, напишет тексты для 5 каналов, рассчитает стоимость и проверит комплаенс. Или создайте турнир: призовая структура, экономика, гайд по запуску, AI-тексты. Всё за 2 минуты.',
     hero_cta1: '🤖 Сгенерировать бесплатно →',
     tr1: 'Готово за 2 мин', tr2: 'Без регистрации', tr3: 'Бесплатно в бете', tr4: '9 юрисдикций',
     stat1: 'CRM-сценариев',
     stat2: 'Каналов AI-текстов',
-    stat3: 'Сценария затрат',
-    stat4: 'Кампания готова',
+    stat5: 'Типа турниров',
+    stat3: 'Юрисдикций',
+    stat4: 'Любая промо готова',
     feat_tag: 'Функциональность',
-    feat_h2: 'Всё, что нужно бонусному менеджеру.',
-    feat_sub: 'AI-генератор кампаний для CRM-команд + compliance-ready движок бонусов для администраторов — механики, тексты, экономика и регуляторный аудит в одном месте.',
+    feat_h2: 'Кампании. Турниры. Комплаенс.',
+    feat_sub: 'Одна платформа для всего промо-управления: AI-генератор кампаний, дизайн турниров с гайдом по запуску, модель P10/P50/P90, тексты для 5 каналов и регуляторный аудит — всё в одном месте.',
     f1_h: 'AI-генератор кампаний',
     f1_p: 'Мастер из 5 шагов: выберите сценарий (реактивация, первый депозит, VIP, спортивное событие…), задайте гео и сегмент — AI подберёт оптимальную механику, объяснит логику и покажет альтернативы.',
     f2_h: 'Тексты для 5 каналов',
@@ -1746,7 +1754,7 @@ const LANG = {
     f6_h: 'Экспорт для администраторов',
     f6_p: 'Экспорт в JSON, CSV, curl или полный Admin Config с вейджерными правилами, спекой по фриспинам и контрибуциями игр — готово для разработчиков.',
     f7_h: 'Генератор Турниров',
-    f7_p: 'Создавайте слот, лайв и смешанные турниры за минуты. Настройте призовой фонд, механику скоринга и распределение — AI напишет рекламные тексты и проведёт комплаенс-аудит.',
+    f7_p: 'Создавайте Slot, Live, Mixed и Prize Drop турниры за минуты. Выберите модель призового фонда, скоринг и схему распределения — получите ROI-прогноз, точку безубыточности и полный гайд для оператора с чек-листом и таймлайном. AI напишет рекламные тексты и проведёт комплаенс-аудит.',
     reg_tag: 'Рынки',
     reg_h2: 'Работает на ваших рынках',
     reg_sub: 'Каждый регион поставляется настроенным — правильные лимиты вейджера, местные валюты и регуляторные строки из коробки. Новые гео добавляются на постоянной основе.',
@@ -1861,10 +1869,11 @@ const LANG = {
     ex_cc3: '✓ Стоимость рассчитана',
     ex_cta: '🤖 Сгенерировать свою кампанию →',
     sticky_cta: '🤖 Сгенерировать бесплатно →',
-    demo_h: 'Ваша следующая кампания — через 2 минуты.',
-    demo_p: 'Выберите сценарий, задайте гео — получите механику, тексты для 5 каналов, модель стоимости и аудит. Бесплатно, мгновенно, без регистрации.',
+    demo_h: 'Кампания или турнир — за 2 минуты.',
+    demo_p: 'Выберите сценарий, задайте гео — получите механику, тексты для 5 каналов, модель стоимости и аудит. Или создайте турнир с экономикой, гайдом и AI-текстами. Бесплатно, мгновенно, без регистрации.',
     demo_btn: '🤖 Сгенерировать бесплатно →',
-    marquee: ['AI-генератор кампаний', 'Compliance-Ready конфиг', 'Тексты для 5 каналов', 'Push · Email · SMS · TG · Popup', 'Лучший / ожидаемый / худший сценарий', 'UKGC · MGA · DGA · Curaçao', 'Автоприменение лицензионных правил', 'Welcome + D2 + D3 + NDB', 'Reload и Cashback', 'AI-аудит соответствия', 'Экспорт Admin Config', 'Мульти-гео поддержка', '15+ CRM-сценариев', 'Без таблиц'],
+    demo_btn2: '🏆 Генератор Турниров',
+    marquee: ['AI-генератор кампаний', 'Генератор турниров', 'Compliance-Ready конфиг', 'Тексты для 5 каналов', 'Push · Email · SMS · TG · Popup', 'Слот · Лайв · Смешанный · Prize Drop', 'Лучший / ожидаемый / худший сценарий', 'UKGC · MGA · DGA · Curaçao', 'Автоприменение лицензионных правил', 'Welcome + D2 + D3 + NDB', 'Reload и Cashback', 'AI-аудит соответствия', 'Гайд по запуску турнира', 'ROI и точка безубыточности', 'Движок распределения призов', 'Мульти-гео поддержка', '15+ CRM-сценариев', 'Без таблиц'],
   }
 };
 
