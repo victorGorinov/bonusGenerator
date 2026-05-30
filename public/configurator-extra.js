@@ -865,3 +865,47 @@ document.addEventListener('keydown', function(e) {
 document.addEventListener('DOMContentLoaded', function() {
   _updateCampsCount();
 });
+
+// ── GLOSSARY ──────────────────────────────────────────────────────────────────
+function toggleCfgGlossary() {
+  let panel = document.getElementById('cfg-glossary-panel');
+  if (panel) { panel.remove(); return; }
+
+  const isRu = (typeof L !== 'undefined' && L === 'ru') || document.documentElement.lang === 'ru';
+  const terms = [
+    {name:'Вейджер / Wager',      ru:'Количество оборотов бонуса до вывода средств.',                     en:'Times bonus must be turned over before withdrawal.'},
+    {name:'RTP',                   ru:'Доля ставок, возвращаемых игрокам в виде выигрышей.',               en:'% of total bets returned as winnings.'},
+    {name:'WCR',                   ru:'Взвешенный RTP по реальной структуре ставок.',                      en:'Weighted RTP across actual bet mix.'},
+    {name:'P10',                   ru:'Оптимистичный сценарий — только 10% исходов лучше.',                en:'Optimistic scenario — only 10% of outcomes are better.'},
+    {name:'P50',                   ru:'Базовый сценарий (медиана). Используйте для бюджетирования.',       en:'Base scenario (median). Use for budget planning.'},
+    {name:'P90',                   ru:'Пессимистичный — только 10% исходов хуже.',                        en:'Pessimistic — only 10% of outcomes are worse.'},
+    {name:'Retention lift',        ru:'Прирост доли активных игроков от бонусной программы.',              en:'% increase in active player count from the bonus program.'},
+    {name:'Cost ratio',            ru:'Выплаты по бонусам ÷ депозитный оборот (безразмерная).',           en:'Bonus payouts ÷ total deposit volume (dimensionless).'},
+    {name:'Breakeven wager',       ru:'Вейджер, при котором ожидаемые выплаты = размер бонуса.',           en:'Wager at which expected payout equals bonus size.'},
+    {name:'ARPU',                  ru:'Средняя выручка с игрока в месяц (USD бенчмарк).',                  en:'Average Revenue Per User per month (USD benchmark).'},
+    {name:'CAC',                   ru:'Стоимость привлечения одного нового игрока (USD).',                 en:'Customer Acquisition Cost per new player (USD).'},
+  ].map(t => `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+    <div style="font-size:.78rem;font-weight:600;color:#e8eaf0;margin-bottom:1px">${t.name}</div>
+    <div style="font-size:.72rem;color:#8892a4">${isRu ? t.ru : t.en}</div>
+  </div>`).join('');
+
+  panel = document.createElement('div');
+  panel.id = 'cfg-glossary-panel';
+  panel.style.cssText = 'position:fixed;top:54px;right:0;width:300px;max-height:calc(100vh - 54px);background:#0f1420;border-left:1px solid #1e2740;z-index:400;display:flex;flex-direction:column;box-shadow:-4px 0 24px rgba(0,0,0,.5);overflow:hidden';
+  panel.innerHTML = `
+    <div style="padding:12px 16px;border-bottom:1px solid #1e2740;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <span style="font-size:.88rem;font-weight:700;color:#e8eaf0">${isRu ? 'Глоссарий' : 'Glossary'}</span>
+      <button onclick="document.getElementById('cfg-glossary-panel').remove()"
+        style="background:none;border:none;color:#8892a4;cursor:pointer;font-size:18px;line-height:1;padding:0">&times;</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:4px 16px 16px">${terms}</div>`;
+  document.body.appendChild(panel);
+
+  setTimeout(() => {
+    const close = (e) => {
+      const p = document.getElementById('cfg-glossary-panel');
+      if (p && !p.contains(e.target)) { p.remove(); document.removeEventListener('click', close); }
+    };
+    document.addEventListener('click', close);
+  }, 50);
+}

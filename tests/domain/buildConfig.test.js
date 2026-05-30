@@ -165,4 +165,29 @@ describe('buildConfig — snapshots', () => {
   it('EU/MGA snapshot', () => expect(buildConfig({ ...eu, lic: 'mga' })).toMatchSnapshot());
   it('Sweep snapshot',  () => expect(buildConfig(sw)).toMatchSnapshot());
   it('Crypto snapshot', () => expect(buildConfig(cry)).toMatchSnapshot());
+  it('DK/DGA snapshot', () => expect(buildConfig({ ...eu, lic: 'dga', sitecur: 'DKK', depcur: 'DKK', avgdep: 700 })).toMatchSnapshot());
+  it('MN snapshot',     () => expect(buildConfig({ ...mn, avgdep: 100000 })).toMatchSnapshot());
+});
+
+// ── Payout fallback (large-denomination currencies) ───────────────────────────
+
+describe('buildConfig — payout fallback for large-denomination currencies', () => {
+  it('RU sP10/sP50/sP90 cost all > 0 (fallback path)', () => {
+    const cfg = buildConfig({ ...base, region: 'cis', sitecur: 'RUB', depcur: 'RUB', avgdep: 2000 });
+    expect(cfg.econ.sP10.cost).toBeGreaterThan(0);
+    expect(cfg.econ.sP50.cost).toBeGreaterThan(0);
+    expect(cfg.econ.sP90.cost).toBeGreaterThan(0);
+  });
+
+  it('KZ sP50 cost > 0 (KZT fallback)', () => {
+    const cfg = buildConfig({ ...base, region: 'cis', sitecur: 'KZT', depcur: 'KZT', avgdep: 20000 });
+    expect(cfg.econ.sP50.cost).toBeGreaterThan(0);
+  });
+
+  it('MN sP10/sP50/sP90 cost all > 0 (MNT fallback)', () => {
+    const cfg = buildConfig({ ...mn, avgdep: 100000 });
+    expect(cfg.econ.sP10.cost).toBeGreaterThan(0);
+    expect(cfg.econ.sP50.cost).toBeGreaterThan(0);
+    expect(cfg.econ.sP90.cost).toBeGreaterThan(0);
+  });
 });
