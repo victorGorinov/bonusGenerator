@@ -1,42 +1,39 @@
 import { asyncHandler }                   from '../middleware/asyncHandler.js';
-import { buildTournamentTextsPrompt }     from '../ai/prompts/tournament-texts.prompt.js';
-import { buildTournamentAuditPrompt }     from '../ai/prompts/tournament-audit.prompt.js';
-import { generate as aiGenerate }         from '../ai/providers/anthropic.js';
-import { parseTournamentTextsResponse, parseTournamentAuditResponse } from '../ai/parser.js';
-import * as tournamentService             from '../services/tournament.service.js';
-import type { TournamentGenerateInput }   from '../validation/tournament.schema.js';
-import type { TournamentTextsInput, TournamentAuditInput } from '../validation/tournament.schema.js';
+import { AIProviderError }                from '../errors/AIProviderError.js';
+import { generateTournament, generateTournamentTexts, auditTournament } from '../use-cases/GenerateTournament.js';
+import type { AIProvider }                from '../ai/interface.js';
+import type { TournamentGenerateInput, TournamentTextsInput, TournamentAuditInput } from '../validation/tournament.schema.js';
 
-export const generate = asyncHandler<Record<string, never>, unknown, TournamentGenerateInput>(
-  async (req, res) => {
-    const { type, params } = req.body;
-    res.json(tournamentService.generateTournament({ type, params }));
-  },
-);
+interface Deps { ai: AIProvider }
 
-export const texts = asyncHandler<Record<string, never>, unknown, TournamentTextsInput>(
-  async (req, res) => {
-    const { type, params, spec } = req.body;
-    const prompt = buildTournamentTextsPrompt({
-      type:   String(type   ?? 'slot'),
-      params: (params as Record<string, unknown>) ?? {},
-      spec:   (spec   as Record<string, unknown>) ?? {},
-    });
-    const raw = await aiGenerate(prompt, { maxTokens: 4096 });
-    res.json(parseTournamentTextsResponse(raw));
-  },
-);
+export function createTournamentController({ ai }: Deps) {
+  return {
+    generate: asyncHandler<Record<string, never>, unknown, TournamentGenerateInput>(
+      async (req, res) => {
+        res.json(generateTournament(req.body));
+      },
+    ),
 
-export const audit = asyncHandler<Record<string, never>, unknown, TournamentAuditInput>(
-  async (req, res) => {
-    const { type, params, spec, uiLang } = req.body;
-    const prompt = buildTournamentAuditPrompt({
-      type:   String(type   ?? 'slot'),
-      params: (params as Record<string, unknown>) ?? {},
-      spec:   (spec   as Record<string, unknown>) ?? {},
-      uiLang: uiLang ? String(uiLang) : undefined,
-    });
-    const raw = await aiGenerate(prompt, { maxTokens: 900 });
-    res.json(parseTournamentAuditResponse(raw));
-  },
-);
+    texts: asyncHandler<Record<string, never>, unknown, TournamentTextsInput>(
+      async (req, res) => {
+        try {
+          res.json(await generateTournamentTexts(req.body, ai));
+        } catch (err) {
+          throw err instanceof AIProviderError ? err
+            : new AIProviderError(err instanceof Error ? err.message : String(err));
+        }
+      },
+    ),
+
+    audit: asyncHandler<Record<string, never>, unknown, TournamentAuditInput>(
+      async (req, res) => {
+        try {
+          res.json(await auditTournament(req.body, ai));
+        } catch (err) {
+          throw err instanceof AIProviderError ? err
+            : new AIProviderError(err instanceof Error ? err.message : String(err));
+        }
+      },
+    ),
+  };
+}

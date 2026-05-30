@@ -5,8 +5,10 @@ import { CampaignGenerateSchema }       from '../validation/campaign.schema.js';
 import { TextsSchema }                  from '../validation/texts.schema.js';
 import { AuditSchema }                  from '../validation/audit.schema.js';
 import { OptimizeSchema }               from '../validation/optimize.schema.js';
-import * as ctrl                        from '../controllers/campaign.controller.js';
+import { createCampaignController }     from '../controllers/campaign.controller.js';
+import { getAIProvider }                from '../ai/registry.js';
 
+const ctrl   = createCampaignController({ ai: getAIProvider() });
 const router = Router();
 router.post('/generate',  campaignLimiter, validate(CampaignGenerateSchema), ctrl.generate);
 router.post('/texts',     aiLimiter,       validate(TextsSchema),             ctrl.texts);
