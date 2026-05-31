@@ -2414,6 +2414,7 @@ try {
 showView(window.location.hash === '#campaigns' ? 'campaigns' : 'dashboard');
 renderScenarios();
 renderCampaignViews();
+document.querySelector('.main').classList.add('ready');
 if (!localStorage.getItem('cg_onboarding_done')) showOnboarding();
 
 window.addEventListener('pageshow', function() {

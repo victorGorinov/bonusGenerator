@@ -43,7 +43,8 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .exit-actions{display:flex;gap:10px;justify-content:flex-end}
 
 /* MAIN */
-.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh}
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh;opacity:0;transition:opacity .15s}
+.main.ready{opacity:1}
 .topbar{height:54px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:10px;position:sticky;top:0;z-index:40}
 .topbar-title{font-weight:600;font-size:.92rem}
 .topbar-sep,.topbar-sub{color:var(--muted);font-size:.8rem}
