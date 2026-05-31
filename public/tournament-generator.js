@@ -69,8 +69,9 @@ const SEGMENTS = [
   { val:'dormant',    lbl:'Dormant' },
 ];
 
-let step       = 1;
-let detailId   = null;
+let step            = 1;
+let detailId        = null;
+let hasActiveGenerator = false;
 const draft = {
   type: 'slot',
   params: {
@@ -117,6 +118,7 @@ function autoName(type, params) {
 
 function goStep(n) {
   step = n;
+  hasActiveGenerator = true;
   document.getElementById('topbar-step').textContent = `Step ${n} of 4`;
   setSidebarActive('nav-tournament');
   renderStep();
@@ -1129,8 +1131,8 @@ window.addEventListener('pageshow', function() {
     showView('setup');
   } else if (hash === '#list') {
     showView('list');
-  } else if (draft.type) {
-    // Resume generator if draft exists
+  } else if (hasActiveGenerator && step > 0) {
+    // Resume generator if currently in progress
     renderStep();
   } else {
     const saved = loadTournaments();
