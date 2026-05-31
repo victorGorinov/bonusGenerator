@@ -1180,4 +1180,28 @@ window.addEventListener('pageshow', function() {
       renderStep();
     }
   }
+  // Update both badges on load
+  updateAllBadges();
 });
+
+// Update campaign and tournament badges
+function updateAllBadges() {
+  // Campaign badge
+  try {
+    const camps = JSON.parse(localStorage.getItem('be_campaigns') || '[]');
+    const campBadge = document.getElementById('camp-nav-badge');
+    if (campBadge) {
+      campBadge.textContent = camps.length;
+      campBadge.style.display = camps.length > 0 ? 'inline' : 'none';
+    }
+  } catch (e) {}
+  // Tournament badge
+  try {
+    const tourns = JSON.parse(localStorage.getItem('savedTournaments') || '[]');
+    const tournBadge = document.getElementById('nav-tourn-badge');
+    if (tournBadge) {
+      tournBadge.textContent = tourns.length;
+      tournBadge.style.display = tourns.length > 0 ? 'inline' : 'none';
+    }
+  } catch (e) {}
+}
