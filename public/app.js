@@ -2604,3 +2604,116 @@ function buildConfiguratorURL(campaignParams, autoGenerate = true) {
 function _esc(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// CSV PARSER & ANALYTICS
+// ═════════════════════════════════════════════════════════════════════════════
+
+// Parse CSV file into campaign actuals
+// Expected columns: campaignId, participants, totalDeposits, wagerCompleted, bonusPayout, incrRevenue, notes
+function parseCSVActuals(csvText) {
+  const lines = csvText.trim().split('\n');
+  if (lines.length < 2) throw new Error('CSV must have header + at least 1 data row');
+
+  const header = lines[0].toLowerCase().split(',').map(h => h.trim());
+  const headerMap = {
+    'campaignid': 'campaignId',
+    'id': 'campaignId',
+    'participants': 'participants',
+    'totaldeposits': 'totalDeposits',
+    'wagercompleted': 'wagerCompleted',
+    'bonuspayout': 'bonusPayout',
+    'incrrevenue': 'incrRevenue',
+    'notes': 'notes',
+  };
+
+  const colIndices = {};
+  for (const [i, h] of header.entries()) {
+    const mapped = headerMap[h];
+    if (mapped) colIndices[mapped] = i;
+  }
+
+  const requiredCols = ['campaignId', 'participants', 'totalDeposits', 'wagerCompleted', 'bonusPayout'];
+  for (const col of requiredCols) {
+    if (!(col in colIndices)) throw new Error(`Missing required column: ${col}`);
+  }
+
+  const records = [];
+  for (let i = 1; i < lines.length; i++) {
+    const parts = lines[i].split(',').map(p => p.trim());
+    const rec = {
+      campaignId: parts[colIndices.campaignId],
+      source: 'csv',
+      enteredAt: new Date().toISOString(),
+      participants: parseInt(parts[colIndices.participants], 10),
+      totalDeposits: parseFloat(parts[colIndices.totalDeposits]),
+      wagerCompleted: parseFloat(parts[colIndices.wagerCompleted]),
+      bonusPayout: parseFloat(parts[colIndices.bonusPayout]),
+      incrRevenue: colIndices.incrRevenue !== undefined ? parseFloat(parts[colIndices.incrRevenue]) : undefined,
+      notes: colIndices.notes !== undefined ? parts[colIndices.notes] : undefined,
+    };
+    if (!isNaN(rec.participants) && !isNaN(rec.totalDeposits)) {
+      records.push(rec);
+    }
+  }
+
+  return records;
+}
+
+// Build portfolio dashboard artifact
+// Takes array of campaign analyses with forecast + actual, returns HTML summary
+function buildPortfolioDashboard(analyses) {
+  if (!analyses || analyses.length === 0) {
+    return `<div style="padding:20px;color:#999;">No campaign analyses yet</div>`;
+  }
+
+  const withinBandCount = analyses.filter(a => a.withinBand).length;
+  const flaggedCount = analyses.filter(a => a.flags.length > 0).length;
+  const avgCostRatio = (analyses.reduce((s, a) => s + a.actualRatio, 0) / analyses.length).toFixed(3);
+  const totalNetUSD = analyses.reduce((s, a) => s + a.actualNet, 0).toFixed(0);
+
+  let html = `<div style="padding:20px;">
+    <h3>${L === 'ru' ? 'Портфель кампаний' : 'Campaign Portfolio'}</h3>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:16px 0;">
+      <div style="background:#f5f5f5;padding:12px;border-radius:6px;">
+        <div style="font-size:12px;color:#666;">${L === 'ru' ? 'Точность' : 'Accuracy'}</div>
+        <div style="font-size:24px;font-weight:bold;">${withinBandCount}/${analyses.length}</div>
+        <div style="font-size:11px;color:#999;">${L === 'ru' ? 'в диапазоне' : 'within band'}</div>
+      </div>
+      <div style="background:#f5f5f5;padding:12px;border-radius:6px;">
+        <div style="font-size:12px;color:#666;">${L === 'ru' ? 'Флаги' : 'Flags'}</div>
+        <div style="font-size:24px;font-weight:bold;color:#e74c3c;">${flaggedCount}</div>
+        <div style="font-size:11px;color:#999;">${L === 'ru' ? 'кампаний' : 'campaigns'}</div>
+      </div>
+      <div style="background:#f5f5f5;padding:12px;border-radius:6px;">
+        <div style="font-size:12px;color:#666;">${L === 'ru' ? 'Сред. ratio' : 'Avg ratio'}</div>
+        <div style="font-size:24px;font-weight:bold;">${avgCostRatio}</div>
+        <div style="font-size:11px;color:#999;">cost/dep</div>
+      </div>
+      <div style="background:#f5f5f5;padding:12px;border-radius:6px;">
+        <div style="font-size:12px;color:#666;">${L === 'ru' ? 'Итого net' : 'Total net'}</div>
+        <div style="font-size:24px;font-weight:bold;">${totalNetUSD}</div>
+        <div style="font-size:11px;color:#999;">USD</div>
+      </div>
+    </div>
+    <h4 style="margin-top:24px;">${L === 'ru' ? 'Отклонения' : 'Divergences'}</h4>
+    <div style="max-height:300px;overflow-y:auto;">
+  `;
+
+  for (const a of analyses) {
+    if (a.flags.length > 0) {
+      const risk = a.flags.map(f => {
+        const key = `an_flag_${f}`;
+        return window._i18n?.[L]?.[key] || f;
+      }).join(', ');
+      html += `<div style="padding:12px;margin-bottom:8px;background:#fff3cd;border-left:4px solid #ffc107;border-radius:4px;">
+        <div style="font-weight:bold;margin-bottom:4px;">${a.campaignId || 'Unknown'}</div>
+        <div style="font-size:12px;color:#666;">${L === 'ru' ? 'Флаги' : 'Flags'}: ${risk}</div>
+        <div style="font-size:12px;color:#666;">${L === 'ru' ? 'Отклон.' : 'Variance'}: ${a.costVariancePct.toFixed(1)}% cost, ${a.convVariancePct.toFixed(1)}% wager</div>
+      </div>`;
+    }
+  }
+
+  html += `</div></div>`;
+  return html;
+}

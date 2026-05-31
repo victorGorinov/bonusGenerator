@@ -5,7 +5,7 @@ import { CampaignGenerateSchema }       from '../validation/campaign.schema.js';
 import { TextsSchema }                  from '../validation/texts.schema.js';
 import { AuditSchema }                  from '../validation/audit.schema.js';
 import { OptimizeSchema }               from '../validation/optimize.schema.js';
-import { AnalysisSchema, ActualsSchema } from '../validation/analysis.schema.js';
+import { AnalysisSchema, ActualsSchema, ExplainSchema } from '../validation/analysis.schema.js';
 import { createCampaignController }     from '../controllers/campaign.controller.js';
 import { createAnalyticsController }    from '../controllers/analytics.controller.js';
 import { getAIProvider }                from '../ai/registry.js';
@@ -19,4 +19,5 @@ router.post('/audit',     aiLimiter,       validate(AuditSchema),             ct
 router.post('/optimize',  aiLimiter,       validate(OptimizeSchema),          ctrl.optimize);
 router.post('/analysis',  apiLimiter,      validate(AnalysisSchema),          analyticsCtrl.analyze);
 router.post('/actuals',   apiLimiter,      validate(ActualsSchema),           analyticsCtrl.saveActuals);
+router.post('/analysis/explain', aiLimiter, validate(ExplainSchema),          analyticsCtrl.explain);
 export default router;

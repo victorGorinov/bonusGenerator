@@ -46,3 +46,33 @@ export const AnalysisSchema = z.object({
 });
 
 export type AnalysisInput = z.infer<typeof AnalysisSchema>;
+
+// CampaignComparison schema for explain endpoint
+export const ComparisonSchema = z.object({
+  forecastCostP50: z.number(),
+  actualCost: z.number(),
+  costVarianceAbs: z.number(),
+  costVariancePct: z.number(),
+  percentile: z.enum(['below_p10', 'p10_p50', 'p50_p90', 'above_p90']),
+  withinBand: z.boolean(),
+  forecastConvP50: z.number(),
+  actualWagerCompl: z.number(),
+  convVariancePct: z.number(),
+  forecastRatio: z.number(),
+  actualRatio: z.number(),
+  ratioVariancePct: z.number(),
+  forecastNet: z.number(),
+  actualNet: z.number(),
+  netVarianceAbs: z.number(),
+  roiActual: z.number(),
+  flags: z.array(z.enum(['worse_than_worst_case', 'better_than_best_case', 'abuse_suspected', 'data_incomplete'])),
+});
+
+export type ComparisonInput = z.infer<typeof ComparisonSchema>;
+
+// Request to explain divergence: POST /api/campaign/analysis/explain
+export const ExplainSchema = z.object({
+  comparison: ComparisonSchema,
+});
+
+export type ExplainInput = z.infer<typeof ExplainSchema>;
