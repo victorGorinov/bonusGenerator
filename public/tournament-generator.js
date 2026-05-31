@@ -77,6 +77,7 @@ const draft = {
     geo:          'de',
     lic:          'auto',
     segment:      'all',
+    totalPlayers: 5000,
     entryModel:   'freeroll',
     scoring:      'total_wins',
     duration:     'weekly',
@@ -158,6 +159,23 @@ function showView(view, id) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// ── PLAYER ELIGIBILITY HELPERS ───────────────────────────────────────────────
+const SEGMENT_RATIO_UI = {
+  all: 1.00, new: 0.20, vip: 0.10, dormant: 0.40, depositors: 0.60,
+};
+
+function getSegRatio(seg) {
+  return SEGMENT_RATIO_UI[seg] ?? 1.0;
+}
+
+function updateEligibleHint() {
+  const el = document.getElementById('tp-eligible');
+  if (!el) return;
+  const tp  = draft.params.totalPlayers || 5000;
+  const seg = draft.params.segment || 'all';
+  el.textContent = Math.round(tp * getSegRatio(seg)).toLocaleString();
+}
+
 // ── STEP 1: Tournament type ──────────────────────────────────────────────────
 function renderStep1() {
   return `
@@ -201,7 +219,20 @@ function renderStep2() {
   <div class="form-row">
     <label class="form-label">Segment</label>
     <div class="chips">
-      ${SEGMENTS.map(s => `<div class="chip${p.segment===s.val?' on':''}" onclick="draft.params.segment='${s.val}';renderStep()">${s.lbl}</div>`).join('')}
+      ${SEGMENTS.map(s => `<div class="chip${p.segment===s.val?' on':''}" onclick="draft.params.segment='${s.val}';draft.params.totalPlayers=draft.params.totalPlayers||5000;renderStep();updateEligibleHint()">${s.lbl}</div>`).join('')}
+    </div>
+  </div>
+  <div class="form-row">
+    <label class="form-label">Total Active Players in Casino</label>
+    <div style="display:flex;align-items:center;gap:12px">
+      <input type="range" min="100" max="100000" step="100" id="f-tp"
+             value="${p.totalPlayers||5000}"
+             oninput="draft.params.totalPlayers=+this.value;document.getElementById('tp-out').textContent=Number(+this.value).toLocaleString();updateEligibleHint()"
+             style="flex:1">
+      <span id="tp-out" style="min-width:64px;font-weight:600;text-align:right">${(p.totalPlayers||5000).toLocaleString()}</span>
+    </div>
+    <div style="font-size:.73rem;color:var(--muted);margin-top:5px">
+      Eligible for this segment: <strong id="tp-eligible">${Math.round((p.totalPlayers||5000)*getSegRatio(p.segment)).toLocaleString()}</strong> players
     </div>
   </div>
 </div>
@@ -303,10 +334,15 @@ function renderStep3() {
     return cur + ' ' + Math.abs(Math.round(n)).toLocaleString();
   }
 
+  const dur = draft.params.duration || 'weekly';
+  const pctMap = { flash:{lo:'3%',mi:'7%',hi:'12%'}, daily:{lo:'5%',mi:'10%',hi:'18%'},
+    weekly:{lo:'8%',mi:'15%',hi:'25%'}, monthly:{lo:'10%',mi:'18%',hi:'30%'},
+    multi_round:{lo:'6%',mi:'12%',hi:'20%'} };
+  const pct = pctMap[dur] || pctMap['weekly'];
   const scenarios = [
-    { label:'Best Case (5% participation)',  lift:e.ggrLiftLow,  net:e.netMarginLow,  pl:e.participantsLow,  cpp:e.costPerActiveLow  },
-    { label:'Expected (10% participation)',  lift:e.ggrLiftMid,  net:e.netMarginMid,  pl:e.participantsMid,  cpp:e.costPerActiveMid  },
-    { label:'Worst Case (15% participation)',lift:e.ggrLiftHigh, net:e.netMarginHigh, pl:e.participantsHigh, cpp:e.costPerActiveHigh },
+    { label:`Low (${pct.lo} participation)`,      lift:e.ggrLiftLow,  net:e.netMarginLow,  pl:e.participantsLow,  cpp:e.costPerActiveLow  },
+    { label:`Expected (${pct.mi} participation)`, lift:e.ggrLiftMid,  net:e.netMarginMid,  pl:e.participantsMid,  cpp:e.costPerActiveMid  },
+    { label:`High (${pct.hi} participation)`,     lift:e.ggrLiftHigh, net:e.netMarginHigh, pl:e.participantsHigh, cpp:e.costPerActiveHigh },
   ];
 
   const prizeRows = (spec.prizes||[]).map((pr,i) => {
@@ -324,10 +360,15 @@ function renderStep3() {
     return `<div class="econ-card">
       <div class="econ-label">${s.label}</div>
       <div class="econ-val ${netClass}">${s.net>=0?'+':''}${fmtCur(s.net)}</div>
-      <div class="econ-sub">${s.pl} players · GGR lift: +${fmtCur(s.lift)}</div>
+      <div class="econ-sub">${s.pl} players · GGR: +${fmtCur(s.lift)}</div>
       <div class="econ-sub">Cost/active: ${fmtCur(s.cpp)}</div>
     </div>`;
   }).join('');
+
+  const engMul  = e.engagementMultiplier || 2.5;
+  const retVal  = e.retentionValue || 0;
+  const totVal  = e.totalValueMid  || e.netMarginMid || 0;
+  const totClass = totVal >= 0 ? 'pos' : 'neg';
 
   return `
 <div class="step-header">
@@ -360,7 +401,33 @@ function renderStep3() {
 <div class="card">
   <div class="card-title">Economic Scenarios</div>
   <div class="econ-grid">${econCards}</div>
-  <div style="font-size:.73rem;color:var(--muted)">Based on ${e.eligible} eligible ${draft.params.segment} players · ARPU ${e.arpu} USD/mo</div>
+  <div style="margin-top:14px;padding:12px 14px;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:8px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div style="flex:1;min-width:160px">
+      <div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Total value (expected)</div>
+      <div style="font-size:1.1rem;font-weight:700;color:${totClass==='pos'?'var(--success)':'#ef4444'}">${totVal>=0?'+':''}${fmtCur(totVal)}</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-top:2px">GGR lift + post-tournament retention</div>
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div style="text-align:center">
+        <div style="font-size:.68rem;color:var(--muted);margin-bottom:2px">Engagement</div>
+        <div style="font-size:.88rem;font-weight:600;color:#a0b0ff">×${engMul.toFixed(1)}</div>
+        <div style="font-size:.65rem;color:var(--muted)">vs normal play</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:.68rem;color:var(--muted);margin-bottom:2px">Retention value</div>
+        <div style="font-size:.88rem;font-weight:600;color:var(--success)">+${fmtCur(retVal)}</div>
+        <div style="font-size:.65rem;color:var(--muted)">next-month uplift</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:.68rem;color:var(--muted);margin-bottom:2px">Full ROI</div>
+        <div style="font-size:.88rem;font-weight:600;color:${roi>=0?'var(--success)':'#ef4444'}">${roi>=0?'+':''}${roi}%</div>
+        <div style="font-size:.65rem;color:var(--muted)">on prize pool</div>
+      </div>
+    </div>
+  </div>
+  <div style="font-size:.7rem;color:var(--muted);margin-top:10px">
+    Based on ${e.eligible} eligible ${draft.params.segment} players (${Math.round((e.segmentRatio||1)*100)}% of ${(draft.params.totalPlayers||5000).toLocaleString()} total casino players) · ARPU ${e.arpu} USD/mo · engagement ×${engMul.toFixed(1)} vs normal play
+  </div>
 </div>
 
 <div style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.25);border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:14px">
@@ -956,13 +1023,19 @@ function renderDetail(id) {
       <span class="prize-amt">${cur} ${pr.amount.toLocaleString()}</span>
     </div>`).join('');
 
+  const totVal   = e.totalValueMid  ?? e.netMarginMid ?? 0;
+  const retVal   = e.retentionValue ?? 0;
+  const engMulD  = e.engagementMultiplier ?? 2.5;
+  const totPos   = totVal >= 0;
   const econRows = [
-    { label:'Expected participants', val: (e.participantsMid || 0).toLocaleString() },
-    { label:'GGR lift (expected)',   val: cur + ' ' + Math.round(e.ggrLiftMid || 0).toLocaleString() },
-    { label:'Net margin (expected)', val: (e.netMarginMid >= 0 ? '+' : '') + cur + ' ' + Math.round(Math.abs(e.netMarginMid || 0)).toLocaleString(), pos: roiPos },
-    { label:'ROI',                   val: roiStr, pos: roiPos },
-    { label:'Break-even players',    val: (e.breakEvenParticipants || '—').toLocaleString() },
-    { label:'Cost per active',       val: cur + ' ' + Math.round(e.costPerActiveMid || 0).toLocaleString() },
+    { label:'Expected participants',  val: (e.participantsMid || 0).toLocaleString() },
+    { label:'GGR lift (expected)',    val: cur + ' ' + Math.round(e.ggrLiftMid || 0).toLocaleString() },
+    { label:'Retention value',        val: '+' + cur + ' ' + Math.round(retVal).toLocaleString(), pos: true },
+    { label:'Total value (expected)', val: (totVal >= 0 ? '+' : '') + cur + ' ' + Math.round(Math.abs(totVal)).toLocaleString(), pos: totPos },
+    { label:'ROI (on prize pool)',    val: roiStr, pos: roiPos },
+    { label:'Break-even players',     val: (e.breakEvenParticipants || '—').toLocaleString() },
+    { label:'Cost per active',        val: cur + ' ' + Math.round(e.costPerActiveMid || 0).toLocaleString() },
+    { label:'Engagement multiplier',  val: '×' + engMulD.toFixed(1) + ' vs normal play' },
   ].map(r => `
     <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
       <span style="font-size:.8rem;color:var(--muted)">${r.label}</span>
