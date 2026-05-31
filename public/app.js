@@ -2014,7 +2014,7 @@ function buildAdminText(c){
   const ts = new Date().toLocaleDateString('ru');
   const A = [];
   A.push('╔══════════════════════════════════════════════════════════════╗');
-  A.push('║        BONUS ENGINE — ADMIN PANEL CONFIGURATION             ║');
+  A.push('║        RETOMAT — ADMIN PANEL CONFIGURATION             ║');
   A.push('╚══════════════════════════════════════════════════════════════╝');
   A.push(`Generated : ${ts}   |   Language: ${L.toUpperCase()}`);
   A.push(`Region    : ${r.toUpperCase()}   |   License: ${(lic||'none').toUpperCase()}`);
