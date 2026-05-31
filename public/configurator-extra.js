@@ -864,7 +864,28 @@ document.addEventListener('keydown', function(e) {
 // Init count badge on load
 document.addEventListener('DOMContentLoaded', function() {
   _updateCampsCount();
+  updateAllBadges();
 });
+
+// Update campaign and tournament badges across pages
+function updateAllBadges() {
+  try {
+    const camps = JSON.parse(localStorage.getItem('be_campaigns') || '[]');
+    const campBadge = document.getElementById('camp-nav-badge');
+    if (campBadge) {
+      campBadge.textContent = camps.length;
+      campBadge.style.display = camps.length > 0 ? 'inline' : 'none';
+    }
+  } catch (e) {}
+  try {
+    const tourns = JSON.parse(localStorage.getItem('savedTournaments') || '[]');
+    const tournBadge = document.getElementById('nav-tourn-badge');
+    if (tournBadge) {
+      tournBadge.textContent = tourns.length;
+      tournBadge.style.display = tourns.length > 0 ? 'inline' : 'none';
+    }
+  } catch (e) {}
+}
 
 // ── GLOSSARY ──────────────────────────────────────────────────────────────────
 function toggleCfgGlossary() {
