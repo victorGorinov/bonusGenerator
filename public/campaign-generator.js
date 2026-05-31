@@ -2172,6 +2172,15 @@ function renderCampaignViews() {
   if (all)  all.innerHTML  = camps.length ? camps.map(campaignRowHTML).join('') : empty;
   const nb = document.getElementById('camp-nav-badge');
   if (nb) { nb.textContent = camps.length; nb.style.display = camps.length > 0 ? 'inline' : 'none'; }
+  // Update tournament badge count
+  const tb = document.getElementById('nav-tourn-badge');
+  if (tb) {
+    try {
+      const tourns = JSON.parse(localStorage.getItem('savedTournaments') || '[]');
+      tb.textContent = tourns.length;
+      tb.style.display = tourns.length > 0 ? 'inline' : 'none';
+    } catch (e) {}
+  }
 }
 
 // ── CONTEXT MENU ─────────────────────────────────────────────────────────────

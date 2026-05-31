@@ -21,7 +21,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 /* SIDEBAR */
 .sidebar{width:var(--sidebar-w);min-height:100vh;background:#1E1B4B;border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50}
 .sb-logo{padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px}
-.sb-logo-icon{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.sb-logo-img{height:28px;width:auto;display:block;flex-shrink:0}
 .sb-logo-text{font-weight:800;font-size:.9rem;color:#fff;letter-spacing:-.3px}.sb-logo-text span{color:#F59E0B}
 .sb-logo-tag{font-size:9px;font-weight:700;color:#1E1B4B;background:#F59E0B;padding:1px 6px;border-radius:8px;letter-spacing:.4px;margin-left:2px;align-self:center}
 .sb-nav{flex:1;padding:10px 0;overflow-y:auto}
@@ -333,15 +333,14 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 <!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="sb-logo">
-    <div class="sb-logo-icon">🎰</div>
-    <div class="sb-logo-text">Retomat</div>
+    <img src="/logo.svg" class="sb-logo-img" alt="Retomat"/>
     <div class="sb-logo-tag">AI</div>
   </div>
   <nav class="sb-nav">
     <div class="nav-lbl" data-i18n="nav_main">Главное</div>
     <button class="nav-item active" onclick="showView('dashboard')"><span class="nav-icon">📊</span><span data-i18n="nav_dashboard">Дашборд</span></button>
     <button class="nav-item" onclick="showView('campaigns')"><span class="nav-icon">📁</span><span data-i18n="nav_campaigns">Кампании</span><span class="nav-badge" id="camp-nav-badge" style="display:none"></span></button>
-    <a class="nav-item" href="/tournament-generator.html"><span class="nav-icon">🏆</span><span data-i18n="nav_tournament">Турниры</span></a>
+    <a class="nav-item" href="/tournament-generator.html"><span class="nav-icon">🏆</span><span data-i18n="nav_tournament">Турниры</span><span class="nav-badge" id="nav-tourn-badge" style="display:none"></span></a>
     <div class="nav-lbl" data-i18n="nav_tools" style="margin-top:6px">Инструменты</div>
     <button class="nav-item" onclick="showView('configurator')"><span class="nav-icon">⚙️</span><span data-i18n="nav_configurator">Конфигуратор</span></button>
     <a class="nav-item" href="/campaign-generator.html"><span class="nav-icon">🚀</span><span data-i18n="nav_campaign_gen">Campaign Gen</span></a>
