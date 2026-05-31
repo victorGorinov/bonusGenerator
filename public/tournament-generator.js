@@ -426,7 +426,7 @@ function renderStep3() {
     </div>
   </div>
   <div style="font-size:.7rem;color:var(--muted);margin-top:10px">
-    Based on ${e.eligible} eligible ${draft.params.segment} players (${Math.round((e.segmentRatio||1)*100)}% of ${(draft.params.totalPlayers||5000).toLocaleString()} total casino players) · ARPU ${e.arpu} USD/mo · engagement ×${engMul.toFixed(1)} vs normal play
+    Based on ${e.eligible} eligible ${draft.params.segment} players (${Math.round(e.segmentRatio*100)}% of ${(draft.params.totalPlayers||5000).toLocaleString()} total casino players) · ARPU ${e.arpu} USD/mo · engagement ×${engMul.toFixed(1)} vs normal play
   </div>
 </div>
 
