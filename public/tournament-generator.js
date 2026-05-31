@@ -990,8 +990,8 @@ function renderList() {
     </div>
   </div>
   <div style="display:flex;gap:7px;flex-shrink:0">
-    <button class="btn btn-outline btn-sm" onclick="showView('detail','${t.id}')">Details</button>
-    <button class="btn btn-outline btn-sm" style="border-color:rgba(124,58,237,.4);color:#c4b5fd" onclick="loadAndShowGuide('${t.id}')">📋 Guide</button>
+    <button class="btn btn-outline btn-sm" data-id="${t.id}" onclick="showView('detail', this.dataset.id)">Details</button>
+    <button class="btn btn-outline btn-sm" style="border-color:rgba(124,58,237,.4);color:#c4b5fd" data-id="${t.id}" onclick="loadAndShowGuide(this.dataset.id)">📋 Guide</button>
   </div>
 </div>`;
   }).join('');
