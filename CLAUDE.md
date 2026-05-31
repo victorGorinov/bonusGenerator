@@ -1,6 +1,6 @@
 # CLAUDE.md — Bonus Engine Configurator
 
-Complete architecture reference for Claude Code sessions. Updated: 2026-05-30.
+Complete architecture reference for Claude Code sessions. Updated: 2026-05-31.
 
 ---
 
@@ -56,7 +56,7 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │   │   ├── scenarios.ts         # GEO_CFG, LANG_NAME, SEG_DESC, SCENARIO_MSG
 │   │   │   └── explanation.ts       # campaignExplanation(), campaignAlternatives()
 │   │   ├── tournament/
-│   │   │   └── calcEconomics.ts     # calcTournamentEconomics() — pure economics
+│   │   │   └── calcEconomics.ts     # calcTournamentEconomics() — SEGMENT_RATIO × totalPlayers → eligible
 │   │   └── ai/
 │   │       └── parser.ts            # tryRepairJSON — JSON repair utility
 │   ├── ai/
@@ -354,12 +354,19 @@ campaign-generator.html + campaign-generator.js
 ### Tournament Generator
 ```
 tournament-generator.html + tournament-generator.js
-  → POST /api/tournament/generate → createTournamentController().generate → GenerateTournament use-case
-  → tournamentService.generateTournament() → calcTournamentEconomics()
-  ← { spec, econ, params, cur, region, lic }
+  → POST /api/tournament/generate { type, params: { ..., totalPlayers, segment, ... } }
+  → createTournamentController().generate → GenerateTournament use-case
+  → tournamentService.generateTournament() → calcTournamentEconomics({ totalPlayers, segment, ... })
+    eligible = round(totalPlayers × SEGMENT_RATIO[segment])
+    SEGMENT_RATIO: { all:1.0, new:0.20, vip:0.10, dormant:0.40, depositors:0.60 }
+  ← { spec, econ: { totalPlayers, segmentRatio, eligible, ... }, params, cur, region, lic }
 
   → POST /api/tournament/texts / /audit → GenerateTournament use-case + AI
 ```
+
+**Step 2 UI**: slider "Total Active Players" (100–100,000, default 5,000). Live hint shows eligible count (e.g. "500 VIP players eligible"). Eligible recalculates on both slider move and segment chip click.
+
+**Step 3 footnote**: `"500 eligible vip players (10% of 5,000 total casino players) · ARPU 65 USD/mo · engagement ×2.5"`
 
 ---
 
@@ -443,7 +450,7 @@ npm run test:watch   # vitest watch mode
 ```
 tests/domain/buildConfig.test.js
 tests/domain/recalcCosts.test.js
-tests/domain/calcEconomics.test.js   # 20 tests
+tests/domain/calcEconomics.test.js   # 25 tests (includes totalPlayers/segmentRatio coverage)
 tests/domain/payout.test.js
 tests/ai/parser.test.js
 tests/integration/api.generate.test.js
