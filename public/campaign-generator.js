@@ -2441,7 +2441,11 @@ try {
   if (saved && I18N[saved]) setUILang(saved);
 } catch(e) {}
 
-showView(window.location.hash === '#campaigns' ? 'campaigns' : 'dashboard');
+// Check for view parameter (?view=configurator) and hash (#campaigns)
+const params = new URLSearchParams(window.location.search);
+const viewParam = params.get('view');
+const hashView = window.location.hash === '#campaigns' ? 'campaigns' : null;
+showView(viewParam || hashView || 'dashboard');
 renderScenarios();
 renderCampaignViews();
 document.querySelector('.main').classList.add('ready');
