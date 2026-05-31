@@ -1572,7 +1572,7 @@ function saveActuals() {
 function renderDetailAnalytics(c) {
   const isRu = currentLang === 'ru';
   const fs   = c.forecastSnapshot;
-  const cur  = fs?.sitecur || c.econ?.cur || c.params?.sitecur || '€';
+  const cur  = fs?.sitecur || getSitecurByGeo(fs?.geo) || getSitecurByGeo(c.params?.geo) || c.econ?.cur || c.params?.sitecur || '€';
   const fmt  = v => cur + ' ' + Math.abs(Math.round(v)).toLocaleString();
   const fmtU = v => '$' + Math.abs(Math.round(v)).toLocaleString();
   const pct  = v => (v * 100).toFixed(1) + '%';
