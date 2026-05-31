@@ -1152,32 +1152,48 @@ if (initialHash === '#setup') {
 } else if (initialHash === '#list') {
   showView('list');
 } else {
-  // Show saved tournaments list if available, otherwise show generator
-  const saved = loadTournaments();
-  if (saved.length > 0) {
-    showView('list');
-  } else {
-    renderStep();
-  }
-}
+  // Check for view parameter (?view=list or ?view=setup)
+  const params = new URLSearchParams(window.location.search);
+  const viewParam = params.get('view');
 
-window.addEventListener('pageshow', function() {
-  updateNavBadge();
-  // Restore view state when returning to page from another tab
-  const hash = window.location.hash;
-  if (hash === '#setup') {
-    showView('setup');
-  } else if (hash === '#list') {
-    showView('list');
-  } else if (hasActiveGenerator && step > 0) {
-    // Resume generator if currently in progress
-    renderStep();
+  if (viewParam === 'list' || viewParam === 'setup') {
+    showView(viewParam);
   } else {
+    // Show saved tournaments list if available, otherwise show generator
     const saved = loadTournaments();
     if (saved.length > 0) {
       showView('list');
     } else {
       renderStep();
+    }
+  }
+}
+
+window.addEventListener('pageshow', function() {
+  updateNavBadge();
+  // Check for view parameter (?view=list or ?view=setup)
+  const params = new URLSearchParams(window.location.search);
+  const viewParam = params.get('view');
+
+  if (viewParam === 'list' || viewParam === 'setup') {
+    showView(viewParam);
+  } else {
+    // Restore view state when returning to page from another tab
+    const hash = window.location.hash;
+    if (hash === '#setup') {
+      showView('setup');
+    } else if (hash === '#list') {
+      showView('list');
+    } else if (hasActiveGenerator && step > 0) {
+      // Resume generator if currently in progress
+      renderStep();
+    } else {
+      const saved = loadTournaments();
+      if (saved.length > 0) {
+        showView('list');
+      } else {
+        renderStep();
+      }
     }
   }
   // Update both badges on load
