@@ -46,6 +46,14 @@ function showView(name) {
     );
   });
   if (name === 'campaigns') renderCampaignViews();
+  // Always update campaign badge when switching views
+  updateCampaignBadge();
+}
+
+function updateCampaignBadge() {
+  const camps = getCampaigns();
+  const nb = document.getElementById('camp-nav-badge');
+  if (nb) { nb.textContent = camps.length; nb.style.display = camps.length > 0 ? 'inline' : 'none'; }
 }
 
 // ── WIZARD ────────────────────────────────────────────────────────────────────
@@ -1572,7 +1580,11 @@ function saveActuals() {
 function renderDetailAnalytics(c) {
   const isRu = currentLang === 'ru';
   const fs   = c.forecastSnapshot;
-  const cur  = fs?.sitecur || getSitecurByGeo(fs?.geo) || getSitecurByGeo(c.params?.geo) || c.econ?.cur || c.params?.sitecur || '€';
+  // Fallback chain: if sitecur is default '€' but geo is non-EU, use geo-based currency
+  const curFromGeo = getSitecurByGeo(fs?.geo || c.params?.geo);
+  const cur = (fs?.sitecur && fs.sitecur !== '€') ? fs.sitecur :
+              (curFromGeo && curFromGeo !== '€') ? curFromGeo :
+              c.econ?.cur || c.params?.sitecur || '€';
   const fmt  = v => cur + ' ' + Math.abs(Math.round(v)).toLocaleString();
   const fmtU = v => '$' + Math.abs(Math.round(v)).toLocaleString();
   const pct  = v => (v * 100).toFixed(1) + '%';
@@ -2104,7 +2116,10 @@ const CAMPS_KEY = 'be_campaigns';
 function getCampaigns() {
   try { return JSON.parse(localStorage.getItem(CAMPS_KEY) || '[]'); } catch { return []; }
 }
-function putCampaigns(arr) { localStorage.setItem(CAMPS_KEY, JSON.stringify(arr)); }
+function putCampaigns(arr) {
+  localStorage.setItem(CAMPS_KEY, JSON.stringify(arr));
+  updateCampaignBadge();
+}
 
 function saveCampaign() {
   const camps = getCampaigns();
@@ -2186,8 +2201,7 @@ function renderCampaignViews() {
   const all  = document.getElementById('all-camp-body');
   if (dash) dash.innerHTML = camps.length ? camps.slice(0,5).map(campaignRowHTML).join('') : empty;
   if (all)  all.innerHTML  = camps.length ? camps.map(campaignRowHTML).join('') : empty;
-  const nb = document.getElementById('camp-nav-badge');
-  if (nb) { nb.textContent = camps.length; nb.style.display = camps.length > 0 ? 'inline' : 'none'; }
+  updateCampaignBadge();
   // Update tournament badge count
   const tb = document.getElementById('nav-tourn-badge');
   if (tb) {
