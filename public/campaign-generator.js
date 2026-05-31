@@ -14,6 +14,12 @@ function getProgSteps() {
 }
 const GEO_LBL   = {eu:'🇪🇺 EU / UK',de:'🇩🇪 Germany',fr:'🇫🇷 France',es:'🇪🇸 Spain',it:'🇮🇹 Italy',nl:'🇳🇱 Netherlands',dk:'🇩🇰 Denmark',uk:'🇬🇧 UK',ru:'🌐 Russia',kz:'🇰🇿 Kazakhstan',mx:'🇲🇽 Mexico',br:'🇧🇷 Brazil',mn:'🇲🇳 Mongolia',us:'🇺🇸 USA'};
 const SEG_LBL   = {new:'Новые',mid:'Средние',vip:'VIP'};
+const GEO_CURRENCY = {de:'EUR',fr:'EUR',es:'EUR',it:'EUR',nl:'EUR',dk:'DKK',uk:'GBP',ru:'RUB',kz:'KZT',mx:'MXN',br:'BRL',mn:'MNT',us:'USD'};
+
+// Get currency for a given geo code
+function getSitecurByGeo(geo) {
+  return GEO_CURRENCY[geo] || '€';
+}
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let draft = { scenario: null, params: { vertical:'casino', segment:'mid', games:'slots', tone:'friendly', agg:'low', risk:'low', lic:'auto' } };
@@ -75,9 +81,11 @@ function goStep(n) {
         goStep(2);
         return;
       }
-      // draft.params.geo already set by pickEuCountry — leave it
+      // draft.params.geo already set by pickEuCountry — leave it, but set sitecur
+      draft.params.sitecur = getSitecurByGeo(draft.params.geo);
     } else {
       draft.params.geo = geoSel;
+      draft.params.sitecur = getSitecurByGeo(geoSel);
     }
     draft.params.budget  = parseFloat(document.getElementById('p-budget').value) || 5000;
     draft.params.players = parseInt(document.getElementById('cg-pnum').value) || 5000;
@@ -206,6 +214,7 @@ function pickEuCountry(el) {
   el.classList.add('active');
   const code = el.dataset.v;
   draft.params.geo = code;
+  draft.params.sitecur = getSitecurByGeo(code);
   draft.params._euPending = false;
   // Sync language and reset license
   const lang = GEO_LANG[code] || 'en';
@@ -1379,12 +1388,18 @@ function switchDTab(tab, btn) {
 
 function renderDetailTab(tab, c) {
   const body = document.getElementById('det-body');
-  if      (tab === 'overview') body.innerHTML = renderDetailOverview(c);
-  else if (tab === 'mechanic') body.innerHTML = renderDetailMechanic(c);
-  else if (tab === 'texts')  { renderDetailTexts(c, body); }
-  else if (tab === 'audit')  { renderDetailAudit(c, body); }
-  else if (tab === 'export')     body.innerHTML = renderDetailExport(c);
-  else if (tab === 'analytics')  body.innerHTML = renderDetailAnalytics(c);
+  if (!body) { console.error('det-body not found'); return; }
+  try {
+    if      (tab === 'overview') body.innerHTML = renderDetailOverview(c);
+    else if (tab === 'mechanic') body.innerHTML = renderDetailMechanic(c);
+    else if (tab === 'texts')  { renderDetailTexts(c, body); }
+    else if (tab === 'audit')  { renderDetailAudit(c, body); }
+    else if (tab === 'export')     body.innerHTML = renderDetailExport(c);
+    else if (tab === 'analytics')  body.innerHTML = renderDetailAnalytics(c);
+  } catch (e) {
+    console.error('Error rendering tab ' + tab, e);
+    body.innerHTML = `<p style="color:#ef4444">Error: ${e.message}</p>`;
+  }
 }
 
 function renderDetailOverview(c) {
@@ -1557,7 +1572,7 @@ function saveActuals() {
 function renderDetailAnalytics(c) {
   const isRu = currentLang === 'ru';
   const fs   = c.forecastSnapshot;
-  const cur  = lastResult?.cur || c.econ?.cur || '';
+  const cur  = fs?.sitecur || c.econ?.cur || c.params?.sitecur || '€';
   const fmt  = v => cur + ' ' + Math.abs(Math.round(v)).toLocaleString();
   const fmtU = v => '$' + Math.abs(Math.round(v)).toLocaleString();
   const pct  = v => (v * 100).toFixed(1) + '%';
@@ -2109,6 +2124,7 @@ function saveCampaign() {
       sP10: draft.econ.sP10, sP50: draft.econ.sP50, sP90: draft.econ.sP90,
       costRatio: draft.econ.costRatio, pl: draft.econ.pl, arpu: draft.econ.arpu,
       ltv3: draft.econ.ltv3, wagerX: draft.econ.wagerX,
+      sitecur: draft.params?.sitecur || '€', geo: draft.params?.geo || '',
       capturedAt: new Date().toISOString(),
     } : null,
     texts: draft.texts || null,
