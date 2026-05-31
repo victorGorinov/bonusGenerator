@@ -435,14 +435,9 @@ function renderStep3() {
   <span style="font-size:1.4rem;flex-shrink:0">📋</span>
   <div style="flex:1;min-width:0">
     <div style="font-size:.85rem;font-weight:600;color:#c4b5fd;margin-bottom:2px">Setup Guide ready</div>
-    <div style="font-size:.77rem;color:var(--muted)">Save this tournament to access it later from your library</div>
+    <div style="font-size:.77rem;color:var(--muted)">View the detailed setup guide for this tournament</div>
   </div>
   <div style="display:flex;gap:8px;flex-shrink:0">
-    <button id="btn-save-tournament" class="btn btn-outline btn-sm"
-            style="border-color:rgba(79,110,247,.4);color:#a0b0ff"
-            onclick="saveTournament()">
-      💾 Save
-    </button>
     <button class="btn btn-outline btn-sm"
             style="border-color:rgba(124,58,237,.4);color:#c4b5fd"
             onclick="showSetupGuide()">
@@ -452,7 +447,14 @@ function renderStep3() {
 </div>
 
 <div class="nav-footer">
-  <button class="btn btn-outline" onclick="goStep(2)">← Reconfigure</button>
+  <div style="display:flex;gap:9px;align-items:center">
+    <button class="btn btn-outline" onclick="goStep(2)">← Reconfigure</button>
+    <button id="btn-save-tournament" class="btn btn-outline"
+            style="border-color:rgba(79,110,247,.4);color:#a0b0ff"
+            onclick="saveTournament()">
+      💾 Save
+    </button>
+  </div>
   <div style="display:flex;gap:9px">
     <button class="btn btn-outline btn-sm" onclick="exportTournamentPDF()">⬇ PDF</button>
     <button class="btn btn-primary btn-lg" onclick="goStep(4)">Generate AI Texts →</button>
