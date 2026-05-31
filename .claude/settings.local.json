@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --input-type=module)",
+      "Bash(node -e \"import\\('./server.js'\\)\")",
+      "Bash(node --check server.js)",
+      "Bash(node --check public/app.js)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(curl -s http://localhost:3000/)",
+      "Bash(curl -s http://localhost:3000/generator.html)",
+      "Bash(open http://localhost:3000)",
+      "Bash(git add *)",
+      "Bash(npm install *)",
+      "Bash(lsof -ti:3000)",
+      "Bash(xargs kill -9)",
+      "Bash(node server.js)",
+      "Bash(curl -s -X POST http://localhost:3000/api/signup -H 'Content-Type: application/json' -d '{\"name\":\"Test\",\"email\":\"viktar.horynau@gmail.com\",\"role\":\"Bonus Manager\"}')"
+    ]
+  }
+}

@@ -846,17 +846,23 @@ function renderSetupGuide() {
 
   const licBadge = lic !== 'none' ? `<span style="font-size:.72rem;padding:1px 8px;border-radius:6px;background:rgba(245,158,11,.15);color:var(--warn);margin-left:6px">${lic.toUpperCase()}</span>` : '';
 
+  // compact prize summary for guide header (no repeated full table)
+  const top3 = (spec.prizes || []).slice(0, 3).map(pr =>
+    `${pr.place===1?'🥇':pr.place===2?'🥈':'🥉'} ${cur} ${pr.amount.toLocaleString()}`
+  ).join(' · ');
+
   return `
 <div class="step-header">
-  <div class="step-badge">📋 Setup Guide</div>
+  <div class="step-badge">📋 Operator Setup Guide</div>
   <div class="step-title">${spec.type.charAt(0).toUpperCase()+spec.type.slice(1)} Tournament${licBadge}</div>
-  <div class="step-sub">${cur} ${spec.prizePool.toLocaleString()} prize pool · ${spec.distribution} · ${p.duration || 'weekly'} duration</div>
+  <div class="step-sub">What you need to configure before going live</div>
 </div>
 
-<div class="card">
-  <div class="card-title">Prize Table</div>
-  ${prizeRows}
-  <div style="margin-top:10px;font-size:.75rem;color:var(--muted)">Total pool: ${cur} ${spec.prizePool.toLocaleString()} · ${(spec.prizes||[]).length} prize places</div>
+<div style="background:rgba(79,110,247,.07);border:1px solid rgba(79,110,247,.2);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+  <span style="font-size:.75rem;color:var(--muted)">Prize pool:</span>
+  <span style="font-size:.85rem;font-weight:600;color:var(--text)">${cur} ${spec.prizePool.toLocaleString()}</span>
+  <span style="font-size:.75rem;color:var(--muted);margin-left:4px">${top3}</span>
+  <span style="font-size:.72rem;color:var(--muted);margin-left:auto">${(spec.prizes||[]).length} places · ${spec.distribution}</span>
 </div>
 
 <div class="card">
@@ -951,10 +957,64 @@ function showToast(msg) {
 }
 
 // ── LIST VIEW ────────────────────────────────────────────────────────────────
+const TYPE_LABEL = { slot:'Slots', live:'Live Casino', mixed:'Mixed', prize_drop:'Prize Drop' };
+const TYPE_ICON  = { slot:'🎰', live:'🃏', mixed:'🎲', prize_drop:'💎' };
+
+function roiBadge(roi) {
+  if (roi >= 10)  return `<span class="badge badge-pos">+${roi}% ROI</span>`;
+  if (roi >= 0)   return `<span class="badge badge-neu">+${roi}% ROI</span>`;
+  return `<span class="badge badge-neg">${roi}% ROI</span>`;
+}
+
+function tournRowHTML(t) {
+  const roi  = t.econ?.roi ?? 0;
+  const cur  = t.cur || '';
+  const pool = cur + ' ' + (t.spec?.prizePool || 0).toLocaleString();
+  const seg  = t.params?.segment || 'all';
+  const dur  = t.params?.duration || '';
+  const date = new Date(t.createdAt).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+  const icon = TYPE_ICON[t.type] || '🏆';
+  const lbl  = TYPE_LABEL[t.type] || t.type;
+  return `<div class="ct-row" onclick="showView('detail','${t.id}')">
+    <div>
+      <div class="ct-name">${icon} ${t.name}</div>
+      <div class="ct-meta">${lbl} · ${seg} · ${dur}</div>
+    </div>
+    <div class="ct-cell" style="font-size:.75rem">${pool}</div>
+    <div>${roiBadge(roi)}</div>
+    <div class="ct-cell">${date}</div>
+    <div style="text-align:right">
+      <button class="btn btn-ghost btn-sm" style="padding:4px 8px" onclick="event.stopPropagation();showTournMenu('${t.id}',this)">···</button>
+    </div>
+  </div>`;
+}
+
+let _openTournMenu = null;
+function closeTournMenu() {
+  if (_openTournMenu) { _openTournMenu.remove(); _openTournMenu = null; }
+}
+function showTournMenu(id, btn) {
+  closeTournMenu();
+  const menu = document.createElement('div');
+  menu.className = 'tourn-menu';
+  menu.innerHTML = `
+    <button class="tourn-menu-item" onclick="showView('detail','${id}')">↗ Details</button>
+    <button class="tourn-menu-item" onclick="loadAndShowGuide('${id}')">📋 Setup Guide</button>
+    <button class="tourn-menu-item" onclick="loadAndRegenTexts('${id}')">✦ AI Texts</button>
+    <div class="tourn-menu-sep"></div>
+    <button class="tourn-menu-item" onclick="deleteTournament('${id}')" style="color:#f87171">🗑 Delete</button>`;
+  document.body.appendChild(menu);
+  _openTournMenu = menu;
+  const r  = btn.getBoundingClientRect();
+  const mh = menu.offsetHeight || 160;
+  const top = (window.innerHeight - r.bottom) < (mh + 8) ? r.top - mh - 4 : r.bottom + 4;
+  menu.style.top   = top + 'px';
+  menu.style.right = (window.innerWidth - r.right) + 'px';
+  setTimeout(() => document.addEventListener('click', closeTournMenu, { once: true }), 10);
+}
+
 function renderList() {
   const list = loadTournaments();
-  const typeIcon = { slot:'🎰', live:'🃏', mixed:'🎲', prize_drop:'💎' };
-  const roiColor = roi => roi >= 10 ? 'var(--success)' : roi >= 0 ? 'var(--warn)' : '#ef4444';
 
   if (list.length === 0) {
     return `
@@ -970,41 +1030,19 @@ function renderList() {
 </div>`;
   }
 
-  const cards = list.map(t => {
-    const roi    = t.econ?.roi ?? 0;
-    const roiStr = (roi >= 0 ? '+' : '') + roi + '%';
-    const cur    = t.cur || '';
-    const pool   = cur + ' ' + (t.spec?.prizePool || 0).toLocaleString();
-    const date   = new Date(t.createdAt).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
-    const seg    = t.params?.segment || 'mid';
-    return `
-<div class="card" style="display:flex;align-items:center;gap:14px;padding:14px 16px;margin-bottom:10px">
-  <div style="width:38px;height:38px;border-radius:9px;background:rgba(79,110,247,.15);border:1px solid rgba(79,110,247,.25);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${typeIcon[t.type] || '🏆'}</div>
-  <div style="flex:1;min-width:0">
-    <div style="font-size:.88rem;font-weight:600;color:var(--text);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <span style="font-size:.78rem;color:var(--muted)">${pool}</span>
-      <span style="font-size:.73rem;padding:1px 7px;border-radius:99px;background:rgba(16,185,129,.12);color:${roiColor(roi)}">${roiStr} ROI</span>
-      <span style="font-size:.73rem;padding:1px 7px;border-radius:99px;background:rgba(79,110,247,.12);color:#a0b0ff">${seg}</span>
-      <span style="font-size:.73rem;color:var(--muted);margin-left:auto">${date}</span>
-    </div>
-  </div>
-  <div style="display:flex;gap:7px;flex-shrink:0">
-    <button class="btn btn-outline btn-sm" data-id="${t.id}" onclick="showView('detail', this.dataset.id)">Details</button>
-    <button class="btn btn-outline btn-sm" style="border-color:rgba(124,58,237,.4);color:#c4b5fd" data-id="${t.id}" onclick="loadAndShowGuide(this.dataset.id)">📋 Guide</button>
-  </div>
-</div>`;
-  }).join('');
-
   return `
-<div class="step-header">
-  <div class="step-badge">🏆 Tournaments</div>
-  <div class="step-title">Your Tournament Library</div>
-  <div class="step-sub">${list.length} saved tournament${list.length !== 1 ? 's' : ''}</div>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+  <div>
+    <div style="font-size:1.1rem;font-weight:700;color:var(--text)">Tournaments</div>
+    <div style="font-size:.8rem;color:var(--muted);margin-top:2px">${list.length} saved</div>
+  </div>
+  <button class="btn btn-primary btn-sm" onclick="goStep(1)">+ New Tournament</button>
 </div>
-${cards}
-<div style="margin-top:16px;text-align:center">
-  <button class="btn btn-primary" onclick="goStep(1)">+ Create New Tournament</button>
+<div class="ctable">
+  <div class="ct-hd">
+    <span>Name</span><span>Prize pool</span><span>ROI</span><span>Date</span><span></span>
+  </div>
+  ${list.map(tournRowHTML).join('')}
 </div>`;
 }
 
@@ -1051,7 +1089,7 @@ function renderDetail(id) {
 
   return `
 <div style="margin-bottom:18px">
-  <button class="btn btn-ghost btn-sm" onclick="showView('list')" style="padding:0;margin-bottom:10px">← Tournaments</button>
+  <button class="btn btn-ghost btn-sm" onclick="showView('list')" style="padding:0;margin-bottom:10px;color:var(--muted);font-size:.8rem">← Tournaments</button>
   <div style="display:flex;align-items:flex-start;gap:14px">
     <div style="width:46px;height:46px;border-radius:10px;background:rgba(79,110,247,.15);border:1px solid rgba(79,110,247,.3);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">
       ${{ slot:'🎰', live:'🃏', mixed:'🎲', prize_drop:'💎' }[t.type] || '🏆'}
@@ -1069,17 +1107,17 @@ function renderDetail(id) {
 </div>
 
 <div class="card">
-  <div class="card-title">Economics</div>
+  <div class="card-title">Financial economics</div>
   ${econRows}
 </div>
 
 <div class="card">
-  <div class="card-title">Prize Distribution (${cur} ${(spec.prizePool||0).toLocaleString()} pool)</div>
+  <div class="card-title">Prize distribution (${cur} ${(spec.prizePool||0).toLocaleString()} total pool)</div>
   ${prizeRows}
 </div>
 
 <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap">
-  <button class="btn btn-outline" style="flex:1;border-color:rgba(124,58,237,.4);color:#c4b5fd" onclick="loadAndShowGuide('${t.id}')">📋 Setup Guide</button>
+  <button class="btn btn-outline" style="flex:1;border-color:rgba(124,58,237,.4);color:#c4b5fd" onclick="loadAndShowGuide('${t.id}')">📋 Setup Guide →</button>
   <button class="btn btn-outline" style="flex:1;border-color:rgba(79,110,247,.4);color:#a0b0ff" onclick="loadAndRegenTexts('${t.id}')">✦ AI Texts</button>
   <button class="btn btn-outline btn-sm" style="color:var(--muted);border-color:var(--border)" onclick="deleteTournament('${t.id}')">🗑 Delete</button>
 </div>`;

@@ -227,6 +227,15 @@ const LANG = {
     incr_base:'Базовый лифт (сегмент)', incr_f_wager:'F1 Вейджер', incr_f_gen:'F2 Щедрость бонуса',
     incr_f_mech:'F3 Ширина механик', incr_f_rtp:'F4 RTP опыт', incr_f_plat:'F5 Платформа',
     incr_lift_total:'Итоговый лифт',
+    // Analytics
+    sec_analytics:'Анализ кампании',
+    an_actuals_title:'Реальные результаты', an_participants:'Участников', an_deposits:'Депозиты', an_wager_compl:'Вейджер выполнен',
+    an_payout:'Выплата бонуса', an_incr_rev:'Доп. выручка (USD)', an_notes:'Примечания',
+    an_forecast:'Прогноз (P50)', an_actual:'Реально', an_variance:'Отклонение', an_percentile:'Перцентиль',
+    an_within_band:'В пределах диапазона', an_flag_worst:'Хуже худшего сценария', an_flag_best:'Лучше лучшего сценария',
+    an_flag_abuse:'Подозрение на аборт', an_flag_incomplete:'Неполные данные',
+    an_roi_actual:'Реальный ROI', an_net_actual:'Реальный доход',
+    btn_save_actuals:'Сохранить результаты', btn_run_analysis:'Запустить анализ',
   },
 
   en: {
@@ -445,6 +454,15 @@ const LANG = {
     incr_base:'Base lift (segment)', incr_f_wager:'F1 Wager achievability', incr_f_gen:'F2 Bonus generosity',
     incr_f_mech:'F3 Mechanics breadth', incr_f_rtp:'F4 RTP quality', incr_f_plat:'F5 Platform',
     incr_lift_total:'Total lift',
+    // Analytics
+    sec_analytics:'Campaign Analysis',
+    an_actuals_title:'Actual Results', an_participants:'Participants', an_deposits:'Deposits', an_wager_compl:'Wager Completion',
+    an_payout:'Bonus Payout', an_incr_rev:'Incr. Revenue (USD)', an_notes:'Notes',
+    an_forecast:'Forecast (P50)', an_actual:'Actual', an_variance:'Variance', an_percentile:'Percentile',
+    an_within_band:'Within Band', an_flag_worst:'Worse than worst case', an_flag_best:'Better than best case',
+    an_flag_abuse:'Abuse suspected', an_flag_incomplete:'Incomplete data',
+    an_roi_actual:'Actual ROI', an_net_actual:'Actual Net',
+    btn_save_actuals:'Save Results', btn_run_analysis:'Run Analysis',
   },
 
   mn: {
@@ -648,6 +666,14 @@ const LANG = {
     incr_base:'Үндсэн лифт (сегмент)', incr_f_wager:'F1 Вейжер', incr_f_gen:'F2 Бонусын өгөмж',
     incr_f_mech:'F3 Механикийн өргөн', incr_f_rtp:'F4 RTP чанар', incr_f_plat:'F5 Платформ',
     incr_lift_total:'Нийт лифт',
+    sec_analytics:'Кампанийн анализ',
+    an_actuals_title:'Бодит үр дүн', an_participants:'Оролцогчид', an_deposits:'Депозит', an_wager_compl:'Вейжер гүйцэлтэй',
+    an_payout:'Бонусын төлөлт', an_incr_rev:'Нэмэлт ашиг (USD)', an_notes:'Тайлбар',
+    an_forecast:'Урьдчилсан мэдээлэл (P50)', an_actual:'Бодит', an_variance:'Зөрүү', an_percentile:'Процентиль',
+    an_within_band:'Хүрээ дотор', an_flag_worst:'Хамгийн муу сценариос доош', an_flag_best:'Хамгийн сайн сценариос дээш',
+    an_flag_abuse:'Хүчирхийлэл сэжимтэй', an_flag_incomplete:'Бүрэн бус өгөгдөл',
+    an_roi_actual:'Бодит ROI', an_net_actual:'Бодит цэвэр',
+    btn_save_actuals:'Үр дүнг хадгалах', btn_run_analysis:'Анализ эхлүүлэх',
   },
 
   es: {
@@ -850,6 +876,14 @@ const LANG = {
     incr_base:'Lift base (segmento)', incr_f_wager:'F1 Alcanzabilidad wager', incr_f_gen:'F2 Generosidad del bono',
     incr_f_mech:'F3 Amplitud mecánicas', incr_f_rtp:'F4 Calidad RTP', incr_f_plat:'F5 Plataforma',
     incr_lift_total:'Lift total',
+    sec_analytics:'Análisis de campaña',
+    an_actuals_title:'Resultados reales', an_participants:'Participantes', an_deposits:'Depósitos', an_wager_compl:'Wager completado',
+    an_payout:'Pago de bono', an_incr_rev:'Ingresos incr. (USD)', an_notes:'Notas',
+    an_forecast:'Pronóstico (P50)', an_actual:'Real', an_variance:'Varianza', an_percentile:'Percentil',
+    an_within_band:'Dentro de banda', an_flag_worst:'Peor que el peor caso', an_flag_best:'Mejor que el mejor caso',
+    an_flag_abuse:'Se sospecha abuso', an_flag_incomplete:'Datos incompletos',
+    an_roi_actual:'ROI real', an_net_actual:'Ganancia real',
+    btn_save_actuals:'Guardar resultados', btn_run_analysis:'Ejecutar análisis',
   }
 };
 
