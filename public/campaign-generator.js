@@ -1870,7 +1870,7 @@ const I18N = {
     step_ctr:'Шаг {n} из 5',
     // Sidebar
     nav_main:'Главное', nav_dashboard:'Дашборд', nav_campaigns:'Акции',
-    nav_tools:'Инструменты', nav_configurator:'Конфигуратор', nav_campaign_gen:'Campaign Gen', nav_tournament:'Турниры', nav_tournament_gen:'Tournament Gen', nav_setup_guide:'Setup Guide',
+    nav_tools:'Инструменты', nav_configurator:'Конфигуратор', nav_campaign_gen:'Генератор акций', nav_tournament:'Турниры', nav_tournament_gen:'Tournament Gen', nav_setup_guide:'Setup Guide',
     nav_scenarios:'Сценарии', nav_calendar:'Календарь', nav_ai:'AI Ассистент',
     nav_soon:'Скоро', nav_analytics:'Аналитика', nav_settings:'Настройки',
     // Topbar view titles
@@ -1997,7 +1997,7 @@ const I18N = {
     step_ctr:'Step {n} of 5',
     // Sidebar
     nav_main:'Main', nav_dashboard:'Dashboard', nav_campaigns:'Offers',
-    nav_tools:'Tools', nav_configurator:'Configurator', nav_campaign_gen:'Campaign Gen', nav_tournament:'Tournaments', nav_tournament_gen:'Tournament Gen', nav_setup_guide:'Setup Guide',
+    nav_tools:'Tools', nav_configurator:'Configurator', nav_campaign_gen:'Offer Gen', nav_tournament:'Tournaments', nav_tournament_gen:'Tournament Gen', nav_setup_guide:'Setup Guide',
     nav_scenarios:'Scenarios', nav_calendar:'Calendar', nav_ai:'AI Assistant',
     nav_soon:'Soon', nav_analytics:'Analytics', nav_settings:'Settings',
     // Topbar view titles
