@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { tryRepairJSON, parseAI, bonusLine } from '../../src/domain/ai/parser.js';
-import { parseTextsResponse, parseAuditResponse } from '../../src/ai/parser.js';
+import { parseTextsResponse, parseAuditResponse, parseTournamentOptimizeResponse } from '../../src/ai/parser.js';
 import { AIProviderError } from '../../src/errors/AIProviderError.js';
 
 // ── tryRepairJSON ─────────────────────────────────────────────────────────────
@@ -104,5 +104,35 @@ describe('parseAuditResponse', () => {
   it('requires at least one check', () => {
     const bad = JSON.stringify({ checks: [], recommendations: [{ text: 'T', impact: 'I' }] });
     expect(() => parseAuditResponse(bad)).toThrow(AIProviderError);
+  });
+});
+
+// ── parseTournamentOptimizeResponse ─────────────────────────────────────
+
+const VALID_TOURNAMENT_OPTIMIZE = JSON.stringify({
+  realism: {
+    verdict: 'optimistic',
+    summary: 'Forecast looks somewhat aggressive but plausible.',
+    checks: [
+      { metric: 'cost_per_active', forecast: 12, benchmark: '$8-$16', verdict: 'realistic', note: 'Cost is within range' },
+      { metric: 'engagement', forecast: '×2.8', benchmark: '×2.5 typical', verdict: 'optimistic', note: 'High engagement expected' },
+      { metric: 'roi', forecast: '150%', benchmark: '80%-120%', verdict: 'optimistic', note: 'ROI is above benchmark' },
+    ],
+  },
+  recommendations: [
+    { param: 'total_players', current: 5000, target: 6000, reason: 'Increase participant pool for better economies of scale', impact: 'medium' },
+  ],
+});
+
+describe('parseTournamentOptimizeResponse', () => {
+  it('parses valid response and normalizes numeric values and aliases', () => {
+    const result = parseTournamentOptimizeResponse(VALID_TOURNAMENT_OPTIMIZE);
+    expect(result.realism.verdict).toBe('optimistic');
+    expect(result.realism.checks[0].metric).toBe('cost_per_active');
+    expect(result.realism.checks[0].forecast).toBe('12');
+    expect(result.realism.checks[0].benchmark).toBe('$8-$16');
+    expect(result.recommendations[0].param).toBe('totalPlayers');
+    expect(result.recommendations[0].current).toBe('5000');
+    expect(result.recommendations[0].impact).toBe('med');
   });
 });

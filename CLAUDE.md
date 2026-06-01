@@ -73,11 +73,12 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │       ├── audit.prompt.ts      # buildAuditPrompt() + per-license rule blocks
 │   │       ├── optimize.prompt.ts   # buildOptimizePrompt()
 │   │       ├── tournament-texts.prompt.ts
-│   │       └── tournament-audit.prompt.ts
+│   │       ├── tournament-audit.prompt.ts
+│   │       └── tournament-optimize.prompt.ts  # buildTournamentOptimizePrompt() — realism + recs
 │   ├── use-cases/
 │   │   ├── GenerateBonusConfig.ts   # generateBonusConfig(), recalcBonusConfig()
 │   │   ├── GenerateCampaign.ts      # generateCampaign(), texts, audit, optimize (inject AIProvider)
-│   │   └── GenerateTournament.ts    # generateTournament(), texts, audit (inject AIProvider)
+│   │   └── GenerateTournament.ts    # generateTournament(), texts, audit, optimize (inject AIProvider)
 │   ├── controllers/                 # All use createXxxController(deps) factory pattern
 │   │   ├── generate.controller.ts   # createGenerateController()
 │   │   ├── campaign.controller.ts   # createCampaignController({ ai })
@@ -106,7 +107,7 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │   ├── texts.schema.ts          # TextsSchema + TextsInput
 │   │   ├── audit.schema.ts          # AuditSchema + AuditInput
 │   │   ├── optimize.schema.ts       # OptimizeSchema + OptimizeInput
-│   │   ├── tournament.schema.ts     # TournamentGenerateSchema + Input types (Generate/Texts/Audit)
+│   │   ├── tournament.schema.ts     # TournamentGenerateSchema + Input types (Generate/Texts/Audit/Optimize)
 │   │   └── signup.schema.ts         # SignupSchema + SignupInput
 │   └── errors/
 │       ├── AppError.ts              # Base error with status + isOperational
@@ -193,6 +194,8 @@ Exponential backoff with full jitter. Only retryable errors (429, 5xx, network) 
 | POST | `/api/tournament/generate` | 20/min | TournamentGenerateSchema | `createTournamentController().generate` |
 | POST | `/api/tournament/texts` | 15/min | TournamentTextsSchema | `createTournamentController().texts` |
 | POST | `/api/tournament/audit` | 15/min | TournamentAuditSchema | `createTournamentController().audit` |
+| POST | `/api/tournament/games` | 15/min | TournamentGamesSchema | `createTournamentController().games` |
+| POST | `/api/tournament/optimize` | 15/min | TournamentOptimizeSchema | `createTournamentController().optimize` |
 | POST | `/api/signup` | 5/hr | SignupSchema | `createSignupController().signup` |
 | GET | `/api/health` | — | — | `{ status: 'ok' }` |
 | GET | `/privacy` | — | — | `public/privacy.html` |
@@ -258,7 +261,7 @@ UKGC: `maxB: 200 GBP`, `wager: 10x`, no FS on dep2/dep3, 6 regulatory strings.
 
 **Model:** `claude-haiku-4-5-20251001` (constant `AI_MODEL` in `src/config/index.ts`)
 
-**Token budgets:** texts → 4096, audit → 900, optimize → 1000
+**Token budgets:** texts → 4096, audit → 900, optimize → 1000, tournament/optimize → 1200
 
 **Retry:** exp backoff + full jitter, max 2 retries; only 429/5xx/network errors retried.
 
@@ -270,6 +273,7 @@ UKGC: `maxB: 200 GBP`, `wager: 10x`, no FS on dep2/dep3, 6 regulatory strings.
 - `TextsResponseSchema`: `{ push[3], email[3]{subject,body}, sms[3], telegram[3], popup[3]{headline,subtext,cta} }`
 - `AuditResponseSchema`: `{ checks[5]{label,status,note,rule?}, recommendations[2-4]{text,impact} }`
 - `OptimizeResponseSchema`: `{ recommendations[1-5]{factor,param,current,target,reason,impact} }`
+- `TournamentOptimizeResponseSchema`: `{ realism:{verdict,summary,checks[3-6]{metric,forecast,benchmark,verdict,note}}, recommendations[1-3]{param,current,target,reason,impact} }`
 
 ---
 
@@ -362,6 +366,9 @@ tournament-generator.html + tournament-generator.js
   ← { spec, econ: { totalPlayers, segmentRatio, eligible, ... }, params, cur, region, lic }
 
   → POST /api/tournament/texts / /audit → GenerateTournament use-case + AI
+  → POST /api/tournament/optimize { type, params, econ, mode:'optimize'|'review', uiLang? }
+  → optimizeTournament() → tournamentBenchmarks() [deterministic] + buildTournamentOptimizePrompt() + AI
+  ← { realism:{verdict,summary,checks[]}, recommendations[] }
 ```
 
 **Step 2 UI**: slider "Total Active Players" (100–100,000, default 5,000). Live hint shows eligible count (e.g. "500 VIP players eligible"). Eligible recalculates on both slider move and segment chip click.
@@ -475,7 +482,6 @@ tests/integration/security.headers.test.js  # CSP assertions
 
 **P2 (features):**
 - Task A: Projected result per AI recommendation (apply param-change to 5-factor formula, show lift delta)
-- Task B: AI campaign review button when `netIncr > 0` (`mode:'review'` in optimize prompt)
 
 **P3 (frontend):**
 - Convert `onclick=` handlers to `addEventListener` → remove `scriptSrcAttr: 'unsafe-inline'` from CSP

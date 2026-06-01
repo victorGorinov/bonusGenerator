@@ -2,10 +2,12 @@ import * as tournamentService              from '../services/tournament.service.
 import { buildTournamentTextsPrompt }     from '../ai/prompts/tournament-texts.prompt.js';
 import { buildTournamentAuditPrompt }     from '../ai/prompts/tournament-audit.prompt.js';
 import { buildGamesPrompt }               from '../ai/prompts/tournament-games.prompt.js';
-import { parseTournamentTextsResponse, parseTournamentAuditResponse, parseGamesResponse } from '../ai/parser.js';
+import { buildTournamentOptimizePrompt }  from '../ai/prompts/tournament-optimize.prompt.js';
+import { parseTournamentTextsResponse, parseTournamentAuditResponse, parseGamesResponse, parseTournamentOptimizeResponse } from '../ai/parser.js';
 import { recommendGames }                 from '../domain/tournament/recommendGames.js';
+import { tournamentBenchmarks }           from '../domain/tournament/benchmarks.js';
 import { GEO_CFG }                        from '../domain/campaign/scenarios.js';
-import type { TournamentGenerateInput, TournamentTextsInput, TournamentAuditInput, TournamentGamesInput } from '../validation/tournament.schema.js';
+import type { TournamentGenerateInput, TournamentTextsInput, TournamentAuditInput, TournamentGamesInput, TournamentOptimizeInput } from '../validation/tournament.schema.js';
 import type { AIProvider }                from '../ai/interface.js';
 
 export function generateTournament(input: TournamentGenerateInput): ReturnType<typeof tournamentService.generateTournament> {
@@ -53,6 +55,26 @@ export async function recommendTournamentGames(input: TournamentGamesInput, ai: 
   });
 
   return { primary: annotatedPrimary, alternatives, scores, rationale, region };
+}
+
+export async function optimizeTournament(input: TournamentOptimizeInput, ai: AIProvider): Promise<ReturnType<typeof parseTournamentOptimizeResponse>> {
+  const geoCode = String(input.params['geo'] ?? 'de');
+  const geoEntry = GEO_CFG[geoCode] ?? GEO_CFG['de'];
+  const region  = geoEntry.region;
+  const benchmarks = tournamentBenchmarks({
+    region,
+    segment:  String(input.params['segment']  ?? 'all'),
+    duration: String(input.params['duration'] ?? 'weekly'),
+  });
+  const prompt = buildTournamentOptimizePrompt({
+    ...input,
+    benchmarks,
+    region,
+    cur: geoEntry.sitecur,
+    uiLang: input.uiLang,
+  });
+  const raw = await ai.generate(prompt, { maxTokens: 1200 });
+  return parseTournamentOptimizeResponse(raw);
 }
 
 export async function auditTournament(input: TournamentAuditInput, ai: AIProvider): Promise<ReturnType<typeof parseTournamentAuditResponse>> {

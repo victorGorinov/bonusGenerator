@@ -42,7 +42,32 @@ export const TournamentGamesSchema = z.object({
   uiLang:  z.string().optional(),
 });
 
+const TournamentOptimizeEconSchema = z.object({
+  arpu:                  z.number(),
+  eligible:              z.number(),
+  durationDays:          z.number(),
+  engagementMultiplier:  z.number(),
+  participantsMid:       z.number(),
+  ggrLiftMid:            z.number(),
+  retentionValue:        z.number(),
+  prizePoolCost:         z.number(),
+  netMarginMid:          z.number(),
+  totalValueMid:         z.number(),
+  roi:                   z.number(),
+  breakEvenParticipants: z.number(),
+  costPerActiveMid:      z.number(),
+});
+
+export const TournamentOptimizeSchema = z.object({
+  type:   z.string(),
+  params: z.record(z.string(), z.unknown()),
+  econ:   TournamentOptimizeEconSchema,
+  mode:   z.enum(['optimize', 'review']),
+  uiLang: z.string().optional(),
+});
+
 export type TournamentGenerateInput = z.infer<typeof TournamentGenerateSchema>;
 export type TournamentTextsInput    = z.infer<typeof TournamentTextsSchema>;
 export type TournamentAuditInput    = z.infer<typeof TournamentAuditSchema>;
 export type TournamentGamesInput    = z.infer<typeof TournamentGamesSchema>;
+export type TournamentOptimizeInput = z.infer<typeof TournamentOptimizeSchema>;

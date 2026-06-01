@@ -2,7 +2,7 @@ import { GEO_CFG } from '../campaign/scenarios.js';
 
 // Returns local-currency units per 1 USD for a given geo + sitecur.
 // Priority: GEO_CFG.avgdepUSD (derived from real deposit benchmarks) → STABLE_USD_TO_LOCAL.
-function deriveLocalFxRate(sitecur: string, geo?: string): number {
+export function deriveLocalFxRate(sitecur: string, geo?: string): number {
   if (geo) {
     const cfg = GEO_CFG[geo];
     if (cfg?.avgdep && cfg.avgdepUSD) {
@@ -13,7 +13,7 @@ function deriveLocalFxRate(sitecur: string, geo?: string): number {
   return STABLE_USD_TO_LOCAL[sitecur] ?? 1;
 }
 
-const ARPU_BY_REGION: Record<string, number> = {
+export const ARPU_BY_REGION: Record<string, number> = {
   eu: 65, cis: 22, mn: 12, sweep: 30, crypto: 80, latam: 18,
 };
 
@@ -42,28 +42,29 @@ const DURATION_DAYS: Record<string, number> = {
  * Engagement multiplier — how much more than their normal daily ARPU
  * tournament participants spend during the event.
  *
- * Industry benchmarks: tournament players play 2–3× more intensively
- * (more spins, longer sessions, daily check-ins to track leaderboard).
- * Longer formats produce higher cumulative lift.
+ * Industry benchmarks: iGaming analytics show tournament participants
+ * generate 40–120% more GGR than their baseline during the event period.
+ * Longer formats sustain higher lift; flash events create a short burst.
  */
 const ENGAGEMENT_LIFT: Record<string, number> = {
-  flash:       2.0,  // concentrated burst — 2× in under 1 hour
-  daily:       1.8,  // elevated daily activity
-  weekly:      2.5,  // players return daily to track position
-  monthly:     3.0,  // highest sustained engagement, repeat sessions
-  multi_round: 2.8,  // elimination mechanics drive repeat daily play
+  flash:       1.40,  // 40% incremental — short burst, concentrated play
+  daily:       1.50,  // 50% incremental — moderate daily habit
+  weekly:      1.80,  // 80% incremental — leaderboard check-ins, return sessions
+  monthly:     2.20,  // 120% incremental — strongest sustained habit formation
+  multi_round: 2.00,  // 100% incremental — elimination mechanics drive daily return
 };
 
 /**
  * Participation rates by duration.
  * Longer / better-marketed formats achieve higher opt-in rates.
+ * Mid values calibrated to typical opt-in rates across iGaming operators.
  */
 const PARTICIPATION_RATES: Record<string, { low: number; mid: number; high: number }> = {
-  flash:       { low: 0.03, mid: 0.07, high: 0.12 },
-  daily:       { low: 0.05, mid: 0.10, high: 0.18 },
-  weekly:      { low: 0.08, mid: 0.15, high: 0.25 },
-  monthly:     { low: 0.10, mid: 0.18, high: 0.30 },
-  multi_round: { low: 0.06, mid: 0.12, high: 0.20 },
+  flash:       { low: 0.03, mid: 0.06, high: 0.10 },
+  daily:       { low: 0.04, mid: 0.08, high: 0.15 },
+  weekly:      { low: 0.06, mid: 0.11, high: 0.20 },
+  monthly:     { low: 0.08, mid: 0.14, high: 0.25 },
+  multi_round: { low: 0.05, mid: 0.10, high: 0.17 },
 };
 
 /**
@@ -131,11 +132,14 @@ export function calcTournamentEconomics(params: {
   const participantsMid  = Math.round(eligible * rates.mid);
   const participantsHigh = Math.round(eligible * rates.high);
 
-  // GGR lift = players × (daily ARPU × engagement multiplier) × days
+  // GGR lift = incremental revenue ABOVE baseline (baseline happens with or without tournament)
+  // Incremental = players × daily_ARPU × (engMul - 1) × days
+  // Total engagement = players × daily_ARPU × engMul × days (not used for net margin)
   const revenuePerPlayerPerDay = arpu / 30;
-  const ggrLiftLow  = Math.round(participantsLow  * revenuePerPlayerPerDay * engMul * durationDays);
-  const ggrLiftMid  = Math.round(participantsMid  * revenuePerPlayerPerDay * engMul * durationDays);
-  const ggrLiftHigh = Math.round(participantsHigh * revenuePerPlayerPerDay * engMul * durationDays);
+  const incrementalMul = engMul - 1;
+  const ggrLiftLow  = Math.round(participantsLow  * revenuePerPlayerPerDay * incrementalMul * durationDays);
+  const ggrLiftMid  = Math.round(participantsMid  * revenuePerPlayerPerDay * incrementalMul * durationDays);
+  const ggrLiftHigh = Math.round(participantsHigh * revenuePerPlayerPerDay * incrementalMul * durationDays);
 
   // Post-tournament retention: fraction of participants with improved next-month value
   const retentionValue = Math.round(participantsMid * retLift * arpu);
@@ -160,8 +164,8 @@ export function calcTournamentEconomics(params: {
   // ROI based on full economic value (GGR + retention) vs prize pool cost
   const roi = prizePoolCost > 0 ? Math.round((totalValueMid / prizePoolCost) * 100) : 0;
 
-  // Break-even: how many participants needed for GGR alone to cover prize pool
-  const ggrPerParticipantPerDay = revenuePerPlayerPerDay * engMul;
+  // Break-even: how many participants needed for INCREMENTAL GGR alone to cover prize pool
+  const ggrPerParticipantPerDay = revenuePerPlayerPerDay * incrementalMul;
   const breakEvenParticipants = ggrPerParticipantPerDay * durationDays > 0
     ? Math.ceil(prizePoolCost / (ggrPerParticipantPerDay * durationDays))
     : 0;

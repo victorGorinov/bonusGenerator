@@ -29,14 +29,14 @@ describe('calcTournamentEconomics — defaults (EU, weekly, fixed)', () => {
   it('segmentRatio = 1.0 for segment=all', () => expect(result.segmentRatio).toBe(1.0));
   it('eligible = 5000 for segment=all, totalPlayers=5000', () => expect(result.eligible).toBe(5000));
 
-  // weekly participation mid = 15% of 5000 = 750
-  it('participantsMid = 15% of eligible for weekly', () => expect(result.participantsMid).toBe(750));
+  // weekly participation mid = 11% of 5000 = 550
+  it('participantsMid = 11% of eligible for weekly', () => expect(result.participantsMid).toBe(550));
   it('participantsLow < participantsMid < participantsHigh', () => {
     expect(result.participantsLow).toBeLessThan(result.participantsMid);
     expect(result.participantsMid).toBeLessThan(result.participantsHigh);
   });
 
-  it('engagementMultiplier = 2.5 for weekly', () => expect(result.engagementMultiplier).toBe(2.5));
+  it('engagementMultiplier = 1.8 for weekly', () => expect(result.engagementMultiplier).toBe(1.8));
 
   it('ggrLiftMid > 0', () => expect(result.ggrLiftMid).toBeGreaterThan(0));
   it('ggrLiftMid reflects engagement multiplier (substantially > prize pool for reasonable pool)', () => {

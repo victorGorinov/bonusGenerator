@@ -1,17 +1,21 @@
-import { GEO_CFG }                 from '../domain/campaign/scenarios.js';
-import { calcTournamentEconomics } from '../domain/tournament/calcEconomics.js';
+import { GEO_CFG }                                    from '../domain/campaign/scenarios.js';
+import { calcTournamentEconomics, deriveLocalFxRate } from '../domain/tournament/calcEconomics.js';
 
 export function generateTournament({ type, params }: { type: string; params: Record<string, unknown> }): Record<string, unknown> {
   const geo      = GEO_CFG[String(params['geo'] || 'de')] || GEO_CFG['de'];
   const resolvedLic = (params['lic'] && params['lic'] !== 'auto')
     ? String(params['lic']) : geo.lic;
 
-  const prizePool = Number(params['prizePool'] || 1000);
+  // Default prize pool: $300 USD equivalent in local currency (avoids absurd ROI for KZT/MNT)
+  const geoCode = String(params['geo'] || 'de');
+  const fxRate  = deriveLocalFxRate(geo.sitecur, geoCode);
+  const prizePool = params['prizePool'] != null && params['prizePool'] !== ''
+    ? Number(params['prizePool'])
+    : Math.round(300 * fxRate);
   const poolModel = String(params['poolModel'] || 'fixed');
   const rake      = Number(params['rake']      || 0);
   const duration  = String(params['duration']  || 'weekly');
   const segment   = String(params['segment']   || 'all');
-  const geoCode = String(params['geo'] || 'de');
   const econ    = calcTournamentEconomics({
     region:      geo.region,
     segment,

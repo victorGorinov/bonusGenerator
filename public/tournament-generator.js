@@ -96,11 +96,12 @@ const draft = {
     tone:         'professional',
   },
 };
-let lastResult  = null;
-let lastTexts   = null;
-let lastAudit   = null;
-let activeTab   = 'push';
-let activeAudit = false;
+let lastResult   = null;
+let lastTexts    = null;
+let lastAudit    = null;
+let lastOptimize = null;
+let activeTab    = 'push';
+let activeAudit  = false;
 
 // ── LOCALSTORAGE HELPERS ─────────────────────────────────────────────────────
 function loadTournaments() {
@@ -335,6 +336,47 @@ const SEGMENT_RATIO_UI = {
   all: 1.00, new: 0.20, vip: 0.10, dormant: 0.40, depositors: 0.60,
 };
 
+// ── PRIZE POOL RECOMMENDATION ─────────────────────────────────────────────────
+const GEO_TO_REGION_UI = {
+  de:'eu', fr:'eu', es:'eu', it:'eu', nl:'eu', dk:'eu', uk:'eu',
+  ru:'cis', kz:'cis', mn:'mn', us:'sweep', mx:'latam', br:'latam',
+};
+const GEO_TO_CUR_UI = {
+  de:'EUR', fr:'EUR', es:'EUR', it:'EUR', nl:'EUR', dk:'DKK', uk:'GBP',
+  ru:'RUB', kz:'KZT', mn:'MNT', us:'USD', mx:'USD', br:'USD',
+};
+// local units per 1 USD — mirrors deriveLocalFxRate() backend logic
+const GEO_FX_RATE_UI = {
+  de:0.92, fr:0.92, es:0.92, it:0.92, nl:0.92, dk:7.37, uk:0.79,
+  ru:90.9,  kz:500,  mn:3448, us:1.00, mx:1.00, br:1.00,
+};
+const ARPU_USD_BY_REGION_UI  = { eu:65, cis:22, mn:12, sweep:30, latam:18 };
+const ENGAGEMENT_LIFT_UI     = { flash:1.40, daily:1.50, weekly:1.80, monthly:2.20, multi_round:2.00 };
+const PARTICIPATION_MID_UI   = { flash:0.06, daily:0.08, weekly:0.11, monthly:0.14, multi_round:0.10 };
+const DURATION_DAYS_UI       = { flash:0.03, daily:1,    weekly:7,    monthly:30,   multi_round:10   };
+
+function roundToNice(n) {
+  if (n <= 0) return 100;
+  const mag = Math.pow(10, Math.floor(Math.log10(n)) - 1);
+  return Math.round(n / mag) * mag;
+}
+
+function calcSuggestedPrize(params) {
+  const geo        = params.geo || 'de';
+  const region     = GEO_TO_REGION_UI[geo] || 'eu';
+  const fx         = GEO_FX_RATE_UI[geo] || 1;
+  const arpuLocal  = (ARPU_USD_BY_REGION_UI[region] || 65) * fx;
+  const eligible   = Math.round((params.totalPlayers || 5000) * (SEGMENT_RATIO_UI[params.segment] ?? 1));
+  const duration   = params.duration || 'weekly';
+  const partMid    = PARTICIPATION_MID_UI[duration] || 0.11;
+  const participants = Math.round(eligible * partMid);
+  const engMul     = ENGAGEMENT_LIFT_UI[duration] || 1.8;
+  const days       = DURATION_DAYS_UI[duration] || 7;
+  const ggrLiftMid = participants * (arpuLocal / 30) * (engMul - 1) * days;
+  // 60% of ggrLiftMid → ROI ≈ 80–100%, within all regional benchmarks
+  return { prize: roundToNice(Math.round(ggrLiftMid * 0.60)), ggrLift: Math.round(ggrLiftMid) };
+}
+
 function getSegRatio(seg) {
   return SEGMENT_RATIO_UI[seg] ?? 1.0;
 }
@@ -345,6 +387,24 @@ function updateEligibleHint() {
   const tp  = draft.params.totalPlayers || 5000;
   const seg = draft.params.segment || 'all';
   el.textContent = Math.round(tp * getSegRatio(seg)).toLocaleString();
+}
+
+function updatePrizeHint() {
+  const p = draft.params;
+  const { prize: suggested, ggrLift } = calcSuggestedPrize(p);
+  const cur   = GEO_TO_CUR_UI[p.geo] || 'EUR';
+  const isRu  = (localStorage.getItem('bonusLang') || 'en') === 'ru';
+  const hint  = document.getElementById('prize-hint');
+  if (hint) {
+    hint.innerHTML = isRu
+      ? `Рекомендовано: <strong>${suggested.toLocaleString()} ${cur}</strong> — 60% от ожидаемого GGR-лифта (${ggrLift.toLocaleString()} ${cur}), ROI ≈ 80–120%`
+      : `Recommended: <strong>${suggested.toLocaleString()} ${cur}</strong> — 60% of projected GGR lift (${ggrLift.toLocaleString()} ${cur}), ROI ≈ 80–120%`;
+  }
+  if (p._prizeAutoSet !== false) {
+    p.prizePool = suggested;
+    const input = document.getElementById('f-pp');
+    if (input) input.value = suggested;
+  }
 }
 
 // ── STEP 1: Tournament type ──────────────────────────────────────────────────
@@ -372,6 +432,22 @@ function renderStep1() {
 // ── STEP 2: Parameters ───────────────────────────────────────────────────────
 function renderStep2() {
   const p = draft.params;
+  const lang = localStorage.getItem('bonusLang') || 'en';
+  const isRu = lang === 'ru';
+
+  // Auto-set prize pool to recommendation when params change (unless user manually overrode it)
+  const { prize: suggestedPrize, ggrLift: suggestedGgrLift } = calcSuggestedPrize(p);
+  if (p._prizeAutoSet !== false) {
+    p.prizePool = suggestedPrize;
+    p._prizeAutoSet = true;
+  }
+  const cur = GEO_TO_CUR_UI[p.geo] || 'EUR';
+  const suggestedFmt   = suggestedPrize.toLocaleString();
+  const ggrLiftFmt     = suggestedGgrLift.toLocaleString();
+  const prizeHintLabel = isRu
+    ? `Рекомендовано: <strong>${suggestedFmt} ${cur}</strong> — 60% от ожидаемого GGR-лифта (${ggrLiftFmt} ${cur}), ROI ≈ 80–120%`
+    : `Recommended: <strong>${suggestedFmt} ${cur}</strong> — 60% of projected GGR lift (${ggrLiftFmt} ${cur}), ROI ≈ 80–120%`;
+
   return `
 <div class="step-header">
   <div class="step-badge">Step 2</div>
@@ -383,7 +459,7 @@ function renderStep2() {
   <div class="card-title">Geography & Audience</div>
   <div class="form-row">
     <label class="form-label">Market / GEO</label>
-    <select class="form-input" id="f-geo" onchange="draft.params.geo=this.value">
+    <select class="form-input" id="f-geo" onchange="draft.params.geo=this.value;draft.params._prizeAutoSet=true;renderStep()">
       ${GEO_OPTIONS.map(g => `<option value="${g.val}"${p.geo===g.val?' selected':''}>${g.lbl}</option>`).join('')}
     </select>
   </div>
@@ -398,7 +474,7 @@ function renderStep2() {
     <div style="display:flex;align-items:center;gap:12px">
       <input type="range" min="100" max="100000" step="100" id="f-tp"
              value="${p.totalPlayers||5000}"
-             oninput="draft.params.totalPlayers=+this.value;document.getElementById('tp-out').textContent=Number(+this.value).toLocaleString();updateEligibleHint()"
+             oninput="draft.params.totalPlayers=+this.value;document.getElementById('tp-out').textContent=Number(+this.value).toLocaleString();updateEligibleHint();updatePrizeHint()"
              style="flex:1">
       <span id="tp-out" style="min-width:64px;font-weight:600;text-align:right">${(p.totalPlayers||5000).toLocaleString()}</span>
     </div>
@@ -439,8 +515,10 @@ function renderStep2() {
     </div>
   </div>
   <div class="form-row">
-    <label class="form-label">Prize Pool Amount</label>
-    <input class="form-input" type="number" min="100" id="f-pp" value="${p.prizePool}" onchange="draft.params.prizePool=Math.max(100,+this.value)">
+    <label class="form-label">${isRu ? 'Призовой фонд' : 'Prize Pool Amount'}</label>
+    <input class="form-input" type="number" min="100" id="f-pp" value="${p.prizePool}"
+           onchange="draft.params._prizeAutoSet=false;draft.params.prizePool=Math.max(100,+this.value)">
+    <div id="prize-hint" style="font-size:.73rem;color:var(--muted);margin-top:5px">${prizeHintLabel}</div>
   </div>
   <div class="form-row">
     <label class="form-label">Pool Model</label>
@@ -599,7 +677,14 @@ function renderStep3() {
   <div style="font-size:.7rem;color:var(--muted);margin-top:10px">
     Based on ${e.eligible} eligible ${draft.params.segment} players (${Math.round(e.segmentRatio*100)}% of ${(draft.params.totalPlayers||5000).toLocaleString()} total casino players) · ARPU ${e.arpu} USD/mo · engagement ×${engMul.toFixed(1)} vs normal play
   </div>
+  <div style="margin-top:14px;display:flex;gap:10px;align-items:center">
+    <button class="btn btn-outline btn-sm" onclick="runOptimize()" id="btn-optimize">
+      ${(function(){ const l=localStorage.getItem('bonusLang')||'en'; return l==='ru'?'🤖 AI-ревью прогноза':'🤖 AI Review'; })()}
+    </button>
+  </div>
 </div>
+
+<div id="optimize-area">${lastOptimize ? renderOptimizeHTML(lastOptimize, (roi<0||e.netMarginMid<0)?'optimize':'review') : ''}</div>
 
 ${gamesSection()}
 
@@ -788,9 +873,10 @@ async function runGenerate() {
       const err = await resp.json().catch(() => ({ message: resp.statusText }));
       throw new Error(err.message || resp.statusText);
     }
-    lastResult = await resp.json();
-    lastTexts  = null;
-    lastAudit  = null;
+    lastResult   = await resp.json();
+    lastTexts    = null;
+    lastAudit    = null;
+    lastOptimize = null;
     goStep(3);
   } catch (e) {
     alert('Error: ' + e.message);
@@ -853,6 +939,138 @@ async function runAudit() {
     btn.textContent = '🔍 Compliance Audit';
   }
   btn.disabled = false;
+}
+
+// ── AI OPTIMIZE / REVIEW ─────────────────────────────────────────────────────
+async function runOptimize() {
+  const btn  = document.getElementById('btn-optimize');
+  const area = document.getElementById('optimize-area');
+  if (!btn || !area || !lastResult) return;
+
+  const lang  = localStorage.getItem('bonusLang') || 'en';
+  const isRu  = lang === 'ru';
+  const e     = lastResult.econ;
+  const mode  = (e.netMarginMid < 0 || e.roi < 0) ? 'optimize' : 'review';
+
+  btn.disabled = true;
+  btn.textContent = isRu ? '⏳ Анализирую…' : '⏳ Analysing…';
+  area.innerHTML = `<div class="loader"><div class="spinner"></div> ${isRu?'AI анализирует прогноз…':'AI is reviewing the forecast…'}</div>`;
+
+  try {
+    const resp = await fetch('/api/tournament/optimize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type:   draft.type,
+        params: draft.params,
+        econ: {
+          arpu:                  e.arpu,
+          eligible:              e.eligible,
+          durationDays:          e.durationDays,
+          engagementMultiplier:  e.engagementMultiplier,
+          participantsMid:       e.participantsMid,
+          ggrLiftMid:            e.ggrLiftMid,
+          retentionValue:        e.retentionValue,
+          prizePoolCost:         e.prizePoolCost,
+          netMarginMid:          e.netMarginMid,
+          totalValueMid:         e.totalValueMid,
+          roi:                   e.roi,
+          breakEvenParticipants: e.breakEvenParticipants,
+          costPerActiveMid:      e.costPerActiveMid,
+        },
+        mode,
+        uiLang: lang,
+      }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ message: resp.statusText }));
+      throw new Error(err?.message || resp.statusText);
+    }
+    lastOptimize = await resp.json();
+    area.innerHTML = renderOptimizeHTML(lastOptimize, mode);
+    btn.textContent = isRu ? '↺ Обновить ревью' : '↺ Re-run Review';
+  } catch (e) {
+    area.innerHTML = `<div class="alert alert-warn">${isRu?'Ошибка AI-ревью':'AI review failed'}: ${e?.message||String(e)}</div>`;
+    btn.textContent = isRu ? '🤖 AI-ревью прогноза' : '🤖 AI Review';
+  }
+  btn.disabled = false;
+}
+
+function renderOptimizeHTML(data, mode) {
+  const lang = localStorage.getItem('bonusLang') || 'en';
+  const isRu = lang === 'ru';
+
+  const VERDICT_LABEL = {
+    realistic:   isRu ? 'Реалистично'   : 'Realistic',
+    optimistic:  isRu ? 'Оптимистично'  : 'Optimistic',
+    pessimistic: isRu ? 'Пессимистично' : 'Pessimistic',
+  };
+  const VERDICT_COLOR = { realistic: '#22c55e', optimistic: '#f59e0b', pessimistic: '#60a5fa' };
+  const VERDICT_BG    = { realistic: 'rgba(34,197,94,.1)', optimistic: 'rgba(245,158,11,.1)', pessimistic: 'rgba(96,165,250,.1)' };
+
+  const METRIC_LABEL = {
+    participation:  isRu ? 'Participation rate'    : 'Participation rate',
+    engagement:     isRu ? 'Вовлечённость'         : 'Engagement',
+    roi:            isRu ? 'ROI'                   : 'ROI',
+    cost_per_active:isRu ? 'Cost/активный игрок'   : 'Cost per active',
+    retention:      isRu ? 'Retention lift'        : 'Retention lift',
+    arpu:           isRu ? 'ARPU'                  : 'ARPU',
+  };
+
+  const IMPACT_COLOR = { high: '#ef4444', med: '#f59e0b', low: '#60a5fa' };
+  const IMPACT_LABEL = { high: isRu ? 'Высокий' : 'High', med: isRu ? 'Средний' : 'Med', low: isRu ? 'Низкий' : 'Low' };
+
+  const r = data.realism;
+  const vc = VERDICT_COLOR[r.verdict] || '#a0b0ff';
+  const vb = VERDICT_BG[r.verdict]    || 'rgba(160,176,255,.1)';
+
+  const modeTitle = isRu
+    ? (mode === 'optimize' ? 'Как улучшить отрицательный результат' : 'Как усилить результат')
+    : (mode === 'optimize' ? 'How to improve the negative result' : 'How to strengthen the result');
+
+  const checksHTML = (r.checks || []).map(c => {
+    const cc = VERDICT_COLOR[c.verdict] || '#a0b0ff';
+    const cb = VERDICT_BG[c.verdict]    || 'rgba(160,176,255,.1)';
+    return `<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+      <div style="min-width:130px;font-size:.78rem;color:var(--muted);padding-top:2px">${METRIC_LABEL[c.metric] || c.metric}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">
+          <span style="font-size:.8rem;font-weight:600;color:var(--text)">${c.forecast}</span>
+          <span style="font-size:.72rem;color:var(--muted)">vs ${c.benchmark}</span>
+          <span style="font-size:.7rem;padding:1px 7px;border-radius:10px;background:${cb};color:${cc};font-weight:600">${VERDICT_LABEL[c.verdict]||c.verdict}</span>
+        </div>
+        <div style="font-size:.74rem;color:var(--muted)">${c.note}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const recsHTML = (data.recommendations || []).map(rec => {
+    const ic = IMPACT_COLOR[rec.impact] || '#a0b0ff';
+    const il = IMPACT_LABEL[rec.impact] || rec.impact;
+    return `<div style="padding:10px 12px;border:1px solid rgba(255,255,255,.07);border-radius:8px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+        <span style="font-size:.78rem;font-weight:600;color:#c4b5fd;font-family:monospace">${rec.param}</span>
+        <span style="font-size:.78rem;color:var(--muted)">${rec.current} → <strong style="color:var(--text)">${rec.target}</strong></span>
+        <span style="margin-left:auto;font-size:.7rem;padding:1px 8px;border-radius:10px;background:${ic}22;color:${ic};font-weight:600">${il}</span>
+      </div>
+      <div style="font-size:.78rem;color:var(--muted)">${rec.reason}</div>
+    </div>`;
+  }).join('');
+
+  return `<div style="background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.2);border-radius:10px;padding:16px;margin-bottom:16px">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+    <div style="font-size:.9rem;font-weight:700;color:#c4b5fd">${isRu?'AI-ревью прогноза':'AI Forecast Review'}</div>
+    <div style="font-size:.75rem;padding:2px 10px;border-radius:12px;background:${vb};color:${vc};font-weight:600;border:1px solid ${vc}44">${VERDICT_LABEL[r.verdict]||r.verdict}</div>
+  </div>
+
+  <div style="font-size:.82rem;color:var(--text);margin-bottom:14px;line-height:1.5">${r.summary}</div>
+
+  <div style="font-size:.76rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">${isRu?'Реалистичность прогноза по показателям':'Forecast realism by metric'}</div>
+  <div style="margin-bottom:16px">${checksHTML}</div>
+
+  <div style="font-size:.76rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">${modeTitle}</div>
+  ${recsHTML}
+</div>`;
 }
 
 // ── SETUP GUIDE ──────────────────────────────────────────────────────────────
@@ -1218,12 +1436,41 @@ function renderDetail(id) {
   const t = loadTournaments().find(t => t.id === id);
   if (!t) return `<div class="card">Tournament not found. <button class="btn btn-ghost" onclick="showView('list')">← Back</button></div>`;
 
-  const e      = t.econ || {};
-  const spec   = t.spec || {};
-  const cur    = t.cur || '';
-  const roi     = typeof e.roi === 'number' ? e.roi : Number(e.roi) || 0;
-  const roiPos  = roi >= 0;
-  const roiStr  = (roi >= 0 ? '+' : '') + roi + '%';
+  const e    = t.econ || {};
+  const spec = t.spec || {};
+  const cur  = t.cur  || '';
+  const roi  = typeof e.roi === 'number' ? e.roi : Number(e.roi) || 0;
+
+  function fmtCur(n) {
+    return cur + ' ' + Math.abs(Math.round(n)).toLocaleString();
+  }
+
+  const dur = t.params?.duration || 'weekly';
+  const pctMap = { flash:{lo:'3%',mi:'7%',hi:'12%'}, daily:{lo:'5%',mi:'10%',hi:'18%'},
+    weekly:{lo:'8%',mi:'15%',hi:'25%'}, monthly:{lo:'10%',mi:'18%',hi:'30%'},
+    multi_round:{lo:'6%',mi:'12%',hi:'20%'} };
+  const pct = pctMap[dur] || pctMap['weekly'];
+
+  const scenarios = [
+    { label:`Low (${pct.lo} participation)`,      lift:e.ggrLiftLow,  net:e.netMarginLow,  pl:e.participantsLow,  cpp:e.costPerActiveLow  },
+    { label:`Expected (${pct.mi} participation)`, lift:e.ggrLiftMid,  net:e.netMarginMid,  pl:e.participantsMid,  cpp:e.costPerActiveMid  },
+    { label:`High (${pct.hi} participation)`,     lift:e.ggrLiftHigh, net:e.netMarginHigh, pl:e.participantsHigh, cpp:e.costPerActiveHigh },
+  ];
+
+  const econCards = scenarios.map(s => {
+    const netClass = s.net >= 0 ? 'pos' : 'neg';
+    return `<div class="econ-card">
+      <div class="econ-label">${s.label}</div>
+      <div class="econ-val ${netClass}">${s.net>=0?'+':''}${fmtCur(s.net)}</div>
+      <div class="econ-sub">${s.pl} players · GGR: +${fmtCur(s.lift)}</div>
+      <div class="econ-sub">Cost/active: ${fmtCur(s.cpp)}</div>
+    </div>`;
+  }).join('');
+
+  const engMul  = e.engagementMultiplier || 2.5;
+  const retVal  = e.retentionValue || 0;
+  const totVal  = e.totalValueMid  || e.netMarginMid || 0;
+  const totClass = totVal >= 0 ? 'pos' : 'neg';
 
   const prizeRows = (spec.prizes || []).map(pr => `
     <div class="prize-row">
@@ -1231,25 +1478,6 @@ function renderDetail(id) {
       <div class="prize-bar-wrap"><div class="prize-bar" style="width:${Math.min(pr.pct*3,100)}%"></div></div>
       <span class="prize-pct">${pr.pct}%</span>
       <span class="prize-amt">${cur} ${pr.amount.toLocaleString()}</span>
-    </div>`).join('');
-
-  const totVal   = e.totalValueMid  ?? e.netMarginMid ?? 0;
-  const retVal   = e.retentionValue ?? 0;
-  const engMulD  = e.engagementMultiplier ?? 2.5;
-  const totPos   = totVal >= 0;
-  const econRows = [
-    { label:'Expected participants',  val: (e.participantsMid || 0).toLocaleString() },
-    { label:'GGR lift (expected)',    val: cur + ' ' + Math.round(e.ggrLiftMid || 0).toLocaleString() },
-    { label:'Retention value',        val: '+' + cur + ' ' + Math.round(retVal).toLocaleString(), pos: true },
-    { label:'Total value (expected)', val: (totVal >= 0 ? '+' : '') + cur + ' ' + Math.round(Math.abs(totVal)).toLocaleString(), pos: totPos },
-    { label:'ROI (on prize pool)',    val: roiStr, pos: roiPos },
-    { label:'Break-even players',     val: (e.breakEvenParticipants || '—').toLocaleString() },
-    { label:'Cost per active',        val: cur + ' ' + Math.round(e.costPerActiveMid || 0).toLocaleString() },
-    { label:'Engagement multiplier',  val: '×' + engMulD.toFixed(1) + ' vs normal play' },
-  ].map(r => `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
-      <span style="font-size:.8rem;color:var(--muted)">${r.label}</span>
-      <span style="font-size:.83rem;font-weight:600;color:${r.pos===false?'#ef4444':r.pos?'var(--success)':'var(--text)'}">${r.val}</span>
     </div>`).join('');
 
   const date = new Date(t.createdAt).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
@@ -1265,8 +1493,8 @@ function renderDetail(id) {
       <div style="font-size:1.15rem;font-weight:700;color:var(--text);margin-bottom:4px">${t.name}</div>
       <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">
         <span style="font-size:.75rem;padding:2px 8px;border-radius:99px;background:rgba(79,110,247,.15);color:#a0b0ff">${t.lic?.toUpperCase() || 'NONE'}</span>
-        <span style="font-size:.75rem;padding:2px 8px;border-radius:99px;background:rgba(79,110,247,.12);color:#a0b0ff">${t.params?.segment || 'mid'}</span>
-        <span style="font-size:.75rem;padding:2px 8px;border-radius:99px;background:rgba(79,110,247,.12);color:#a0b0ff">${t.params?.duration || ''}</span>
+        <span style="font-size:.75rem;padding:2px 8px;border-radius:99px;background:rgba(79,110,247,.12);color:#a0b0ff">${t.params?.segment || 'all'}</span>
+        <span style="font-size:.75rem;padding:2px 8px;border-radius:99px;background:rgba(79,110,247,.12);color:#a0b0ff">${dur}</span>
         <span style="font-size:.75rem;color:var(--muted)">Saved ${date}</span>
       </div>
     </div>
@@ -1274,13 +1502,56 @@ function renderDetail(id) {
 </div>
 
 <div class="card">
-  <div class="card-title">Financial economics</div>
-  ${econRows}
+  <div class="card-title">Tournament Summary</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-size:.82rem">
+    <div><span style="color:var(--muted)">Type:</span> ${spec.type || t.type}</div>
+    <div><span style="color:var(--muted)">Duration:</span> ${spec.duration || dur}</div>
+    <div><span style="color:var(--muted)">Entry:</span> ${spec.entryModel || '—'}</div>
+    <div><span style="color:var(--muted)">Scoring:</span> ${spec.scoring || '—'}</div>
+    <div><span style="color:var(--muted)">Pool model:</span> ${spec.poolModel || '—'}</div>
+    <div><span style="color:var(--muted)">Re-entry:</span> ${spec.reentry || '—'}</div>
+    <div><span style="color:var(--muted)">Prize pool:</span> <strong>${fmtCur(spec.prizePool || 0)}</strong></div>
+    <div><span style="color:var(--muted)">Distribution:</span> ${spec.distribution || '—'}</div>
+    <div><span style="color:var(--muted)">ROI:</span> <strong style="color:${roi>=0?'var(--success)':'#ef4444'}">${roi>=0?'+':''}${roi}%</strong></div>
+  </div>
+  ${e.breakEvenParticipants > 0 ? `<div style="margin-top:10px;font-size:.78rem;color:var(--muted)">Break-even: <strong style="color:var(--text)">${e.breakEvenParticipants} participants</strong> at 30% GGR lift</div>` : ''}
 </div>
 
 <div class="card">
-  <div class="card-title">Prize distribution (${cur} ${(spec.prizePool||0).toLocaleString()} total pool)</div>
+  <div class="card-title">Prize Distribution (${cur} ${(spec.prizePool||0).toLocaleString()} pool)</div>
   ${prizeRows}
+</div>
+
+<div class="card">
+  <div class="card-title">Economic Scenarios</div>
+  <div class="econ-grid">${econCards}</div>
+  <div style="margin-top:14px;padding:12px 14px;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:8px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div style="flex:1;min-width:160px">
+      <div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Total value (expected)</div>
+      <div style="font-size:1.1rem;font-weight:700;color:${totClass==='pos'?'var(--success)':'#ef4444'}">${totVal>=0?'+':''}${fmtCur(totVal)}</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-top:2px">GGR lift + post-tournament retention</div>
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div style="text-align:center">
+        <div style="font-size:.68rem;color:var(--muted);margin-bottom:2px">Engagement</div>
+        <div style="font-size:.88rem;font-weight:600;color:#a0b0ff">×${engMul.toFixed(1)}</div>
+        <div style="font-size:.65rem;color:var(--muted)">vs normal play</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:.68rem;color:var(--muted);margin-bottom:2px">Retention value</div>
+        <div style="font-size:.88rem;font-weight:600;color:var(--success)">+${fmtCur(retVal)}</div>
+        <div style="font-size:.65rem;color:var(--muted)">next-month uplift</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:.68rem;color:var(--muted);margin-bottom:2px">Full ROI</div>
+        <div style="font-size:.88rem;font-weight:600;color:${roi>=0?'var(--success)':'#ef4444'}">${roi>=0?'+':''}${roi}%</div>
+        <div style="font-size:.65rem;color:var(--muted)">on prize pool</div>
+      </div>
+    </div>
+  </div>
+  <div style="font-size:.7rem;color:var(--muted);margin-top:10px">
+    Based on ${e.eligible || 0} eligible ${t.params?.segment || 'all'} players (${Math.round((e.segmentRatio||1)*100)}% of ${(t.params?.totalPlayers||e.totalPlayers||5000).toLocaleString()} total casino players) · ARPU ${e.arpu || 0} ${cur}/mo · engagement ×${engMul.toFixed(1)} vs normal play
+  </div>
 </div>
 
 ${gamesSectionFromData(t.games)}

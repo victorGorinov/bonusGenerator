@@ -38,6 +38,27 @@ const OptimizeResponseSchema = z.object({
   recommendations: z.array(OptimizeRecommendationSchema).min(1).max(5),
 });
 
+const numberToString = z.preprocess((val) => typeof val === 'number' ? String(val) : val, z.string());
+const lowerTrim = z.preprocess((val) => typeof val === 'string' ? val.trim().toLowerCase() : val, z.string());
+const PARAM_ENUM = ['duration','segment','prizePool','poolModel','rake','totalPlayers'] as const;
+const paramNormalizer = z.preprocess((val) => {
+  if (typeof val !== 'string') return val;
+  const original = val.trim();
+  if ((PARAM_ENUM as readonly string[]).includes(original)) return original;
+  const normalized = original.toLowerCase().replace(/[\s-]+/g, '_');
+  if (normalized === 'prize_pool' || normalized === 'prizepool') return 'prizePool';
+  if (normalized === 'pool_model' || normalized === 'poolmodel') return 'poolModel';
+  if (normalized === 'total_players' || normalized === 'totalplayers') return 'totalPlayers';
+  return normalized;
+}, z.enum(PARAM_ENUM));
+const verdictNormalizer = z.preprocess((val) => typeof val === 'string' ? val.trim().toLowerCase() : val, z.enum(['realistic', 'optimistic', 'pessimistic']));
+const impactNormalizer = z.preprocess((val) => {
+  if (typeof val !== 'string') return val;
+  const normalized = val.trim().toLowerCase();
+  if (normalized === 'medium') return 'med';
+  return normalized;
+}, z.enum(['high', 'med', 'low']));
+
 export type TextsResponse    = z.infer<typeof TextsResponseSchema>;
 export type AuditResponse    = z.infer<typeof AuditResponseSchema>;
 export type OptimizeResponse = z.infer<typeof OptimizeResponseSchema>;
@@ -101,6 +122,38 @@ export function parseTournamentAuditResponse(raw: string): TournamentAuditRespon
   const parsed = parseRaw(raw);
   const result = TournamentAuditResponseSchema.safeParse(parsed);
   if (!result.success) throw new AIProviderError('AI tournament audit response failed schema validation');
+  return result.data;
+}
+
+const TournamentOptimizeRealismCheckSchema = z.object({
+  metric:    z.preprocess((val) => typeof val === 'string' ? val.trim().toLowerCase().replace(/\s+/g, '_') : val, z.enum(['participation', 'engagement', 'roi', 'cost_per_active', 'retention', 'arpu'])),
+  forecast:  numberToString,
+  benchmark: numberToString,
+  verdict:   verdictNormalizer,
+  note:      numberToString,
+});
+
+const TournamentOptimizeResponseSchema = z.object({
+  realism: z.object({
+    verdict: verdictNormalizer,
+    summary: numberToString,
+    checks:  z.array(TournamentOptimizeRealismCheckSchema).min(3).max(6),
+  }),
+  recommendations: z.array(z.object({
+    param:   paramNormalizer,
+    current: numberToString,
+    target:  numberToString,
+    reason:  numberToString,
+    impact:  impactNormalizer,
+  })).min(1).max(3),
+});
+
+export type TournamentOptimizeResponse = z.infer<typeof TournamentOptimizeResponseSchema>;
+
+export function parseTournamentOptimizeResponse(raw: string): TournamentOptimizeResponse {
+  const parsed = parseRaw(raw);
+  const result = TournamentOptimizeResponseSchema.safeParse(parsed);
+  if (!result.success) throw new AIProviderError('AI tournament optimize response failed schema validation');
   return result.data;
 }
 

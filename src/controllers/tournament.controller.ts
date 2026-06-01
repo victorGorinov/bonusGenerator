@@ -1,8 +1,8 @@
 import { asyncHandler }                   from '../middleware/asyncHandler.js';
 import { AIProviderError }                from '../errors/AIProviderError.js';
-import { generateTournament, generateTournamentTexts, auditTournament, recommendTournamentGames } from '../use-cases/GenerateTournament.js';
+import { generateTournament, generateTournamentTexts, auditTournament, recommendTournamentGames, optimizeTournament } from '../use-cases/GenerateTournament.js';
 import type { AIProvider }                from '../ai/interface.js';
-import type { TournamentGenerateInput, TournamentTextsInput, TournamentAuditInput, TournamentGamesInput } from '../validation/tournament.schema.js';
+import type { TournamentGenerateInput, TournamentTextsInput, TournamentAuditInput, TournamentGamesInput, TournamentOptimizeInput } from '../validation/tournament.schema.js';
 
 interface Deps { ai: AIProvider }
 
@@ -40,6 +40,17 @@ export function createTournamentController({ ai }: Deps) {
       async (req, res) => {
         try {
           res.json(await recommendTournamentGames(req.body, ai));
+        } catch (err) {
+          throw err instanceof AIProviderError ? err
+            : new AIProviderError(err instanceof Error ? err.message : String(err));
+        }
+      },
+    ),
+
+    optimize: asyncHandler<Record<string, never>, unknown, TournamentOptimizeInput>(
+      async (req, res) => {
+        try {
+          res.json(await optimizeTournament(req.body, ai));
         } catch (err) {
           throw err instanceof AIProviderError ? err
             : new AIProviderError(err instanceof Error ? err.message : String(err));
