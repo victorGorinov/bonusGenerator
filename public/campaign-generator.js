@@ -1363,17 +1363,28 @@ function addCampaignToCalendar() {
     econ:       draft.econ || null,
     sourceType: 'campaign_generator',
   };
-  const rc = { rc_campaigns: localStorage.getItem('rc_campaigns') };
+  const isRu = currentLang === 'ru';
   try {
-    const camps = JSON.parse(rc.rc_campaigns || '[]');
-    const id    = 'cg_' + Date.now();
-    const now   = new Date().toISOString();
-    camps.push({ ...campaign, id, createdAt: now, updatedAt: now });
+    const camps   = JSON.parse(localStorage.getItem('rc_campaigns') || '[]');
+    const dupe    = camps.find(c =>
+      c.sourceType === 'campaign_generator' &&
+      c.geo      === campaign.geo &&
+      c.segment  === campaign.segment &&
+      c.type     === campaign.type
+    );
+    if (dupe) {
+      const added = new Date(dupe.createdAt).toLocaleDateString();
+      const msg   = isRu
+        ? `Эта кампания уже добавлена в календарь (${dupe.title}, добавлена ${added}).\nДобавить ещё раз?`
+        : `This campaign is already in the calendar (${dupe.title}, added ${added}).\nAdd again?`;
+      if (!confirm(msg)) return;
+    }
+    const now = new Date().toISOString();
+    camps.push({ ...campaign, id: 'cg_' + Date.now(), createdAt: now, updatedAt: now });
     localStorage.setItem('rc_campaigns', JSON.stringify(camps));
   } catch {}
-  const isRu = currentLang === 'ru';
-  const msg   = isRu ? '📅 Кампания добавлена в Retention Calendar' : '📅 Campaign added to Retention Calendar';
-  const link  = '<a href="/retention-calendar.html" style="color:var(--gold);font-weight:600">Open Calendar →</a>';
+  const msg  = isRu ? '📅 Кампания добавлена в Retention Calendar' : '📅 Campaign added to Retention Calendar';
+  const link = '<a href="/retention-calendar.html" style="color:var(--gold);font-weight:600">Open Calendar →</a>';
   showToast(`${msg} · ${link}`);
 }
 

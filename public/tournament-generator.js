@@ -1310,13 +1310,26 @@ function addTournamentToCalendar() {
     econ:       econ || null,
     sourceType: 'tournament_generator',
   };
+  const isRu = (localStorage.getItem('bonusLang') || 'en') === 'ru';
   try {
     const camps = JSON.parse(localStorage.getItem('rc_campaigns') || '[]');
-    const now   = new Date().toISOString();
+    const dupe  = camps.find(c =>
+      c.sourceType === 'tournament_generator' &&
+      c.geo     === campaign.geo &&
+      c.segment === campaign.segment &&
+      c.mechanic === campaign.mechanic
+    );
+    if (dupe) {
+      const added = new Date(dupe.createdAt).toLocaleDateString();
+      const msg   = isRu
+        ? `Этот турнир уже добавлен в календарь (${dupe.title}, добавлен ${added}).\nДобавить ещё раз?`
+        : `This tournament is already in the calendar (${dupe.title}, added ${added}).\nAdd again?`;
+      if (!confirm(msg)) return;
+    }
+    const now = new Date().toISOString();
     camps.push({ ...campaign, id: 'tg_' + Date.now(), createdAt: now, updatedAt: now });
     localStorage.setItem('rc_campaigns', JSON.stringify(camps));
   } catch {}
-  const isRu = (localStorage.getItem('bonusLang') || 'en') === 'ru';
   const msg   = isRu ? '📅 Турнир добавлен в Retention Calendar' : '📅 Tournament added to Retention Calendar';
   let toast   = document.getElementById('tg-rc-toast');
   if (!toast) {
