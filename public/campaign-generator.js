@@ -1813,7 +1813,7 @@ const I18N = {
     exit_stay:'Остаться', exit_confirm:'Выйти',
     dash_title:'Добро пожаловать! 👋', dash_sub:'Создайте CRM-кампанию за 5 шагов с помощью AI',
     dash_create:'⚡ Создать кампанию', dash_quickstart:'Быстрый старт',
-    dash_recent:'Последние акции', dash_all:'Все →',
+    dash_recent:'Последние активности', dash_all:'Все →',
     tbl_name:'Название', tbl_type:'Тип', tbl_status:'Статус', tbl_date:'Дата',
     camps_title:'Бонусные акции', camps_sub:'Все созданные акции',
     s1_title:'Выберите сценарий кампании',
@@ -1940,7 +1940,7 @@ const I18N = {
     exit_stay:'Stay', exit_confirm:'Exit',
     dash_title:'Welcome! 👋', dash_sub:'Create a CRM campaign in 5 steps with AI',
     dash_create:'⚡ Create Campaign', dash_quickstart:'Quick Start',
-    dash_recent:'Recent Offers', dash_all:'All →',
+    dash_recent:'Recent Activity', dash_all:'All →',
     tbl_name:'Name', tbl_type:'Type', tbl_status:'Status', tbl_date:'Date',
     camps_title:'Bonus Offers', camps_sub:'All created offers',
     s1_title:'Select Campaign Scenario',
@@ -2199,30 +2199,64 @@ function campaignRowHTML(c) {
   </div>`;
 }
 
+function getTournaments() {
+  try { return JSON.parse(localStorage.getItem('savedTournaments') || '[]'); } catch { return []; }
+}
+
+function tournamentRowHTML(t) {
+  const date = t.createdAt ? new Date(t.createdAt).toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '—';
+  const TYPE_ICON = { slot:'🎰', live:'🃏', mixed:'🎲', prize_drop:'💎' };
+  const TYPE_LABEL = { slot:'Slots', live:'Live Casino', mixed:'Mixed', prize_drop:'Prize Drop' };
+  const icon  = TYPE_ICON[t.type]  || '🏆';
+  const label = TYPE_LABEL[t.type] || t.type || 'Tournament';
+  const seg   = t.params?.segment  || 'all';
+  const pool  = t.spec?.prizePool  ? `${t.cur || ''}${t.spec.prizePool.toLocaleString()}` : '—';
+  return `<div class="ct-row clickable" onclick="window.location.href='/tournament-generator.html?view=list'">
+    <div><div class="ct-name">${icon} ${esc(t.name || label)}</div><div class="ct-meta">${seg} · ${pool}</div></div>
+    <div class="ct-cell">🏆 ${label}</div>
+    <div><span class="status-badge status-saved" style="background:rgba(16,185,129,.15);color:#10b981;padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:700">Saved</span></div>
+    <div class="ct-cell">${date}</div>
+    <div></div>
+  </div>`;
+}
+
 function renderCampaignViews() {
   const camps = getCampaigns();
+  const tourns = getTournaments();
+
+  // Dashboard: merged last 5 items (campaigns + tournaments) sorted by date desc
+  const dash = document.getElementById('dash-camp-body');
+  if (dash) {
+    const campItems = camps.map(c => ({ ...c, _kind: 'camp', _ts: new Date(c.date || 0).getTime() }));
+    const tournItems = tourns.map(t => ({ ...t, _kind: 'tourn', _ts: new Date(t.createdAt || 0).getTime() }));
+    const merged = [...campItems, ...tournItems].sort((a, b) => b._ts - a._ts).slice(0, 5);
+    if (merged.length) {
+      dash.innerHTML = merged.map(item =>
+        item._kind === 'camp' ? campaignRowHTML(item) : tournamentRowHTML(item)
+      ).join('');
+    } else {
+      dash.innerHTML = `
+<div class="card" style="text-align:center;padding:40px 20px;margin:0;border-radius:0 0 12px 12px;border-top:none">
+  <div style="font-size:2.5rem;margin-bottom:14px">📁</div>
+  <div style="color:var(--muted);font-size:.88rem;margin-bottom:20px">${t('camp_empty')}</div>
+  <button class="btn btn-primary" onclick="startWizard()">⚡ ${t('dash_create')}</button>
+</div>`;
+    }
+  }
+
+  // Bonus Offers view: campaigns only
   const emptyCard = `
 <div class="card" style="text-align:center;padding:40px 20px;margin:0;border-radius:0 0 12px 12px;border-top:none">
   <div style="font-size:2.5rem;margin-bottom:14px">📁</div>
   <div style="color:var(--muted);font-size:.88rem;margin-bottom:20px">${t('camp_empty')}</div>
   <button class="btn btn-primary" onclick="startWizard()">⚡ ${t('dash_create')}</button>
 </div>`;
-  const dash = document.getElementById('dash-camp-body');
-  const all  = document.getElementById('all-camp-body');
-  if (dash) dash.innerHTML = camps.length ? camps.slice(0,5).map(campaignRowHTML).join('') : emptyCard;
-  if (all)  all.innerHTML  = camps.length ? camps.map(campaignRowHTML).join('') : emptyCard;
+  const all = document.getElementById('all-camp-body');
+  if (all)  all.innerHTML = camps.length ? camps.map(campaignRowHTML).join('') : emptyCard;
   const hd = document.getElementById('all-camp-hd');
   if (hd) hd.style.display = camps.length ? '' : 'none';
-  updateCampaignBadge();
-  // Update tournament badge count
-  const tb = document.getElementById('nav-tourn-badge');
-  if (tb) {
-    try {
-      const tourns = JSON.parse(localStorage.getItem('savedTournaments') || '[]');
-      tb.textContent = tourns.length;
-      tb.style.display = tourns.length > 0 ? 'inline' : 'none';
-    } catch (e) {}
-  }
+
+  updateAllBadges();
 }
 
 // ── CONTEXT MENU ─────────────────────────────────────────────────────────────
