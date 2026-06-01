@@ -18,6 +18,8 @@ export function generateTournament({ type, params }: { type: string; params: Rec
     prizePool,
     poolModel,
     rake,
+    sitecur:   geo.sitecur,
+    totalPlayers: Number(params['totalPlayers'] || 5000),
   });
 
   const PRIZE_SCHEMAS: Record<string, { places: number[]; pct: number[] }> = {

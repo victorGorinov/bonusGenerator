@@ -2,6 +2,25 @@ const ARPU_BY_REGION: Record<string, number> = {
   eu: 65, cis: 22, mn: 12, sweep: 30, crypto: 80, latam: 18,
 };
 
+// Approximate USD → local currency rates, derived from GEO_CFG avgdep benchmarks.
+// Used to convert USD-denominated ARPU into site currency so all economics
+// (GGR lift, net margin, prize pool) are expressed in the same currency.
+const USD_TO_LOCAL: Record<string, number> = {
+  EUR: 0.92,
+  GBP: 0.79,
+  USD: 1.00,
+  DKK: 6.90,
+  RUB: 90,
+  KZT: 470,
+  MNT: 3400,
+  MXN: 17,
+  BRL: 5.0,
+  SC:  1.00,
+  USDT: 1.00,
+  BTC:  0.000015,
+  ETH:  0.00042,
+};
+
 const SEGMENT_RATIO: Record<string, number> = {
   all: 1.00, new: 0.20, vip: 0.10, dormant: 0.40, depositors: 0.60,
 };
@@ -78,15 +97,17 @@ export interface TournamentEconomics {
 }
 
 export function calcTournamentEconomics(params: {
-  region:       string;
-  segment:      string;
-  duration:     string;
-  prizePool:    number;
-  poolModel:    string;
-  rake?:        number;
+  region:        string;
+  segment:       string;
+  duration:      string;
+  prizePool:     number;
+  poolModel:     string;
+  rake?:         number;
   totalPlayers?: number;
+  sitecur?:      string;   // site currency — used to convert USD ARPU to local currency
 }): TournamentEconomics {
-  const arpu         = ARPU_BY_REGION[params.region] ?? ARPU_BY_REGION['eu'];
+  const fxRate       = USD_TO_LOCAL[params.sitecur ?? 'USD'] ?? 1;
+  const arpu         = Math.round((ARPU_BY_REGION[params.region] ?? ARPU_BY_REGION['eu']) * fxRate * 100) / 100;
   const totalPlayers = params.totalPlayers ?? 5000;
   const segmentRatio = SEGMENT_RATIO[params.segment] ?? 1.0;
   const eligible     = Math.round(totalPlayers * segmentRatio);
