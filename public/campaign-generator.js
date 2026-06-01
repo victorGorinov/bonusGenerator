@@ -2201,11 +2201,18 @@ function campaignRowHTML(c) {
 
 function renderCampaignViews() {
   const camps = getCampaigns();
-  const empty = `<div class="tbl-empty">${t('camp_empty')}</div>`;
+  const emptyCard = `
+<div class="card" style="text-align:center;padding:40px 20px;margin:0;border-radius:0 0 12px 12px;border-top:none">
+  <div style="font-size:2.5rem;margin-bottom:14px">📁</div>
+  <div style="color:var(--muted);font-size:.88rem;margin-bottom:20px">${t('camp_empty')}</div>
+  <button class="btn btn-primary" onclick="startWizard()">⚡ ${t('dash_create')}</button>
+</div>`;
   const dash = document.getElementById('dash-camp-body');
   const all  = document.getElementById('all-camp-body');
-  if (dash) dash.innerHTML = camps.length ? camps.slice(0,5).map(campaignRowHTML).join('') : empty;
-  if (all)  all.innerHTML  = camps.length ? camps.map(campaignRowHTML).join('') : empty;
+  if (dash) dash.innerHTML = camps.length ? camps.slice(0,5).map(campaignRowHTML).join('') : emptyCard;
+  if (all)  all.innerHTML  = camps.length ? camps.map(campaignRowHTML).join('') : emptyCard;
+  const hd = document.getElementById('all-camp-hd');
+  if (hd) hd.style.display = camps.length ? '' : 'none';
   updateCampaignBadge();
   // Update tournament badge count
   const tb = document.getElementById('nav-tourn-badge');
