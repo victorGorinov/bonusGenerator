@@ -1350,8 +1350,8 @@ function finishCampaign() {
   document.getElementById('s5-done').style.display='';
   const _campName = draft.scenario?.lbl || (currentLang==='ru' ? 'Кампания' : 'Campaign');
   document.getElementById('done-sub').textContent = currentLang==='ru'
-    ? `«${_campName}» успешно сохранена. Найдите её в разделе «Кампании».`
-    : `«${_campName}» saved successfully. Find it in the Campaigns section.`;
+    ? `«${_campName}» успешно сохранена. Найдите её в разделе «Бонусные акции».`
+    : `«${_campName}» saved successfully. Find it in Bonus Offers.`;
   updateProg(6);
 }
 
@@ -1813,9 +1813,9 @@ const I18N = {
     exit_stay:'Остаться', exit_confirm:'Выйти',
     dash_title:'Добро пожаловать! 👋', dash_sub:'Создайте CRM-кампанию за 5 шагов с помощью AI',
     dash_create:'⚡ Создать кампанию', dash_quickstart:'Быстрый старт',
-    dash_recent:'Последние кампании', dash_all:'Все →',
+    dash_recent:'Последние акции', dash_all:'Все →',
     tbl_name:'Название', tbl_type:'Тип', tbl_status:'Статус', tbl_date:'Дата',
-    camps_title:'Кампании', camps_sub:'Все созданные кампании',
+    camps_title:'Бонусные акции', camps_sub:'Все созданные акции',
     s1_title:'Выберите сценарий кампании',
     s1_sub:'Сценарий определяет тип аудитории и логику бонусного предложения',
     s2_title:'Параметры кампании', s2_sub:'Настройте аудиторию, бюджет и тон коммуникации',
@@ -1857,10 +1857,10 @@ const I18N = {
     s5_sum_budget:'Бюджет', s5_sum_channels:'Каналы',
     s5_admin_copy:'⎘ Копировать', s5_admin_save:'↓ Сохранить .txt',
     s5_done_title:'Кампания создана!',
-    s5_done_sub:'Кампания успешно сохранена. Найдите её в разделе «Кампании».',
+    s5_done_sub:'Акция успешно сохранена. Найдите её в разделе «Бонусные акции».',
     wpl_1:'Сценарий', wpl_2:'Параметры', wpl_3:'Генерация', wpl_4:'Тексты', wpl_5:'Экспорт',
     badge_draft:'Черновик', badge_active:'Активна', badge_done:'Завершена',
-    camp_empty:'Нет кампаний. Создайте первую!',
+    camp_empty:'Нет бонусных акций. Создайте первую!',
     // Wizard navigation
     btn_cancel:'← Отмена', btn_back:'← Назад', btn_next:'Далее →',
     btn_generate:'Сгенерировать ⚡',
@@ -1869,12 +1869,12 @@ const I18N = {
     btn_create_more:'+ Создать ещё', btn_new_camp:'+ Новая кампания',
     step_ctr:'Шаг {n} из 5',
     // Sidebar
-    nav_main:'Главное', nav_dashboard:'Дашборд', nav_campaigns:'Кампании',
+    nav_main:'Главное', nav_dashboard:'Дашборд', nav_campaigns:'Акции',
     nav_tools:'Инструменты', nav_configurator:'Конфигуратор', nav_campaign_gen:'Campaign Gen', nav_tournament:'Турниры', nav_tournament_gen:'Tournament Gen', nav_setup_guide:'Setup Guide',
     nav_scenarios:'Сценарии', nav_calendar:'Календарь', nav_ai:'AI Ассистент',
     nav_soon:'Скоро', nav_analytics:'Аналитика', nav_settings:'Настройки',
     // Topbar view titles
-    view_dashboard:'Дашборд', view_campaigns:'Кампании',
+    view_dashboard:'Дашборд', view_campaigns:'Бонусные акции',
     view_configurator:'Конфигуратор', view_wizard:'Новая кампания',
     // Quick start cards
     qc_launch_n:'Первый запуск казино',
@@ -1917,7 +1917,7 @@ const I18N = {
     sc_sport_event:'Спортивное событие', sc_tournament:'Турнир / Ивент',
     sc_cashback:'Cashback кампания', sc_custom:'Кастомный сценарий',
     // Detail view
-    det_back:'← Кампании', det_dup:'⎘ Дублировать', det_edit:'✏ Редактировать',
+    det_back:'← Акции', det_dup:'⎘ Дублировать', det_edit:'✏ Редактировать',
     det_tab_ov:'Обзор', det_tab_mech:'Механика', det_tab_texts:'Тексты', det_tab_audit:'Аудит', det_tab_export:'Экспорт', det_tab_analytics:'📊 Факт',
     det_ov_scenario:'Сценарий', det_ov_geo:'Регион', det_ov_segment:'Сегмент',
     det_ov_budget:'Бюджет', det_ov_tone:'Тон', det_ov_lang:'Язык текстов',
@@ -1940,9 +1940,9 @@ const I18N = {
     exit_stay:'Stay', exit_confirm:'Exit',
     dash_title:'Welcome! 👋', dash_sub:'Create a CRM campaign in 5 steps with AI',
     dash_create:'⚡ Create Campaign', dash_quickstart:'Quick Start',
-    dash_recent:'Recent Campaigns', dash_all:'All →',
+    dash_recent:'Recent Offers', dash_all:'All →',
     tbl_name:'Name', tbl_type:'Type', tbl_status:'Status', tbl_date:'Date',
-    camps_title:'Campaigns', camps_sub:'All created campaigns',
+    camps_title:'Bonus Offers', camps_sub:'All created offers',
     s1_title:'Select Campaign Scenario',
     s1_sub:'The scenario defines the audience type and bonus offer logic',
     s2_title:'Campaign Parameters', s2_sub:'Configure audience, budget and communication tone',
@@ -1984,10 +1984,10 @@ const I18N = {
     s5_sum_budget:'Budget', s5_sum_channels:'Channels',
     s5_admin_copy:'⎘ Copy', s5_admin_save:'↓ Save .txt',
     s5_done_title:'Campaign Created!',
-    s5_done_sub:'Campaign saved successfully. Find it in the Campaigns section.',
+    s5_done_sub:'Offer saved successfully. Find it in Bonus Offers.',
     wpl_1:'Scenario', wpl_2:'Parameters', wpl_3:'Generate', wpl_4:'Texts', wpl_5:'Export',
     badge_draft:'Draft', badge_active:'Active', badge_done:'Done',
-    camp_empty:'No campaigns yet. Create your first one!',
+    camp_empty:'No bonus offers yet. Create your first one!',
     // Wizard navigation
     btn_cancel:'← Cancel', btn_back:'← Back', btn_next:'Next →',
     btn_generate:'Generate ⚡',
@@ -1996,12 +1996,12 @@ const I18N = {
     btn_create_more:'+ Create Another', btn_new_camp:'+ New Campaign',
     step_ctr:'Step {n} of 5',
     // Sidebar
-    nav_main:'Main', nav_dashboard:'Dashboard', nav_campaigns:'Campaigns',
+    nav_main:'Main', nav_dashboard:'Dashboard', nav_campaigns:'Offers',
     nav_tools:'Tools', nav_configurator:'Configurator', nav_campaign_gen:'Campaign Gen', nav_tournament:'Tournaments', nav_tournament_gen:'Tournament Gen', nav_setup_guide:'Setup Guide',
     nav_scenarios:'Scenarios', nav_calendar:'Calendar', nav_ai:'AI Assistant',
     nav_soon:'Soon', nav_analytics:'Analytics', nav_settings:'Settings',
     // Topbar view titles
-    view_dashboard:'Dashboard', view_campaigns:'Campaigns',
+    view_dashboard:'Dashboard', view_campaigns:'Bonus Offers',
     view_configurator:'Configurator', view_wizard:'New Campaign',
     // Quick start cards
     qc_launch_n:'Casino First Launch',
@@ -2044,7 +2044,7 @@ const I18N = {
     sc_sport_event:'Sport Event', sc_tournament:'Tournament / Event',
     sc_cashback:'Cashback Campaign', sc_custom:'Custom Scenario',
     // Detail view
-    det_back:'← Campaigns', det_dup:'⎘ Duplicate', det_edit:'✏ Edit',
+    det_back:'← Offers', det_dup:'⎘ Duplicate', det_edit:'✏ Edit',
     det_tab_ov:'Overview', det_tab_mech:'Mechanics', det_tab_texts:'Texts', det_tab_audit:'Audit', det_tab_export:'Export', det_tab_analytics:'📊 Actuals',
     det_ov_scenario:'Scenario', det_ov_geo:'Region', det_ov_segment:'Segment',
     det_ov_budget:'Budget', det_ov_tone:'Tone', det_ov_lang:'Text Language',

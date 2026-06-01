@@ -345,7 +345,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   <nav class="sb-nav">
     <div class="nav-lbl" data-i18n="nav_main">Main</div>
     <button class="nav-item" onclick="showView('dashboard')"><span class="nav-icon">📊</span><span data-i18n="nav_dashboard">Dashboard</span></button>
-    <button class="nav-item" onclick="showView('campaigns')"><span class="nav-icon">📁</span><span data-i18n="nav_campaigns">Campaigns</span><span class="nav-badge" id="camp-nav-badge" style="display:none"></span></button>
+    <button class="nav-item" onclick="showView('campaigns')"><span class="nav-icon">📁</span><span data-i18n="nav_campaigns">Offers</span><span class="nav-badge" id="camp-nav-badge" style="display:none"></span></button>
     <a class="nav-item" href="/tournament-generator.html?view=list"><span class="nav-icon">🏆</span><span data-i18n="nav_tournament">Tournaments</span><span class="nav-badge" id="nav-tourn-badge" style="display:none"></span></a>
     <div class="nav-lbl" data-i18n="nav_tools" style="margin-top:6px">Tools</div>
     <a class="nav-item" href="/configurator.html"><span class="nav-icon">⚙️</span><span data-i18n="nav_configurator">Configurator</span></a>
@@ -422,7 +422,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     <div id="view-campaigns" style="display:none">
       <div class="dash-header">
         <div>
-          <div class="dash-title" data-i18n="camps_title">Кампании</div>
+          <div class="dash-title" data-i18n="camps_title">Бонусные акции</div>
           <div class="dash-sub" data-i18n="camps_sub">Все созданные кампании</div>
         </div>
         <button class="btn btn-primary" onclick="startWizard()" data-i18n="dash_create">⚡ Создать кампанию</button>
@@ -784,7 +784,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     <!-- CAMPAIGN DETAIL -->
     <div id="view-campaign-detail" style="display:none">
       <div class="det-hd">
-        <button class="det-back" onclick="closeDetail()" data-i18n="det_back">← Кампании</button>
+        <button class="det-back" onclick="closeDetail()" data-i18n="det_back">← Акции</button>
         <div class="det-name" id="det-name">—</div>
         <div id="det-badge"></div>
         <div class="det-acts">
