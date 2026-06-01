@@ -15,7 +15,9 @@ export default defineConfig({
         'retention-calendar':   resolve(__dirname, 'public/retention-calendar.js'),
       },
       output: {
-        entryFileNames: '[name].[hash].js',
+        // retention-calendar uses FullCalendar (npm imports) — needs stable path for HTML ref
+        entryFileNames: (chunk) =>
+          chunk.name === 'retention-calendar' ? '[name].js' : '[name].[hash].js',
       },
     },
     target:    'es2020',

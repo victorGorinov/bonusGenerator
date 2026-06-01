@@ -44,15 +44,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 });
 
-// ── Sidebar nav ───────────────────────────────────────────────────────────────
+// ── View toggle (Month / Week / Agenda in topbar) ─────────────────────────────
 
 function setupSidebarNav() {
-  document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
+  document.querySelectorAll('#view-toggle .vt-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const v = btn.dataset.view;
-      setCalendarView(v === 'month' ? 'dayGridMonth' : v === 'week' ? 'timeGridWeek' : 'listMonth');
-      setView(v);
-      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      const fcView = btn.dataset.fcView;
+      setCalendarView(fcView);
+      document.querySelectorAll('#view-toggle .vt-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
     });
   });

@@ -5,3 +5,5 @@ npm-debug.log*
 .env.stage
 .vercel
 public/dist/
+!public/dist/retention-calendar.js
+!public/dist/retention-calendar.js.map
