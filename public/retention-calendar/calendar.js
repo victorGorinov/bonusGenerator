@@ -20,7 +20,7 @@ export function initCalendar(el, onEventClick) {
       center: 'title',
       right:  'dayGridMonth,timeGridWeek,listMonth',
     },
-    height:      'calc(100vh - 110px)',
+    height:      '100%',
     editable:    true,
     eventResizableFromStart: true,
     eventDrop:   handleDrop,
