@@ -19,6 +19,8 @@ html{height:100%;background:#0a0d14}
 body{height:100%}
 .main{opacity:0;transition:opacity .15s ease}
 .main.ready{opacity:1}
+.sidebar{opacity:0;transition:opacity .15s ease}
+.sidebar.ready{opacity:1}
 body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);font-size:14px;display:flex;min-height:100vh}
 
 /* SIDEBAR */
@@ -341,21 +343,21 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     <div class="sb-logo-tag">AI</div>
   </div>
   <nav class="sb-nav">
-    <div class="nav-lbl" data-i18n="nav_main">Главное</div>
-    <button class="nav-item" onclick="showView('dashboard')"><span class="nav-icon">📊</span><span data-i18n="nav_dashboard">Дашборд</span></button>
-    <button class="nav-item" onclick="showView('campaigns')"><span class="nav-icon">📁</span><span data-i18n="nav_campaigns">Кампании</span><span class="nav-badge" id="camp-nav-badge" style="display:none"></span></button>
-    <a class="nav-item" href="/tournament-generator.html?view=list"><span class="nav-icon">🏆</span><span data-i18n="nav_tournament">Турниры</span><span class="nav-badge" id="nav-tourn-badge" style="display:none"></span></a>
-    <div class="nav-lbl" data-i18n="nav_tools" style="margin-top:6px">Инструменты</div>
-    <a class="nav-item" href="/configurator.html"><span class="nav-icon">⚙️</span><span data-i18n="nav_configurator">Конфигуратор</span></a>
+    <div class="nav-lbl" data-i18n="nav_main">Main</div>
+    <button class="nav-item" onclick="showView('dashboard')"><span class="nav-icon">📊</span><span data-i18n="nav_dashboard">Dashboard</span></button>
+    <button class="nav-item" onclick="showView('campaigns')"><span class="nav-icon">📁</span><span data-i18n="nav_campaigns">Campaigns</span><span class="nav-badge" id="camp-nav-badge" style="display:none"></span></button>
+    <a class="nav-item" href="/tournament-generator.html?view=list"><span class="nav-icon">🏆</span><span data-i18n="nav_tournament">Tournaments</span><span class="nav-badge" id="nav-tourn-badge" style="display:none"></span></a>
+    <div class="nav-lbl" data-i18n="nav_tools" style="margin-top:6px">Tools</div>
+    <a class="nav-item" href="/configurator.html"><span class="nav-icon">⚙️</span><span data-i18n="nav_configurator">Configurator</span></a>
     <a class="nav-item" href="/campaign-generator.html?view=wizard"><span class="nav-icon">🚀</span><span data-i18n="nav_campaign_gen">Campaign Gen</span></a>
     <a class="nav-item" href="/tournament-generator.html?view=generator"><span class="nav-icon">🏆</span><span data-i18n="nav_tournament_gen">Tournament Gen</span></a>
     <a class="nav-item" href="/tournament-generator.html#setup"><span class="nav-icon">📋</span><span data-i18n="nav_setup_guide">Setup Guide</span></a>
-    <div class="nav-lbl" data-i18n="nav_soon" style="margin-top:6px">Скоро</div>
-    <button class="nav-item off"><span class="nav-icon">📈</span><span data-i18n="nav_analytics">Аналитика</span></button>
-    <button class="nav-item off"><span class="nav-icon">⚙️</span><span data-i18n="nav_settings">Настройки</span></button>
+    <div class="nav-lbl" data-i18n="nav_soon" style="margin-top:6px">Soon</div>
+    <button class="nav-item off"><span class="nav-icon">📈</span><span data-i18n="nav_analytics">Analytics</span></button>
+    <button class="nav-item off"><span class="nav-icon">⚙️</span><span data-i18n="nav_settings">Settings</span></button>
   </nav>
   <div class="sb-foot">
-    <button class="sb-back" onclick="confirmExit()" data-i18n="wb_back">← На главную</button>
+    <button class="sb-back" onclick="confirmExit()" data-i18n="wb_back">← Back to home</button>
   </div>
 </aside>
 
