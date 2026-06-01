@@ -15,7 +15,10 @@
   --sidebar-w:220px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%}
+html{height:100%;background:#0a0d14}
+body{height:100%}
+.main{opacity:0;transition:opacity .15s ease}
+.main.ready{opacity:1}
 body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);font-size:14px;display:flex;min-height:100vh}
 
 /* SIDEBAR */
@@ -30,7 +33,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
 .nav-item.active{background:rgba(79,110,247,.25);color:#a0b0ff}
 .nav-item.active::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
-.nav-item.off{opacity:.3;cursor:not-allowed;pointer-events:none}
+.nav-item.off{opacity:.38;cursor:default;pointer-events:none}
 .nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
 .nav-badge{margin-left:auto;background:rgba(79,110,247,.3);color:#a0b0ff;font-size:.6rem;padding:1px 5px;border-radius:100px;font-weight:700}
 .sb-foot{padding:12px 16px;border-top:1px solid rgba(255,255,255,.06)}
@@ -334,18 +337,18 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 <!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="sb-logo">
-    <img src="/logo.svg" class="sb-logo-img" alt="Retomat"/>
+    <svg class="sb-logo-img" viewBox="0 0 620 140" xmlns="http://www.w3.org/2000/svg" aria-label="Retomat"><defs><linearGradient id="rg1" x1="0" y1="0" x2="140" y2="140" gradientUnits="userSpaceOnUse"><stop stop-color="#8B5CF6"/><stop offset="1" stop-color="#3B82F6"/></linearGradient><filter id="glow1" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g transform="translate(20,20)"><path d="M20 0 H70 C100 0 122 20 122 48 C122 70 108 86 84 93 L118 120 H82 L56 100 L26 120 H0 L34 88 V20 C34 8 42 0 54 0 Z" fill="url(#rg1)" filter="url(#glow1)"/><path d="M54 24 H70 C84 24 94 33 94 45 C94 58 84 66 70 66 H54 V24 Z" fill="#0B1020"/><path d="M34 88 L58 70 H84 L50 100 L26 120 H0 L34 88 Z" fill="#0B1020" opacity="0.9"/></g><text x="176" y="108" font-family="Inter,Arial,sans-serif" font-size="94" font-weight="700" letter-spacing="-3" fill="#F8FAFC">Retomat</text><rect x="182" y="122" width="330" height="8" rx="4" fill="url(#rg1)" opacity="0.95"/></svg>
     <div class="sb-logo-tag">AI</div>
   </div>
   <nav class="sb-nav">
     <div class="nav-lbl" data-i18n="nav_main">Главное</div>
-    <button class="nav-item active" onclick="showView('dashboard')"><span class="nav-icon">📊</span><span data-i18n="nav_dashboard">Дашборд</span></button>
+    <button class="nav-item" onclick="showView('dashboard')"><span class="nav-icon">📊</span><span data-i18n="nav_dashboard">Дашборд</span></button>
     <button class="nav-item" onclick="showView('campaigns')"><span class="nav-icon">📁</span><span data-i18n="nav_campaigns">Кампании</span><span class="nav-badge" id="camp-nav-badge" style="display:none"></span></button>
     <a class="nav-item" href="/tournament-generator.html?view=list"><span class="nav-icon">🏆</span><span data-i18n="nav_tournament">Турниры</span><span class="nav-badge" id="nav-tourn-badge" style="display:none"></span></a>
     <div class="nav-lbl" data-i18n="nav_tools" style="margin-top:6px">Инструменты</div>
-    <button class="nav-item" onclick="showView('configurator')"><span class="nav-icon">⚙️</span><span data-i18n="nav_configurator">Конфигуратор</span></button>
+    <a class="nav-item" href="/configurator.html"><span class="nav-icon">⚙️</span><span data-i18n="nav_configurator">Конфигуратор</span></a>
     <a class="nav-item" href="/campaign-generator.html?view=wizard"><span class="nav-icon">🚀</span><span data-i18n="nav_campaign_gen">Campaign Gen</span></a>
-    <a class="nav-item" href="/tournament-generator.html?view=setup"><span class="nav-icon">🏆</span><span data-i18n="nav_tournament_gen">Tournament Gen</span></a>
+    <a class="nav-item" href="/tournament-generator.html?view=generator"><span class="nav-icon">🏆</span><span data-i18n="nav_tournament_gen">Tournament Gen</span></a>
     <a class="nav-item" href="/tournament-generator.html#setup"><span class="nav-icon">📋</span><span data-i18n="nav_setup_guide">Setup Guide</span></a>
     <div class="nav-lbl" data-i18n="nav_soon" style="margin-top:6px">Скоро</div>
     <button class="nav-item off"><span class="nav-icon">📈</span><span data-i18n="nav_analytics">Аналитика</span></button>
@@ -363,9 +366,9 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 <div class="main">
   <div class="topbar">
     <button class="topbar-ham" onclick="toggleSidebar()">☰</button>
-    <span class="topbar-title" id="tb-title">Дашборд</span>
-    <span class="topbar-sep">·</span>
-    <span class="topbar-sub" id="tb-sub">AI Campaign Generator</span>
+    <span class="topbar-title" id="tb-title"></span>
+    <span class="topbar-sep" id="tb-sep" style="display:none">·</span>
+    <span class="topbar-sub" id="tb-sub"></span>
     <div class="topbar-right" id="tb-right"></div>
     <button onclick="toggleGlossary()" title="Glossary"
       style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);width:28px;height:28px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s"
@@ -380,7 +383,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   <div class="content">
 
     <!-- DASHBOARD -->
-    <div id="view-dashboard">
+    <div id="view-dashboard" style="display:none">
       <div class="dash-header">
         <div>
           <div class="dash-title" data-i18n="dash_title">Добро пожаловать! 👋</div>
@@ -431,11 +434,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
       </div>
     </div>
 
-    <!-- CONFIGURATOR -->
-    <div id="view-configurator" style="display:none;margin:-26px -30px;height:calc(100vh - 54px)">
-      <iframe id="cfg-iframe" src="/configurator.html" style="width:100%;height:100%;border:none"
-        onload="initCfgIframe(this)"></iframe>
-    </div>
 
     <!-- WIZARD -->
     <div id="view-wizard" style="display:none">
@@ -834,7 +832,29 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   </div>
 </div>
 
+<script src="/nav-utils.js"></script>
 <script src="/campaign-generator.js"></script>
-
+<script>
+document.addEventListener('click', function(e) {
+  const a = e.target.closest('a[href]');
+  if (!a || !a.closest('.sidebar')) return;
+  const href = a.getAttribute('href');
+  if (!href || href.startsWith('#') || a.target) return;
+  let url;
+  try { url = new URL(href, location.href); } catch(e) { return; }
+  if (url.origin !== location.origin) return;
+  e.preventDefault();
+  // Same page — just switch view without reload
+  if (url.pathname === location.pathname) {
+    const view = url.searchParams.get('view') || 'dashboard';
+    if (typeof currentView !== 'undefined' && currentView === view) return;
+    if (typeof showView === 'function') { showView(view); return; }
+  }
+  // Different page — fade .main then navigate
+  const m = document.querySelector('.main');
+  if (m) { m.style.transition = 'opacity .1s ease'; m.style.opacity = '0'; }
+  setTimeout(() => { location.href = href; }, 110);
+});
+</script>
 </body>
 </html>

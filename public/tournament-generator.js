@@ -69,6 +69,11 @@ const SEGMENTS = [
   { val:'dormant',    lbl:'Dormant' },
 ];
 
+function setTournLang(lang) {
+  try { localStorage.setItem('bonusLang', lang); } catch(e) {}
+  document.querySelectorAll('.lt-btn').forEach(b => b.classList.toggle('active', b.id === 'lt-' + lang));
+}
+
 let step            = 1;
 let detailId        = null;
 let hasActiveGenerator = false;
@@ -153,10 +158,21 @@ function showView(view, id) {
     tb.textContent = t ? t.name : 'Tournament';
     setSidebarActive('nav-tournament');
     c.innerHTML = renderDetail(id);
-  } else if (view === 'setup') {
-    tb.textContent = 'Setup Guide';
-    setSidebarActive('nav-setup-guide');
-    c.innerHTML = renderSetupGuide();
+  } else if (view === 'setup' || view === 'generator') {
+    // If view is 'setup', show setup guide; if 'generator', show tournament wizard
+    if (view === 'setup') {
+      tb.textContent = 'Setup Guide';
+      setSidebarActive('nav-setup-guide');
+      c.innerHTML = renderSetupGuide();
+    } else {
+      // Initialize draft and step if needed
+      if (!draft.type) draft.type = 'slot';
+      if (!draft.params) draft.params = { segment: 'all', totalPlayers: 5000 };
+      if (step === 0) step = 1;
+      tb.textContent = 'Tournament Generator';
+      setSidebarActive('nav-tourn-gen');
+      renderStep();
+    }
   }
   updateNavBadge();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -930,13 +946,7 @@ function deleteTournament(id) {
   showView('list');
 }
 
-function updateNavBadge() {
-  const n  = loadTournaments().length;
-  const el = document.getElementById('nav-tourn-badge');
-  if (!el) return;
-  el.textContent = n;
-  el.style.display = n > 0 ? 'inline' : 'none';
-}
+function updateNavBadge() { updateAllBadges(); }
 
 function showToast(msg) {
   let el = document.getElementById('toast');
@@ -1145,79 +1155,54 @@ function loadAndRegenTexts(id) {
 }
 
 // Init
-updateNavBadge();
-const initialHash = window.location.hash;
-if (initialHash === '#setup') {
-  showView('setup');
-} else if (initialHash === '#list') {
-  showView('list');
-} else {
-  // Check for view parameter (?view=list or ?view=setup)
-  const params = new URLSearchParams(window.location.search);
-  const viewParam = params.get('view');
-
-  if (viewParam === 'list' || viewParam === 'setup') {
-    showView(viewParam);
+function resolveInitialTournamentView() {
+  const view = getInitialView(null);
+  if (view === 'list' || view === 'setup' || view === 'generator') {
+    showView(view);
+  } else if (hasActiveGenerator && step > 0) {
+    renderStep();
   } else {
-    // Show saved tournaments list if available, otherwise show generator
-    const saved = loadTournaments();
-    if (saved.length > 0) {
-      showView('list');
-    } else {
-      renderStep();
-    }
+    loadTournaments().length > 0 ? showView('list') : renderStep();
   }
 }
 
-window.addEventListener('pageshow', function() {
-  updateNavBadge();
-  // Check for view parameter (?view=list or ?view=setup)
-  const params = new URLSearchParams(window.location.search);
-  const viewParam = params.get('view');
+updateAllBadges();
+setTournLang(localStorage.getItem('bonusLang') || 'en');
+resolveInitialTournamentView();
 
-  if (viewParam === 'list' || viewParam === 'setup') {
-    showView(viewParam);
-  } else {
-    // Restore view state when returning to page from another tab
-    const hash = window.location.hash;
-    if (hash === '#setup') {
-      showView('setup');
-    } else if (hash === '#list') {
-      showView('list');
-    } else if (hasActiveGenerator && step > 0) {
-      // Resume generator if currently in progress
-      renderStep();
-    } else {
-      const saved = loadTournaments();
-      if (saved.length > 0) {
-        showView('list');
-      } else {
-        renderStep();
-      }
-    }
-  }
-  // Update both badges on load
+window.addEventListener('pageshow', function() {
   updateAllBadges();
+  resolveInitialTournamentView();
 });
 
-// Update campaign and tournament badges
-function updateAllBadges() {
-  // Campaign badge
-  try {
-    const camps = JSON.parse(localStorage.getItem('be_campaigns') || '[]');
-    const campBadge = document.getElementById('camp-nav-badge');
-    if (campBadge) {
-      campBadge.textContent = camps.length;
-      campBadge.style.display = camps.length > 0 ? 'inline' : 'none';
-    }
-  } catch (e) {}
-  // Tournament badge
-  try {
-    const tourns = JSON.parse(localStorage.getItem('savedTournaments') || '[]');
-    const tournBadge = document.getElementById('nav-tourn-badge');
-    if (tournBadge) {
-      tournBadge.textContent = tourns.length;
-      tournBadge.style.display = tourns.length > 0 ? 'inline' : 'none';
-    }
-  } catch (e) {}
+function toggleTournGlossary() {
+  let panel = document.getElementById('tourn-glossary-panel');
+  if (panel) { panel.remove(); return; }
+  panel = document.createElement('div');
+  panel.id = 'tourn-glossary-panel';
+  panel.style.cssText = 'position:fixed;top:54px;right:0;width:360px;max-width:100vw;height:calc(100vh - 54px);background:#0f1420;border-left:1px solid #1e2740;z-index:200;display:flex;flex-direction:column;box-shadow:-8px 0 32px rgba(0,0,0,.5);overflow-y:auto;padding:20px';
+  panel.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <span style="font-size:.88rem;font-weight:700;color:#e8eaf0">Glossary</span>
+      <button onclick="document.getElementById('tourn-glossary-panel').remove()"
+        style="background:rgba(255,255,255,.08);border:none;color:#8892a4;width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    ${[
+      ['Prize Pool','Total value of rewards distributed to tournament winners'],
+      ['Leaderboard','Ranking of players by score during the tournament'],
+      ['Entry Model','How players join: Freeroll (free), Buy-in (paid), or Ticket (earned)'],
+      ['Scoring','Metric used to rank players: total wins, highest multiplier, most spins, or missions'],
+      ['Eligible Players','Players who qualify to participate based on segment filter'],
+      ['Segment Ratio','Fraction of total active players in the target segment'],
+      ['ARPU','Average Revenue Per User per month in USD'],
+      ['Prize Drop','Random prizes awarded during gameplay, not leaderboard-based'],
+      ['Multi-Round','Tournament spanning several rounds with cumulative scoring'],
+      ['Rake','Percentage of player bets that contributes to a dynamic prize pool'],
+    ].map(([term,def]) => `
+      <div style="padding:10px 0;border-bottom:1px solid #1e2740">
+        <div style="font-size:.8rem;font-weight:700;color:#a0b0ff;margin-bottom:3px">${term}</div>
+        <div style="font-size:.76rem;color:#8892a4;line-height:1.5">${def}</div>
+      </div>`).join('')}
+  `;
+  document.body.appendChild(panel);
 }

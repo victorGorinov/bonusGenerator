@@ -890,16 +890,18 @@ const LANG = {
 // ═════════════════════════════════════════════════════════════════════════════
 // STATE & i18n
 // ═════════════════════════════════════════════════════════════════════════════
-let L = 'ru';
+let L = (() => { try { return localStorage.getItem('bonusLang') || 'ru'; } catch(e) { return 'ru'; } })();
 const S = { region:null, players:5000, sitecur:'USD', depcur:'USD', avgdep:100, plat:'both', lic:'mga', rtp:96, segment:'mid' };
 
 function t(k){ return (LANG[L] && LANG[L][k]) || (LANG.ru && LANG.ru[k]) || k; }
 
 function setLang(lang){
   L = lang;
+  try { localStorage.setItem('bonusLang', lang); } catch(e) {}
   document.querySelectorAll('.lchip').forEach(c=>{
     c.classList.toggle('on', c.dataset.l===lang);
   });
+  document.querySelectorAll('.lt-btn').forEach(b=>{ if(b) b.classList.toggle('active', b.id==='lt-'+lang); });
   relabel();
   // Re-render output if visible
   if(document.getElementById('out').style.display !== 'none' && S.region){
@@ -2412,20 +2414,21 @@ document.addEventListener('click', function(e){
     document.querySelectorAll('.tip-box.open').forEach(b => b.classList.remove('open'));
   }
 });
-document.addEventListener('DOMContentLoaded', () => {
+function initAppPage() {
   const params = new URLSearchParams(location.search);
   const saved = params.get('lang') || (() => { try { return localStorage.getItem('bonusLang'); } catch(e) { return null; } })();
   const valid = ['ru','en','mn','es'];
   if (saved && valid.includes(saved) && saved !== L) setLang(saved);
   else relabel();
-
-  // Pre-fill configurator from campaign URL params
   initFromCampaignURL();
-
-  // First-use hint
   const hint = document.getElementById('cfg-hint');
   if (hint && !localStorage.getItem('cfg_hint_dismissed')) hint.style.display = 'flex';
-});
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAppPage);
+} else {
+  initAppPage();
+}
 
 // ═════════════════════════════════════════════════════════════════════════════
 // CAMPAIGN → CONFIGURATOR: Pre-fill form from URL params
@@ -2609,22 +2612,42 @@ function _esc(s) {
 // CSV PARSER & ANALYTICS
 // ═════════════════════════════════════════════════════════════════════════════
 
+// Parse a single CSV row with RFC 4180 quoted-field support
+function parseCSVRow(line) {
+  const fields = [];
+  let cur = '', inQuote = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuote) {
+      if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; }  // escaped quote
+      else if (ch === '"') { inQuote = false; }
+      else { cur += ch; }
+    } else {
+      if (ch === '"') { inQuote = true; }
+      else if (ch === ',') { fields.push(cur.trim()); cur = ''; }
+      else { cur += ch; }
+    }
+  }
+  fields.push(cur.trim());
+  return fields;
+}
+
 // Parse CSV file into campaign actuals
-// Expected columns: campaignId, participants, totalDeposits, wagerCompleted, bonusPayout, incrRevenue, notes
+// Expected columns: campaignId, participants, totalDeposits, wagerCompleted, bonusPayout[, incrRevenue][, notes]
 function parseCSVActuals(csvText) {
-  const lines = csvText.trim().split('\n');
+  const lines = csvText.trim().split(/\r?\n/).filter(l => l.trim());
   if (lines.length < 2) throw new Error('CSV must have header + at least 1 data row');
 
-  const header = lines[0].toLowerCase().split(',').map(h => h.trim());
+  const header = parseCSVRow(lines[0]).map(h => h.toLowerCase());
+  const colCount = header.length;
   const headerMap = {
-    'campaignid': 'campaignId',
-    'id': 'campaignId',
-    'participants': 'participants',
-    'totaldeposits': 'totalDeposits',
-    'wagercompleted': 'wagerCompleted',
-    'bonuspayout': 'bonusPayout',
-    'incrrevenue': 'incrRevenue',
-    'notes': 'notes',
+    campaignid: 'campaignId', id: 'campaignId',
+    participants: 'participants',
+    totaldeposits: 'totalDeposits',
+    wagercompleted: 'wagerCompleted',
+    bonuspayout: 'bonusPayout',
+    incrrevenue: 'incrRevenue',
+    notes: 'notes',
   };
 
   const colIndices = {};
@@ -2640,21 +2663,20 @@ function parseCSVActuals(csvText) {
 
   const records = [];
   for (let i = 1; i < lines.length; i++) {
-    const parts = lines[i].split(',').map(p => p.trim());
+    const parts = parseCSVRow(lines[i]);
+    if (parts.length !== colCount) throw new Error(`Row ${i + 1}: expected ${colCount} columns, got ${parts.length}`);
     const rec = {
-      campaignId: parts[colIndices.campaignId],
-      source: 'csv',
-      enteredAt: new Date().toISOString(),
-      participants: parseInt(parts[colIndices.participants], 10),
+      campaignId:    parts[colIndices.campaignId],
+      source:        'csv',
+      enteredAt:     new Date().toISOString(),
+      participants:  parseInt(parts[colIndices.participants], 10),
       totalDeposits: parseFloat(parts[colIndices.totalDeposits]),
       wagerCompleted: parseFloat(parts[colIndices.wagerCompleted]),
-      bonusPayout: parseFloat(parts[colIndices.bonusPayout]),
-      incrRevenue: colIndices.incrRevenue !== undefined ? parseFloat(parts[colIndices.incrRevenue]) : undefined,
-      notes: colIndices.notes !== undefined ? parts[colIndices.notes] : undefined,
+      bonusPayout:   parseFloat(parts[colIndices.bonusPayout]),
+      incrRevenue:   colIndices.incrRevenue !== undefined ? parseFloat(parts[colIndices.incrRevenue]) : undefined,
+      notes:         colIndices.notes !== undefined ? parts[colIndices.notes] || undefined : undefined,
     };
-    if (!isNaN(rec.participants) && !isNaN(rec.totalDeposits)) {
-      records.push(rec);
-    }
+    if (!isNaN(rec.participants) && !isNaN(rec.totalDeposits)) records.push(rec);
   }
 
   return records;

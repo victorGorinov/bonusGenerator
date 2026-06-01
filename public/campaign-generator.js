@@ -16,9 +16,11 @@ const GEO_LBL   = {eu:'🇪🇺 EU / UK',de:'🇩🇪 Germany',fr:'🇫🇷 Fran
 const SEG_LBL   = {new:'Новые',mid:'Средние',vip:'VIP'};
 const GEO_CURRENCY = {de:'EUR',fr:'EUR',es:'EUR',it:'EUR',nl:'EUR',dk:'DKK',uk:'GBP',ru:'RUB',kz:'KZT',mx:'MXN',br:'BRL',mn:'MNT',us:'USD'};
 
-// Get currency for a given geo code
+// Returns undefined for unknown geo — callers decide the fallback
 function getSitecurByGeo(geo) {
-  return GEO_CURRENCY[geo] || '€';
+  const cur = GEO_CURRENCY[geo];
+  if (!cur && geo) console.warn('[getSitecurByGeo] unknown geo:', geo);
+  return cur;
 }
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
@@ -39,10 +41,12 @@ function showView(name) {
     `<button class="btn btn-primary btn-sm" onclick="confirmNewCampaign()">${t('btn_new_camp')}</button>`;
   document.querySelectorAll('.nav-item:not(.off)').forEach(el => {
     const onclick = el.getAttribute('onclick') || '';
+    const href    = el.getAttribute('href') || '';
     el.classList.toggle('active',
       (name==='dashboard'    && onclick.includes("'dashboard'")) ||
       (name==='campaigns'    && onclick.includes("'campaigns'")) ||
-      (name==='configurator' && onclick.includes("'configurator'"))
+      (name==='wizard'       && href.includes('view=wizard')) ||
+      (name==='detail'       && onclick.includes("'campaigns'"))
     );
   });
   if (name === 'campaigns') renderCampaignViews();
@@ -51,9 +55,8 @@ function showView(name) {
 }
 
 function updateCampaignBadge() {
-  const camps = getCampaigns();
-  const nb = document.getElementById('camp-nav-badge');
-  if (nb) { nb.textContent = camps.length; nb.style.display = camps.length > 0 ? 'inline' : 'none'; }
+  updateBadge('camp-nav-badge', 'be_campaigns');
+  updateBadge('nav-tourn-badge', 'savedTournaments');
 }
 
 // ── WIZARD ────────────────────────────────────────────────────────────────────
@@ -90,10 +93,10 @@ function goStep(n) {
         return;
       }
       // draft.params.geo already set by pickEuCountry — leave it, but set sitecur
-      draft.params.sitecur = getSitecurByGeo(draft.params.geo);
+      draft.params.sitecur = getSitecurByGeo(draft.params.geo) ?? 'EUR';
     } else {
       draft.params.geo = geoSel;
-      draft.params.sitecur = getSitecurByGeo(geoSel);
+      draft.params.sitecur = getSitecurByGeo(geoSel) ?? 'EUR';
     }
     draft.params.budget  = parseFloat(document.getElementById('p-budget').value) || 5000;
     draft.params.players = parseInt(document.getElementById('cg-pnum').value) || 5000;
@@ -222,7 +225,7 @@ function pickEuCountry(el) {
   el.classList.add('active');
   const code = el.dataset.v;
   draft.params.geo = code;
-  draft.params.sitecur = getSitecurByGeo(code);
+  draft.params.sitecur = getSitecurByGeo(code) ?? 'EUR';
   draft.params._euPending = false;
   // Sync language and reset license
   const lang = GEO_LANG[code] || 'en';
@@ -1580,11 +1583,8 @@ function saveActuals() {
 function renderDetailAnalytics(c) {
   const isRu = currentLang === 'ru';
   const fs   = c.forecastSnapshot;
-  // Fallback chain: if sitecur is default '€' but geo is non-EU, use geo-based currency
   const curFromGeo = getSitecurByGeo(fs?.geo || c.params?.geo);
-  const cur = (fs?.sitecur && fs.sitecur !== '€') ? fs.sitecur :
-              (curFromGeo && curFromGeo !== '€') ? curFromGeo :
-              c.econ?.cur || c.params?.sitecur || '€';
+  const cur = fs?.sitecur || curFromGeo || c.econ?.cur || c.params?.sitecur || 'EUR';
   const fmt  = v => cur + ' ' + Math.abs(Math.round(v)).toLocaleString();
   const fmtU = v => '$' + Math.abs(Math.round(v)).toLocaleString();
   const pct  = v => (v * 100).toFixed(1) + '%';
@@ -1999,7 +1999,7 @@ const I18N = {
     nav_main:'Main', nav_dashboard:'Dashboard', nav_campaigns:'Campaigns',
     nav_tools:'Tools', nav_configurator:'Configurator', nav_campaign_gen:'Campaign Gen', nav_tournament:'Tournaments', nav_tournament_gen:'Tournament Gen', nav_setup_guide:'Setup Guide',
     nav_scenarios:'Scenarios', nav_calendar:'Calendar', nav_ai:'AI Assistant',
-    nav_soon:'Coming Soon', nav_analytics:'Analytics', nav_settings:'Settings',
+    nav_soon:'Soon', nav_analytics:'Analytics', nav_settings:'Settings',
     // Topbar view titles
     view_dashboard:'Dashboard', view_campaigns:'Campaigns',
     view_configurator:'Configurator', view_wizard:'New Campaign',
@@ -2062,19 +2062,24 @@ const I18N = {
   },
 };
 
-let currentLang = 'en';
+let currentLang = localStorage.getItem('bonusLang') || 'en';
 let currentView  = 'dashboard';
 
 function t(key) { return (I18N[currentLang] || I18N.ru)[key] || key; }
 
 function updateTopbar(name) {
-  const subMap = { configurator:'Retomat Configurator v2.0', wizard:'AI Campaign Generator' };
+  const subMap = { wizard:'AI Campaign Generator' };
   document.getElementById('tb-title').textContent = t('view_'+name) || name;
-  document.getElementById('tb-sub').textContent   = subMap[name] || 'AI Campaign Generator';
+  const sub = subMap[name] || '';
+  const subEl = document.getElementById('tb-sub');
+  const sepEl = document.getElementById('tb-sep');
+  if (subEl) subEl.textContent = sub;
+  if (sepEl) sepEl.style.display = sub ? '' : 'none';
 }
 
 function setUILang(lang) {
   currentLang = lang;
+  try { localStorage.setItem('bonusLang', lang); } catch(e) {}
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const v = t(el.dataset.i18n);
     if (v && v !== el.dataset.i18n) el.textContent = v;
@@ -2139,7 +2144,7 @@ function saveCampaign() {
       sP10: draft.econ.sP10, sP50: draft.econ.sP50, sP90: draft.econ.sP90,
       costRatio: draft.econ.costRatio, pl: draft.econ.pl, arpu: draft.econ.arpu,
       ltv3: draft.econ.ltv3, wagerX: draft.econ.wagerX,
-      sitecur: draft.params?.sitecur || '€', geo: draft.params?.geo || '',
+      sitecur: draft.params?.sitecur || getSitecurByGeo(draft.params?.geo) || 'EUR', geo: draft.params?.geo || '',
       capturedAt: new Date().toISOString(),
     } : null,
     texts: draft.texts || null,
@@ -2252,20 +2257,6 @@ function toggleSidebar() {
 }
 
 // ── CONFIGURATOR IFRAME ───────────────────────────────────────────────────────
-function initCfgIframe(iframe) {
-  try {
-    const doc = iframe.contentDocument;
-    // Hide standalone header — it's redundant inside the sidebar layout
-    const hdr = doc.querySelector('.hdr');
-    if (hdr) hdr.style.display = 'none';
-    // Adjust left panel sticky offset (no header above it anymore)
-    const left = doc.querySelector('.left');
-    if (left) { left.style.top = '0'; left.style.height = '100vh'; }
-    // Remove min-height so it doesn't force scroll
-    const wrap = doc.querySelector('.wrap');
-    if (wrap) wrap.style.minHeight = '100vh';
-  } catch(e) {}
-}
 
 // ── ONBOARDING ────────────────────────────────────────────────────────────────
 function showOnboarding() {
@@ -2436,16 +2427,11 @@ function syncInitialView() {
   showView(name);
 }
 
-try {
-  const saved = localStorage.getItem('bonusLang');
-  if (saved && I18N[saved]) setUILang(saved);
-} catch(e) {}
-
-// Check for view parameter (?view=configurator) and hash (#campaigns)
-const params = new URLSearchParams(window.location.search);
-const viewParam = params.get('view');
-const hashView = window.location.hash === '#campaigns' ? 'campaigns' : null;
-showView(viewParam || hashView || 'dashboard');
+// Apply language before showing UI to avoid flash of wrong language
+setUILang(currentLang);
+updateAllBadges();
+const _hashView = window.location.hash === '#campaigns' ? 'campaigns' : null;
+showView(getViewParam() || _hashView || 'dashboard');
 renderScenarios();
 renderCampaignViews();
 document.querySelector('.main').classList.add('ready');

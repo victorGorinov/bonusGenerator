@@ -1,28 +1,21 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git commit --allow-empty -m 'chore: trigger redeploy — apply ANTHROPIC_API_KEY and RESEND_API_KEY env vars *)",
-      "Bash(git commit -m ' *)",
+      "Bash(npm run *)",
+      "Bash(npx vitest *)",
+      "Bash(git commit *)",
       "Bash(git checkout *)",
       "Bash(git merge *)",
-      "Bash(npm run *)",
-      "Bash(rm \"/Users/victorgorinov/Documents/Claude/Projects/Bonus system/.git/index.lock\")",
-      "Bash(node -e ' *)",
-      "Bash(node -e \"const d=require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\); const c=JSON.parse\\(d\\); console.log\\('EU sP10:',c.econ.sP10.cost,'sP50:',c.econ.sP50.cost,'sP90:',c.econ.sP90.cost\\)\")",
-      "Bash(curl -s -X POST http://localhost:3000/api/campaign/optimize -H 'Content-Type: application/json' -d '{\"geo\":\"de\",\"segment\":\"mid\",\"lift\":{\"wagFactor\":0.9,\"wagerX\":25,\"beW\":18,\"genFactor\":1.0,\"matchPct\":50,\"mechFactor\":1.08,\"hasNDB\":false,\"hasReload\":true,\"hasDep2\":false,\"hasFS\":false,\"hasCB\":false,\"rtpFactor\":1.0,\"rtp\":0.96,\"platFactor\":1.0,\"plat\":\"both\",\"base\":0.10,\"lift\":0.098},\"economics\":{\"net\":-500,\"campCost3\":2000,\"incrRev\":1500,\"incrPl\":49,\"pl\":5000},\"uiLang\":\"en\"}')",
-      "Bash(curl -s -X POST http://localhost:3000/api/campaign/optimize \\\\ *)",
-      "Read(//private/tmp/**)",
-      "Bash(python3 -m json.tool)",
-      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(r['factor'],'·',r['param'],'→ impact:',r['impact']\\) for r in d['recommendations']]\")",
-      "Bash(npx vitest *)",
-      "Bash(curl -s -X POST http://localhost:3000/api/health)",
-      "Bash(curl -s -X POST http://localhost:3000/api/tournament/generate -H 'Content-Type: application/json' -d '{\"type\":\"slot\",\"params\":{\"geo\":\"de\",\"lic\":\"auto\",\"segment\":\"all\",\"entryModel\":\"freeroll\",\"scoring\":\"total_wins\",\"duration\":\"weekly\",\"prizePool\":1000,\"poolModel\":\"fixed\",\"distribution\":\"top_n\",\"reentry\":\"single\",\"lang\":\"en\",\"tone\":\"professional\"}}')",
-      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('OK spec:', d['spec']['type']\\)\")",
-      "Bash(pkill -f \"tsx server.ts\")",
-      "Bash(curl -s -X POST http://localhost:3000/api/campaign/analysis -H 'Content-Type: application/json' -d '{ *)",
-      "Bash(curl -s -X POST http://localhost:3000/api/campaign/analysis/explain -H 'Content-Type: application/json' -d '{ *)",
+      "Bash(curl -s http://localhost:3000/*)",
+      "Bash(curl -s -o /dev/null *)",
+      "Bash(curl -s -X POST http://localhost:3000/*)",
+      "Bash(pkill -f \"tsx server*\")",
       "Bash(pkill -f \"npm start\")",
-      "Bash(pkill -f \"tsx server\")"
+      "Bash(pkill -f \"tsx server.ts\")",
+      "Bash(rm \"/Users/victorgorinov/Documents/Claude/Projects/Bonus system/.git/index.lock\")",
+      "Bash(node -e '*)",
+      "Bash(python3 *)",
+      "Read(//private/tmp/**)"
     ]
   }
 }

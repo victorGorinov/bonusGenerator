@@ -4,73 +4,212 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Bonus Configurator — Retomat</title>
-<link rel="stylesheet" href="styles.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <style>
-/* ── SAVED CAMPAIGNS SIDEBAR ─────────────────────────────────────── */
-.camps-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;backdrop-filter:blur(3px)}
-.camps-overlay.open{display:block}
-.camps-drawer{position:fixed;top:0;right:-420px;width:420px;max-width:100vw;height:100vh;background:#0f1420;border-left:1px solid #1e2740;z-index:301;display:flex;flex-direction:column;transition:right .28s cubic-bezier(.4,0,.2,1);box-shadow:-8px 0 40px rgba(0,0,0,.5)}
-.camps-drawer.open{right:0}
-.camps-head{padding:18px 20px;border-bottom:1px solid #1e2740;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.camps-head-title{font-size:15px;font-weight:700;color:#e8eaf0}
-.camps-head-close{width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.08);border:none;color:#8892a4;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
-.camps-head-close:hover{background:rgba(255,255,255,.15);color:#e8eaf0}
-.camps-body{flex:1;overflow-y:auto;padding:16px}
-.camps-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:#8892a4;text-align:center;gap:8px}
-.camps-empty-ico{font-size:36px;opacity:.4}
-.camps-empty-t{font-size:13px;font-weight:600}
-.camps-empty-s{font-size:12px;opacity:.7}
-.camp-card{background:#161c2d;border:1px solid #1e2740;border-radius:10px;padding:14px;margin-bottom:10px;transition:border-color .15s}
-.camp-card:hover{border-color:rgba(79,110,247,.4)}
-.camp-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
-.camp-card-name{font-size:13px;font-weight:700;color:#e8eaf0;line-height:1.3}
-.camp-card-del{width:22px;height:22px;border-radius:5px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
-.camp-card-del:hover{background:rgba(239,68,68,.25)}
-.camp-card-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
-.camp-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:.04em}
-.camp-badge-region{background:rgba(79,110,247,.15);color:#a0b0ff}
-.camp-badge-lic{background:rgba(245,158,11,.12);color:#f59e0b}
-.camp-badge-dep{background:rgba(16,185,129,.1);color:#10b981}
-.camp-card-date{font-size:10px;color:#8892a4;margin-bottom:10px}
-.camp-card-actions{display:flex;gap:8px}
-.camp-btn{flex:1;padding:7px 10px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s;text-align:center}
-.camp-btn-open{background:linear-gradient(135deg,#4f6ef7,#7c3aed);color:#fff}
-.camp-btn-open:hover{opacity:.85;transform:translateY(-1px)}
-.camp-btn-view{background:rgba(255,255,255,.06);color:#8892a4;border:1px solid #1e2740}
-.camp-btn-view:hover{background:rgba(255,255,255,.12);color:#e8eaf0}
+/* ── BASE (identical to campaign-generator / tournament-generator) ── */
+:root{--bg:#0a0d14;--bg2:#0f1420;--bg3:#141926;--card:#161c2d;--border:#1e2740;--accent:#4f6ef7;--accent2:#7c3aed;--text:#e8eaf0;--muted:#8892a4;--success:#10b981;--warn:#f59e0b;--sidebar-w:220px;
+  /* configurator palette aliases */
+  --dark:#1E1B4B;--purple:#7C3AED;--teal:#0D9488;--gold:#F59E0B;--blue:#4f6ef7;--green:#10b981;--red:#EF4444;--off:#0a0d14;--slate:#e8eaf0;--light:#141926}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%;background:#0a0d14}
+body{height:100%;font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);font-size:14px;display:flex;min-height:100vh}
+.main{animation:pageFadeIn .15s ease}
+@keyframes pageFadeIn{from{opacity:0}to{opacity:1}}
 
-/* ── SAVE CAMPAIGN BUTTON (in output header) ─────────────────────── */
-.btn-save-camp{padding:7px 14px;background:rgba(16,185,129,.15);color:#10b981;border:1.5px solid rgba(16,185,129,.3);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
-.btn-save-camp:hover{background:rgba(16,185,129,.25);border-color:rgba(16,185,129,.5)}
-.btn-save-camp.saved{background:rgba(16,185,129,.25);border-color:#10b981;color:#6ee7b7}
+/* ── SIDEBAR ── */
+.sidebar{width:var(--sidebar-w);min-height:100vh;background:#1E1B4B;border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50}
+.sb-logo{padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px}
+.sb-logo-img{height:28px;width:auto;display:block;flex-shrink:0}
+.sb-logo-tag{font-size:9px;font-weight:700;color:#1E1B4B;background:#F59E0B;padding:1px 6px;border-radius:8px;letter-spacing:.4px;margin-left:2px;align-self:center}
+.sb-nav{flex:1;padding:10px 0;overflow-y:auto}
+.nav-lbl{padding:8px 16px 3px;font-size:.65rem;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.08em}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;color:rgba(255,255,255,.5);font-size:.83rem;font-weight:500;position:relative;transition:background .15s,color .15s;text-decoration:none;border:none;background:none;width:100%;font-family:inherit}
+.nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
+.nav-item.active{background:rgba(79,110,247,.25);color:#a0b0ff}
+.nav-item.active::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
+.nav-item.off{opacity:.38;cursor:default;pointer-events:none}
+.nav-badge{margin-left:auto;background:rgba(79,110,247,.3);color:#a0b0ff;font-size:.6rem;padding:1px 5px;border-radius:100px;font-weight:700}
+.nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.sb-foot{padding:12px 16px;border-top:1px solid rgba(255,255,255,.06)}
+.sb-back{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.4);font-size:.78rem;text-decoration:none;transition:color .15s;cursor:pointer;background:none;border:none;font-family:inherit;padding:0;width:100%;text-align:left}
+.sb-back:hover{color:#fff}
 
-/* ── SAVE MODAL ──────────────────────────────────────────────────── */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
-.modal-overlay.open{display:flex}
-.modal{background:#0f1420;border:1px solid #1e2740;border-radius:16px;padding:28px;width:380px;max-width:calc(100vw - 32px);box-shadow:0 20px 60px rgba(0,0,0,.6)}
-.modal h3{font-size:16px;font-weight:700;margin-bottom:6px}
-.modal p{font-size:12px;color:#8892a4;margin-bottom:20px;line-height:1.6}
-.modal-input{width:100%;padding:10px 14px;background:#161c2d;border:1.5px solid #1e2740;border-radius:9px;color:#e8eaf0;font-size:14px;outline:none;font-family:inherit;margin-bottom:14px;transition:border-color .15s}
-.modal-input:focus{border-color:#7c3aed}
-.modal-actions{display:flex;gap:10px}
-.modal-btn{flex:1;padding:10px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s}
-.modal-btn-cancel{background:rgba(255,255,255,.06);color:#8892a4;border:1px solid #1e2740}
-.modal-btn-cancel:hover{background:rgba(255,255,255,.12)}
-.modal-btn-save{background:linear-gradient(135deg,#4f6ef7,#7c3aed);color:#fff}
-.modal-btn-save:hover{opacity:.85}
+/* ── MAIN LAYOUT ── */
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{height:54px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:10px;position:sticky;top:0;z-index:40}
+.topbar-title{font-weight:600;font-size:.92rem;color:var(--text)}
+.content{flex:1;display:flex;flex-direction:column;padding:0}
 
-/* ── CAMPAIGNS NAV BADGE ─────────────────────────────────────────── */
-.camps-count{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;background:#7c3aed;color:#fff;border-radius:50%;font-size:9px;font-weight:800;margin-left:4px;vertical-align:middle}
+/* ── BTN ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:8px;font-size:.83rem;font-weight:600;cursor:pointer;border:none;transition:all .2s;font-family:inherit;text-decoration:none}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 2px 12px rgba(79,110,247,.3)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(79,110,247,.45)}
+.btn-sm{padding:5px 11px;font-size:.76rem}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;box-shadow:none!important}
 
-/* ── EDIT MODE BANNER ────────────────────────────────────────────── */
-#edit-mode-bar{
-  position:sticky;top:52px;z-index:90;
-  background:linear-gradient(135deg,rgba(245,158,11,.12),rgba(217,119,6,.08));
-  border-bottom:1px solid rgba(245,158,11,.3);
-  padding:9px 24px;
-  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
-  font-size:12px;
-}
+/* ── CONFIGURATOR TWO-COLUMN LAYOUT ── */
+.wrap{display:grid;grid-template-columns:380px 1fr;flex:1;min-height:calc(100vh - 54px)}
+.left{background:var(--bg2);border-right:1px solid var(--border);padding:20px;overflow-y:auto;height:calc(100vh - 54px);position:sticky;top:54px}
+.right{padding:24px 28px;overflow-y:auto}
+.pnl-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:16px}
+
+/* ── FORM ELEMENTS ── */
+.fg{margin-bottom:16px}
+.fl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center}
+.fl em{font-size:10.5px;color:var(--purple);font-style:normal;font-weight:500;text-transform:none;letter-spacing:0}
+input[type=number],input[type=text],select{width:100%;padding:8px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--slate);background:var(--bg2);transition:border-color .15s;font-family:inherit;outline:none}
+input[type=number]:focus,input[type=text]:focus,select:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(124,58,237,.15)}
+.irow{display:flex;gap:7px}
+.irow>*{flex:1}
+.irow>select{max-width:100px;flex:none}
+
+/* ── REGION CARDS ── */
+.rgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
+.rcard{border:2px solid var(--border);border-radius:10px;padding:10px 8px;cursor:pointer;transition:all .15s;text-align:center;user-select:none;background:var(--card)}
+.rcard:hover{border-color:var(--purple);background:rgba(124,58,237,.12)}
+.rcard.active{border-color:var(--purple);background:rgba(124,58,237,.18)}
+.rcard .flag{font-size:20px;display:block;margin-bottom:3px;line-height:1}
+.rcard .rn{font-size:11.5px;font-weight:700;color:var(--slate)}
+.rcard .rs{font-size:10px;color:var(--muted);margin-top:1px}
+
+/* ── SLIDER ── */
+.sv{font-size:20px;font-weight:800;color:var(--purple);text-align:center;margin-bottom:4px}
+input[type=range]{width:100%;-webkit-appearance:none;height:4px;border-radius:4px;background:var(--border);cursor:pointer;margin:6px 0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:var(--purple);border:2px solid #1e1b4b;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.sl{display:flex;justify-content:space-between;font-size:10px;color:var(--muted)}
+
+/* ── CHIPS ── */
+.chips{display:flex;gap:5px;flex-wrap:wrap}
+.chip{padding:5px 11px;border-radius:20px;border:1.5px solid var(--border);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;color:var(--muted);user-select:none}
+.chip:hover{border-color:var(--purple);color:var(--purple)}
+.chip.on{background:var(--purple);border-color:var(--purple);color:#fff}
+
+hr.dv{border:none;border-top:1px solid var(--border);margin:16px 0}
+
+/* ── GENERATE BTN ── */
+.btn-gen{width:100%;padding:12px;background:var(--purple);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px;transition:all .15s;font-family:inherit;letter-spacing:.2px}
+.btn-gen:hover{background:#6D28D9;transform:translateY(-1px);box-shadow:0 4px 14px rgba(124,58,237,.4)}
+.btn-gen:active{transform:none}
+
+/* ── TOOLTIPS ── */
+.tip-wrap{position:relative;display:inline-flex;align-items:center;gap:4px;max-width:calc(100% - 40px)}
+.tip-btn{width:14px;height:14px;background:rgba(255,255,255,.1);color:var(--muted);border-radius:50%;font-size:8.5px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;cursor:help;flex-shrink:0;transition:background .12s;user-select:none;line-height:1}
+.tip-btn:hover{background:var(--purple);color:#fff}
+.tip-box{display:none;position:absolute;left:0;top:calc(100% + 7px);width:260px;background:var(--bg2);color:#8892a4;font-size:11px;line-height:1.6;padding:9px 12px;border-radius:8px;z-index:600;font-weight:400;text-transform:none;letter-spacing:0;box-shadow:0 4px 20px rgba(0,0,0,.5);pointer-events:none;border:1px solid var(--border)}
+.tip-box::before{content:'';position:absolute;top:-5px;left:10px;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:5px solid var(--bg2)}
+.tip-wrap:hover .tip-box,.tip-box.open{display:block}
+
+/* ── OVERRIDE FIELDS ── */
+.ov-sep{border-top:1px dashed var(--border);margin:8px 0 4px}
+.ov-inp{width:72px;padding:2px 7px;border:1.5px solid var(--border);border-radius:5px;font-size:11px;font-weight:700;color:var(--slate);background:var(--bg);text-align:right;outline:none;transition:border .15s;-moz-appearance:textfield}
+.ov-inp::-webkit-inner-spin-button,.ov-inp::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.ov-inp:focus{border-color:var(--purple);background:rgba(124,58,237,.08)}
+.ov-row .pk{color:#a78bfa!important;font-size:10px;font-style:italic;letter-spacing:0}
+.cost-row{background:linear-gradient(90deg,rgba(16,185,129,.07),transparent);border-radius:5px;margin-top:5px}
+.cost-row .pk{font-weight:700;font-size:10.5px}
+
+/* ── OUTPUT ── */
+.ph{display:flex;flex-direction:column;align-items:center;justify-content:center;height:70vh;color:var(--muted);text-align:center;gap:10px}
+.ph-ico{font-size:52px}
+.ph-t{font-size:17px;font-weight:700;color:var(--slate)}
+.ph-s{font-size:13px}
+.oh{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.ot{font-size:21px;font-weight:800;color:#fff}
+.om{font-size:12px;color:var(--muted);margin-top:5px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.obadge{display:inline-block;padding:2px 10px;border-radius:10px;font-size:11.5px;font-weight:700}
+.btn-print{padding:7px 16px;background:var(--dark);color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-print:hover{background:#2D2A6E}
+
+/* ── SECTION CARDS ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.sec{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.sec.fw{margin-bottom:14px}
+.sh{padding:10px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
+.si{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.st{font-size:12.5px;font-weight:700;color:var(--slate)}
+.sb{margin-left:auto;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.pl{padding:10px 14px}
+.pr{display:flex;justify-content:space-between;align-items:baseline;padding:4.5px 0;border-bottom:1px solid var(--border)}
+.pr:last-child{border-bottom:none}
+.pk{font-size:11.5px;color:var(--muted);flex-shrink:0;padding-right:8px;position:relative}
+.pv{font-size:12px;font-weight:600;color:var(--slate);text-align:right}
+.pv.hi{color:var(--purple)}
+.pv.gn{color:var(--green)}
+.pv.gd{color:#F59E0B}
+.pv.rd{color:var(--red)}
+.pv.yw{color:#FBBF24}
+
+/* ── ECON GRID ── */
+.eg{display:grid;grid-template-columns:repeat(3,1fr)}
+.ei{padding:12px 14px;text-align:center;border-right:1px solid var(--border)}
+.ei:last-child{border-right:none}
+.el{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.ev{font-size:19px;font-weight:800}
+.es{font-size:10px;color:var(--muted);margin-top:2px}
+
+/* ── TABLES ── */
+.tt{width:100%;border-collapse:collapse;font-size:12px}
+.tt th{background:var(--light);font-weight:600;color:var(--muted);padding:5px 12px;text-align:left;font-size:11px}
+.tt td{padding:5px 12px;border-bottom:1px solid var(--border)}
+.tt tr:last-child td{border-bottom:none}
+.tbadge{display:inline-block;padding:1px 8px;border-radius:8px;font-size:11px;font-weight:700}
+.ctab{width:100%;border-collapse:collapse;font-size:11.5px}
+.ctab th{background:var(--light);font-size:10.5px;font-weight:600;color:var(--muted);padding:5px 10px;text-align:left}
+.ctab td{padding:5px 10px;border-bottom:1px solid var(--border)}
+.ctab tr:last-child td{border-bottom:none}
+.pct-bar{background:var(--border);border-radius:4px;height:6px;overflow:hidden;margin-top:3px}
+.pct-fill{height:6px;border-radius:4px}
+.ptab{width:100%;border-collapse:collapse;font-size:12px}
+.ptab th{background:var(--light);font-size:11px;font-weight:600;color:var(--muted);padding:5px 10px;text-align:center}
+.ptab td{padding:5px 10px;border-bottom:1px solid var(--border);text-align:center}
+.ptab tr:last-child td{border-bottom:none}
+
+/* ── REG WARNING ── */
+.rw{background:rgba(245,158,11,.08);border:1.5px solid rgba(245,158,11,.25);border-radius:10px;padding:11px 14px;margin-bottom:14px}
+.rw-t{font-size:11.5px;font-weight:700;color:#FBBF24;margin-bottom:5px}
+.rw ul{padding-left:15px}
+.rw li{font-size:11px;color:#FCD34D;margin-bottom:2px;line-height:1.5}
+.mn-note{background:rgba(16,185,129,.08);border:1.5px solid rgba(16,185,129,.25);border-radius:10px;padding:11px 14px;margin-bottom:14px}
+.mn-note-t{font-size:11.5px;font-weight:700;color:#34D399;margin-bottom:5px}
+.mn-note p{font-size:11px;color:#6EE7B7;line-height:1.5}
+
+/* ── ADMIN CONFIG BLOCK ── */
+.cfg-pre{padding:14px 16px;font-size:11px;color:var(--slate);background:var(--bg);overflow-x:auto;line-height:1.7;white-space:pre;font-family:'Courier New',monospace;border-top:1px solid var(--border)}
+.cfg-actions{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--border);background:var(--light);flex-wrap:wrap;align-items:center}
+.cfg-btn{padding:5px 14px;border:none;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .12s}
+.cfg-btn.copy{background:var(--dark);color:#fff;border:1px solid rgba(255,255,255,.15)}
+.cfg-btn.copy:hover{background:#2D2A6E}
+.cfg-btn.save{background:#059669;color:#fff}
+.cfg-btn.save:hover{background:#047857}
+.cfg-btn.gen{background:var(--purple);color:#fff;padding:7px 18px;font-size:12px}
+.cfg-btn.gen:hover{background:#6D28D9}
+
+/* ── COLLAPSIBLE ── */
+.sec-body{overflow:hidden}
+.sec-body.collapsed{display:none}
+.sh-toggle{margin-left:4px;font-size:11px;color:var(--muted);transition:transform .2s;display:inline-block;line-height:1}
+.sh-toggle.open{transform:rotate(180deg)}
+.sh.clickable{cursor:pointer;user-select:none}
+.sh.clickable:hover{background:rgba(255,255,255,.04)}
+.admin-ph{padding:20px 14px;text-align:center;border-top:1px solid var(--border)}
+.admin-ph-txt{font-size:12px;color:var(--muted);margin-bottom:10px}
+
+/* ── LANG TOGGLE (matches campaign-generator) ── */
+.topbar-right{margin-left:auto}
+.lang-toggle{display:flex;background:var(--bg2);border:1px solid var(--border);border-radius:100px;padding:2px;gap:1px;flex-shrink:0}
+.lt-btn{padding:3px 10px;border-radius:100px;font-size:.68rem;font-weight:700;cursor:pointer;border:none;background:none;color:var(--muted);font-family:inherit;transition:all .15s;letter-spacing:.05em}
+.lt-btn:hover{color:var(--text)}
+.lt-btn.active{background:var(--accent);color:#fff}
+
+/* ── TOPBAR CAMPAIGNS BUTTON ── */
+.hdr-campaigns{font-size:12px;color:#8B9EC3;text-decoration:none;white-space:nowrap;flex-shrink:0;background:rgba(79,110,247,.12);border:1px solid rgba(79,110,247,.25);padding:4px 10px;border-radius:7px;transition:opacity .15s;opacity:.85;cursor:pointer;font-family:inherit}
+.hdr-campaigns:hover{opacity:1;color:#a0b0ff}
+
+/* ── EDIT MODE BANNER ── */
+#edit-mode-bar{position:sticky;top:54px;z-index:90;background:linear-gradient(135deg,rgba(245,158,11,.12),rgba(217,119,6,.08));border-bottom:1px solid rgba(245,158,11,.3);padding:9px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:12px}
 .edit-bar-left{display:flex;align-items:center;gap:10px}
 .edit-bar-icon{font-size:16px}
 .edit-bar-label{color:#fcd34d;font-weight:600}
@@ -82,368 +221,426 @@
 .edit-bar-exit{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2)}
 .edit-bar-exit:hover{background:rgba(239,68,68,.2)}
 
-/* ── AUDIT PANEL ─────────────────────────────────────────────────── */
-#audit-panel{
-  background:#161c2d;border:1px solid rgba(245,158,11,.3);
-  border-radius:14px;margin-top:20px;overflow:hidden;
-}
-.audit-head{
-  padding:14px 18px;display:flex;align-items:center;gap:10px;
-  background:rgba(245,158,11,.07);border-bottom:1px solid rgba(245,158,11,.2);
-}
+/* ── AUDIT PANEL ── */
+#audit-panel{background:var(--card);border:1px solid rgba(245,158,11,.3);border-radius:14px;margin-top:20px;overflow:hidden}
+.audit-head{padding:14px 18px;display:flex;align-items:center;gap:10px;background:rgba(245,158,11,.07);border-bottom:1px solid rgba(245,158,11,.2)}
 .audit-head-ico{font-size:18px}
 .audit-head-title{font-size:14px;font-weight:700;color:#fcd34d;flex:1}
 .audit-head-badge{padding:3px 10px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:.05em}
-.audit-section{padding:14px 18px;border-bottom:1px solid #1e2740}
+.audit-section{padding:14px 18px;border-bottom:1px solid var(--border)}
 .audit-section:last-of-type{border-bottom:none}
-.audit-section-title{font-size:10px;font-weight:700;color:#8892a4;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
+.audit-section-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
 .audit-diff-row{display:flex;align-items:baseline;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);gap:8px}
 .audit-diff-row:last-child{border-bottom:none}
-.audit-diff-key{font-size:11.5px;color:#8892a4;flex-shrink:0}
+.audit-diff-key{font-size:11.5px;color:var(--muted);flex-shrink:0}
 .audit-diff-val{font-size:12px;font-weight:600;text-align:right;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-.audit-before{color:#8892a4;text-decoration:line-through;font-weight:400;font-size:11px}
-.audit-arrow{color:#4f6ef7;font-size:11px}
-.audit-after{color:#e8eaf0}
+.audit-before{color:var(--muted);text-decoration:line-through;font-weight:400;font-size:11px}
+.audit-arrow{color:var(--accent);font-size:11px}
+.audit-after{color:var(--text)}
 .audit-delta{font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px}
 .delta-up{background:rgba(239,68,68,.12);color:#f87171}
 .delta-up-good{background:rgba(16,185,129,.12);color:#10b981}
 .delta-down{background:rgba(16,185,129,.12);color:#10b981}
 .delta-down-bad{background:rgba(239,68,68,.12);color:#f87171}
-.delta-neutral{background:rgba(148,163,184,.1);color:#8892a4}
-
-/* econ comparison grid */
+.delta-neutral{background:rgba(148,163,184,.1);color:var(--muted)}
 .audit-econ-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}
-.audit-econ-card{background:#0f1420;border:1px solid #1e2740;border-radius:9px;padding:10px 12px;text-align:center}
-.audit-econ-label{font-size:9.5px;color:#8892a4;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
-.audit-econ-before{font-size:11px;color:#8892a4;text-decoration:line-through;margin-bottom:2px}
+.audit-econ-card{background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;text-align:center}
+.audit-econ-label{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.audit-econ-before{font-size:11px;color:var(--muted);text-decoration:line-through;margin-bottom:2px}
 .audit-econ-after{font-size:16px;font-weight:800}
 .econ-improved{color:#10b981}
 .econ-worsened{color:#f87171}
-.econ-neutral{color:#e8eaf0}
-
-/* ratio bar */
+.econ-neutral{color:var(--text)}
 .audit-ratio-row{display:flex;align-items:center;gap:12px;margin-top:8px}
-.audit-ratio-track{flex:1;height:6px;background:#1e2740;border-radius:10px;position:relative;overflow:hidden}
-.audit-ratio-fill-orig{height:100%;border-radius:10px;background:#8892a4;opacity:.5;position:absolute;top:0;left:0;transition:width .4s}
+.audit-ratio-track{flex:1;height:6px;background:var(--border);border-radius:10px;position:relative;overflow:hidden}
+.audit-ratio-fill-orig{height:100%;border-radius:10px;background:var(--muted);opacity:.5;position:absolute;top:0;left:0;transition:width .4s}
 .audit-ratio-fill-new{height:100%;border-radius:10px;position:absolute;top:0;left:0;transition:width .5s .1s}
-
-/* verdict box */
 .audit-verdict{padding:12px 14px;border-radius:9px;margin-top:0}
-.audit-verdict-item{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:12px;color:#8892a4;line-height:1.5}
+.audit-verdict-item{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:12px;color:var(--muted);line-height:1.5}
 .audit-verdict-item:first-child{padding-top:0}
 .audit-verdict-item.warn{color:#fcd34d}
 .audit-verdict-item.ok{color:#6ee7b7}
 .audit-verdict-item.info{color:#93c5fd}
 .audit-verdict-ico{flex-shrink:0;font-size:13px;line-height:1.4}
-
-/* audit actions */
 .audit-actions{display:flex;gap:10px;padding:14px 18px;background:rgba(255,255,255,.02);flex-wrap:wrap}
 .audit-action-btn{padding:9px 18px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s}
 .audit-btn-save{background:linear-gradient(135deg,#10b981,#059669);color:#fff;flex:1}
 .audit-btn-save:hover{opacity:.85;transform:translateY(-1px)}
-.audit-btn-reset{background:rgba(255,255,255,.06);color:#8892a4;border:1px solid #1e2740}
-.audit-btn-reset:hover{background:rgba(255,255,255,.12);color:#e8eaf0}
+.audit-btn-reset{background:rgba(255,255,255,.06);color:var(--muted);border:1px solid var(--border)}
+.audit-btn-reset:hover{background:rgba(255,255,255,.12);color:var(--text)}
+
+/* ── SAVED CAMPAIGNS DRAWER ── */
+.camps-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;backdrop-filter:blur(3px)}
+.camps-overlay.open{display:block}
+.camps-drawer{position:fixed;top:0;right:-420px;width:420px;max-width:100vw;height:100vh;background:var(--bg2);border-left:1px solid var(--border);z-index:301;display:flex;flex-direction:column;transition:right .28s cubic-bezier(.4,0,.2,1);box-shadow:-8px 0 40px rgba(0,0,0,.5)}
+.camps-drawer.open{right:0}
+.camps-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.camps-head-title{font-size:15px;font-weight:700;color:var(--text)}
+.camps-head-close{width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.08);border:none;color:var(--muted);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.camps-head-close:hover{background:rgba(255,255,255,.15);color:var(--text)}
+.camps-body{flex:1;overflow-y:auto;padding:16px}
+.camps-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:var(--muted);text-align:center;gap:8px}
+.camps-empty-ico{font-size:36px;opacity:.4}
+.camps-empty-t{font-size:13px;font-weight:600}
+.camps-empty-s{font-size:12px;opacity:.7}
+.camp-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;transition:border-color .15s}
+.camp-card:hover{border-color:rgba(79,110,247,.4)}
+.camp-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+.camp-card-name{font-size:13px;font-weight:700;color:var(--text);line-height:1.3}
+.camp-card-del{width:22px;height:22px;border-radius:5px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.camp-card-del:hover{background:rgba(239,68,68,.25)}
+.camp-card-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.camp-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:.04em}
+.camp-badge-region{background:rgba(79,110,247,.15);color:#a0b0ff}
+.camp-badge-lic{background:rgba(245,158,11,.12);color:#f59e0b}
+.camp-badge-dep{background:rgba(16,185,129,.1);color:#10b981}
+.camp-card-date{font-size:10px;color:var(--muted);margin-bottom:10px}
+.camp-card-actions{display:flex;gap:8px}
+.camp-btn{flex:1;padding:7px 10px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s;text-align:center}
+.camp-btn-open{background:linear-gradient(135deg,#4f6ef7,#7c3aed);color:#fff}
+.camp-btn-open:hover{opacity:.85;transform:translateY(-1px)}
+.camp-btn-view{background:rgba(255,255,255,.06);color:var(--muted);border:1px solid var(--border)}
+.camp-btn-view:hover{background:rgba(255,255,255,.12);color:var(--text)}
+.camps-count{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;background:#7c3aed;color:#fff;border-radius:50%;font-size:9px;font-weight:800;margin-left:4px;vertical-align:middle}
+
+/* ── SAVE CAMPAIGN BTN ── */
+.btn-save-camp{padding:7px 14px;background:rgba(16,185,129,.15);color:#10b981;border:1.5px solid rgba(16,185,129,.3);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
+.btn-save-camp:hover{background:rgba(16,185,129,.25);border-color:rgba(16,185,129,.5)}
+.btn-save-camp.saved{background:rgba(16,185,129,.25);border-color:#10b981;color:#6ee7b7}
+
+/* ── SAVE MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px;width:380px;max-width:calc(100vw - 32px);box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.modal h3{font-size:16px;font-weight:700;margin-bottom:6px}
+.modal p{font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.6}
+.modal-input{width:100%;padding:10px 14px;background:var(--card);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;outline:none;font-family:inherit;margin-bottom:14px;transition:border-color .15s}
+.modal-input:focus{border-color:#7c3aed}
+.modal-actions{display:flex;gap:10px}
+.modal-btn{flex:1;padding:10px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s}
+.modal-btn-cancel{background:rgba(255,255,255,.06);color:var(--muted);border:1px solid var(--border)}
+.modal-btn-cancel:hover{background:rgba(255,255,255,.12)}
+.modal-btn-save{background:linear-gradient(135deg,#4f6ef7,#7c3aed);color:#fff}
+.modal-btn-save:hover{opacity:.85}
+
+/* ── BTN BACK MOBILE ── */
+.btn-back-mob{display:none;padding:7px 14px;background:transparent;color:var(--purple);border:1.5px solid var(--purple);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .wrap{grid-template-columns:1fr;min-height:auto}
+  .left{height:auto;position:static;border-right:none;border-bottom:2px solid var(--border);padding:16px;overflow-y:visible}
+  .grid2,.grid3{grid-template-columns:1fr;gap:10px}
+  .eg{grid-template-columns:1fr}
+  .ei{border-right:none;border-bottom:1px solid var(--border)}
+  .ei:last-child{border-bottom:none}
+  .tip-box{max-width:calc(100vw - 32px)!important;width:auto!important;left:auto!important;right:0!important}
+  .tip-box::before{left:auto!important;right:10px!important}
+  .right{padding:16px}
+}
+@media(max-width:480px){
+  .left{padding:12px}
+  .right{padding:12px}
+  .rgrid{gap:6px}
+  .rcard{padding:8px 4px}
+  .rcard .flag{font-size:17px}
+  .rcard .rn{font-size:10.5px}
+  .rcard .rs{font-size:9px}
+  input[type=number],input[type=text],select{padding:10px 11px;font-size:16px}
+  .btn-back-mob{display:inline-flex}
+}
+@media print{
+  .sidebar,.topbar{display:none}
+  .main{margin-left:0}
+  .left{display:none}
+  .wrap{grid-template-columns:1fr}
+  .right{padding:16px}
+  .btn-print,.cfg-actions{display:none}
+  .sec{break-inside:avoid}
+}
 </style>
 </head>
-<style>
-.cfg-sidebar{width:220px;min-height:100vh;background:#1E1B4B;border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:200;box-shadow:2px 0 8px rgba(0,0,0,.3)}
-.cfg-sb-logo{padding:16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:8px}
-.cfg-sb-logo-img{height:26px;width:auto;display:block;flex-shrink:0}
-.cfg-sb-logo-text{font-weight:800;font-size:.87rem;color:#fff;letter-spacing:-.3px}.cfg-sb-logo-text span{color:#F59E0B}
-.cfg-sb-tag{font-size:8px;font-weight:700;color:#1E1B4B;background:#F59E0B;padding:1px 5px;border-radius:7px;margin-left:2px;align-self:center}
-.cfg-sb-nav{flex:1;padding:8px 0;overflow-y:auto}
-.cfg-nav-lbl{padding:7px 14px 2px;font-size:.62rem;font-weight:600;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.08em}
-.cfg-nav-item{display:flex;align-items:center;gap:9px;padding:8px 14px;color:rgba(255,255,255,.5);font-size:.81rem;font-weight:500;text-decoration:none;transition:background .15s,color .15s;position:relative;border:none;background:none;width:100%;font-family:inherit;cursor:pointer}
-.cfg-nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
-.cfg-nav-item.active{background:rgba(79,110,247,.25);color:#a0b0ff}
-.cfg-nav-item.active::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:#4f6ef7;border-radius:0 2px 2px 0}
-.cfg-nav-item.off{opacity:.35;cursor:default;pointer-events:none}
-.cfg-nav-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0}
-.cfg-sb-foot{padding:10px 14px;border-top:1px solid rgba(255,255,255,.06)}
-.cfg-main{margin-left:220px}
-</style>
 
 <body>
 
-<aside class="cfg-sidebar">
-  <div class="cfg-sb-logo">
-    <img src="/logo.svg" class="cfg-sb-logo-img" alt="Retomat"/>
-    <div class="cfg-sb-tag">AI</div>
+<aside class="sidebar">
+  <div class="sb-logo">
+    <svg class="sb-logo-img" viewBox="0 0 620 140" xmlns="http://www.w3.org/2000/svg" aria-label="Retomat"><defs><linearGradient id="rg3" x1="0" y1="0" x2="140" y2="140" gradientUnits="userSpaceOnUse"><stop stop-color="#8B5CF6"/><stop offset="1" stop-color="#3B82F6"/></linearGradient><filter id="glow3" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g transform="translate(20,20)"><path d="M20 0 H70 C100 0 122 20 122 48 C122 70 108 86 84 93 L118 120 H82 L56 100 L26 120 H0 L34 88 V20 C34 8 42 0 54 0 Z" fill="url(#rg3)" filter="url(#glow3)"/><path d="M54 24 H70 C84 24 94 33 94 45 C94 58 84 66 70 66 H54 V24 Z" fill="#0B1020"/><path d="M34 88 L58 70 H84 L50 100 L26 120 H0 L34 88 Z" fill="#0B1020" opacity="0.9"/></g><text x="176" y="108" font-family="Inter,Arial,sans-serif" font-size="94" font-weight="700" letter-spacing="-3" fill="#F8FAFC">Retomat</text><rect x="182" y="122" width="330" height="8" rx="4" fill="url(#rg3)" opacity="0.95"/></svg>
+    <div class="sb-logo-tag">AI</div>
   </div>
-  <nav class="cfg-sb-nav">
-    <div class="cfg-nav-lbl">Main</div>
-    <a href="/campaign-generator.html" class="cfg-nav-item"><span class="cfg-nav-icon">📊</span> Dashboard</a>
-    <a href="/campaign-generator.html#campaigns" class="cfg-nav-item"><span class="cfg-nav-icon">📁</span> Campaigns<span class="nav-badge" id="camp-nav-badge" style="display:none;margin-left:auto;font-size:.6rem;padding:1px 5px;border-radius:20px;background:rgba(79,110,247,.3);color:#a0b0ff;"></span></a>
-    <a href="/tournament-generator.html?view=list" class="cfg-nav-item"><span class="cfg-nav-icon">🏆</span> Tournaments<span class="nav-badge" id="nav-tourn-badge" style="display:none;margin-left:auto;font-size:.6rem;padding:1px 5px;border-radius:20px;background:rgba(79,110,247,.3);color:#a0b0ff;"></span></a>
-    <div class="cfg-nav-lbl" style="margin-top:4px">Tools</div>
-    <a href="/configurator.html" class="cfg-nav-item active"><span class="cfg-nav-icon">⚙️</span> Configurator</a>
-    <a href="/campaign-generator.html?view=wizard" class="cfg-nav-item"><span class="cfg-nav-icon">🚀</span> Campaign Gen</a>
-    <a href="/tournament-generator.html?view=setup" class="cfg-nav-item"><span class="cfg-nav-icon">🏆</span> Tournament Gen</a>
-    <div class="cfg-nav-lbl" style="margin-top:4px">Soon</div>
-    <a href="#" class="cfg-nav-item off"><span class="cfg-nav-icon">📈</span> Analytics</a>
-    <a href="#" class="cfg-nav-item off"><span class="cfg-nav-icon">⚙️</span> Settings</a>
+  <nav class="sb-nav">
+    <div class="nav-lbl">Main</div>
+    <a class="nav-item" href="/campaign-generator.html"><span class="nav-icon">📊</span> Dashboard</a>
+    <a class="nav-item" href="/campaign-generator.html#campaigns"><span class="nav-icon">📁</span> Campaigns<span class="nav-badge" id="camp-nav-badge" style="display:none"></span></a>
+    <a class="nav-item" href="/tournament-generator.html?view=list"><span class="nav-icon">🏆</span> Tournaments<span class="nav-badge" id="nav-tourn-badge" style="display:none"></span></a>
+    <div class="nav-lbl" style="margin-top:6px">Tools</div>
+    <a class="nav-item active" href="/configurator.html"><span class="nav-icon">⚙️</span> Configurator</a>
+    <a class="nav-item" href="/campaign-generator.html?view=wizard"><span class="nav-icon">🚀</span> Campaign Gen</a>
+    <a class="nav-item" href="/tournament-generator.html?view=generator"><span class="nav-icon">🏆</span> Tournament Gen</a>
+    <a class="nav-item" href="/tournament-generator.html#setup"><span class="nav-icon">📋</span> Setup Guide</a>
+    <div class="nav-lbl" style="margin-top:6px">Soon</div>
+    <button class="nav-item off"><span class="nav-icon">📈</span> Analytics</button>
+    <button class="nav-item off"><span class="nav-icon">⚙️</span> Settings</button>
   </nav>
-  <div class="cfg-sb-foot">
-    <a href="/" style="display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.35);font-size:.75rem;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.35)'">← Back to home</a>
+  <div class="sb-foot">
+    <a href="/" class="sb-back">← Back to home</a>
   </div>
 </aside>
 
-<div class="cfg-main">
-
-<!-- ════ HEADER ════ -->
-<div class="hdr">
-  <div class="hdr-logo">Retomat</div>
-  <div class="hdr-tag" data-i18n="hdr_sub">v2.0</div>
-  <div class="hdr-sub" data-i18n="pnl_title" style="margin-left:8px">Bonus Admin Spec Generator</div>
-  <a href="/campaign-generator.html" class="hdr-campaigns" id="hdr-gen-link">🤖 AI Generator</a>
-  <button class="hdr-campaigns" onclick="openCampaignsDrawer()" id="hdr-camps-btn" style="cursor:pointer;background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.3);color:#10b981">
-    📂 <span data-i18n="camps_btn">Saved Campaigns</span><span class="camps-count" id="camps-count" style="display:none">0</span>
-  </button>
-  <button onclick="toggleCfgGlossary()" title="Glossary"
-    style="background:none;border:1px solid rgba(255,255,255,.15);border-radius:6px;color:rgba(255,255,255,.4);width:26px;height:26px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;font-family:inherit"
-    onmouseover="this.style.borderColor='rgba(255,255,255,.5)';this.style.color='#fff'"
-    onmouseout="this.style.borderColor='rgba(255,255,255,.15)';this.style.color='rgba(255,255,255,.4)'">?</button>
-  <div class="lang-sel">
-    <div class="lchip on" data-l="ru" onclick="setLang('ru')">RU</div>
-    <div class="lchip" data-l="en" onclick="setLang('en')">EN</div>
-    <div class="lchip" data-l="mn" onclick="setLang('mn')">MN</div>
-    <div class="lchip" data-l="es" onclick="setLang('es')">ES</div>
+<main class="main">
+  <div class="topbar">
+    <span class="topbar-title">Bonus Configurator</span>
+    <div class="topbar-right"></div>
+    <button onclick="openCampaignsDrawer()" id="hdr-camps-btn"
+      style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:#10b981;transition:opacity .15s"
+      onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+      📂 <span data-i18n="camps_btn">Saved</span><span class="camps-count" id="camps-count" style="display:none">0</span>
+    </button>
+    <button onclick="toggleCfgGlossary()" title="Glossary"
+      style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);width:28px;height:28px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s"
+      onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+      onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">?</button>
+    <div class="lang-toggle">
+      <button class="lt-btn active" id="lt-ru" onclick="setLang('ru')">RU</button>
+      <button class="lt-btn" id="lt-en" onclick="setLang('en')">EN</button>
+    </div>
   </div>
-</div>
+  <div class="content">
 
-<!-- ════ EDIT MODE BANNER (hidden by default) ════ -->
-<div id="edit-mode-bar" style="display:none">
-  <div class="edit-bar-left">
-    <span class="edit-bar-icon">✏️</span>
-    <span class="edit-bar-label" data-i18n="edit_bar_label">Редактирование:</span>
-    <span class="edit-bar-name" id="edit-bar-name">—</span>
-  </div>
-  <div class="edit-bar-right">
-    <button class="edit-bar-btn edit-bar-reset" onclick="resetToOriginal()" data-i18n="edit_bar_reset">↺ Сбросить параметры</button>
-    <button class="edit-bar-btn edit-bar-exit" onclick="exitEditMode()" data-i18n="edit_bar_exit">✕ Выйти</button>
-  </div>
-</div>
+    <!-- EDIT MODE BANNER -->
+    <div id="edit-mode-bar" style="display:none">
+      <div class="edit-bar-left">
+        <span class="edit-bar-icon">✏️</span>
+        <span class="edit-bar-label" data-i18n="edit_bar_label">Редактирование:</span>
+        <span class="edit-bar-name" id="edit-bar-name">—</span>
+      </div>
+      <div class="edit-bar-right">
+        <button class="edit-bar-btn edit-bar-reset" onclick="resetToOriginal()" data-i18n="edit_bar_reset">↺ Сбросить параметры</button>
+        <button class="edit-bar-btn edit-bar-exit" onclick="exitEditMode()" data-i18n="edit_bar_exit">✕ Выйти</button>
+      </div>
+    </div>
 
-<!-- ════ FIRST-USE HINT ════ -->
-<div id="cfg-hint" style="display:none;align-items:center;gap:10px;background:rgba(79,110,247,.08);border-bottom:1px solid rgba(79,110,247,.2);padding:9px 20px;font-size:.8rem;color:#a0b0ff">
-  <span>ℹ️</span>
-  <span data-i18n="cfg_hint">Choose a region and click Generate to get a full bonus spec with P10/P50/P90 cost model and incremental revenue forecast.</span>
-  <button onclick="document.getElementById('cfg-hint').style.display='none';localStorage.setItem('cfg_hint_dismissed','1')"
-          style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 6px">✕</button>
-</div>
+    <!-- FIRST-USE HINT -->
+    <div id="cfg-hint" style="display:none;align-items:center;gap:10px;background:rgba(79,110,247,.08);border-bottom:1px solid rgba(79,110,247,.2);padding:9px 20px;font-size:.8rem;color:#a0b0ff">
+      <span>ℹ️</span>
+      <span data-i18n="cfg_hint">Choose a region and click Generate to get a full bonus spec with P10/P50/P90 cost model and incremental revenue forecast.</span>
+      <button onclick="document.getElementById('cfg-hint').style.display='none';localStorage.setItem('cfg_hint_dismissed','1')"
+              style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 6px">✕</button>
+    </div>
 
-<!-- ════ MAIN LAYOUT ════ -->
-<div class="wrap">
+    <!-- TWO-COLUMN LAYOUT -->
+    <div class="wrap">
 
-  <!-- ════ LEFT PANEL — FORM ════ -->
-  <div class="left">
-    <div class="pnl-title" data-i18n="pnl_title">Параметры конфигурации</div>
+      <!-- LEFT PANEL — FORM -->
+      <div class="left">
+        <div class="pnl-title" data-i18n="pnl_title">Параметры конфигурации</div>
 
-    <!-- Region -->
-    <div class="fg">
-      <div class="fl" data-i18n="lbl_region">Регион и бизнес-модель</div>
-      <div class="rgrid">
-        <div class="rcard" id="rc-cis" onclick="pickRegion('cis')">
-          <span class="flag">🌐</span>
-          <div class="rn" data-i18n="reg_cis">СНГ</div>
-          <div class="rs" data-i18n="reg_cis_sub">RU · UA · KZ / Фиат</div>
+        <!-- Region -->
+        <div class="fg">
+          <div class="fl" data-i18n="lbl_region">Регион и бизнес-модель</div>
+          <div class="rgrid">
+            <div class="rcard" id="rc-cis" onclick="pickRegion('cis')">
+              <span class="flag">🌐</span>
+              <div class="rn" data-i18n="reg_cis">СНГ</div>
+              <div class="rs" data-i18n="reg_cis_sub">RU · UA · KZ / Фиат</div>
+            </div>
+            <div class="rcard" id="rc-eu" onclick="pickRegion('eu')">
+              <span class="flag">🇪🇺</span>
+              <div class="rn" data-i18n="reg_eu">EU / UK</div>
+              <div class="rs" data-i18n="reg_eu_sub">EUR · GBP / Фиат</div>
+            </div>
+            <div class="rcard" id="rc-crypto" onclick="pickRegion('crypto')">
+              <span class="flag">₿</span>
+              <div class="rn" data-i18n="reg_crypto">Global Crypto</div>
+              <div class="rs" data-i18n="reg_crypto_sub">BTC · ETH · USDT</div>
+            </div>
+            <div class="rcard" id="rc-sweep" onclick="pickRegion('sweep')">
+              <span class="flag">🇺🇸</span>
+              <div class="rn" data-i18n="reg_sweep">USA / Sweep</div>
+              <div class="rs" data-i18n="reg_sweep_sub">SC · GC / Sweepcoins</div>
+            </div>
+            <div class="rcard" id="rc-mn" onclick="pickRegion('mn')">
+              <span class="flag">🇲🇳</span>
+              <div class="rn" data-i18n="reg_mn">Монголия</div>
+              <div class="rs" data-i18n="reg_mn_sub">MNT / Фиат</div>
+            </div>
+            <div class="rcard" id="rc-latam" onclick="pickRegion('latam')">
+              <span class="flag">🌎</span>
+              <div class="rn" data-i18n="reg_latam">LatAm</div>
+              <div class="rs" data-i18n="reg_latam_sub">USD / Фиат</div>
+            </div>
+          </div>
         </div>
-        <div class="rcard" id="rc-eu" onclick="pickRegion('eu')">
-          <span class="flag">🇪🇺</span>
-          <div class="rn" data-i18n="reg_eu">EU / UK</div>
-          <div class="rs" data-i18n="reg_eu_sub">EUR · GBP / Фиат</div>
+
+        <!-- EU Country Picker -->
+        <div class="fg" id="eu-country-wrap" style="display:none">
+          <div class="fl">
+            <span data-i18n="lbl_country">Страна</span>
+            <em id="eu-country-hint" style="font-size:11px;color:var(--muted);margin-left:6px"></em>
+          </div>
+          <div class="chips" style="flex-wrap:wrap">
+            <div class="chip" data-g="country" data-v="de" onclick="pickCountry(this)">🇩🇪 DE</div>
+            <div class="chip" data-g="country" data-v="fr" onclick="pickCountry(this)">🇫🇷 FR</div>
+            <div class="chip" data-g="country" data-v="es" onclick="pickCountry(this)">🇪🇸 ES</div>
+            <div class="chip" data-g="country" data-v="it" onclick="pickCountry(this)">🇮🇹 IT</div>
+            <div class="chip" data-g="country" data-v="nl" onclick="pickCountry(this)">🇳🇱 NL</div>
+            <div class="chip" data-g="country" data-v="uk" onclick="pickCountry(this)">🇬🇧 UK</div>
+            <div class="chip" data-g="country" data-v="dk" onclick="pickCountry(this)">🇩🇰 DK</div>
+          </div>
         </div>
-        <div class="rcard" id="rc-crypto" onclick="pickRegion('crypto')">
-          <span class="flag">₿</span>
-          <div class="rn" data-i18n="reg_crypto">Global Crypto</div>
-          <div class="rs" data-i18n="reg_crypto_sub">BTC · ETH · USDT</div>
+
+        <!-- Players -->
+        <div class="fg">
+          <div class="fl">
+            <span data-i18n="lbl_players">Новых игроков / месяц</span>
+            <span id="plbl"></span>
+          </div>
+          <div class="sv" id="pdsp">5 000</div>
+          <input type="range" id="prange" min="100" max="50000" step="100" value="5000" oninput="syncR('p')" onchange="syncR('p')"/>
+          <div class="sl"><span data-i18n="sl_min">100</span><span data-i18n="sl_max">50 000+</span></div>
+          <div class="irow" style="margin-top:6px">
+            <input type="number" id="pnum" value="5000" min="100" max="200000" step="100" oninput="syncN('p')"/>
+          </div>
         </div>
-        <div class="rcard" id="rc-sweep" onclick="pickRegion('sweep')">
-          <span class="flag">🇺🇸</span>
-          <div class="rn" data-i18n="reg_sweep">USA / Sweep</div>
-          <div class="rs" data-i18n="reg_sweep_sub">SC · GC / Sweepcoins</div>
+
+        <!-- Currencies & Avg Deposit -->
+        <div class="fg">
+          <div class="fl">
+            <span class="tip-wrap">
+              <span data-i18n="lbl_sitecur">Основная валюта сайта</span>
+              <span class="tip-btn" onclick="toggleTip(this)">?</span>
+              <div class="tip-box" data-i18n="tip_sitecur"></div>
+            </span>
+          </div>
+          <div class="irow">
+            <select id="sitecur" onchange="S.sitecur=this.value">
+              <option value="USD">USD</option><option value="EUR">EUR</option>
+              <option value="GBP">GBP</option><option value="RUB">RUB</option>
+              <option value="UAH">UAH</option><option value="KZT">KZT</option>
+              <option value="USDT">USDT</option><option value="BTC">BTC</option>
+              <option value="ETH">ETH</option><option value="MNT">MNT</option>
+              <option value="SC">SC</option>
+            </select>
+            <select id="depcur" onchange="S.depcur=this.value">
+              <option value="USD">USD</option><option value="EUR">EUR</option>
+              <option value="GBP">GBP</option><option value="RUB">RUB</option>
+              <option value="UAH">UAH</option><option value="KZT">KZT</option>
+              <option value="USDT">USDT</option><option value="BTC">BTC</option>
+              <option value="ETH">ETH</option><option value="MNT">MNT</option>
+              <option value="SC">SC</option>
+            </select>
+          </div>
         </div>
-        <div class="rcard" id="rc-mn" onclick="pickRegion('mn')">
-          <span class="flag">🇲🇳</span>
-          <div class="rn" data-i18n="reg_mn">Монголия</div>
-          <div class="rs" data-i18n="reg_mn_sub">MNT / Фиат</div>
+        <div class="fg">
+          <div class="fl">
+            <span class="tip-wrap">
+              <span data-i18n="lbl_avgdep">Средний первый депозит</span>
+              <span class="tip-btn" onclick="toggleTip(this)">?</span>
+              <div class="tip-box" data-i18n="tip_avgdep"></div>
+            </span>
+            <em id="dephint"></em>
+          </div>
+          <input type="number" id="avgdep" value="100" min="1" step="1" oninput="S.avgdep=parseFloat(this.value)||100"/>
         </div>
-        <div class="rcard" id="rc-latam" onclick="pickRegion('latam')">
-          <span class="flag">🌎</span>
-          <div class="rn" data-i18n="reg_latam">LatAm</div>
-          <div class="rs" data-i18n="reg_latam_sub">USD / Фиат</div>
+
+        <!-- Segment -->
+        <div class="fg">
+          <div class="fl">
+            <span class="tip-wrap">
+              <span data-i18n="lbl_segment">Сегмент игроков</span>
+              <span class="tip-btn" onclick="toggleTip(this)">?</span>
+              <div class="tip-box" data-i18n="tip_segment"></div>
+            </span>
+          </div>
+          <div class="chips">
+            <div class="chip" data-g="segment" data-v="new" onclick="pickChip(this)" data-i18n="seg_new">🆕 Новые</div>
+            <div class="chip on" data-g="segment" data-v="mid" onclick="pickChip(this)" data-i18n="seg_mid">👤 Средние</div>
+            <div class="chip" data-g="segment" data-v="vip" onclick="pickChip(this)" data-i18n="seg_vip">👑 VIP</div>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <!-- EU Country Picker (shown only when EU region is active) -->
-    <div class="fg" id="eu-country-wrap" style="display:none">
-      <div class="fl">
-        <span data-i18n="lbl_country">Страна</span>
-        <em id="eu-country-hint" style="font-size:11px;color:var(--muted);margin-left:6px"></em>
-      </div>
-      <div class="chips" style="flex-wrap:wrap">
-        <div class="chip" data-g="country" data-v="de" onclick="pickCountry(this)">🇩🇪 DE</div>
-        <div class="chip" data-g="country" data-v="fr" onclick="pickCountry(this)">🇫🇷 FR</div>
-        <div class="chip" data-g="country" data-v="es" onclick="pickCountry(this)">🇪🇸 ES</div>
-        <div class="chip" data-g="country" data-v="it" onclick="pickCountry(this)">🇮🇹 IT</div>
-        <div class="chip" data-g="country" data-v="nl" onclick="pickCountry(this)">🇳🇱 NL</div>
-        <div class="chip" data-g="country" data-v="uk" onclick="pickCountry(this)">🇬🇧 UK</div>
-        <div class="chip" data-g="country" data-v="dk" onclick="pickCountry(this)">🇩🇰 DK</div>
-      </div>
-    </div>
+        <!-- Platform -->
+        <div class="fg">
+          <div class="fl">
+            <span class="tip-wrap">
+              <span data-i18n="lbl_platform">Платформа</span>
+              <span class="tip-btn" onclick="toggleTip(this)">?</span>
+              <div class="tip-box" data-i18n="tip_platform"></div>
+            </span>
+          </div>
+          <div class="chips">
+            <div class="chip on" data-g="plat" data-v="both" onclick="pickChip(this)" data-i18n="plat_both">Desktop + Mobile</div>
+            <div class="chip" data-g="plat" data-v="mobile" onclick="pickChip(this)" data-i18n="plat_mobile">Mobile Only</div>
+            <div class="chip" data-g="plat" data-v="desk" onclick="pickChip(this)" data-i18n="plat_desk">Desktop Only</div>
+          </div>
+        </div>
 
-    <!-- Players -->
-    <div class="fg">
-      <div class="fl">
-        <span data-i18n="lbl_players">Новых игроков / месяц</span>
-        <span id="plbl"></span>
-      </div>
-      <div class="sv" id="pdsp">5 000</div>
-      <input type="range" id="prange" min="100" max="50000" step="100" value="5000" oninput="syncR('p')" onchange="syncR('p')"/>
-      <div class="sl"><span data-i18n="sl_min">100</span><span data-i18n="sl_max">50 000+</span></div>
-      <div class="irow" style="margin-top:6px">
-        <input type="number" id="pnum" value="5000" min="100" max="200000" step="100" oninput="syncN('p')"/>
-      </div>
-    </div>
+        <!-- License -->
+        <div class="fg" id="lic-wrap">
+          <div class="fl">
+            <span class="tip-wrap">
+              <span data-i18n="lbl_license">Лицензия / юрисдикция</span>
+              <span class="tip-btn" onclick="toggleTip(this)">?</span>
+              <div class="tip-box" data-i18n="tip_license"></div>
+            </span>
+          </div>
+          <div class="chips" style="flex-wrap:wrap">
+            <div class="chip" data-g="lic" data-v="mga" onclick="pickChip(this)" data-i18n="lic_mga">MGA</div>
+            <div class="chip" data-g="lic" data-v="ukgc" onclick="pickChip(this)" data-i18n="lic_ukgc">UKGC</div>
+            <div class="chip" data-g="lic" data-v="dga" onclick="pickChip(this)" data-i18n="lic_dga">DGA</div>
+            <div class="chip on" data-g="lic" data-v="curacao" onclick="pickChip(this)" data-i18n="lic_curacao">Curaçao</div>
+            <div class="chip" data-g="lic" data-v="none" onclick="pickChip(this)" data-i18n="lic_none">Нет / Офшор</div>
+          </div>
+        </div>
 
-    <!-- Currencies & Avg Deposit -->
-    <div class="fg">
-      <div class="fl">
-        <span class="tip-wrap">
-          <span data-i18n="lbl_sitecur">Основная валюта сайта</span>
-          <span class="tip-btn" onclick="toggleTip(this)">?</span>
-          <div class="tip-box" data-i18n="tip_sitecur"></div>
-        </span>
-      </div>
-      <div class="irow">
-        <select id="sitecur" onchange="S.sitecur=this.value">
-          <option value="USD">USD</option><option value="EUR">EUR</option>
-          <option value="GBP">GBP</option><option value="RUB">RUB</option>
-          <option value="UAH">UAH</option><option value="KZT">KZT</option>
-          <option value="USDT">USDT</option><option value="BTC">BTC</option>
-          <option value="ETH">ETH</option><option value="MNT">MNT</option>
-          <option value="SC">SC</option>
-        </select>
-        <select id="depcur" onchange="S.depcur=this.value">
-          <option value="USD">USD</option><option value="EUR">EUR</option>
-          <option value="GBP">GBP</option><option value="RUB">RUB</option>
-          <option value="UAH">UAH</option><option value="KZT">KZT</option>
-          <option value="USDT">USDT</option><option value="BTC">BTC</option>
-          <option value="ETH">ETH</option><option value="MNT">MNT</option>
-          <option value="SC">SC</option>
-        </select>
-      </div>
-    </div>
-    <div class="fg">
-      <div class="fl">
-        <span class="tip-wrap">
-          <span data-i18n="lbl_avgdep">Средний первый депозит</span>
-          <span class="tip-btn" onclick="toggleTip(this)">?</span>
-          <div class="tip-box" data-i18n="tip_avgdep"></div>
-        </span>
-        <em id="dephint"></em>
-      </div>
-      <input type="number" id="avgdep" value="100" min="1" step="1" oninput="S.avgdep=parseFloat(this.value)||100"/>
-    </div>
+        <!-- RTP -->
+        <div class="fg">
+          <div class="fl">
+            <span class="tip-wrap">
+              <span data-i18n="lbl_rtp">Средний RTP слотов</span>
+              <span class="tip-btn" onclick="toggleTip(this)">?</span>
+              <div class="tip-box" data-i18n="tip_rtp"></div>
+            </span>
+          </div>
+          <div class="sv" id="rtpdsp">96.0%</div>
+          <input type="range" id="rtprange" min="85" max="99" step="0.5" value="96" oninput="syncRtp(this.value)" onchange="syncRtp(this.value)"/>
+          <div class="sl"><span>85%</span><span>99%</span></div>
+          <div class="irow" style="margin-top:6px">
+            <input type="number" id="rtpnum" value="96" min="85" max="99" step="0.5" oninput="syncRtp(this.value)"/>
+          </div>
+        </div>
 
-    <!-- Segment -->
-    <div class="fg">
-      <div class="fl">
-        <span class="tip-wrap">
-          <span data-i18n="lbl_segment">Сегмент игроков</span>
-          <span class="tip-btn" onclick="toggleTip(this)">?</span>
-          <div class="tip-box" data-i18n="tip_segment"></div>
-        </span>
-      </div>
-      <div class="chips">
-        <div class="chip" data-g="segment" data-v="new" onclick="pickChip(this)" data-i18n="seg_new">🆕 Новые</div>
-        <div class="chip on" data-g="segment" data-v="mid" onclick="pickChip(this)" data-i18n="seg_mid">👤 Средние</div>
-        <div class="chip" data-g="segment" data-v="vip" onclick="pickChip(this)" data-i18n="seg_vip">👑 VIP</div>
-      </div>
-    </div>
+        <hr class="dv"/>
+        <button class="btn-gen" onclick="generate()" data-i18n="btn_gen">⚡ Сгенерировать конфигурацию</button>
+      </div><!-- /left -->
 
-    <!-- Platform -->
-    <div class="fg">
-      <div class="fl">
-        <span class="tip-wrap">
-          <span data-i18n="lbl_platform">Платформа</span>
-          <span class="tip-btn" onclick="toggleTip(this)">?</span>
-          <div class="tip-box" data-i18n="tip_platform"></div>
-        </span>
-      </div>
-      <div class="chips">
-        <div class="chip on" data-g="plat" data-v="both" onclick="pickChip(this)" data-i18n="plat_both">Desktop + Mobile</div>
-        <div class="chip" data-g="plat" data-v="mobile" onclick="pickChip(this)" data-i18n="plat_mobile">Mobile Only</div>
-        <div class="chip" data-g="plat" data-v="desk" onclick="pickChip(this)" data-i18n="plat_desk">Desktop Only</div>
-      </div>
-    </div>
+      <!-- RIGHT PANEL — OUTPUT -->
+      <div class="right">
 
-    <!-- License -->
-    <div class="fg" id="lic-wrap">
-      <div class="fl">
-        <span class="tip-wrap">
-          <span data-i18n="lbl_license">Лицензия / юрисдикция</span>
-          <span class="tip-btn" onclick="toggleTip(this)">?</span>
-          <div class="tip-box" data-i18n="tip_license"></div>
-        </span>
-      </div>
-      <div class="chips" style="flex-wrap:wrap">
-        <div class="chip" data-g="lic" data-v="mga" onclick="pickChip(this)" data-i18n="lic_mga">MGA</div>
-        <div class="chip" data-g="lic" data-v="ukgc" onclick="pickChip(this)" data-i18n="lic_ukgc">UKGC</div>
-        <div class="chip" data-g="lic" data-v="dga" onclick="pickChip(this)" data-i18n="lic_dga">DGA</div>
-        <div class="chip on" data-g="lic" data-v="curacao" onclick="pickChip(this)" data-i18n="lic_curacao">Curaçao</div>
-        <div class="chip" data-g="lic" data-v="none" onclick="pickChip(this)" data-i18n="lic_none">Нет / Офшор</div>
-      </div>
-    </div>
+        <!-- Placeholder -->
+        <div class="ph" id="ph">
+          <div class="ph-ico">⚙️</div>
+          <div class="ph-t" data-i18n="ph_t">Выберите регион и заполните параметры</div>
+          <div class="ph-s" data-i18n="ph_s">Нажмите «Сгенерировать конфигурацию» — получите полный набор настроек</div>
+        </div>
 
-    <!-- RTP -->
-    <div class="fg">
-      <div class="fl">
-        <span class="tip-wrap">
-          <span data-i18n="lbl_rtp">Средний RTP слотов</span>
-          <span class="tip-btn" onclick="toggleTip(this)">?</span>
-          <div class="tip-box" data-i18n="tip_rtp"></div>
-        </span>
-      </div>
-      <div class="sv" id="rtpdsp">96.0%</div>
-      <input type="range" id="rtprange" min="85" max="99" step="0.5" value="96" oninput="syncRtp(this.value)" onchange="syncRtp(this.value)"/>
-      <div class="sl"><span>85%</span><span>99%</span></div>
-      <div class="irow" style="margin-top:6px">
-        <input type="number" id="rtpnum" value="96" min="85" max="99" step="0.5" oninput="syncRtp(this.value)"/>
-      </div>
-    </div>
+        <!-- Stale econ banner -->
+        <div id="stale-banner" style="display:none;align-items:center;gap:10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:.8rem;color:#f59e0b">
+          <span>⚠</span>
+          <span data-i18n="stale_banner">Параметры изменились — нажмите «Сгенерировать» для обновления</span>
+          <button onclick="generate()" style="margin-left:auto;font-size:.78rem;padding:3px 10px;border-radius:6px;border:1px solid rgba(245,158,11,.4);background:rgba(245,158,11,.1);color:#f59e0b;cursor:pointer;font-family:inherit" data-i18n="stale_btn">Generate ↻</button>
+        </div>
 
-    <hr class="dv"/>
+        <!-- Output rendered by app.js -->
+        <div id="out" style="display:none"></div>
 
-    <!-- Generate button -->
-    <button class="btn-gen" onclick="generate()" data-i18n="btn_gen">⚡ Сгенерировать конфигурацию</button>
-  </div><!-- /left -->
+      </div><!-- /right -->
+    </div><!-- /wrap -->
 
-  <!-- ════ RIGHT PANEL — OUTPUT ════ -->
-  <div class="right">
+  </div><!-- /content -->
+</main><!-- /main -->
 
-    <!-- Placeholder -->
-    <div class="ph" id="ph">
-      <div class="ph-ico">⚙️</div>
-      <div class="ph-t" data-i18n="ph_t">Выберите регион и заполните параметры</div>
-      <div class="ph-s" data-i18n="ph_s">Нажмите «Сгенерировать конфигурацию» — получите полный набор настроек</div>
-    </div>
-
-    <!-- Stale econ banner -->
-    <div id="stale-banner" style="display:none;align-items:center;gap:10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:.8rem;color:#f59e0b">
-      <span>⚠</span>
-      <span data-i18n="stale_banner">Параметры изменились — нажмите «Сгенерировать» для обновления</span>
-      <button onclick="generate()" style="margin-left:auto;font-size:.78rem;padding:3px 10px;border-radius:6px;border:1px solid rgba(245,158,11,.4);background:rgba(245,158,11,.1);color:#f59e0b;cursor:pointer;font-family:inherit" data-i18n="stale_btn">Generate ↻</button>
-    </div>
-
-    <!-- Output (rendered by app.js render()) -->
-    <div id="out" style="display:none"></div>
-
-  </div><!-- /right -->
-</div><!-- /wrap -->
-
-<!-- ════ SAVED CAMPAIGNS DRAWER ════ -->
+<!-- SAVED CAMPAIGNS DRAWER -->
 <div class="camps-overlay" id="campsOverlay" onclick="closeCampaignsDrawer()"></div>
 <div class="camps-drawer" id="campsDrawer">
   <div class="camps-head">
@@ -453,7 +650,7 @@
   <div class="camps-body" id="campsBody"></div>
 </div>
 
-<!-- ════ SAVE CAMPAIGN MODAL ════ -->
+<!-- SAVE CAMPAIGN MODAL -->
 <div class="modal-overlay" id="saveModal">
   <div class="modal">
     <h3 data-i18n="save_modal_title">💾 Сохранить кампанию</h3>
@@ -468,8 +665,21 @@
   </div>
 </div>
 
+<script src="/nav-utils.js"></script>
 <script src="app.js"></script>
 <script src="/configurator-extra.js"></script>
-</div><!-- /cfg-main -->
+<script>
+document.addEventListener('click', function(e) {
+  const a = e.target.closest('a[href]');
+  if (!a || !a.closest('.sidebar')) return;
+  const href = a.getAttribute('href');
+  if (!href || href.startsWith('#') || a.target) return;
+  try { if (new URL(href, location.href).origin !== location.origin) return; } catch(e) { return; }
+  e.preventDefault();
+  const m = document.querySelector('.main');
+  if (m) { m.style.transition = 'opacity .1s ease'; m.style.opacity = '0'; }
+  setTimeout(() => { location.href = href; }, 110);
+});
+</script>
 </body>
 </html>

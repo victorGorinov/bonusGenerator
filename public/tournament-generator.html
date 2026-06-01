@@ -10,7 +10,10 @@
 <style>
 :root{--bg:#0a0d14;--bg2:#0f1420;--bg3:#141926;--card:#161c2d;--border:#1e2740;--accent:#4f6ef7;--accent2:#7c3aed;--text:#e8eaf0;--muted:#8892a4;--success:#10b981;--warn:#f59e0b;--sidebar-w:220px}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%}
+html{height:100%;background:#0a0d14}
+body{height:100%}
+.main{animation:pageFadeIn .15s ease}
+@keyframes pageFadeIn{from{opacity:0}to{opacity:1}}
 body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);font-size:14px;display:flex;min-height:100vh}
 .sidebar{width:var(--sidebar-w);min-height:100vh;background:#1E1B4B;border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50}
 .sb-logo{padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px}
@@ -24,7 +27,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .nav-item.active{background:rgba(79,110,247,.25);color:#a0b0ff}
 .nav-item.active::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
 .nav-item.off{opacity:.38;cursor:default;pointer-events:none}
-.nav-badge{font-size:.66rem;padding:1px 6px;border-radius:20px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.4);margin-left:auto}
+.nav-badge{margin-left:auto;background:rgba(79,110,247,.3);color:#a0b0ff;font-size:.6rem;padding:1px 5px;border-radius:100px;font-weight:700}
 .nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
 .sb-foot{padding:12px 16px;border-top:1px solid rgba(255,255,255,.06)}
 .sb-back{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.4);font-size:.78rem;text-decoration:none;transition:color .15s;cursor:pointer;background:none;border:none;font-family:inherit;padding:0;width:100%;text-align:left}
@@ -33,6 +36,11 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .topbar{height:54px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:10px;position:sticky;top:0;z-index:40}
 .topbar-title{font-weight:600;font-size:.92rem}
 .topbar-sep,.topbar-sub{color:var(--muted);font-size:.8rem}
+.topbar-right{margin-left:auto}
+.lang-toggle{display:flex;background:var(--bg2);border:1px solid var(--border);border-radius:100px;padding:2px;gap:1px;flex-shrink:0}
+.lt-btn{padding:3px 10px;border-radius:100px;font-size:.68rem;font-weight:700;cursor:pointer;border:none;background:none;color:var(--muted);font-family:inherit;transition:all .15s;letter-spacing:.05em}
+.lt-btn:hover{color:var(--text)}
+.lt-btn.active{background:var(--accent);color:#fff}
 .content{flex:1;padding:26px 30px}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:8px;font-size:.83rem;font-weight:600;cursor:pointer;border:none;transition:all .2s;font-family:inherit;text-decoration:none}
 .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 2px 12px rgba(79,110,247,.3)}
@@ -136,22 +144,22 @@ select.form-input{cursor:pointer}
 <body>
 <aside class="sidebar">
   <div class="sb-logo">
-    <img src="/logo.svg" class="sb-logo-img" alt="Retomat"/>
+    <svg class="sb-logo-img" viewBox="0 0 620 140" xmlns="http://www.w3.org/2000/svg" aria-label="Retomat"><defs><linearGradient id="rg2" x1="0" y1="0" x2="140" y2="140" gradientUnits="userSpaceOnUse"><stop stop-color="#8B5CF6"/><stop offset="1" stop-color="#3B82F6"/></linearGradient><filter id="glow2" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g transform="translate(20,20)"><path d="M20 0 H70 C100 0 122 20 122 48 C122 70 108 86 84 93 L118 120 H82 L56 100 L26 120 H0 L34 88 V20 C34 8 42 0 54 0 Z" fill="url(#rg2)" filter="url(#glow2)"/><path d="M54 24 H70 C84 24 94 33 94 45 C94 58 84 66 70 66 H54 V24 Z" fill="#0B1020"/><path d="M34 88 L58 70 H84 L50 100 L26 120 H0 L34 88 Z" fill="#0B1020" opacity="0.9"/></g><text x="176" y="108" font-family="Inter,Arial,sans-serif" font-size="94" font-weight="700" letter-spacing="-3" fill="#F8FAFC">Retomat</text><rect x="182" y="122" width="330" height="8" rx="4" fill="url(#rg2)" opacity="0.95"/></svg>
     <div class="sb-logo-tag">AI</div>
   </div>
   <nav class="sb-nav">
     <div class="nav-lbl">Main</div>
     <a href="/campaign-generator.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
     <a href="/campaign-generator.html#campaigns" class="nav-item"><span class="nav-icon">📁</span> Campaigns<span class="nav-badge" id="camp-nav-badge" style="display:none"></span></a>
-    <button class="nav-item" id="nav-tournament" onclick="showView('list')"><span class="nav-icon">🏆</span> Tournaments <span class="nav-badge" id="nav-tourn-badge" style="display:none"></span></button>
+    <button class="nav-item" id="nav-tournament" onclick="showView('list')"><span class="nav-icon">🏆</span> Tournaments<span class="nav-badge" id="nav-tourn-badge" style="display:none"></span></button>
     <div class="nav-lbl" style="margin-top:6px">Tools</div>
-    <a href="/campaign-generator.html?view=configurator" class="nav-item"><span class="nav-icon">⚙️</span> Configurator</a>
+    <a href="/configurator.html" class="nav-item"><span class="nav-icon">⚙️</span> Configurator</a>
     <a href="/campaign-generator.html?view=wizard" class="nav-item"><span class="nav-icon">🚀</span> Campaign Gen</a>
-    <a href="/tournament-generator.html?view=setup" class="nav-item"><span class="nav-icon">🏆</span> Tournament Gen</a>
-    <button class="nav-item" id="nav-setup-guide" onclick="showSetupGuide()"><span class="nav-icon">📋</span> Setup Guide</button>
+    <a href="/tournament-generator.html?view=generator" class="nav-item" id="nav-tourn-gen"><span class="nav-icon">🏆</span> Tournament Gen</a>
+    <a href="/tournament-generator.html#setup" class="nav-item" id="nav-setup-guide"><span class="nav-icon">📋</span> Setup Guide</a>
     <div class="nav-lbl" style="margin-top:6px">Soon</div>
-    <a href="#" class="nav-item off"><span class="nav-icon">📈</span> Analytics</a>
-    <a href="#" class="nav-item off"><span class="nav-icon">⚙️</span> Settings</a>
+    <button class="nav-item off"><span class="nav-icon">📈</span> Analytics</button>
+    <button class="nav-item off"><span class="nav-icon">⚙️</span> Settings</button>
   </nav>
   <div class="sb-foot">
     <a href="/" class="sb-back">← Back to home</a>
@@ -163,10 +171,46 @@ select.form-input{cursor:pointer}
     <span class="topbar-title">Tournament Generator</span>
     <span class="topbar-sep">/</span>
     <span class="topbar-sub" id="topbar-step">Step 1 of 4</span>
+    <div class="topbar-right"></div>
+    <button onclick="showView('generator')" class="btn btn-primary btn-sm">+ New Tournament</button>
+    <button onclick="toggleTournGlossary()" title="Glossary"
+      style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);width:28px;height:28px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s"
+      onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+      onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">?</button>
+    <div class="lang-toggle">
+      <button class="lt-btn" id="lt-ru" onclick="setTournLang('ru')">RU</button>
+      <button class="lt-btn active" id="lt-en" onclick="setTournLang('en')">EN</button>
+    </div>
   </div>
   <div class="content" id="content"></div>
 </main>
 
+<script src="/nav-utils.js"></script>
 <script src="/tournament-generator.js"></script>
+<script>
+document.addEventListener('click', function(e) {
+  const a = e.target.closest('a[href]');
+  if (!a || !a.closest('.sidebar')) return;
+  const href = a.getAttribute('href');
+  if (!href || href.startsWith('#') || a.target) return;
+  let url;
+  try { url = new URL(href, location.href); } catch(e) { return; }
+  if (url.origin !== location.origin) return;
+  e.preventDefault();
+  // Same page — just switch view without reload
+  if (url.pathname === location.pathname) {
+    const view = url.searchParams.get('view');
+    if (!view) return;
+    // Already on this view — do nothing
+    const activeEl = document.querySelector('.sb-nav .nav-item.active');
+    if (activeEl && activeEl.getAttribute('href') === href) return;
+    if (typeof showView === 'function') { showView(view); return; }
+  }
+  // Different page — fade .main then navigate
+  const m = document.querySelector('.main');
+  if (m) { m.style.transition = 'opacity .1s ease'; m.style.opacity = '0'; }
+  setTimeout(() => { location.href = href; }, 110);
+});
+</script>
 </body>
 </html>
