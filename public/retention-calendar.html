@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Retention Calendar — Retomat</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+.rc-main { display:flex; flex-direction:column; height:100%; gap:0; }
+.rc-topbar {
+  display:flex; align-items:center; gap:8px; padding:8px 16px;
+  border-bottom:1px solid var(--border); background:var(--card); flex-shrink:0;
+}
+.rc-topbar-title { font-size:1rem; font-weight:700; flex:1; }
+.rc-actions { display:flex; gap:8px; flex-wrap:wrap; }
+
+/* ── Filters ─────────────────────────────────────────────────────────────── */
+#filters-bar {
+  display:flex; flex-wrap:wrap; gap:6px; padding:8px 16px;
+  border-bottom:1px solid var(--border); background:var(--bg); flex-shrink:0;
+}
+.rc-filter-btn {
+  padding:3px 10px; border-radius:20px; border:1.5px solid var(--border);
+  background:transparent; color:var(--text); font-size:.75rem; font-weight:500;
+  cursor:pointer; transition:all .15s;
+}
+.rc-filter-btn:hover { border-color:var(--purple); color:var(--purple); }
+.rc-filter-btn.active { background:var(--purple); border-color:var(--purple); color:#fff; }
+.rc-filter-btn.type-chip.active { background:var(--chip-color); border-color:var(--chip-color); }
+.rc-filter-sep { color:var(--border); display:flex; align-items:center; }
+
+/* ── Calendar container ──────────────────────────────────────────────────── */
+#calendar-wrap {
+  flex:1; padding:12px 16px; overflow:hidden; min-height:0;
+}
+
+/* ── Stats bar ───────────────────────────────────────────────────────────── */
+#stats-bar {
+  padding:4px 16px; font-size:.75rem; color:var(--muted);
+  border-top:1px solid var(--border); flex-shrink:0;
+}
+
+/* ── Modal ───────────────────────────────────────────────────────────────── */
+#modal-overlay {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,.55);
+  z-index:1000; align-items:center; justify-content:center;
+}
+#modal-box {
+  background:var(--card); border-radius:12px; width:min(520px,95vw);
+  max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.4);
+  border:1px solid var(--border);
+}
+.modal-header {
+  padding:16px 20px 12px; border-bottom:1px solid var(--border);
+}
+.modal-body  { padding:16px 20px; }
+.modal-footer {
+  padding:12px 20px; border-top:1px solid var(--border);
+  display:flex; gap:8px; flex-wrap:wrap;
+}
+.rc-lbl { font-size:.75rem; font-weight:600; color:var(--muted); display:block; margin-bottom:4px; }
+.rc-field { margin-bottom:8px; font-size:.88rem; }
+.rc-tag { background:rgba(124,58,237,.12); color:var(--purple); border-radius:4px; padding:2px 6px; font-size:.75rem; }
+.rc-status-badge {
+  display:inline-block; margin-top:6px; padding:2px 10px; border-radius:20px;
+  font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px;
+}
+.status-draft     { background:#374151; color:#D1D5DB; }
+.status-scheduled { background:#1D4ED8; color:#BFDBFE; }
+.status-active    { background:#065F46; color:#A7F3D0; }
+.status-completed { background:#1F2937; color:#9CA3AF; }
+.status-cancelled { background:#7F1D1D; color:#FECACA; }
+
+/* ── Template row ────────────────────────────────────────────────────────── */
+.rc-template-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:8px 0; border-bottom:1px solid var(--border); font-size:.88rem;
+}
+.rc-template-row:last-child { border-bottom:none; }
+
+/* ── FullCalendar overrides ──────────────────────────────────────────────── */
+.fc { font-family:inherit; font-size:.82rem; }
+.fc-button-primary {
+  background:var(--purple) !important; border-color:var(--purple) !important;
+}
+.fc-button-primary:hover {
+  background:#6D28D9 !important; border-color:#6D28D9 !important;
+}
+.fc-button-active { background:#5B21B6 !important; }
+.fc-event { cursor:pointer; border-radius:5px !important; font-size:.75rem; }
+.fc-day-today { background:rgba(124,58,237,.06) !important; }
+
+/* ── Nav overrides ───────────────────────────────────────────────────────── */
+.nav-item.rc-calendar-link { color: var(--gold) !important; font-weight:700; }
+
+@media(max-width:640px) {
+  .rc-topbar { flex-wrap:wrap; }
+  #calendar-wrap { padding:8px; }
+}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sb-logo">
+    <svg class="sb-logo-img" viewBox="0 0 620 140" xmlns="http://www.w3.org/2000/svg" aria-label="Retomat"><defs><linearGradient id="rg2" x1="0" y1="0" x2="140" y2="140" gradientUnits="userSpaceOnUse"><stop stop-color="#8B5CF6"/><stop offset="1" stop-color="#3B82F6"/></linearGradient><filter id="glow2" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g transform="translate(20,20)"><path d="M20 0 H70 C100 0 122 20 122 48 C122 70 108 86 84 93 L118 120 H82 L56 100 L26 120 H0 L34 88 V20 C34 8 42 0 54 0 Z" fill="url(#rg2)" filter="url(#glow2)"/><path d="M54 24 H70 C84 24 94 33 94 45 C94 58 84 66 70 66 H54 V24 Z" fill="#0B1020"/><path d="M34 88 L58 70 H84 L50 100 L26 120 H0 L34 88 Z" fill="#0B1020" opacity="0.9"/></g><text x="176" y="108" font-family="Inter,Arial,sans-serif" font-size="94" font-weight="700" letter-spacing="-3" fill="#F8FAFC">Retomat</text><rect x="182" y="122" width="330" height="8" rx="4" fill="url(#rg2)" opacity="0.95"/></svg>
+    <div class="sb-logo-tag">AI</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="nav-lbl">Calendar</div>
+    <button class="nav-item active" data-view="month"><span class="nav-icon">📅</span> Month</button>
+    <button class="nav-item" data-view="week"><span class="nav-icon">📆</span> Week</button>
+    <button class="nav-item" data-view="list"><span class="nav-icon">📋</span> Agenda</button>
+    <div class="nav-lbl" style="margin-top:6px">Tools</div>
+    <a href="/campaign-generator.html" class="nav-item"><span class="nav-icon">🚀</span> Offer Gen</a>
+    <a href="/tournament-generator.html?view=generator" class="nav-item"><span class="nav-icon">🏆</span> Tournament Gen</a>
+    <a href="/configurator.html" class="nav-item"><span class="nav-icon">⚙️</span> Configurator</a>
+    <div class="nav-lbl" style="margin-top:6px">Data</div>
+    <button class="nav-item" onclick="window._rcExportCSV()"><span class="nav-icon">⬇️</span> Export CSV</button>
+    <button class="nav-item" onclick="window._rcExportJSON()"><span class="nav-icon">⬇️</span> Export JSON</button>
+    <button class="nav-item" onclick="window._rcOpenTemplates()"><span class="nav-icon">📄</span> Templates</button>
+  </nav>
+  <div class="sb-foot">
+    <a href="/" class="sb-back">← Back to home</a>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="rc-main">
+    <div class="rc-topbar">
+      <span class="rc-topbar-title">📅 Retention Calendar</span>
+      <div class="rc-actions">
+        <button class="btn btn-outline btn-sm" onclick="window._rcOpenAI()">🤖 AI-Assisted</button>
+        <button class="btn btn-outline btn-sm" onclick="window._rcOpenTemplates()">📄 Templates</button>
+        <button class="btn btn-primary btn-sm" onclick="window._rcOpenNew()">+ New Campaign</button>
+      </div>
+    </div>
+
+    <div id="filters-bar"></div>
+
+    <div id="calendar-wrap">
+      <div id="calendar"></div>
+    </div>
+
+    <div id="stats-bar">Loading…</div>
+  </div>
+</main>
+
+<!-- Modal -->
+<div id="modal-overlay">
+  <div id="modal-box"></div>
+</div>
+
+<script type="module" src="/retention-calendar.js"></script>
+</body>
+</html>

@@ -350,6 +350,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     <a class="nav-item" href="/campaign-generator.html?view=wizard"><span class="nav-icon">🚀</span><span data-i18n="nav_campaign_gen">Offer Gen</span></a>
     <a class="nav-item" href="/tournament-generator.html?view=generator"><span class="nav-icon">🏆</span><span data-i18n="nav_tournament_gen">Tournament Gen</span></a>
     <a class="nav-item" href="/tournament-generator.html#setup"><span class="nav-icon">📋</span><span data-i18n="nav_setup_guide">Setup Guide</span></a>
+    <a href="/retention-calendar.html" class="nav-item" style="color:var(--gold);font-weight:600"><span class="nav-icon">📅</span> Retention Calendar</a>
     <div class="nav-lbl" data-i18n="nav_soon" style="margin-top:6px">Soon</div>
     <button class="nav-item off"><span class="nav-icon">📈</span><span data-i18n="nav_analytics">Analytics</span></button>
     <button class="nav-item off"><span class="nav-icon">⚙️</span><span data-i18n="nav_settings">Settings</span></button>
@@ -736,8 +737,9 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
                 <div class="sum-row"><span class="sr-l" data-i18n="s5_sum_wager">Вейджер</span><span class="sr-v" id="sum-wager">—</span></div>
                 <div class="sum-row"><span class="sr-l" data-i18n="s5_sum_budget">Бюджет</span><span class="sr-v" id="sum-bud">—</span></div>
                 <div class="sum-row"><span class="sr-l" data-i18n="s5_sum_channels">Каналы</span><span class="sr-v">Push · Email · SMS</span></div>
-                <div style="margin-top:13px">
+                <div style="margin-top:13px;display:flex;flex-direction:column;gap:8px">
                   <button class="btn btn-primary" style="width:100%" onclick="finishCampaign()" data-i18n="btn_create_camp">✓ Создать кампанию</button>
+                  <button class="btn btn-outline" style="width:100%" onclick="addCampaignToCalendar()">📅 <span data-i18n="btn_add_calendar">Add to Calendar</span></button>
                 </div>
               </div>
             </div>

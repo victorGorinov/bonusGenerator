@@ -1343,6 +1343,53 @@ function saveAdminCfg() {
   a.download = `admin-config-${draft.scenario?.id||'campaign'}-${new Date().toISOString().slice(0,10)}.txt`;
   a.click();
 }
+function addCampaignToCalendar() {
+  const mechanic    = draft.mechanicType || draft.scenario?.cat || 'custom';
+  const MECH_TO_TYPE = { reload:'reload', cashback:'cashback', freespins:'freespins', free_spins:'freespins', vip:'vip', reactivation:'reactivation', welcome:'reload', ndb:'freespins', dep2:'reload', dep3:'reload' };
+  const type        = MECH_TO_TYPE[mechanic?.toLowerCase()] || 'custom';
+  const today       = new Date();
+  const monday      = new Date(today); monday.setDate(today.getDate() + ((today.getDay() === 0 ? 1 : 8 - today.getDay())));
+  const addD        = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r.toISOString().slice(0, 10); };
+  const campaign = {
+    title:      draft.scenario?.lbl || mechanic || 'Campaign',
+    type,
+    segment:    draft.params?.segment || 'all',
+    geo:        draft.params?.geo || '',
+    startDate:  monday.toISOString().slice(0, 10),
+    endDate:    addD(monday, 6),
+    status:     'draft',
+    brands:     ['default'],
+    mechanic:   String(mechanic || ''),
+    econ:       draft.econ || null,
+    sourceType: 'campaign_generator',
+  };
+  const rc = { rc_campaigns: localStorage.getItem('rc_campaigns') };
+  try {
+    const camps = JSON.parse(rc.rc_campaigns || '[]');
+    const id    = 'cg_' + Date.now();
+    const now   = new Date().toISOString();
+    camps.push({ ...campaign, id, createdAt: now, updatedAt: now });
+    localStorage.setItem('rc_campaigns', JSON.stringify(camps));
+  } catch {}
+  const isRu = currentLang === 'ru';
+  const msg   = isRu ? '📅 Кампания добавлена в Retention Calendar' : '📅 Campaign added to Retention Calendar';
+  const link  = '<a href="/retention-calendar.html" style="color:var(--gold);font-weight:600">Open Calendar →</a>';
+  showToast(`${msg} · ${link}`);
+}
+
+function showToast(html) {
+  let t = document.getElementById('rc-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'rc-toast';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e293b;color:#f8fafc;padding:10px 20px;border-radius:10px;font-size:.85rem;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);max-width:90vw;text-align:center';
+    document.body.appendChild(t);
+  }
+  t.innerHTML = html;
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 5000);
+}
+
 function finishCampaign() {
   saveCampaign();
   renderCampaignViews();

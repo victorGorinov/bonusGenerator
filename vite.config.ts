@@ -12,6 +12,7 @@ export default defineConfig({
         'campaign-generator':   resolve(__dirname, 'public/campaign-generator.js'),
         'tournament-generator': resolve(__dirname, 'public/tournament-generator.js'),
         'configurator-extra':   resolve(__dirname, 'public/configurator-extra.js'),
+        'retention-calendar':   resolve(__dirname, 'public/retention-calendar.js'),
       },
       output: {
         entryFileNames: '[name].[hash].js',

@@ -711,6 +711,9 @@ ${gamesSection()}
             onclick="saveTournament()">
       💾 Save
     </button>
+    <button class="btn btn-outline" style="border-color:var(--gold);color:var(--gold)" onclick="addTournamentToCalendar()">
+      📅 Add to Calendar
+    </button>
   </div>
   <div style="display:flex;gap:9px">
     <button class="btn btn-outline btn-sm" onclick="exportTournamentPDF()">⬇ PDF</button>
@@ -1281,6 +1284,50 @@ ${_gamesData && _gamesData._key === _gamesParamsKey() ? gamesSectionFromData(_ga
     <button class="btn btn-primary" onclick="goStep(4)">Generate AI Texts →</button>
   </div>
 </div>`;
+}
+
+// ── ADD TO RETENTION CALENDAR ─────────────────────────────────────────────────
+function addTournamentToCalendar() {
+  if (!lastResult) return;
+  const { spec, econ, params, cur } = lastResult;
+  const DURATION_DAYS = { flash:1, daily:1, weekly:7, monthly:30, multi_round:10 };
+  const days    = DURATION_DAYS[params?.duration] || 7;
+  const today   = new Date();
+  const monday  = new Date(today); monday.setDate(today.getDate() + ((today.getDay() === 0 ? 1 : 8 - today.getDay())));
+  const addD    = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r.toISOString().slice(0, 10); };
+  const startDate = monday.toISOString().slice(0, 10);
+  const campaign = {
+    title:      `${(draft.type||'slot').charAt(0).toUpperCase() + (draft.type||'slot').slice(1)} Tournament · ${(params?.geo||'').toUpperCase()}`,
+    type:       'tournament',
+    segment:    params?.segment  || 'all',
+    geo:        params?.geo      || '',
+    startDate,
+    endDate:    addD(monday, days - 1),
+    status:     'draft',
+    brands:     ['default'],
+    mechanic:   spec?.scoring || '',
+    rewards:    { prizePool: spec?.prizePool, currency: cur },
+    econ:       econ || null,
+    sourceType: 'tournament_generator',
+  };
+  try {
+    const camps = JSON.parse(localStorage.getItem('rc_campaigns') || '[]');
+    const now   = new Date().toISOString();
+    camps.push({ ...campaign, id: 'tg_' + Date.now(), createdAt: now, updatedAt: now });
+    localStorage.setItem('rc_campaigns', JSON.stringify(camps));
+  } catch {}
+  const isRu = (localStorage.getItem('bonusLang') || 'en') === 'ru';
+  const msg   = isRu ? '📅 Турнир добавлен в Retention Calendar' : '📅 Tournament added to Retention Calendar';
+  let toast   = document.getElementById('tg-rc-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'tg-rc-toast';
+    toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e293b;color:#f8fafc;padding:10px 20px;border-radius:10px;font-size:.85rem;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1)';
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML = `${msg} · <a href="/retention-calendar.html" style="color:var(--gold);font-weight:600">Open →</a>`;
+  toast.style.display = 'block';
+  setTimeout(() => { toast.style.display = 'none'; }, 5000);
 }
 
 // ── SAVE / DELETE ────────────────────────────────────────────────────────────
