@@ -237,6 +237,24 @@ function renderGamesBlockHTML() {
     ${altHtml}`;
 }
 
+// Render games block from already-fetched data (for Detail and Setup Guide views)
+function gamesSectionFromData(gamesResult) {
+  if (!gamesResult) return '';
+  const lang = localStorage.getItem('bonusLang') || 'en';
+  const isRu = lang === 'ru';
+  const title = isRu ? 'Рекомендуемые игры' : 'Recommended Games';
+  const sub   = isRu ? 'Подобраны под сегмент, регион и механику турнира' : 'Selected for this segment, region & tournament mechanics';
+  const prev = _gamesData;
+  _gamesData = { _key: '__static__', result: gamesResult };
+  const html = renderGamesBlockHTML();
+  _gamesData = prev;
+  return `<div class="card" style="margin-bottom:16px">
+    <div class="card-title" style="margin-bottom:4px">${title}</div>
+    <div style="font-size:.75rem;color:var(--muted);margin-bottom:12px">${sub}</div>
+    ${html}
+  </div>`;
+}
+
 function gamesSection() {
   const lang = localStorage.getItem('bonusLang') || 'en';
   const isRu = lang === 'ru';
@@ -1028,6 +1046,8 @@ function renderSetupGuide() {
   ${timelineHtml}
 </div>
 
+${_gamesData && _gamesData._key === _gamesParamsKey() ? gamesSectionFromData(_gamesData.result) : ''}
+
 <div class="card" style="background:rgba(124,58,237,.06);border-color:rgba(124,58,237,.25)">
   <div class="card-title" style="color:#c4b5fd">🤖 AI Brief</div>
   <div style="font-size:.82rem;color:var(--muted);margin-bottom:14px">Get an AI-generated strategic analysis: key strengths, risks, operator notes, and A/B test ideas for this tournament.</div>
@@ -1064,6 +1084,7 @@ function saveTournament() {
     cur:       lastResult.cur,
     lic:       lastResult.lic,
     region:    lastResult.region,
+    games:     (_gamesData && _gamesData._key === _gamesParamsKey()) ? _gamesData.result : null,
     createdAt: new Date().toISOString(),
   };
   list.unshift(entry);
@@ -1262,6 +1283,8 @@ function renderDetail(id) {
   ${prizeRows}
 </div>
 
+${gamesSectionFromData(t.games)}
+
 <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap">
   <button class="btn btn-outline" style="flex:1;border-color:rgba(124,58,237,.4);color:#c4b5fd" onclick="loadAndShowGuide('${t.id}')">📋 Setup Guide →</button>
   <button class="btn btn-outline" style="flex:1;border-color:rgba(79,110,247,.4);color:#a0b0ff" onclick="loadAndRegenTexts('${t.id}')">✦ AI Texts</button>
@@ -1276,6 +1299,10 @@ function loadAndShowGuide(id) {
   lastResult   = { spec: t.spec, econ: t.econ, cur: t.cur, lic: t.lic, region: t.region };
   draft.type   = t.type;
   draft.params = { ...t.params };
+  // Restore saved games so Setup Guide shows them without a new fetch
+  if (t.games) {
+    _gamesData = { _key: _gamesParamsKey(), result: t.games };
+  }
   showView('setup');
 }
 
