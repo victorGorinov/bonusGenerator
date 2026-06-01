@@ -103,3 +103,17 @@ export function parseTournamentAuditResponse(raw: string): TournamentAuditRespon
   if (!result.success) throw new AIProviderError('AI tournament audit response failed schema validation');
   return result.data;
 }
+
+const GamesResponseSchema = z.object({
+  rationale: z.string(),
+  games:     z.array(z.object({ id: z.string(), why: z.string() })).min(1),
+});
+
+export type GamesResponse = z.infer<typeof GamesResponseSchema>;
+
+export function parseGamesResponse(raw: string): GamesResponse {
+  const parsed = parseRaw(raw);
+  const result = GamesResponseSchema.safeParse(parsed);
+  if (!result.success) throw new AIProviderError('AI games response failed schema validation');
+  return result.data;
+}

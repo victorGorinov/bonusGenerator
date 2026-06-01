@@ -1,8 +1,11 @@
 import * as tournamentService              from '../services/tournament.service.js';
 import { buildTournamentTextsPrompt }     from '../ai/prompts/tournament-texts.prompt.js';
 import { buildTournamentAuditPrompt }     from '../ai/prompts/tournament-audit.prompt.js';
-import { parseTournamentTextsResponse, parseTournamentAuditResponse } from '../ai/parser.js';
-import type { TournamentGenerateInput, TournamentTextsInput, TournamentAuditInput } from '../validation/tournament.schema.js';
+import { buildGamesPrompt }               from '../ai/prompts/tournament-games.prompt.js';
+import { parseTournamentTextsResponse, parseTournamentAuditResponse, parseGamesResponse } from '../ai/parser.js';
+import { recommendGames }                 from '../domain/tournament/recommendGames.js';
+import { GEO_CFG }                        from '../domain/campaign/scenarios.js';
+import type { TournamentGenerateInput, TournamentTextsInput, TournamentAuditInput, TournamentGamesInput } from '../validation/tournament.schema.js';
 import type { AIProvider }                from '../ai/interface.js';
 
 export function generateTournament(input: TournamentGenerateInput): ReturnType<typeof tournamentService.generateTournament> {
@@ -18,6 +21,38 @@ export async function generateTournamentTexts(input: TournamentTextsInput, ai: A
   });
   const raw = await ai.generate(prompt, { maxTokens: 4096 });
   return parseTournamentTextsResponse(raw);
+}
+
+export async function recommendTournamentGames(input: TournamentGamesInput, ai: AIProvider) {
+  const { geo, segment, type, scoring, plat } = input;
+  const region = GEO_CFG[geo]?.region ?? geo;
+
+  // Deterministic pool — no AI, always fast
+  const { primary, alternatives, scores } = recommendGames({ geo, region, segment, type, scoring, plat });
+
+  // AI rationale — degrades gracefully if AI fails
+  let rationale: string | null = null;
+  let gameAnnotations: { id: string; why: string }[] = [];
+
+  if (primary.length > 0) {
+    try {
+      const prompt = buildGamesPrompt({ region, geo, segment, type, scoring, primary });
+      const raw = await ai.generate(prompt, { maxTokens: 600 });
+      const parsed = parseGamesResponse(raw);
+      rationale = parsed.rationale;
+      gameAnnotations = parsed.games;
+    } catch {
+      // AI failure is non-fatal — return unannotated pool
+    }
+  }
+
+  // Merge annotations into primary games
+  const annotatedPrimary = primary.map(g => {
+    const annotation = gameAnnotations.find(a => a.id === g.id);
+    return { ...g, why: annotation?.why ?? null };
+  });
+
+  return { primary: annotatedPrimary, alternatives, scores, rationale, region };
 }
 
 export async function auditTournament(input: TournamentAuditInput, ai: AIProvider): Promise<ReturnType<typeof parseTournamentAuditResponse>> {

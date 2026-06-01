@@ -33,6 +33,16 @@ export const TournamentAuditSchema = z.object({
   uiLang: z.string().optional(),
 });
 
+export const TournamentGamesSchema = z.object({
+  geo:     z.string().min(2).max(3),
+  segment: z.enum(['all','new','vip','dormant','depositors']).default('all'),
+  type:    z.enum(['slot','live','mixed','prize_drop']),
+  scoring: z.enum(['total_wins','highest_multiplier','most_spins','mission_based']),
+  plat:    z.enum(['mobile','desk','both']).optional(),
+  uiLang:  z.string().optional(),
+});
+
 export type TournamentGenerateInput = z.infer<typeof TournamentGenerateSchema>;
 export type TournamentTextsInput    = z.infer<typeof TournamentTextsSchema>;
 export type TournamentAuditInput    = z.infer<typeof TournamentAuditSchema>;
+export type TournamentGamesInput    = z.infer<typeof TournamentGamesSchema>;

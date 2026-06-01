@@ -121,6 +121,139 @@ function autoName(type, params) {
   return `${typeLabel[type] || type} · ${geo}/${lic}`;
 }
 
+// ── GAME RECOMMENDATIONS STATE ───────────────────────────────────────────────
+
+let _gamesData    = null;  // { geo, segment, type, scoring, result }
+let _gamesLoading = false;
+
+function _gamesParamsKey() {
+  const p = draft.params;
+  return `${p.geo}|${p.segment}|${draft.type}|${p.scoring}`;
+}
+
+async function fetchGamesIfNeeded() {
+  if (_gamesLoading) return;
+  const p = draft.params;
+  const key = _gamesParamsKey();
+  if (_gamesData && _gamesData._key === key) return;   // cache hit
+
+  _gamesLoading = true;
+  const el = document.getElementById('games-recommend-block');
+  if (el) el.innerHTML = renderGamesLoadingHTML();
+
+  try {
+    const res = await fetch('/api/tournament/games', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ geo: p.geo, segment: p.segment, type: draft.type, scoring: p.scoring }),
+    });
+    if (!res.ok) throw new Error('fetch failed');
+    _gamesData = { _key: key, result: await res.json() };
+  } catch(e) {
+    _gamesData = { _key: key, result: null };
+  }
+  _gamesLoading = false;
+  const block = document.getElementById('games-recommend-block');
+  if (block) block.innerHTML = renderGamesBlockHTML();
+}
+
+const VOL_COLOR = { low: '#10b981', mid: '#f59e0b', high: '#ef4444' };
+const MECH_LABEL = { slot: 'Slot', crash: 'Crash', live: 'Live', table: 'Table' };
+
+function renderGamesLoadingHTML() {
+  return `<div class="loader" style="justify-content:center;padding:18px 0">
+    <div class="spinner"></div>
+    <span>Loading recommendations…</span>
+  </div>`;
+}
+
+function renderGamesBlockHTML() {
+  const lang = localStorage.getItem('bonusLang') || 'en';
+  const isRu = lang === 'ru';
+
+  const labels = {
+    title:    isRu ? 'Рекомендуемые игры' : 'Recommended Games',
+    sub:      isRu ? 'Подходят для данного сегмента, региона и механики турнира' : 'Best fit for this segment, region & tournament mechanics',
+    primary:  isRu ? 'Основной пул' : 'Primary Pool',
+    alt:      isRu ? 'Альтернативы' : 'Alternatives',
+    noGames:  isRu ? 'Нет подходящих игр для выбранных параметров' : 'No matching games for selected parameters',
+    aiNote:   isRu ? 'AI-предложение — проверьте соответствие вашему каталогу' : 'AI draft — verify against your actual game catalog',
+    rtp:      'RTP',
+    vol:      isRu ? 'Волатильность' : 'Vol',
+  };
+
+  if (!_gamesData || !_gamesData.result) {
+    return `<div class="alert alert-warn">${isRu ? 'Не удалось загрузить рекомендации' : 'Could not load recommendations'}</div>`;
+  }
+
+  const { primary, alternatives, rationale } = _gamesData.result;
+
+  if (!primary || primary.length === 0) {
+    return `<div style="color:var(--muted);font-size:.82rem;padding:12px 0">${labels.noGames}</div>`;
+  }
+
+  function gameCard(g, showWhy) {
+    const volColor = VOL_COLOR[g.volatility] || 'var(--muted)';
+    const mechLbl  = MECH_LABEL[g.mechanic] || g.mechanic;
+    const why = showWhy && g.why ? `<div style="font-size:.72rem;color:var(--muted);margin-top:5px;line-height:1.4">💡 ${g.why}</div>` : '';
+    return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px">
+        <div style="font-size:.82rem;font-weight:600;color:var(--text)">${g.name}</div>
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          <span style="font-size:.65rem;font-weight:700;padding:1px 6px;border-radius:4px;background:rgba(79,110,247,.15);color:#a0b0ff">${mechLbl}</span>
+          <span style="font-size:.65rem;font-weight:700;padding:1px 6px;border-radius:4px;background:${volColor}20;color:${volColor}">${g.volatility}</span>
+        </div>
+      </div>
+      <div style="font-size:.73rem;color:var(--muted)">${g.provider} · ${labels.rtp} ${g.rtp}%</div>
+      ${why}
+    </div>`;
+  }
+
+  const hasAI = rationale || primary.some(g => g.why);
+  const disclaimer = hasAI
+    ? `<div style="background:rgba(79,110,247,.08);border:1px solid rgba(79,110,247,.2);border-radius:7px;padding:7px 11px;font-size:.73rem;color:#a0b0ff;margin-bottom:10px">ℹ️ ${labels.aiNote}</div>`
+    : '';
+
+  const rationaleHtml = rationale
+    ? `<div style="font-size:.78rem;color:var(--muted);line-height:1.55;margin-bottom:10px">${rationale}</div>`
+    : '';
+
+  const altHtml = alternatives && alternatives.length > 0
+    ? `<details style="margin-top:10px">
+        <summary style="font-size:.75rem;font-weight:600;color:var(--muted);cursor:pointer;user-select:none">${labels.alt} (${alternatives.length})</summary>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px">
+          ${alternatives.map(g => gameCard(g, false)).join('')}
+        </div>
+      </details>`
+    : '';
+
+  return `
+    ${disclaimer}
+    ${rationaleHtml}
+    <div style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px">${labels.primary} (${primary.length})</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+      ${primary.map(g => gameCard(g, true)).join('')}
+    </div>
+    ${altHtml}`;
+}
+
+function gamesSection() {
+  const lang = localStorage.getItem('bonusLang') || 'en';
+  const isRu = lang === 'ru';
+  const title = isRu ? 'Рекомендуемые игры' : 'Recommended Games';
+  const sub   = isRu ? 'Подходят для этого сегмента и механики' : 'Best fit for this segment & mechanics';
+  const inner = _gamesData && _gamesData._key === _gamesParamsKey()
+    ? renderGamesBlockHTML()
+    : renderGamesLoadingHTML();
+  return `<div class="card" style="margin-bottom:16px">
+    <div class="card-title" style="margin-bottom:4px">${title}</div>
+    <div style="font-size:.75rem;color:var(--muted);margin-bottom:12px">${sub}</div>
+    <div id="games-recommend-block">${inner}</div>
+  </div>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 function goStep(n) {
   step = n;
   hasActiveGenerator = true;
@@ -135,6 +268,7 @@ function renderStep() {
   else if (step === 2) c.innerHTML = renderStep2();
   else if (step === 3) c.innerHTML = renderStep3();
   else if (step === 4) c.innerHTML = renderStep4();
+  if (step === 2 || step === 3) setTimeout(fetchGamesIfNeeded, 0);
 }
 
 function setSidebarActive(id) {
@@ -334,6 +468,8 @@ function renderStep2() {
   </div>
 </div>
 
+${gamesSection()}
+
 <div class="nav-footer">
   <button class="btn btn-outline" onclick="goStep(1)">← Back</button>
   <button class="btn btn-primary btn-lg" id="btn-generate" onclick="runGenerate()">Generate Tournament Spec →</button>
@@ -448,6 +584,8 @@ function renderStep3() {
     Based on ${e.eligible} eligible ${draft.params.segment} players (${Math.round(e.segmentRatio*100)}% of ${(draft.params.totalPlayers||5000).toLocaleString()} total casino players) · ARPU ${e.arpu} USD/mo · engagement ×${engMul.toFixed(1)} vs normal play
   </div>
 </div>
+
+${gamesSection()}
 
 <div style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.25);border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:14px">
   <span style="font-size:1.4rem;flex-shrink:0">📋</span>
