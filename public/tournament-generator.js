@@ -468,8 +468,6 @@ function renderStep2() {
   </div>
 </div>
 
-${gamesSection()}
-
 <div class="nav-footer">
   <button class="btn btn-outline" onclick="goStep(1)">← Back</button>
   <button class="btn btn-primary btn-lg" id="btn-generate" onclick="runGenerate()">Generate Tournament Spec →</button>
