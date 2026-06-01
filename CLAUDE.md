@@ -1,6 +1,6 @@
-# CLAUDE.md — Bonus Engine Configurator
+# CLAUDE.md — Retomat: Retention OS for iGaming
 
-Complete architecture reference for Claude Code sessions. Updated: 2026-05-31.
+Complete architecture reference for Claude Code sessions. Updated: 2026-06-01.
 
 ---
 
@@ -19,7 +19,7 @@ Complete architecture reference for Claude Code sessions. Updated: 2026-05-31.
 
 ```bash
 npm start            # Express on http://localhost:3000
-npm test             # vitest run (137 tests)
+npm test             # vitest run (248 tests)
 npm run typecheck    # tsc --noEmit
 npm run lint         # eslint src --ext .ts
 npm run build        # vite build → public/dist/
@@ -35,7 +35,7 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 ```
 /
 ├── server.ts
-├── vite.config.ts                   # Frontend build: 4 JS entry points → public/dist/
+├── vite.config.ts                   # Frontend build: 5 JS entry points → public/dist/
 ├── eslint.config.js                 # @typescript-eslint/recommended
 ├── .github/workflows/ci.yml         # CI: typecheck, lint, test, build, npm audit
 ├── src/
@@ -56,7 +56,8 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │   │   ├── scenarios.ts         # GEO_CFG, LANG_NAME, SEG_DESC, SCENARIO_MSG
 │   │   │   └── explanation.ts       # campaignExplanation(), campaignAlternatives()
 │   │   ├── tournament/
-│   │   │   └── calcEconomics.ts     # calcTournamentEconomics() — SEGMENT_RATIO × totalPlayers → eligible
+│   │   │   ├── calcEconomics.ts     # calcTournamentEconomics() — SEGMENT_RATIO × totalPlayers → eligible
+│   │   │   └── benchmarks.ts        # tournamentBenchmarks() — deterministic realism checks
 │   │   └── ai/
 │   │       └── parser.ts            # tryRepairJSON — JSON repair utility
 │   ├── ai/
@@ -114,32 +115,54 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │       ├── ValidationError.ts       # 400
 │       └── AIProviderError.ts       # 502
 ├── public/                          # Static files served by Express
-│   ├── index.html                   # Landing (EN/RU, all action btns yellow btn-gold, tools hub)
+│   ├── index.html                   # Landing — Retention OS positioning (EN/RU), calendar-first
+│   ├── index.js                     # Landing i18n (EN/RU) + particles + sticky CTA
 │   ├── styles.css                   # Configurator shared CSS
 │   ├── app.js                       # Configurator logic + i18n (RU/EN/MN/ES) — external file
 │   ├── configurator.html            # Bonus Configurator SPA (loads app.js + configurator-extra.js)
 │   ├── configurator-extra.js        # Configurator page-specific JS (RTP sync, edit mode, etc.)
-│   ├── campaign-generator.html      # AI Campaign Generator SPA (loads campaign-generator.js)
-│   ├── campaign-generator.js        # Campaign Generator logic — extracted from HTML (2134 lines)
-│   ├── tournament-generator.html    # Tournament Generator SPA (loads tournament-generator.js)
-│   ├── tournament-generator.js      # Tournament Generator logic — extracted from HTML (983 lines)
+│   ├── campaign-generator.html      # AI Campaign Generator SPA
+│   ├── campaign-generator.js        # Campaign Generator logic (2134 lines)
+│   ├── tournament-generator.html    # Tournament Generator SPA
+│   ├── tournament-generator.js      # Tournament Generator logic (983 lines)
+│   ├── retention-calendar.html      # Retention Calendar SPA — dark theme, inline styles
+│   ├── retention-calendar.js        # RC entry point — imports FullCalendar modules, init
+│   ├── retention-calendar/          # RC module files (calendar, store, repo, i18n, conflicts, export…)
+│   │   ├── calendar.js              # initCalendar(el, onEventClick, onDateClick) — FullCalendar wrapper
+│   │   ├── store.js                 # Reactive state: campaigns, templates, filters, view
+│   │   ├── repository.js            # Async localStorage: listCampaigns, saveCampaign, etc.
+│   │   ├── types.js                 # JSDoc types, TYPE_COLORS, CAMPAIGN_TYPES, SEGMENTS
+│   │   ├── conflicts.js             # detectConflicts(), datesOverlap()
+│   │   ├── export.js                # toCSV(), toJSON(), exportCSV(), exportJSON()
+│   │   ├── filters.js               # applyFilters(), toggleFilter(), clearFilters()
+│   │   ├── templates.js             # saveAsTemplate(), createFromTemplate(), duplicateCampaign()
+│   │   ├── ai-to-campaign.js        # campaignFromAI(), tournamentFromAI()
+│   │   └── i18n.js                  # getT() → RU/EN string map
 │   ├── generator.html               # Legacy — 301 → /campaign-generator.html
 │   ├── privacy.html                 # Privacy Policy (EN/RU)
 │   └── terms.html                   # Terms of Service (EN/RU)
+│   └── dist/                        # Vite output (gitignored except retention-calendar.js)
+│       └── retention-calendar.js    # Committed bundle — FullCalendar can't be served as bare ESM
 └── tests/
     ├── domain/buildConfig.test.js
     ├── domain/recalcCosts.test.js
-    ├── domain/calcEconomics.test.js  # 20 tests
+    ├── domain/calcEconomics.test.js   # 25 tests (totalPlayers/segmentRatio coverage)
     ├── domain/payout.test.js
+    ├── domain/benchmarks.test.js      # Tournament benchmarks tests
+    ├── domain/retention.conflicts.test.js  # 9 tests
+    ├── domain/retention.export.test.js     # 8 tests
+    ├── domain/retention.repository.test.js # 10 tests
+    ├── domain/retention.mapper.test.js     # 10 tests
     ├── ai/parser.test.js
     └── integration/
         ├── api.generate.test.js
-        └── security.headers.test.js  # Asserts script-src has NO unsafe-inline
+        ├── api.tournament.optimize.test.js
+        └── security.headers.test.js  # CSP assertions
 ```
 
 ---
 
-## Backend architecture patterns (Phase 1–3 refactoring)
+## Backend architecture patterns
 
 ### asyncHandler — `src/middleware/asyncHandler.ts`
 
@@ -166,10 +189,6 @@ In tests: `createCampaignController({ ai: new MockAIProvider([...]) })`.
 getAIProvider()          // returns AnthropicProvider singleton
 setAIProvider(mock)      // override in tests
 ```
-
-### Use-case layer — `src/use-cases/`
-
-Thin seam between controllers and services. Controllers call use-cases; use-cases call services + AI. Designed to be thin now, expand when auth/billing arrives.
 
 ### Config validation — `src/config/index.ts`
 
@@ -225,6 +244,17 @@ Active licenses: `mga` (EU default), `ukgc` (UK), `dga` (Denmark), `none` (CIS/l
 Returns `{ costs: { w_p10, w_p50, w_p90, ndb, rl, d2, d3, fs, total }, ratio, maxRisk }`.
 All cost values are TOTAL (already multiplied by `pl`). `ratio = w_p50 / (pl × dep)`.
 
+### `calcTournamentEconomics()` — `src/domain/tournament/calcEconomics.ts`
+
+```typescript
+eligible = round(totalPlayers × SEGMENT_RATIO[segment])
+SEGMENT_RATIO: { all:1.0, new:0.20, vip:0.10, dormant:0.40, depositors:0.60 }
+ENGAGEMENT_LIFT: { flash:1.40, daily:1.50, weekly:1.80, monthly:2.20, multi_round:2.00 }
+PARTICIPATION_RATES: { weekly: { low:0.06, mid:0.11, high:0.20 }, … }
+```
+
+ROI calibrated to market benchmarks (200% realistic range). Revised 2026-05 to fix over-optimistic projections.
+
 ### `econ` object (inside buildConfig output)
 
 Key fields: `arpu` (USD/mo), `cac` (USD), `bpct`, `ltv3`, `mBudget`, `roi3`, `be`, `wagerX`, `costRatio`, `breakeven_wager`, `bonusSize`, `sP10/sP50/sP90`, `mixedRTP`, `mixedWCR`, `pl`, `dep`.
@@ -252,9 +282,6 @@ ru → cis, none, RUB    kz → cis, none, KZT    mn → mn, none, MNT
 us → sweep, none, USD    mx/br → latam, none, USD
 ```
 
-DGA (Denmark): `welcome.maxBMax: 1000 DKK`, `ndb.days: 60`, ROFUS check required.
-UKGC: `maxB: 200 GBP`, `wager: 10x`, no FS on dep2/dep3, 6 regulatory strings.
-
 ---
 
 ## AI subsystem
@@ -267,7 +294,7 @@ UKGC: `maxB: 200 GBP`, `wager: 10x`, no FS on dep2/dep3, 6 regulatory strings.
 
 **Cost logging:** `cost_usd` logged per call (input × $0.80/M + output × $4.00/M).
 
-**Audit `rule` field:** each audit check includes a `rule` string citing the specific regulation (e.g. `"DGA – Spillemyndigheden bonus cap DKK 1,000"`). Field is optional in schema for backward compat.
+**Audit `rule` field:** each audit check includes a `rule` string citing the specific regulation. Field is optional in schema for backward compat.
 
 **Response schemas** (`src/ai/parser.ts`):
 - `TextsResponseSchema`: `{ push[3], email[3]{subject,body}, sms[3], telegram[3], popup[3]{headline,subtext,cta} }`
@@ -281,48 +308,74 @@ UKGC: `maxB: 200 GBP`, `wager: 10x`, no FS on dep2/dep3, 6 regulatory strings.
 
 ### CSP policy (`src/server/app.ts`)
 
-- `scriptSrc: ["'self'"]` — all JS is now in external files; `'unsafe-inline'` removed
+- `scriptSrc: ["'self'"]` — all JS is in external files; `'unsafe-inline'` removed
 - `scriptSrcAttr: ["'unsafe-inline'"]` — needed for `onclick=` handlers until converted to `addEventListener`
+- `styleSrc: ["'self'", "'unsafe-inline'"]` — FullCalendar injects inline styles
 
-### `public/index.html` — Landing page
+### Landing page — `public/index.html` + `public/index.js`
 
-EN/RU. All action buttons use `btn-gold` class (yellow). Nav has links to all 3 tools. Tools hub section (#tools) with 3 cards. Hero has two CTAs (Campaign Generator + Tournament Generator).
+**Positioning:** Retention OS for iGaming — calendar-first workspace narrative.
+
+**Hero visual:** Fake-realistic weekly Retention Calendar grid (Mon–Fri, 5 colored campaign events, overlap warning).
+
+**Section order:** Hero → Tools hub → Marquee → CRM Chaos → Retention Calendar feature → How it works → Features → Examples → Regions → Licenses → Econ → Audience → Demo → Signup.
+
+**CTAs:** Primary → `/retention-calendar.html`; Generators → secondary (btn-outline).
+
+**i18n:** EN/RU via `data-i18n` attributes resolved by `index.js`. Both locales must be updated on any text change.
+
+**Nav:** Calendar · Bonuses (→ /configurator.html) · Tournaments · Try Retomat Free (gold).
 
 ### `public/configurator.html` + `public/app.js` + `public/configurator-extra.js`
 
-Bonus Configurator SPA. `app.js` = main configurator logic (i18n RU/EN/MN/ES). `configurator-extra.js` = page-specific code (RTP sync, edit mode, audit panel, incremental revenue).
-
-Sidebar: purple sidebar matching CG/TG structure, 220px fixed. CSS in inline `<style>`.
+Bonus Configurator SPA. `app.js` = main logic (i18n RU/EN/MN/ES). `configurator-extra.js` = RTP sync, edit mode, audit panel, incremental revenue.
 
 **Edit mode**: `window._editMode`, `_setEditMode()`, `_captureOverrides()`, `renderAuditPanel()`.
 
-**Incremental Revenue v2**: `_calcRetentionV2(cfg, overrideWager)` + `_buildIncrRevBody(cfg, v)`. Factor breakdown collapsible (`cfg_incr_expert` localStorage key). AI optimize button when `netIncr < 0`.
-
-**Basic/Expert toggle**: NOT in Configurator (only in Campaign Generator Step 3).
+**Incremental Revenue v2**: `_calcRetentionV2(cfg, overrideWager)` + `_buildIncrRevBody(cfg, v)`.
 
 ### `public/campaign-generator.html` + `public/campaign-generator.js`
 
-AI Campaign Generator SPA. JS logic in external `campaign-generator.js`.
+AI Campaign Generator SPA.
 
-Key state: `draft = { scenario, _step, params }`. Key functions: `startWizard()`, `goStep(n)`, `showView(name)`, `renderEconScenarios()`, `_toggleEconExpert()`.
+Key state: `draft = { scenario, _step, params }`. Key functions: `startWizard()`, `goStep(n)`, `showView(name)`.
 
-**Basic/Expert toggle** (Step 3): `#econ-wrap[data-expert="0/1"]` controlled by `_toggleEconExpert()`. CSS in global `<style>` block. VIP segment defaults to expert (if no localStorage override). localStorage key: `cg_expert_mode`. i18n: `econ_show_analysis`, `econ_collapse`.
+**Step 3 Basic/Expert toggle**: `#econ-wrap[data-expert="0/1"]`, localStorage key `cg_expert_mode`.
 
-**Onboarding**: `showOnboarding()` shown on first load when `localStorage.cg_onboarding_done` not set.
-
-**AI texts disclaimer**: blue banner above texts content ("AI draft — review before sending"). i18n key: `ai_draft_note`.
-
-**Audit panel**: `auditHTML(data)` renders checks with `rule` sub-line + timestamp "Audited: DD Mon YYYY, HH:MM".
-
-**Tournament link**: sidebar `<a href="/tournament-generator.html">`. Campaigns link: `href="/campaign-generator.html#campaigns"` (hash routing to campaigns view on load).
+**Add to Calendar**: `addCampaignToCalendar()` — duplicate check via `confirm()`, saves to RC localStorage.
 
 ### `public/tournament-generator.html` + `public/tournament-generator.js`
 
-Tournament Generator SPA. JS logic in external `tournament-generator.js`.
+Tournament Generator SPA.
 
 **Views**: `showView('list')`, `showView('detail', id)`, `showView('setup')`, `goStep(1–4)`.
 
-**Save/library**: `savedTournaments` localStorage key. `saveTournament()`, `deleteTournament(id)`, `loadAndShowGuide(id)`, `loadAndRegenTexts(id)`. Nav badge `#nav-tourn-badge` shows count.
+**Step 2:** Prize pool recommendation — `calcSuggestedPrize()` auto-sets based on GEO/segment/duration/totalPlayers (60% of projected GGR lift). Auto-set flag `_prizeAutoSet`.
+
+**Add to Calendar**: `addTournamentToCalendar()` — duplicate check via `confirm()`.
+
+**Save/library**: `savedTournaments` localStorage. `saveTournament()`, `deleteTournament(id)`.
+
+### `public/retention-calendar.html` + `public/retention-calendar.js` + `public/retention-calendar/`
+
+**Retention Calendar SPA** — central CRM planning hub.
+
+**Bundle:** FullCalendar 6 requires bundling (bare npm imports not browser-resolvable). Vite builds `public/retention-calendar.js` → `public/dist/retention-calendar.js` (no hash, committed to git via `.gitignore` exception).
+
+**Views:** Month / Week / List (FullCalendar built-in).
+
+**Drag & drop:** `eventDrop` + `eventResize` handlers → `upsertCampaign()`.
+
+**Date-click popup:** clicking empty calendar cell shows modal → create Bonus Campaign or Tournament (pre-fills date).
+
+**Key features:**
+- `detectConflicts()` — same type+segment+overlapping dates → red outline + ⚠ flag
+- `saveAsTemplate()` / `createFromTemplate()` / `duplicateCampaign()`
+- `exportCSV()` / `exportJSON()`
+- "Add to Calendar" from CG and TG with duplicate detection
+- AI-assisted campaign creation from CG/TG results
+
+**State:** `rc_campaigns` + `rc_templates` localStorage keys.
 
 ---
 
@@ -331,8 +384,7 @@ Tournament Generator SPA. JS logic in external `tournament-generator.js`.
 ### Bonus Configurator
 ```
 configurator.html + app.js + configurator-extra.js
-  → POST /api/generate → createGenerateController().generate → GenerateBonusConfig use-case
-  → buildConfig() → config
+  → POST /api/generate → buildConfig() → config
   ← { welcome, ndb, reload, dep2, dep3, wager, cashback, contrib, fsSpec, econ, reg, cur }
 
 Override change → POST /api/recalc → recalcCosts() ← { costs, ratio, maxRisk }
@@ -340,40 +392,39 @@ Override change → POST /api/recalc → recalcCosts() ← { costs, ratio, maxRi
 
 ### AI Campaign Generator
 ```
-campaign-generator.html + campaign-generator.js
-  → POST /api/campaign/generate → createCampaignController().generate → GenerateCampaign use-case
-  → campaignService.generateCampaign() → buildConfig() + campaignExplanation()
-  ← { mechanic, mechanicType, selectedMechanics, allMechanics, explanation*, alternatives*, econ, ... }
+campaign-generator.js
+  → POST /api/campaign/generate → campaignService.generateCampaign() → buildConfig() + campaignExplanation()
+  ← { mechanic, explanation, alternatives, econ, … }
 
-  → POST /api/campaign/texts → GenerateCampaign.generateCampaignTexts(input, ai)
-  ← { push[3], email[3], sms[3], telegram[3], popup[3] }
-
-  → POST /api/campaign/audit → GenerateCampaign.auditCampaign(input, ai)
-  ← { checks[5]{label,status,note,rule?}, recommendations[2-4] }
-
-  → POST /api/campaign/optimize → GenerateCampaign.optimizeCampaign(input, ai)
-  ← { recommendations[2-4]{factor,param,current,target,reason,impact} }
+  → POST /api/campaign/texts  ← { push[3], email[3], sms[3], telegram[3], popup[3] }
+  → POST /api/campaign/audit  ← { checks[5], recommendations[2-4] }
+  → POST /api/campaign/optimize ← { recommendations[2-4] }
+  → addCampaignToCalendar() → rc_campaigns localStorage
 ```
 
 ### Tournament Generator
 ```
-tournament-generator.html + tournament-generator.js
-  → POST /api/tournament/generate { type, params: { ..., totalPlayers, segment, ... } }
-  → createTournamentController().generate → GenerateTournament use-case
-  → tournamentService.generateTournament() → calcTournamentEconomics({ totalPlayers, segment, ... })
-    eligible = round(totalPlayers × SEGMENT_RATIO[segment])
-    SEGMENT_RATIO: { all:1.0, new:0.20, vip:0.10, dormant:0.40, depositors:0.60 }
-  ← { spec, econ: { totalPlayers, segmentRatio, eligible, ... }, params, cur, region, lic }
+tournament-generator.js
+  → POST /api/tournament/generate { type, params: { totalPlayers, segment, … } }
+  → calcTournamentEconomics() → eligible = round(totalPlayers × SEGMENT_RATIO[segment])
+  ← { spec, econ: { totalPlayers, segmentRatio, eligible, … }, params, cur, region, lic }
 
-  → POST /api/tournament/texts / /audit → GenerateTournament use-case + AI
-  → POST /api/tournament/optimize { type, params, econ, mode:'optimize'|'review', uiLang? }
-  → optimizeTournament() → tournamentBenchmarks() [deterministic] + buildTournamentOptimizePrompt() + AI
+  → POST /api/tournament/texts / /audit
+  → POST /api/tournament/optimize { mode:'optimize'|'review' }
   ← { realism:{verdict,summary,checks[]}, recommendations[] }
+  → addTournamentToCalendar() → rc_campaigns localStorage
 ```
 
-**Step 2 UI**: slider "Total Active Players" (100–100,000, default 5,000). Live hint shows eligible count (e.g. "500 VIP players eligible"). Eligible recalculates on both slider move and segment chip click.
-
-**Step 3 footnote**: `"500 eligible vip players (10% of 5,000 total casino players) · ARPU 65 USD/mo · engagement ×2.5"`
+### Retention Calendar
+```
+retention-calendar.js (Vite bundle from /dist/)
+  ← rc_campaigns localStorage (campaigns)
+  ← rc_templates localStorage (templates)
+  → FullCalendar render (Month/Week/List)
+  → detectConflicts() → red outline events
+  → exportCSV() / exportJSON()
+  → AI: window._rcNewCampaignOnDate(dateStr) / window._rcNewTournamentOnDate(dateStr)
+```
 
 ---
 
@@ -391,13 +442,6 @@ lift = min(0.40, base × F1 × F2 × F3 × F4 × F5)
 | F3 Mechanics | `1 + NDB×0.06 + RL×0.08 + D2×0.04 + FS×0.04 + CB×0.07` | max ≈ 1.29 |
 | F4 RTP | `clamp(0.94 + 0.12 × ((rtp−0.85)/0.14), 0.94, 1.06)` | range 85–99% |
 | F5 Platform | `{ mobile:1.05, desk:0.97, both:1.0 }` | — |
-
-```
-incrPl    = round(pl × lift)
-incrRev   = incrPl × ltv3                    // USD
-campCost3 = 3 × costRatio × pl × arpu        // USD (currency-safe)
-net       = incrRev − campCost3
-```
 
 ---
 
@@ -441,27 +485,16 @@ NODE_ENV=            # development | production | staging | test
 - **Rate limiting** per endpoint class
 - **requestId middleware**: `x-request-id` on every response
 - No cookies — localStorage only (GDPR)
-- No analytics or third-party trackers
 
-**Error response shape**: `{ code: string, message: string }`. Frontend: read `err?.message || String(err)`.
+**Error response shape**: `{ code: string, message: string }`.
 
 ---
 
 ## Tests
 
 ```bash
-npm test             # 137 tests, 7 files
+npm test             # 248 tests, 16 files
 npm run test:watch   # vitest watch mode
-```
-
-```
-tests/domain/buildConfig.test.js
-tests/domain/recalcCosts.test.js
-tests/domain/calcEconomics.test.js   # 25 tests (includes totalPlayers/segmentRatio coverage)
-tests/domain/payout.test.js
-tests/ai/parser.test.js
-tests/integration/api.generate.test.js
-tests/integration/security.headers.test.js  # CSP assertions
 ```
 
 **MockAIProvider** (`src/ai/providers/mock.ts`): inject via `setAIProvider(new MockAIProvider([...]))` or `createCampaignController({ ai: new MockAIProvider([...]) })`.
@@ -474,7 +507,7 @@ tests/integration/security.headers.test.js  # CSP assertions
 - Add DK snapshot to `buildConfig.test.js`
 - Add RU/KZ/MN snapshots for payout fallback path coverage
 
-**P2 (UX — from UX_DEV_PLAN.md, R5–R8 pending):**
+**P2 (UX):**
 - R5: Model assumptions collapsible block + tooltip coverage audit
 - R6: Stale econ indicator in Configurator (params changed after Generate)
 - R7: Glossary panel in CG + Configurator topbar
@@ -482,12 +515,12 @@ tests/integration/security.headers.test.js  # CSP assertions
 
 **P2 (features):**
 - Task A: Projected result per AI recommendation (apply param-change to 5-factor formula, show lift delta)
+- Retention Calendar: read `?rcDate=` query param in tournament-generator.js to pre-fill date from calendar redirect
 
 **P3 (frontend):**
 - Convert `onclick=` handlers to `addEventListener` → remove `scriptSrcAttr: 'unsafe-inline'` from CSP
-- Vite production build referenced from HTML files (currently built to `public/dist/` but HTML still loads raw JS)
 
-**P4 (post-auth — see REFACTORING_PLAN.md):**
+**P4 (post-auth):**
 - AI response caching (Redis/KV)
 - Queue for heavy generation (Bull/BullMQ)
 - Rate limits per authenticated user

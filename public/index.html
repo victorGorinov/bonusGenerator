@@ -35,7 +35,7 @@
 
   /* ── TYPOGRAPHY ── */
   h1, h2, h3, h4 { font-weight: 700; line-height: 1.2; }
-  h1 { font-size: clamp(2.8rem, 6.2vw, 4.8rem); line-height: 1.1; letter-spacing: -.02em; }
+  h1 { font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.15; letter-spacing: -.02em; }
   h2 { font-size: clamp(1.5rem, 3vw, 2.25rem); }
   h3 { font-size: 1.15rem; }
 
@@ -544,20 +544,13 @@
                 inset 0 1px 0 rgba(255,255,255,.06);
     transform: perspective(900px) rotateY(-5deg) rotateX(2deg);
     transition: transform .5s cubic-bezier(.23,1,.32,1), box-shadow .5s ease;
-    animation: floatCard 6s ease-in-out infinite;
   }
   .mockup-card:hover {
-    transform: perspective(900px) rotateY(0deg) rotateX(0deg) translateY(-6px);
+    transform: perspective(900px) rotateY(0deg) rotateX(0deg) translateY(-4px);
     box-shadow: 0 40px 100px rgba(0,0,0,.6),
                 0 0 0 1px rgba(79,110,247,.3),
                 inset 0 1px 0 rgba(255,255,255,.08);
-    animation: none;
   }
-  @keyframes floatCard {
-    0%, 100% { transform: perspective(900px) rotateY(-4deg) rotateX(2deg) translateY(0); }
-    50% { transform: perspective(900px) rotateY(-4deg) rotateX(2deg) translateY(-8px); }
-  }
-  .mockup-card:hover { animation: none; }
 
   .mockup-chrome {
     background: var(--bg3); border-bottom: 1px solid var(--border);
@@ -699,6 +692,49 @@
     border-radius: 100px; background: rgba(16,185,129,.1); color: #34d399;
   }
 
+  /* ── CRM CHAOS SECTION ── */
+  .chaos-section { background: var(--bg2); }
+  .chaos-layout { display:flex; gap:60px; align-items:flex-start; margin-top:56px; }
+  .chaos-text { flex:1; min-width:0; }
+  .chaos-bullets { list-style:none; display:flex; flex-direction:column; gap:14px; margin-top:28px; }
+  .chaos-bullet { display:flex; align-items:flex-start; gap:12px; font-size:.9rem; color:var(--muted); line-height:1.65; }
+  .chaos-bullet-icon { font-size:1.1rem; flex-shrink:0; margin-top:1px; }
+  .chaos-callout {
+    flex:0 0 320px; max-width:320px; background:var(--card);
+    border:1px solid rgba(79,110,247,.2); border-radius:16px; padding:28px;
+    display:flex; flex-direction:column; gap:16px;
+  }
+  .chaos-callout-title { font-size:.72rem; font-weight:700; color:#a0b0ff; letter-spacing:.06em; text-transform:uppercase; margin-bottom:4px; }
+  .chaos-callout-line { display:flex; align-items:center; gap:10px; font-size:.82rem; color:var(--muted); }
+  .chaos-callout-line span:first-child { font-size:1rem; flex-shrink:0; }
+  @media(max-width:860px){
+    .chaos-layout { flex-direction:column; }
+    .chaos-callout { flex:none; width:100%; max-width:100%; }
+  }
+
+  /* ── RC FEATURE SECTION ── */
+  .rc-feature-layout {
+    display:flex; gap:56px; align-items:center; margin-top:56px;
+  }
+  .rc-feature-text { flex:1; min-width:0; }
+  .rc-feature-text h2 { margin-bottom:20px; }
+  .rc-feature-bullets { list-style:none; display:flex; flex-direction:column; gap:12px; margin-top:24px; }
+  .rc-feature-bullet { display:flex; align-items:flex-start; gap:10px; font-size:.9rem; color:var(--muted); line-height:1.65; }
+  .rc-feature-bullet-icon { color:var(--success); font-size:1rem; flex-shrink:0; margin-top:1px; }
+  .rc-feature-visual {
+    flex:0 0 400px; max-width:400px;
+    perspective:1000px; position:relative;
+  }
+  .rc-feature-visual::before {
+    content:''; position:absolute; inset:-30px;
+    background:radial-gradient(ellipse 80% 70% at 50% 50%, rgba(79,110,247,.14) 0%, rgba(16,185,129,.08) 40%, transparent 70%);
+    filter:blur(20px); pointer-events:none; z-index:0;
+  }
+  @media(max-width:900px){
+    .rc-feature-layout { flex-direction:column; gap:32px; }
+    .rc-feature-visual { flex:none; width:100%; max-width:440px; margin:0 auto; }
+  }
+
   /* ── STICKY MOBILE CTA ── */
   .sticky-cta {
     display: none;
@@ -721,11 +757,7 @@
     .hero-layout { flex-direction: column; gap: 40px; }
     .hero-layout .hero-content { max-width: 100%; }
     .hero-visual { flex: none; width: 100%; max-width: 480px; margin: 0 auto; }
-    .mockup-card { transform: none; animation: floatCard 6s ease-in-out infinite; }
-    @keyframes floatCard {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
-    }
+    .mockup-card { transform: none; }
   }
   @media (max-width: 680px) {
     .steps { flex-direction: column; }
@@ -736,7 +768,7 @@
     .sticky-cta { display: block; }
     .hero-visual { max-width: 100%; }
     .hero { padding: 100px 0 60px; }
-    h1 { font-size: clamp(2.2rem, 8vw, 2.8rem); letter-spacing: -.01em; }
+    h1 { font-size: clamp(1.7rem, 7vw, 2.2rem); letter-spacing: -.01em; }
     .hero-sub { max-width: 100%; }
   }
 </style>
@@ -754,7 +786,7 @@
         <button class="lang-btn active" onclick="setLang('en')">EN</button>
         <button class="lang-btn" onclick="setLang('ru')">RU</button>
       </div>
-      <a href="/configurator.html" class="nav-tool-link" data-i18n="nav_cfg">⚙️ Configurator</a>
+      <a href="/configurator.html" class="nav-tool-link" data-i18n="nav_cfg">🎁 Bonuses</a>
       <a href="/tournament-generator.html" class="nav-tool-link" data-i18n="nav_tourn">🏆 Tournaments</a>
       <a href="/retention-calendar.html" class="nav-tool-link">📅 Calendar</a>
       <a href="/campaign-generator.html" class="btn btn-gold" data-i18n="nav_dashboard">🚀 Try Retomat Free →</a>
@@ -784,11 +816,11 @@
           <span class="grad" data-i18n="hero_h1b">Retomat is the Retention OS — AI builds it, compliant and costed.</span>
         </h1>
         <p class="hero-sub" data-i18n="hero_sub">
-          Bonuses, tournaments and CRM campaigns in one place. Pick a scenario, set your geo — AI selects the right mechanic, writes ready-to-send copy for 5 channels, models the cost (P10/P50/P90), and flags compliance issues. Ready in under 2 minutes. No spreadsheets, no guesswork.
+          Plan your entire month's retention calendar — bonus campaigns, tournaments, VIP offers — organized by segment and GEO. AI assists with mechanics, copy, and compliance. No more spreadsheets, scattered docs, or last-minute bonus surprises.
         </p>
         <div class="hero-ctas">
-          <a href="/campaign-generator.html" class="btn btn-gold btn-lg" data-i18n="hero_cta1">🤖 Generate My Campaign Free →</a>
-          <a href="/tournament-generator.html" class="btn btn-gold btn-lg" data-i18n="hero_cta2">🏆 Tournament Generator →</a>
+          <a href="/retention-calendar.html" class="btn btn-gold btn-lg" data-i18n="hero_cta1">📅 Build Retention Calendar →</a>
+          <a href="/campaign-generator.html" class="btn btn-outline btn-lg" data-i18n="hero_cta2">🤖 Campaign Generator →</a>
         </div>
         <div class="trust-strip">
           <div class="trust-item">⚡ <span data-i18n="tr1">Ready in 2 min</span></div>
@@ -802,8 +834,8 @@
             <div class="stat-label" data-i18n="stat1">CRM Scenarios</div>
           </div>
           <div class="stat-item">
-            <div class="stat-num">5</div>
-            <div class="stat-label" data-i18n="stat2">AI Text Channels</div>
+            <div class="stat-num">1</div>
+            <div class="stat-label" data-i18n="stat2">Calendar Hub</div>
           </div>
           <div class="stat-item">
             <div class="stat-num">4</div>
@@ -820,7 +852,7 @@
         </div>
       </div>
 
-      <!-- ── Right: Animated product mockup ── -->
+      <!-- ── Right: Retention Calendar mockup ── -->
       <div class="hero-visual">
         <div class="mockup-card" id="heroMockup">
 
@@ -831,125 +863,87 @@
               <span class="mockup-dot mockup-dot-y"></span>
               <span class="mockup-dot mockup-dot-g"></span>
             </div>
-            <div class="mockup-url">retomat.app / campaign-generator</div>
+            <div class="mockup-url">retomat.app / retention-calendar</div>
           </div>
 
-          <!-- Campaign slides -->
-          <div class="mockup-body">
+          <!-- Calendar body -->
+          <div class="mockup-body" style="padding:0">
 
-            <!-- Slide 1: EU / MGA First Deposit -->
-            <div class="mockup-slide active" id="mslide-0">
-              <div class="mockup-generating">
-                <div class="mockup-gen-dot"></div>
-                <span>AI generated · EU · First Deposit</span>
-              </div>
-              <div class="mockup-geo-row">
-                <div class="mockup-geo">🇪🇺 Europe · EUR</div>
-                <span class="mockup-lic-badge" style="background:rgba(79,110,247,.12);color:#a0b0ff">MGA</span>
-              </div>
-              <div class="mockup-mechanic">100% Welcome Bonus<br/>up to €200 + 30 Free Spins</div>
-              <div class="mockup-econ-row">
-                <div class="mockup-econ-pill">
-                  <div class="mockup-econ-label">Best case</div>
-                  <div class="mockup-econ-val" style="color:var(--success)">€1 840</div>
-                </div>
-                <div class="mockup-econ-pill">
-                  <div class="mockup-econ-label">Expected</div>
-                  <div class="mockup-econ-val" style="color:var(--accent)">€3 200</div>
-                </div>
-                <div class="mockup-econ-pill">
-                  <div class="mockup-econ-label">Worst case</div>
-                  <div class="mockup-econ-val" style="color:var(--gold)">€5 600</div>
-                </div>
-              </div>
-              <div class="mockup-text-box">
-                <div class="mockup-text-ch">📲 Push · 3 variants</div>
-                <div class="mockup-text-body">"Welcome! Claim your 100% bonus up to €200 + 30 free spins on your first deposit. Wagering 25×. T&Cs apply."</div>
-              </div>
-              <div class="mockup-checks">
-                <span class="mockup-check">✓ MGA compliant</span>
-                <span class="mockup-check">✓ Wager 25× set</span>
-                <span class="mockup-check">✓ Cost modeled</span>
+            <!-- Topbar: month label + view toggle -->
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(30,39,64,.6);background:rgba(15,20,32,.5)">
+              <div style="font-size:.65rem;font-weight:700;color:#a0b0ff">Jun 2–8, 2025</div>
+              <div style="display:flex;gap:3px">
+                <span style="font-size:.57rem;padding:2px 7px;border-radius:4px;background:rgba(79,110,247,.12);color:#8892a4;font-weight:600">Month</span>
+                <span style="font-size:.57rem;padding:2px 7px;border-radius:4px;background:rgba(79,110,247,.55);color:#fff;font-weight:700">Week</span>
+                <span style="font-size:.57rem;padding:2px 7px;border-radius:4px;background:rgba(79,110,247,.12);color:#8892a4;font-weight:600">List</span>
               </div>
             </div>
 
-            <!-- Slide 2: LatAm / Reactivation -->
-            <div class="mockup-slide" id="mslide-1">
-              <div class="mockup-generating">
-                <div class="mockup-gen-dot"></div>
-                <span>AI generated · LatAm · Reactivation</span>
-              </div>
-              <div class="mockup-geo-row">
-                <div class="mockup-geo">🌎 Latin America · USD</div>
-                <span class="mockup-lic-badge" style="background:rgba(16,185,129,.12);color:#34d399">Offshore</span>
-              </div>
-              <div class="mockup-mechanic">50% Reload Bonus<br/>up to $100 · Dormant players</div>
-              <div class="mockup-econ-row">
-                <div class="mockup-econ-pill">
-                  <div class="mockup-econ-label">Best case</div>
-                  <div class="mockup-econ-val" style="color:var(--success)">$1 900</div>
-                </div>
-                <div class="mockup-econ-pill">
-                  <div class="mockup-econ-label">Expected</div>
-                  <div class="mockup-econ-val" style="color:var(--accent)">$3 700</div>
-                </div>
-                <div class="mockup-econ-pill">
-                  <div class="mockup-econ-label">Worst case</div>
-                  <div class="mockup-econ-val" style="color:var(--gold)">$6 400</div>
-                </div>
-              </div>
-              <div class="mockup-text-box">
-                <div class="mockup-text-ch">📧 Email · 3 variants</div>
-                <div class="mockup-text-body">"¡Te echamos de menos! Recarga ahora y obtén un 50% de bonificación hasta $100. ¡Vuelve a jugar hoy!"</div>
-              </div>
-              <div class="mockup-checks">
-                <span class="mockup-check">✓ ES localised</span>
-                <span class="mockup-check">✓ No wager cap</span>
-                <span class="mockup-check">✓ Cost modeled</span>
-              </div>
+            <!-- Day headers -->
+            <div style="display:grid;grid-template-columns:34px repeat(5,1fr);background:rgba(20,25,38,.9);border-bottom:1px solid rgba(30,39,64,.5)">
+              <div style="border-right:1px solid rgba(30,39,64,.5)"></div>
+              <div style="text-align:center;padding:5px 2px;font-size:.54rem;font-weight:700;color:#8892a4">MON<br/><span style="color:#e8eaf0;font-size:.68rem">2</span></div>
+              <div style="text-align:center;padding:5px 2px;font-size:.54rem;font-weight:700;color:#8892a4">TUE<br/><span style="color:#e8eaf0;font-size:.68rem">3</span></div>
+              <div style="text-align:center;padding:5px 2px;font-size:.54rem;font-weight:700;color:#8892a4">WED<br/><span style="color:#e8eaf0;font-size:.68rem">4</span></div>
+              <div style="text-align:center;padding:5px 2px;font-size:.54rem;font-weight:700;color:#8892a4">THU<br/><span style="color:#e8eaf0;font-size:.68rem">5</span></div>
+              <div style="text-align:center;padding:5px 2px;font-size:.54rem;font-weight:700;color:#8892a4">FRI<br/><span style="color:#e8eaf0;font-size:.68rem">6</span></div>
             </div>
 
-            <!-- Slide 3: US Sweepstakes / VIP -->
-            <div class="mockup-slide" id="mslide-2">
-              <div class="mockup-generating">
-                <div class="mockup-gen-dot"></div>
-                <span>AI generated · US Sweepstakes · VIP Retention</span>
-              </div>
-              <div class="mockup-geo-row">
-                <div class="mockup-geo">🇺🇸 United States · SC</div>
-                <span class="mockup-lic-badge" style="background:rgba(245,158,11,.12);color:#f59e0b">Sweeps</span>
-              </div>
-              <div class="mockup-mechanic">20% Weekly Cashback<br/>+ 500 Sweepstakes Coins</div>
-              <div class="mockup-econ-row">
-                <div class="mockup-econ-pill">
-                  <div class="mockup-econ-label">Best case</div>
-                  <div class="mockup-econ-val" style="color:var(--success)">$2 800</div>
-                </div>
-                <div class="mockup-econ-pill">
-                  <div class="mockup-econ-label">Expected</div>
-                  <div class="mockup-econ-val" style="color:var(--accent)">$5 100</div>
-                </div>
-                <div class="mockup-econ-pill">
-                  <div class="mockup-econ-label">Worst case</div>
-                  <div class="mockup-econ-val" style="color:var(--gold)">$8 600</div>
-                </div>
-              </div>
-              <div class="mockup-text-box">
-                <div class="mockup-text-ch">💬 Popup · 3 variants</div>
-                <div class="mockup-text-body">"VIP reward: 20% cashback on your weekly play + 500 Sweeps Coins bonus. No purchase necessary. Void where prohibited."</div>
-              </div>
-              <div class="mockup-checks">
-                <span class="mockup-check">✓ Sweeps compliant</span>
-                <span class="mockup-check">✓ No-purchase rule</span>
-                <span class="mockup-check">✓ Cost modeled</span>
-              </div>
-            </div>
+            <!-- Calendar events -->
+            <div style="padding:6px 6px 4px;display:flex;flex-direction:column;gap:3px">
 
-            <!-- Progress dots -->
-            <div class="mockup-progress">
-              <div class="mockup-prog-dot active" id="mpd-0"></div>
-              <div class="mockup-prog-dot" id="mpd-1"></div>
-              <div class="mockup-prog-dot" id="mpd-2"></div>
+              <!-- Row 1: VIP Cashback Mon–Wed, empty Thu–Fri -->
+              <div style="display:grid;grid-template-columns:34px repeat(5,1fr);gap:2px;align-items:stretch">
+                <div style="border-right:1px solid rgba(30,39,64,.3)"></div>
+                <div style="grid-column:2/5;background:rgba(245,158,11,.14);border-left:3px solid #f59e0b;border-radius:4px;padding:4px 7px;position:relative">
+                  <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-size:.6rem;font-weight:700;color:#f59e0b">VIP Cashback</span>
+                    <span style="font-size:.48rem;padding:1px 5px;border-radius:3px;background:rgba(16,185,129,.15);color:#10b981;font-weight:700">ACTIVE</span>
+                  </div>
+                  <div style="font-size:.52rem;color:#8892a4;margin-top:1px">VIP segment · 15% weekly</div>
+                </div>
+                <div style="grid-column:5/7"></div>
+              </div>
+
+              <!-- Row 2: Reactivation Mon, Sportsbook Tue–Thu, Reload Fri -->
+              <div style="display:grid;grid-template-columns:34px repeat(5,1fr);gap:2px;align-items:stretch">
+                <div style="border-right:1px solid rgba(30,39,64,.3)"></div>
+                <div style="grid-column:2/3;background:rgba(124,58,237,.14);border-left:3px solid #7c3aed;border-radius:4px;padding:4px 6px">
+                  <div style="font-size:.58rem;font-weight:700;color:#a78bfa">Reactivation</div>
+                  <div style="font-size:.5rem;color:#8892a4">Dormant</div>
+                </div>
+                <div style="grid-column:3/6;background:rgba(249,115,22,.12);border-left:3px solid #f97316;border-radius:4px;padding:4px 7px">
+                  <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-size:.58rem;font-weight:700;color:#fb923c">Sportsbook Promo</span>
+                    <span style="font-size:.48rem;padding:1px 5px;border-radius:3px;background:rgba(245,158,11,.15);color:#f59e0b;font-weight:700">SCHED</span>
+                  </div>
+                  <div style="font-size:.5rem;color:#8892a4">New players</div>
+                </div>
+                <div style="grid-column:6/7;background:rgba(6,182,212,.14);border-left:3px solid #06b6d4;border-radius:4px;padding:4px 6px">
+                  <div style="font-size:.58rem;font-weight:700;color:#22d3ee">Reload</div>
+                  <div style="font-size:.5rem;color:#8892a4">Mid</div>
+                </div>
+              </div>
+
+              <!-- Row 3: Slot Tournament Wed–Fri -->
+              <div style="display:grid;grid-template-columns:34px repeat(5,1fr);gap:2px;align-items:stretch">
+                <div style="border-right:1px solid rgba(30,39,64,.3)"></div>
+                <div style="grid-column:2/4"></div>
+                <div style="grid-column:4/7;background:rgba(59,130,246,.14);border-left:3px solid #3b82f6;border-radius:4px;padding:4px 7px">
+                  <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-size:.58rem;font-weight:700;color:#60a5fa">Slot Tournament</span>
+                    <span style="font-size:.48rem;padding:1px 5px;border-radius:3px;background:rgba(79,110,247,.15);color:#a0b0ff;font-weight:700">DRAFT</span>
+                  </div>
+                  <div style="font-size:.5rem;color:#8892a4">All segments</div>
+                </div>
+              </div>
+
+            </div><!-- /events -->
+
+            <!-- Overlap warning -->
+            <div style="margin:2px 6px 8px;padding:5px 9px;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.18);border-radius:5px;display:flex;align-items:center;gap:5px">
+              <span style="font-size:.65rem;color:#f87171">⚠</span>
+              <span style="font-size:.56rem;color:#8892a4"><span style="color:#f87171">VIP Cashback</span> overlaps <span style="color:#f87171">Reactivation</span> on Jun 2 · same segment</span>
             </div>
 
           </div><!-- /mockup-body -->
@@ -999,38 +993,200 @@
   </div>
 </div>
 
+<!-- ════ CRM CHAOS ════ -->
+<section class="section--tight chaos-section" id="problem">
+  <div class="container">
+    <div class="chaos-layout">
+      <div class="chaos-text">
+        <div class="section-tag" data-i18n="chaos_tag">The Problem</div>
+        <h2 style="margin-top:16px;margin-bottom:8px" data-i18n="chaos_h2">Most CRM Teams Still Plan Retention in Spreadsheets</h2>
+        <p style="color:var(--muted);font-size:.95rem;line-height:1.75;margin-bottom:0" data-i18n="chaos_sub">Overlapping campaigns, bonus fatigue, repetitive tournament planning — when your workflow lives in spreadsheets, things fall through the cracks. Retomat centralizes your retention planning workflow.</p>
+        <ul class="chaos-bullets">
+          <li class="chaos-bullet"><span class="chaos-bullet-icon">📋</span><span data-i18n="chaos_b1">Campaigns planned in separate docs — no shared calendar, no cross-team visibility</span></li>
+          <li class="chaos-bullet"><span class="chaos-bullet-icon">⚠️</span><span data-i18n="chaos_b2">Overlapping bonus offers hit the same segment twice — bonus fatigue, budget waste</span></li>
+          <li class="chaos-bullet"><span class="chaos-bullet-icon">🔄</span><span data-i18n="chaos_b3">Tournament planning starts from scratch every time — no templates, no history</span></li>
+          <li class="chaos-bullet"><span class="chaos-bullet-icon">🌍</span><span data-i18n="chaos_b4">No cross-brand or cross-geo visibility into what's running when</span></li>
+          <li class="chaos-bullet"><span class="chaos-bullet-icon">💸</span><span data-i18n="chaos_b5">Copy-paste errors in bonus specs cost money before anyone notices</span></li>
+        </ul>
+      </div>
+      <div class="chaos-callout">
+        <div>
+          <div class="chaos-callout-title" data-i18n="chaos_co_title">Without Retomat</div>
+        </div>
+        <div class="chaos-callout-line"><span>📊</span><span data-i18n="chaos_co_1">3–5 spreadsheets per campaign</span></div>
+        <div class="chaos-callout-line"><span>⏱️</span><span data-i18n="chaos_co_2">4–8 hours to brief a tournament</span></div>
+        <div class="chaos-callout-line"><span>❌</span><span data-i18n="chaos_co_3">Overlaps discovered after launch</span></div>
+        <div class="chaos-callout-line"><span>🔁</span><span data-i18n="chaos_co_4">Same spec written from scratch each month</span></div>
+        <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
+          <div class="chaos-callout-title" data-i18n="chaos_co_title2">With Retomat</div>
+        </div>
+        <div class="chaos-callout-line"><span>📅</span><span data-i18n="chaos_co_5">One calendar for all campaigns &amp; brands</span></div>
+        <div class="chaos-callout-line"><span>⚡</span><span data-i18n="chaos_co_6">Full campaign spec in under 2 minutes</span></div>
+        <div class="chaos-callout-line"><span>✅</span><span data-i18n="chaos_co_7">Overlaps flagged before they go live</span></div>
+        <div class="chaos-callout-line"><span>📑</span><span data-i18n="chaos_co_8">Templates reused across months &amp; geos</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ RETENTION CALENDAR FEATURE ════ -->
+<section class="section" id="calendar-feature">
+  <div class="container">
+    <div class="rc-feature-layout">
+      <div class="rc-feature-text">
+        <div class="section-tag" data-i18n="rc_tag">Core Feature</div>
+        <h2 style="margin-top:16px" data-i18n="rc_h2">Visualize Your Entire CRM Strategy in One Place</h2>
+        <p style="color:var(--muted);font-size:.95rem;line-height:1.75" data-i18n="rc_sub">The Retention Calendar is your central planning hub — schedule campaigns, assign segments, detect overlaps, and export your monthly plan. Everything your CRM team needs to stay coordinated.</p>
+        <ul class="rc-feature-bullets" style="margin-top:28px">
+          <li class="rc-feature-bullet"><span class="rc-feature-bullet-icon">✅</span><span data-i18n="rc_b1"><strong>Monthly retention planning</strong> — visualize all campaigns across the month at a glance</span></li>
+          <li class="rc-feature-bullet"><span class="rc-feature-bullet-icon">✅</span><span data-i18n="rc_b2"><strong>Tournament scheduling</strong> — plan prize structures and launch timelines in the calendar</span></li>
+          <li class="rc-feature-bullet"><span class="rc-feature-bullet-icon">✅</span><span data-i18n="rc_b3"><strong>Segment-based organization</strong> — filter by VIP, New, Mid, Dormant across all GEOs</span></li>
+          <li class="rc-feature-bullet"><span class="rc-feature-bullet-icon">✅</span><span data-i18n="rc_b4"><strong>Overlap &amp; conflict detection</strong> — automatic warnings when campaigns clash</span></li>
+          <li class="rc-feature-bullet"><span class="rc-feature-bullet-icon">✅</span><span data-i18n="rc_b5"><strong>Multi-brand ready</strong> — one workspace for all your brands and markets</span></li>
+        </ul>
+        <div style="margin-top:32px">
+          <a href="/retention-calendar.html" class="btn btn-primary btn-lg" data-i18n="rc_cta">📅 Open Retention Calendar →</a>
+        </div>
+      </div>
+      <div class="rc-feature-visual">
+        <div class="mockup-card" style="transform:perspective(900px) rotateY(3deg) rotateX(-1deg)">
+          <div class="mockup-chrome">
+            <div class="mockup-dots">
+              <span class="mockup-dot mockup-dot-r"></span>
+              <span class="mockup-dot mockup-dot-y"></span>
+              <span class="mockup-dot mockup-dot-g"></span>
+            </div>
+            <div class="mockup-url">retomat.app / retention-calendar</div>
+          </div>
+          <div class="mockup-body" style="padding:12px">
+            <!-- Mini month view grid -->
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:10px">
+              <div style="text-align:center;font-size:.52rem;font-weight:700;color:#8892a4;padding:3px 0">M</div>
+              <div style="text-align:center;font-size:.52rem;font-weight:700;color:#8892a4;padding:3px 0">T</div>
+              <div style="text-align:center;font-size:.52rem;font-weight:700;color:#8892a4;padding:3px 0">W</div>
+              <div style="text-align:center;font-size:.52rem;font-weight:700;color:#8892a4;padding:3px 0">T</div>
+              <div style="text-align:center;font-size:.52rem;font-weight:700;color:#8892a4;padding:3px 0">F</div>
+              <div style="text-align:center;font-size:.52rem;font-weight:700;color:#8892a4;padding:3px 0">S</div>
+              <div style="text-align:center;font-size:.52rem;font-weight:700;color:#8892a4;padding:3px 0">S</div>
+              <!-- Week 1 -->
+              <div style="text-align:center;font-size:.6rem;color:#e8eaf0;padding:4px 0;border-radius:3px">1</div>
+              <div style="text-align:center;font-size:.6rem;color:#e8eaf0;padding:4px 0;background:rgba(245,158,11,.2);border-radius:3px">2</div>
+              <div style="text-align:center;font-size:.6rem;color:#e8eaf0;padding:4px 0;background:rgba(245,158,11,.2);border-radius:3px">3</div>
+              <div style="text-align:center;font-size:.6rem;color:#e8eaf0;padding:4px 0;background:rgba(245,158,11,.2);border-radius:3px">4</div>
+              <div style="text-align:center;font-size:.6rem;color:#e8eaf0;padding:4px 0;background:rgba(59,130,246,.2);border-radius:3px">5</div>
+              <div style="text-align:center;font-size:.6rem;color:#e8eaf0;padding:4px 0;background:rgba(59,130,246,.2);border-radius:3px">6</div>
+              <div style="text-align:center;font-size:.6rem;color:#e8eaf0;padding:4px 0;background:rgba(59,130,246,.2);border-radius:3px">7</div>
+              <!-- Week 2 -->
+              <div style="text-align:center;font-size:.6rem;color:#e8eaf0;padding:4px 0;background:rgba(124,58,237,.2);border-radius:3px">8</div>
+              <div style="text-align:center;font-size:.6rem;color:#e8eaf0;padding:4px 0;background:rgba(124,58,237,.2);border-radius:3px">9</div>
+              <div style="text-align:center;font-size:.6rem;color:#e8eaf0;padding:4px 0">10</div>
+              <div style="text-align:center;font-size:.6rem;color:#e8eaf0;padding:4px 0;background:rgba(249,115,22,.2);border-radius:3px">11</div>
+              <div style="text-align:center;font-size:.6rem;color:#e8eaf0;padding:4px 0;background:rgba(249,115,22,.2);border-radius:3px">12</div>
+              <div style="text-align:center;font-size:.6rem;color:#e8eaf0;padding:4px 0">13</div>
+              <div style="text-align:center;font-size:.6rem;color:#e8eaf0;padding:4px 0">14</div>
+              <!-- Week 3 -->
+              <div style="text-align:center;font-size:.6rem;color:#e8eaf0;padding:4px 0">15</div>
+              <div style="text-align:center;font-size:.6rem;color:#e8eaf0;padding:4px 0;background:rgba(6,182,212,.2);border-radius:3px">16</div>
+              <div style="text-align:center;font-size:.6rem;color:#e8eaf0;padding:4px 0;background:rgba(6,182,212,.2);border-radius:3px">17</div>
+              <div style="text-align:center;font-size:.6rem;color:#e8eaf0;padding:4px 0;background:rgba(6,182,212,.2);border-radius:3px">18</div>
+              <div style="text-align:center;font-size:.6rem;color:#e8eaf0;padding:4px 0">19</div>
+              <div style="text-align:center;font-size:.6rem;color:#e8eaf0;padding:4px 0">20</div>
+              <div style="text-align:center;font-size:.6rem;color:#e8eaf0;padding:4px 0">21</div>
+            </div>
+            <!-- Legend -->
+            <div style="display:flex;flex-wrap:wrap;gap:6px;border-top:1px solid var(--border);padding-top:10px">
+              <span style="font-size:.54rem;padding:2px 7px;border-radius:100px;background:rgba(245,158,11,.15);color:#f59e0b;font-weight:600">VIP Cashback</span>
+              <span style="font-size:.54rem;padding:2px 7px;border-radius:100px;background:rgba(59,130,246,.15);color:#60a5fa;font-weight:600">Tournament</span>
+              <span style="font-size:.54rem;padding:2px 7px;border-radius:100px;background:rgba(124,58,237,.15);color:#a78bfa;font-weight:600">Reactivation</span>
+              <span style="font-size:.54rem;padding:2px 7px;border-radius:100px;background:rgba(249,115,22,.15);color:#fb923c;font-weight:600">Sportsbook</span>
+              <span style="font-size:.54rem;padding:2px 7px;border-radius:100px;background:rgba(6,182,212,.15);color:#22d3ee;font-weight:600">Reload</span>
+            </div>
+            <div style="margin-top:8px;padding:6px 9px;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.18);border-radius:5px;font-size:.56rem;color:#8892a4">
+              <span style="color:#f87171">⚠ 1 overlap detected</span> — VIP Cashback + Reactivation on Jun 8
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ HOW IT WORKS ════ -->
+<section class="section" id="how">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag" data-i18n="how_tag">Workflow</div>
+      <h2 data-i18n="how_h2">Plan Your Retention in 5 Steps</h2>
+      <p data-i18n="how_sub">From a blank calendar to a fully scheduled, compliant retention month — organized and ready to execute.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3 data-i18n="step1_h">Generate Campaign Ideas</h3>
+        <p data-i18n="step1_p">Use the AI Campaign Generator or Tournament Generator to get mechanic recommendations, economics, and ready-to-use specs for any GEO and segment.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3 data-i18n="step2_h">Add to Retention Calendar</h3>
+        <p data-i18n="step2_p">Schedule campaigns directly from the generator — or create new entries manually. Set start/end dates, campaign type, and target segment.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3 data-i18n="step3_h">Organize by Segment &amp; GEO</h3>
+        <p data-i18n="step3_p">Filter by player segment, campaign type, or market. See your full month's plan across all brands and markets in one view.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <h3 data-i18n="step4_h">Detect Overlaps &amp; Refine</h3>
+        <p data-i18n="step4_p">Automatic conflict detection warns you when campaigns target the same segment in overlapping periods — before they go live. Adjust in place.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <h3 data-i18n="step5_h">Export to Your CRM Workflow</h3>
+        <p data-i18n="step5_p">Export the full retention plan as CSV or JSON. Copy campaign specs, texts, and admin configs directly into your CRM or dev tools.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ════ FEATURES ════ -->
 <section class="section" id="features" style="padding-top:56px">
   <div class="container">
     <div class="section-header">
-      <div class="section-tag" data-i18n="feat_tag">Core Features</div>
-      <h2 data-i18n="feat_h2">Everything a Bonus Manager Needs.</h2>
-      <p data-i18n="feat_sub">AI campaign generation for CRM teams + a compliance-ready retention engine for admins — mechanics, texts, economics, and regulatory audit in one place.</p>
+      <div class="section-tag" data-i18n="feat_tag">All Features</div>
+      <h2 data-i18n="feat_h2">Everything Your CRM Team Needs to Plan Retention Campaigns</h2>
+      <p data-i18n="feat_sub">One workspace for your entire retention operation: calendar planning, AI campaign generation, tournament design, compliance audit, and unit economics — all connected.</p>
     </div>
     <div class="features-grid">
+      <div class="feature-card" style="border-color:rgba(79,110,247,.35);background:linear-gradient(135deg,rgba(79,110,247,.07) 0%,transparent 60%)">
+        <div class="feature-icon icon-blue">📅</div>
+        <h3 data-i18n="rc_f_h">Retention Calendar</h3>
+        <p data-i18n="rc_f_p">Your central CRM planning hub. Schedule bonus campaigns and tournaments, assign segments, detect overlaps, and export your monthly retention plan — all in one visual calendar.</p>
+        <span class="feature-tag">Calendar · Filters · Conflict detection</span>
+      </div>
       <div class="feature-card" style="border-color:rgba(245,158,11,.3);background:linear-gradient(135deg,rgba(245,158,11,.05) 0%,transparent 60%)">
         <div class="feature-icon icon-gold">🤖</div>
-        <h3 data-i18n="f1_h">AI Campaign Generator</h3>
-        <p data-i18n="f1_p">5-step wizard: choose a scenario (reactivation, first deposit, VIP, sport event…), set geo and budget — AI selects the optimal bonus mechanic and generates a complete campaign.</p>
+        <h3 data-i18n="f1_h">AI-Assisted Campaign Planning</h3>
+        <p data-i18n="f1_p">5-step wizard: pick a scenario (reactivation, first deposit, VIP, sport event…), set GEO and segment — AI selects the optimal bonus mechanic, explains the reasoning, and shows alternatives.</p>
         <span class="feature-tag">15+ scenarios</span>
       </div>
+      <div class="feature-card" style="border-color:rgba(16,185,129,.3);background:linear-gradient(135deg,rgba(16,185,129,.05) 0%,transparent 60%)">
+        <div class="feature-icon icon-green">🏆</div>
+        <h3 data-i18n="f7_h">Tournament Planning Workspace</h3>
+        <p data-i18n="f7_p">Design Slot, Live, Mixed, and Prize Drop tournaments. Choose prize pool model, scoring, and distribution — get ROI projections, break-even analysis, and a full setup guide with checklist and launch timeline.</p>
+        <span class="feature-tag">Slots · Live · Mixed · Prize Drop</span>
+      </div>
       <div class="feature-card">
-        <div class="feature-icon icon-pink">📝</div>
-        <h3 data-i18n="f2_h">5-Channel Text Generation</h3>
-        <p data-i18n="f2_p">AI writes Push, Email, SMS, Telegram, and Popup copy in your language. Multiple variants per channel, regenerate any time.</p>
-        <span class="feature-tag">Push · Email · SMS · TG · Popup</span>
+        <div class="feature-icon icon-cyan">📑</div>
+        <h3 data-i18n="tpl_f_h">CRM Templates</h3>
+        <p data-i18n="tpl_f_p">Save any campaign or tournament as a reusable template. Duplicate across months, adapt for different GEOs, and build a library of your best-performing retention mechanics.</p>
+        <span class="feature-tag">Templates · Duplicate · Reuse</span>
       </div>
       <div class="feature-card">
         <div class="feature-icon icon-purple">🔍</div>
         <h3 data-i18n="f3_h">AI Compliance Audit</h3>
         <p data-i18n="f3_p">Each campaign is automatically checked for bonus abuse risk, wager cap violations, regulatory issues, and localisation gaps — before you send a single message. Compliance fines are expensive. This isn't.</p>
         <span class="feature-tag">UKGC · MGA · DGA · Curaçao · Offshore</span>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon icon-blue">🌍</div>
-        <h3 data-i18n="f4_h">Multi-Geo Retention Engine</h3>
-        <p data-i18n="f4_p">EU, CIS, LatAm, Crypto, and more — every region ships with its own wager caps, currencies, and regulatory rules. Welcome / D2 / D3 / NDB / Reload / Cashback mechanics pre-built. New markets added continuously.</p>
-        <span class="feature-tag">Multi-geo · 6 bonus types</span>
       </div>
       <div class="feature-card">
         <div class="feature-icon icon-gold">📊</div>
@@ -1040,15 +1196,9 @@
       </div>
       <div class="feature-card">
         <div class="feature-icon icon-green">📤</div>
-        <h3 data-i18n="f6_h">Admin-Ready Export</h3>
-        <p data-i18n="f6_p">Export as JSON, CSV, curl snippet, or full Admin Config text with all wager rules, free spin specs, and game contributions — ready for your dev team.</p>
+        <h3 data-i18n="f6_h">CRM-Ready Campaign Export</h3>
+        <p data-i18n="f6_p">Export as JSON, CSV, or full Admin Config with all wager rules, free spin specs, and game contributions — ready for your dev team or CRM platform.</p>
         <span class="feature-tag">JSON · CSV · Admin Config</span>
-      </div>
-      <div class="feature-card" style="border-color:rgba(16,185,129,.3);background:linear-gradient(135deg,rgba(16,185,129,.05) 0%,transparent 60%)">
-        <div class="feature-icon icon-green">🏆</div>
-        <h3 data-i18n="f7_h">Tournament Generator</h3>
-        <p data-i18n="f7_p">Design Slot, Live, Mixed, and Prize Drop tournaments in minutes. Choose prize pool model, scoring, and distribution schema — get ROI projections, break-even analysis, and a full operator setup guide with checklist + launch timeline. AI writes promo copy for 5 channels and audits compliance.</p>
-        <span class="feature-tag">Slots · Live · Mixed · Prize Drop · Setup Guide</span>
       </div>
     </div>
   </div>
@@ -1165,7 +1315,7 @@
 
     </div>
     <div style="text-align:center;margin-top:40px">
-      <a href="/campaign-generator.html" class="btn btn-gold btn-lg" data-i18n="ex_cta">🤖 Generate Your Own Campaign →</a>
+      <a href="/campaign-generator.html" class="btn btn-outline btn-lg" data-i18n="ex_cta">🤖 Generate Your Own Campaign →</a>
     </div>
   </div>
 </section>
@@ -1359,44 +1509,6 @@
   </div>
 </section>
 
-<!-- ════ HOW IT WORKS ════ -->
-<section class="section" id="how">
-  <div class="container">
-    <div class="section-header">
-      <div class="section-tag" data-i18n="how_tag">Process</div>
-      <h2 data-i18n="how_h2">Full Campaign in 5 Steps</h2>
-      <p data-i18n="how_sub">From blank page to ready-to-send campaign — in under 2 minutes.</p>
-    </div>
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <h3 data-i18n="step1_h">Choose a Scenario</h3>
-        <p data-i18n="step1_p">Pick from 15+ templates: reactivation, first deposit, VIP retention, sport event, cashback, casino launch…</p>
-      </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <h3 data-i18n="step2_h">Set Parameters</h3>
-        <p data-i18n="step2_p">Geo, player segment, budget, communication tone, risk level, and bonus mix. Under 60 seconds.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <h3 data-i18n="step3_h">AI Generates Mechanics</h3>
-        <p data-i18n="step3_p">Optimal bonus type, wager conditions, P50 economics, and alternatives — calculated for your market and scenario.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">4</div>
-        <h3 data-i18n="step4_h">Get Texts & Audit</h3>
-        <p data-i18n="step4_p">AI writes Push, Email, SMS, Telegram and Popup copy in your language, then audits the campaign for compliance risks.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">5</div>
-        <h3 data-i18n="step5_h">Export & Launch</h3>
-        <p data-i18n="step5_p">Download JSON, CSV, or Admin Config. Copy texts directly. Campaign saved to history with status tracking.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- ════ ECON PREVIEW ════ -->
 <section class="section--tight preview-section" id="preview">
   <div class="container">
@@ -1457,29 +1569,29 @@
   <div class="container">
     <div class="section-header">
       <div class="section-tag" data-i18n="aud_tag">Who It's For</div>
-      <h2 data-i18n="aud_h2">Built for the People Who Actually Configure Bonuses</h2>
-      <p data-i18n="aud_sub">Not for the CEO — for the Bonus Manager, CRM Lead, and Compliance Officer who carries the spreadsheet every Monday morning.</p>
+      <h2 data-i18n="aud_h2">Built for the People Who Plan Retention for a Living</h2>
+      <p data-i18n="aud_sub">Retomat is the workspace for iGaming CRM teams — bonus managers, retention leads, VIP specialists, and multi-brand operators who need clarity, not more spreadsheets.</p>
     </div>
     <div class="audience-grid">
       <div class="audience-card">
+        <div class="audience-emoji">📅</div>
+        <h3 data-i18n="a1_h">CRM Teams</h3>
+        <p data-i18n="a1_p">Plan your entire month's retention calendar in one place. Schedule campaigns by segment, detect overlaps before they happen, and coordinate across the whole team without Slack threads.</p>
+      </div>
+      <div class="audience-card">
         <div class="audience-emoji">🎯</div>
-        <h3 data-i18n="a1_h">Bonus Managers</h3>
-        <p data-i18n="a1_p">Stop building bonus specs in spreadsheets. Get compliant, market-calibrated configs in minutes — with economics validation built in.</p>
+        <h3 data-i18n="a2_h">Retention &amp; Bonus Managers</h3>
+        <p data-i18n="a2_p">Stop building specs in spreadsheets. AI generates mechanics, writes CRM copy for 5 channels, and audits compliance — in minutes. Templates let you reuse what works across months and markets.</p>
       </div>
       <div class="audience-card">
-        <div class="audience-emoji">🏗️</div>
-        <h3 data-i18n="a2_h">CRM Team Leads</h3>
-        <p data-i18n="a2_p">Brief, approve, send — faster. Instead of explaining what a wager condition is, hand your team a pre-built spec with economics already validated.</p>
+        <div class="audience-emoji">💎</div>
+        <h3 data-i18n="a3_h">VIP Teams</h3>
+        <p data-i18n="a3_p">Schedule VIP cashbacks, exclusive tournaments, and personalized offers as part of your broader retention calendar. Filter by VIP segment, track status, and export briefings for your VIP managers.</p>
       </div>
       <div class="audience-card">
-        <div class="audience-emoji">💼</div>
-        <h3 data-i18n="a3_h">iGaming Consultants</h3>
-        <p data-i18n="a3_p">Deliver polished bonus strategy documents to clients. Export specs directly, model multiple scenarios, compare market approaches side by side.</p>
-      </div>
-      <div class="audience-card">
-        <div class="audience-emoji">🚀</div>
-        <h3 data-i18n="a4_h">Compliance Officers</h3>
-        <p data-i18n="a4_p">Every campaign goes through AI audit before it leaves the door — wager caps, regulatory strings, UKGC/MGA/DGA rules checked automatically. Less exposure, less stress.</p>
+        <div class="audience-emoji">🌍</div>
+        <h3 data-i18n="a4_h">Multi-Brand Operators</h3>
+        <p data-i18n="a4_p">One workspace for all your brands and markets. Plan campaigns across GEOs, manage different license rules per brand, and get a single view of your entire retention operation — without switching tools.</p>
       </div>
     </div>
   </div>
@@ -1492,13 +1604,13 @@
       <div class="demo-banner-left">
         <div class="demo-icon">🤖</div>
         <div>
-          <h3 data-i18n="demo_h">Your Next Campaign Is 2 Minutes Away.</h3>
-          <p data-i18n="demo_p">Pick a scenario, set your geo — get bonus mechanics, texts for 5 channels, cost model, and compliance audit. Free, instant, no login required.</p>
+          <h3 data-i18n="demo_h">Your Retention Calendar Starts Today.</h3>
+          <p data-i18n="demo_p">Plan your month's campaigns, schedule tournaments, detect overlaps — all in one workspace. AI generates specs and copy when you need them. Free, instant, no login required.</p>
         </div>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <a href="/campaign-generator.html" class="btn btn-gold btn-lg" data-i18n="demo_btn">🤖 Launch AI Generator</a>
-        <a href="/tournament-generator.html" class="btn btn-outline btn-lg" data-i18n="demo_btn2">🏆 Try Tournament Generator</a>
+        <a href="/retention-calendar.html" class="btn btn-gold btn-lg" data-i18n="demo_btn">📅 Start Planning →</a>
+        <a href="/campaign-generator.html" class="btn btn-outline btn-lg" data-i18n="demo_btn2">🤖 Campaign Generator</a>
       </div>
     </div>
   </div>
@@ -1519,6 +1631,7 @@
         <select class="form-select">
           <option value="" data-i18n="ph_role">Your role...</option>
           <option data-i18n="role1">Bonus Manager</option>
+          <option data-i18n="role7">Retention Manager / CRM Lead</option>
           <option data-i18n="role2">Product Owner</option>
           <option data-i18n="role3">iGaming Consultant</option>
           <option data-i18n="role4">CTO / Developer</option>
@@ -1546,7 +1659,7 @@
 
 <!-- ════ STICKY MOBILE CTA ════ -->
 <div class="sticky-cta" id="stickyCta">
-  <a href="/campaign-generator.html" data-i18n="sticky_cta">🤖 Generate My Campaign Free →</a>
+  <a href="/retention-calendar.html" data-i18n="sticky_cta">📅 Build Retention Calendar →</a>
 </div>
 
 <!-- ════ COOKIE CONSENT BANNER ════ -->
