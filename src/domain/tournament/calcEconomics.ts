@@ -1,22 +1,31 @@
+import { GEO_CFG } from '../campaign/scenarios.js';
+
+// Returns local-currency units per 1 USD for a given geo + sitecur.
+// Priority: GEO_CFG.avgdepUSD (derived from real deposit benchmarks) → STABLE_USD_TO_LOCAL.
+function deriveLocalFxRate(sitecur: string, geo?: string): number {
+  if (geo) {
+    const cfg = GEO_CFG[geo];
+    if (cfg?.avgdep && cfg.avgdepUSD) {
+      // Implied rate: local avgdep.mid / USD avgdep.mid
+      return cfg.avgdep.mid / cfg.avgdepUSD.mid;
+    }
+  }
+  return STABLE_USD_TO_LOCAL[sitecur] ?? 1;
+}
+
 const ARPU_BY_REGION: Record<string, number> = {
   eu: 65, cis: 22, mn: 12, sweep: 30, crypto: 80, latam: 18,
 };
 
-// Approximate USD → local currency rates, derived from GEO_CFG avgdep benchmarks.
-// Used to convert USD-denominated ARPU into site currency so all economics
-// (GGR lift, net margin, prize pool) are expressed in the same currency.
-const USD_TO_LOCAL: Record<string, number> = {
-  EUR: 0.92,
-  GBP: 0.79,
-  USD: 1.00,
-  DKK: 6.90,
-  RUB: 90,
-  KZT: 470,
-  MNT: 3400,
-  MXN: 17,
-  BRL: 5.0,
-  SC:  1.00,
+// Financial FX rates for currencies without GEO_CFG.avgdepUSD.
+// Only USD-pegged and major Western currencies — these are stable enough to hardcode.
+// All others derive their rate from GEO_CFG.avgdep / avgdepUSD (see deriveLocalFxRate).
+const STABLE_USD_TO_LOCAL: Record<string, number> = {
+  USD:  1.00,
   USDT: 1.00,
+  SC:   1.00,
+  EUR:  0.92,
+  GBP:  0.79,
   BTC:  0.000015,
   ETH:  0.00042,
 };
@@ -105,8 +114,9 @@ export function calcTournamentEconomics(params: {
   rake?:         number;
   totalPlayers?: number;
   sitecur?:      string;   // site currency — used to convert USD ARPU to local currency
+  geo?:          string;   // geo code — enables GEO_CFG-derived FX rate
 }): TournamentEconomics {
-  const fxRate       = USD_TO_LOCAL[params.sitecur ?? 'USD'] ?? 1;
+  const fxRate       = deriveLocalFxRate(params.sitecur ?? 'USD', params.geo);
   const arpu         = Math.round((ARPU_BY_REGION[params.region] ?? ARPU_BY_REGION['eu']) * fxRate * 100) / 100;
   const totalPlayers = params.totalPlayers ?? 5000;
   const segmentRatio = SEGMENT_RATIO[params.segment] ?? 1.0;

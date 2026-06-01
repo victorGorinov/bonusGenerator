@@ -11,14 +11,16 @@ export function generateTournament({ type, params }: { type: string; params: Rec
   const rake      = Number(params['rake']      || 0);
   const duration  = String(params['duration']  || 'weekly');
   const segment   = String(params['segment']   || 'all');
-  const econ      = calcTournamentEconomics({
-    region:    geo.region,
+  const geoCode = String(params['geo'] || 'de');
+  const econ    = calcTournamentEconomics({
+    region:      geo.region,
     segment,
     duration,
     prizePool,
     poolModel,
     rake,
-    sitecur:   geo.sitecur,
+    sitecur:     geo.sitecur,
+    geo:         geoCode,
     totalPlayers: Number(params['totalPlayers'] || 5000),
   });
 

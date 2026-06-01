@@ -1,25 +1,34 @@
 // avgdep: realistic average deposit per segment in the site currency.
 // Omit for EUR/GBP/USD geos — the default (40/100/500) is calibrated for those.
 // Required for high-denomination currencies (RUB, KZT, MNT) and DKK.
+//
+// avgdepUSD: USD equivalent of avgdep.mid — used to derive implied FX rate
+// (localUnitsPerUSD = avgdep.mid / avgdepUSD.mid).
+// Only required for non-USD/non-EUR geos. Update when local rates shift significantly.
 export const GEO_CFG: Record<string, {
   region: string; lic: string; sitecur: string; depcur: string;
-  avgdep?: { new: number; mid: number; vip: number };
+  avgdep?:    { new: number; mid: number; vip: number };
+  avgdepUSD?: { new: number; mid: number; vip: number };
 }> = {
   de: { region:'eu',    lic:'mga',  sitecur:'EUR', depcur:'EUR' },
   dk: { region:'eu',    lic:'dga',  sitecur:'DKK', depcur:'DKK',
-        avgdep: { new: 300,    mid: 700,    vip: 3500   } },  // ~€40 / €95 / €470
+        avgdep:    { new: 300,    mid: 700,    vip: 3500   },
+        avgdepUSD: { new: 40,     mid: 95,     vip: 470    } },
   fr: { region:'eu',    lic:'mga',  sitecur:'EUR', depcur:'EUR' },
   es: { region:'eu',    lic:'mga',  sitecur:'EUR', depcur:'EUR' },
   it: { region:'eu',    lic:'mga',  sitecur:'EUR', depcur:'EUR' },
   nl: { region:'eu',    lic:'mga',  sitecur:'EUR', depcur:'EUR' },
   uk: { region:'eu',    lic:'ukgc', sitecur:'GBP', depcur:'GBP' },
   ru: { region:'cis',   lic:'none', sitecur:'RUB', depcur:'RUB',
-        avgdep: { new: 2000,   mid: 5000,   vip: 25000  } },  // ~$22 / $55 / $275
+        avgdep:    { new: 2000,   mid: 5000,   vip: 25000  },
+        avgdepUSD: { new: 22,     mid: 55,     vip: 275    } },
   kz: { region:'cis',   lic:'none', sitecur:'KZT', depcur:'KZT',
-        avgdep: { new: 8000,   mid: 20000,  vip: 100000 } },  // ~$16 / $40 / $200
+        avgdep:    { new: 8000,   mid: 20000,  vip: 100000 },
+        avgdepUSD: { new: 16,     mid: 40,     vip: 200    } },
   us: { region:'sweep', lic:'none', sitecur:'USD', depcur:'USD' },
   mn: { region:'mn',    lic:'none', sitecur:'MNT', depcur:'MNT',
-        avgdep: { new: 40000,  mid: 100000, vip: 500000 } },  // ~$12 / $29 / $145
+        avgdep:    { new: 40000,  mid: 100000, vip: 500000 },
+        avgdepUSD: { new: 12,     mid: 29,     vip: 145    } },
   mx: { region:'latam', lic:'none', sitecur:'USD', depcur:'USD' },
   br: { region:'latam', lic:'none', sitecur:'USD', depcur:'USD' },
 };
