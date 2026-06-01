@@ -10,8 +10,11 @@ import { getState, subscribe, upsertCampaign } from './store.js';
 
 let cal = null;
 
-/** @param {Function} onEventClick called with campaign id */
-export function initCalendar(el, onEventClick) {
+/**
+ * @param {Function} onEventClick  called with campaign id
+ * @param {Function} onDateClick   called with ISO date string (YYYY-MM-DD)
+ */
+export function initCalendar(el, onEventClick, onDateClick) {
   cal = new Calendar(el, {
     plugins: [dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin],
     initialView: window.innerWidth < 640 ? 'listMonth' : 'dayGridMonth',
@@ -26,6 +29,7 @@ export function initCalendar(el, onEventClick) {
     eventDrop:   handleDrop,
     eventResize: handleResize,
     eventClick:  (info) => onEventClick(info.event.id),
+    dateClick:   (info) => onDateClick && onDateClick(info.dateStr),
     events:      [],
     eventDidMount: (info) => {
       const { extendedProps } = info.event;

@@ -17,7 +17,7 @@ let modalMode    = 'view'; // 'view'|'edit'|'new'|'template'|'ai'
 
 document.addEventListener('DOMContentLoaded', async () => {
   await loadAll();
-  initCalendar(document.getElementById('calendar'), openCampaignModal);
+  initCalendar(document.getElementById('calendar'), openCampaignModal, openDatePickerPopup);
   renderFilters();
   renderStats();
   subscribe(() => { renderStats(); renderFilters(); });
@@ -56,6 +56,54 @@ function setupSidebarNav() {
     });
   });
 }
+
+// ── Date-click popup ──────────────────────────────────────────────────────────
+
+function openDatePickerPopup(dateStr) {
+  const t   = getT();
+  const fmt = new Date(dateStr + 'T00:00:00').toLocaleDateString(
+    undefined, { weekday: 'short', day: 'numeric', month: 'short' }
+  );
+  showModal(`
+    <div class="modal-header">
+      <div style="font-size:1rem;font-weight:700">${fmt}</div>
+      <div style="font-size:.8rem;color:var(--muted);margin-top:2px">
+        ${t.newCampaign.replace('+ ', '')} — выберите тип
+      </div>
+    </div>
+    <div class="modal-body" style="gap:10px">
+      <button class="rc-create-card" onclick="window._rcNewCampaignOnDate('${dateStr}')">
+        <span style="font-size:1.5rem">🚀</span>
+        <div>
+          <div style="font-weight:700;margin-bottom:2px">Bonus Campaign</div>
+          <div style="font-size:.78rem;color:var(--muted)">Reload, cashback, free spins, VIP, reactivation…</div>
+        </div>
+      </button>
+      <button class="rc-create-card" onclick="window._rcNewTournamentOnDate('${dateStr}')">
+        <span style="font-size:1.5rem">🏆</span>
+        <div>
+          <div style="font-weight:700;margin-bottom:2px">Tournament</div>
+          <div style="font-size:.78rem;color:var(--muted)">Slots, live casino, prize drops, multi-round…</div>
+        </div>
+      </button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="window._rcCloseModal()">${t.cancel}</button>
+    </div>
+  `);
+}
+
+window._rcNewCampaignOnDate = (dateStr) => {
+  closeModal();
+  const endDate = addDaysStr(dateStr, 6);
+  openNewCampaignModal({ startDate: dateStr, endDate, sourceType: 'manual' });
+};
+
+window._rcNewTournamentOnDate = (dateStr) => {
+  closeModal();
+  // Pre-fill startDate via query param so TG can read it on load
+  window.location.href = `/tournament-generator.html?view=generator&rcDate=${dateStr}`;
+};
 
 // ── Stats bar ─────────────────────────────────────────────────────────────────
 
