@@ -39,7 +39,6 @@ const OptimizeResponseSchema = z.object({
 });
 
 const numberToString = z.preprocess((val) => typeof val === 'number' ? String(val) : val, z.string());
-const lowerTrim = z.preprocess((val) => typeof val === 'string' ? val.trim().toLowerCase() : val, z.string());
 const PARAM_ENUM = ['duration','segment','prizePool','poolModel','rake','totalPlayers'] as const;
 const paramNormalizer = z.preprocess((val) => {
   if (typeof val !== 'string') return val;

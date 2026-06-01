@@ -32,7 +32,6 @@ export function buildTournamentOptimizePrompt(data: TournamentOptimizePromptInpu
   const isRu = (data.uiLang ?? 'en') === 'ru';
   const { econ: e, benchmarks: b, params: p, cur } = data;
 
-  const dur     = String(p['duration'] ?? 'weekly');
   const seg     = String(p['segment']  ?? 'all');
   const pool    = String(p['poolModel'] ?? 'fixed');
   const rake    = Number(p['rake'] ?? 0);
