@@ -128,14 +128,19 @@ select.form-input{cursor:pointer}
     <div class="sb-logo-tag">AI</div>
   </div>
   <nav class="sb-nav">
-    <div class="nav-lbl">Tools</div>
-    <a href="/campaign-generator.html" class="nav-item"><span class="nav-icon">🚀</span> Offer Gen</a>
-    <a href="/tournament-generator.html?view=generator" class="nav-item"><span class="nav-icon">🏆</span> Tournament Gen</a>
+    <div class="nav-lbl">Main</div>
+    <a href="/campaign-generator.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+    <a href="/campaign-generator.html#campaigns" class="nav-item"><span class="nav-icon">📁</span> Bonus Offers</a>
+    <a href="/tournament-generator.html" class="nav-item"><span class="nav-icon">🏆</span> Tournaments</a>
+    <div class="nav-lbl" style="margin-top:6px">Tools</div>
     <a href="/configurator.html" class="nav-item"><span class="nav-icon">⚙️</span> Configurator</a>
-    <div class="nav-lbl" style="margin-top:6px">Data</div>
-    <button class="nav-item" onclick="window._rcExportCSV()"><span class="nav-icon">⬇️</span> Export CSV</button>
-    <button class="nav-item" onclick="window._rcExportJSON()"><span class="nav-icon">⬇️</span> Export JSON</button>
-    <button class="nav-item" onclick="window._rcOpenTemplates()"><span class="nav-icon">📄</span> Templates</button>
+    <a href="/campaign-generator.html?view=wizard" class="nav-item"><span class="nav-icon">🚀</span> Offer Gen</a>
+    <a href="/tournament-generator.html?view=generator" class="nav-item"><span class="nav-icon">🏆</span> Tournament Gen</a>
+    <a href="/tournament-generator.html#setup" class="nav-item"><span class="nav-icon">📋</span> Setup Guide</a>
+    <a href="/retention-calendar.html" class="nav-item active"><span class="nav-icon">📅</span> Retention Calendar</a>
+    <div class="nav-lbl" style="margin-top:6px">Soon</div>
+    <button class="nav-item off"><span class="nav-icon">📈</span> Analytics</button>
+    <button class="nav-item off"><span class="nav-icon">⚙️</span> Settings</button>
   </nav>
   <div class="sb-foot">
     <a href="/" class="sb-back">← Back to home</a>
@@ -157,6 +162,8 @@ select.form-input{cursor:pointer}
     <div style="margin-left:auto;display:flex;gap:8px">
       <button class="btn btn-outline btn-sm" onclick="window._rcOpenAI()">🤖 AI-Assisted</button>
       <button class="btn btn-outline btn-sm" onclick="window._rcOpenTemplates()">📄 Templates</button>
+      <button class="btn btn-outline btn-sm" onclick="window._rcExportCSV()">⬇ CSV</button>
+      <button class="btn btn-outline btn-sm" onclick="window._rcExportJSON()">⬇ JSON</button>
       <button class="btn btn-primary btn-sm" onclick="window._rcOpenNew()">+ New Campaign</button>
     </div>
   </div>
