@@ -268,7 +268,7 @@ function renderStep() {
   else if (step === 2) c.innerHTML = renderStep2();
   else if (step === 3) c.innerHTML = renderStep3();
   else if (step === 4) c.innerHTML = renderStep4();
-  if (step === 2 || step === 3) setTimeout(fetchGamesIfNeeded, 0);
+  if (step === 3) setTimeout(fetchGamesIfNeeded, 0);
 }
 
 function setSidebarActive(id) {
