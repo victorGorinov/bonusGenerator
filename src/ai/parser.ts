@@ -3,8 +3,7 @@ import { tryRepairJSON }   from '../domain/ai/parser.js';
 import { AIProviderError } from '../errors/AIProviderError.js';
 
 // Preprocessors — defined first so all schemas can reference them
-const numberToString = z.preprocess((val) => typeof val === 'number' ? String(val) : val, z.string());
-const anyToString    = z.preprocess((val) => {
+const anyToString = z.preprocess((val) => {
   if (val === null || val === undefined) return '';
   if (typeof val === 'object') return JSON.stringify(val);
   return String(val);
