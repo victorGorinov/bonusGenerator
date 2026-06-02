@@ -34,6 +34,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .nav-item.active{background:rgba(79,110,247,.25);color:#a0b0ff}
 .nav-item.active::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
 .nav-item.off{opacity:.38;cursor:default;pointer-events:none}
+.nav-sub{padding-left:30px;font-size:.77rem;display:none}.nav-chevron{margin-left:auto;font-size:16px;color:rgba(255,255,255,.7);flex-shrink:0;padding:0 4px;cursor:pointer;user-select:none;transition:color .15s;line-height:1}.nav-chevron:hover{color:#fff}
 .nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
 .nav-badge{margin-left:auto;background:rgba(79,110,247,.3);color:#a0b0ff;font-size:.6rem;padding:1px 5px;border-radius:100px;font-weight:700}
 .sb-foot{padding:12px 16px;border-top:1px solid rgba(255,255,255,.06)}
@@ -344,13 +345,12 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     <div class="nav-lbl" data-i18n="nav_main">Main</div>
     <a href="/retention-calendar.html" class="nav-item"><span class="nav-icon">📅</span> Retention Calendar</a>
     <button class="nav-item" onclick="showView('dashboard')"><span class="nav-icon">📊</span><span data-i18n="nav_dashboard">Dashboard</span></button>
-    <button class="nav-item" onclick="showView('campaigns')"><span class="nav-icon">📁</span><span data-i18n="nav_campaigns">Bonus Offers</span><span class="nav-badge" id="camp-nav-badge" style="display:none"></span></button>
-    <a class="nav-item" href="/tournament-generator.html?view=list"><span class="nav-icon">🏆</span><span data-i18n="nav_tournament">Tournaments</span><span class="nav-badge" id="nav-tourn-badge" style="display:none"></span></a>
     <div class="nav-lbl" data-i18n="nav_tools" style="margin-top:6px">Tools</div>
     <a class="nav-item" href="/configurator.html"><span class="nav-icon">⚙️</span><span data-i18n="nav_configurator">Configurator</span></a>
-    <a class="nav-item" href="/campaign-generator.html?view=wizard"><span class="nav-icon">🚀</span><span data-i18n="nav_campaign_gen">Offer Gen</span></a>
-    <a class="nav-item" href="/tournament-generator.html?view=generator"><span class="nav-icon">🏆</span><span data-i18n="nav_tournament_gen">Tournament Gen</span></a>
-    <a class="nav-item" href="/tournament-generator.html#setup"><span class="nav-icon">📋</span><span data-i18n="nav_setup_guide">Setup Guide</span></a>
+    <a class="nav-item" href="/campaign-generator.html?view=offer-gen"><span class="nav-icon">🚀</span> Bonuses<span class="nav-badge" id="nav-offer-gen-badge" style="display:none"></span></a>
+    <a class="nav-item" href="/tournament-generator.html?view=list"><span class="nav-icon">🏆</span> Tournaments<span class="nav-chevron">▸</span><span class="nav-badge" id="nav-tourn-gen-badge" style="display:none"></span></a>
+    <a class="nav-item nav-sub" href="/tournament-generator.html#setup"><span class="nav-icon" style="font-size:11px;opacity:.55">└</span><span data-i18n="nav_setup_guide">Setup Guide</span></a>
+    <a class="nav-item" href="/loyalty-generator.html"><span class="nav-icon">⭐</span> Loyalty Program<span class="nav-badge" id="nav-loyalty-badge" style="display:none"></span></a>
     <div class="nav-lbl" data-i18n="nav_soon" style="margin-top:6px">Soon</div>
     <button class="nav-item off"><span class="nav-icon">📈</span><span data-i18n="nav_analytics">Analytics</span></button>
     <button class="nav-item off"><span class="nav-icon">⚙️</span><span data-i18n="nav_settings">Settings</span></button>
@@ -416,6 +416,26 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
       </div>
     </div>
 
+    <!-- OFFER GEN LIST (default view for ?view=offer-gen nav item) -->
+    <div id="view-offer-gen" style="display:none">
+      <div class="dash-header">
+        <div>
+          <div class="dash-title" data-i18n="camps_title">Бонусные акции</div>
+          <div class="dash-sub" data-i18n="camps_sub">Все созданные кампании</div>
+        </div>
+      </div>
+      <div class="ctable">
+        <div class="ct-hd" id="offer-gen-hd">
+          <span data-i18n="tbl_name">Name</span><span data-i18n="tbl_type">Type</span>
+          <span data-i18n="tbl_status">Status</span><span data-i18n="tbl_date">Date</span><span></span>
+        </div>
+        <div id="offer-gen-body"></div>
+      </div>
+      <div style="margin-top:16px;text-align:center">
+        <button class="btn btn-primary" onclick="startWizard()" data-i18n="dash_create">⚡ Создать кампанию</button>
+      </div>
+    </div>
+
     <!-- CAMPAIGNS -->
     <div id="view-campaigns" style="display:none">
       <div class="dash-header">
@@ -423,7 +443,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
           <div class="dash-title" data-i18n="camps_title">Бонусные акции</div>
           <div class="dash-sub" data-i18n="camps_sub">Все созданные кампании</div>
         </div>
-        <button class="btn btn-primary" onclick="startWizard()" data-i18n="dash_create">⚡ Создать кампанию</button>
       </div>
       <div class="ctable">
         <div class="ct-hd" id="all-camp-hd">
@@ -431,6 +450,9 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
           <span data-i18n="tbl_status">Status</span><span data-i18n="tbl_date">Date</span><span></span>
         </div>
         <div id="all-camp-body"></div>
+      </div>
+      <div style="margin-top:16px;text-align:center">
+        <button class="btn btn-primary" onclick="startWizard()" data-i18n="dash_create">⚡ Создать кампанию</button>
       </div>
     </div>
 

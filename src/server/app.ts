@@ -7,6 +7,7 @@ import { fileURLToPath }     from 'url';
 import generateRoutes        from '../routes/generate.routes.js';
 import campaignRoutes        from '../routes/campaign.routes.js';
 import tournamentRoutes      from '../routes/tournament.routes.js';
+import loyaltyRoutes         from '../routes/loyalty.routes.js';
 import signupRoutes          from '../routes/signup.routes.js';
 import healthRoutes          from '../routes/health.routes.js';
 import { errorMiddleware }   from '../middleware/errors.js';
@@ -64,6 +65,7 @@ app.use(express.static(path.join(__dirname, '../../public')));
 app.use('/api',            generateRoutes);
 app.use('/api/campaign',   campaignRoutes);
 app.use('/api/tournament', tournamentRoutes);
+app.use('/api/loyalty',   loyaltyRoutes);
 app.use('/api',            signupRoutes);
 app.use('/api',            healthRoutes);
 

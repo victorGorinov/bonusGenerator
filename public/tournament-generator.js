@@ -273,6 +273,24 @@ function gamesSection() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+const WIZ_STEP_LABELS = ['Type', 'Parameters', 'Economics', 'Texts & Audit'];
+
+function wizProgressHTML(current) {
+  return `<div class="wiz-progress">
+    ${WIZ_STEP_LABELS.map((lbl, i) => {
+      const n = i + 1;
+      const done   = n < current;
+      const active = n === current;
+      const conn   = i < WIZ_STEP_LABELS.length - 1
+        ? `<div class="wp-conn${done ? ' done' : ''}"></div>` : '';
+      return `<div class="wp-step">
+        <div class="wp-circle${done ? ' done' : active ? ' active' : ''}">${done ? '✓' : n}</div>
+        <div class="wp-lbl${active ? ' active' : ''}">${lbl}</div>
+      </div>${conn}`;
+    }).join('')}
+  </div>`;
+}
+
 function goStep(n) {
   step = n;
   hasActiveGenerator = true;
@@ -303,13 +321,15 @@ function showView(view, id) {
   const tb = document.getElementById('topbar-step');
   if (view === 'list') {
     tb.textContent = 'Tournaments';
-    setSidebarActive('nav-tournament');
+    // Highlight Tournament Gen nav when accessed from that link (?view=list)
+    const fromTournGen = new URLSearchParams(location.search).get('view') === 'list';
+    setSidebarActive(fromTournGen ? 'nav-tourn-gen' : 'nav-tournament');
     c.innerHTML = renderList();
   } else if (view === 'detail') {
     detailId = id;
     const t = loadTournaments().find(t => t.id === id);
     tb.textContent = t ? t.name : 'Tournament';
-    setSidebarActive('nav-tournament');
+    setSidebarActive('nav-tourn-gen');
     c.innerHTML = renderDetail(id);
   } else if (view === 'setup' || view === 'generator') {
     // If view is 'setup', show setup guide; if 'generator', show tournament wizard
@@ -381,12 +401,24 @@ function getSegRatio(seg) {
   return SEGMENT_RATIO_UI[seg] ?? 1.0;
 }
 
+function deriveLocalFxRateForUI(geo) {
+  return GEO_FX_RATE_UI[geo] || 1;
+}
+
 function updateEligibleHint() {
-  const el = document.getElementById('tp-eligible');
-  if (!el) return;
-  const tp  = draft.params.totalPlayers || 5000;
-  const seg = draft.params.segment || 'all';
-  el.textContent = Math.round(tp * getSegRatio(seg)).toLocaleString();
+  const tp       = draft.params.totalPlayers || 5000;
+  const seg      = draft.params.segment || 'all';
+  const ratio    = getSegRatio(seg);
+  const eligible = Math.round(tp * ratio);
+  const pct      = Math.round(ratio * 100);
+  const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  const setW   = (id, val) => { const el = document.getElementById(id); if (el) el.style.width = val; };
+  setTxt('funnel-total',    tp.toLocaleString());
+  setTxt('funnel-eligible', eligible.toLocaleString());
+  setTxt('funnel-pct',      pct + '% of base');
+  setW('funnel-bar-eligible', pct + '%');
+  // legacy fallback
+  setTxt('tp-eligible', eligible.toLocaleString());
 }
 
 function updatePrizeHint() {
@@ -410,8 +442,9 @@ function updatePrizeHint() {
 // ── STEP 1: Tournament type ──────────────────────────────────────────────────
 function renderStep1() {
   return `
+${wizProgressHTML(1)}
 <div class="step-header">
-  <div class="step-badge">Step 1</div>
+  <div class="step-badge">Step 1 / 4</div>
   <div class="step-title">Select Tournament Type</div>
   <div class="step-sub">Choose the game type for your tournament</div>
 </div>
@@ -448,9 +481,19 @@ function renderStep2() {
     ? `Рекомендовано: <strong>${suggestedFmt} ${cur}</strong> — 60% от ожидаемого GGR-лифта (${ggrLiftFmt} ${cur}), ROI ≈ 80–120%`
     : `Recommended: <strong>${suggestedFmt} ${cur}</strong> — 60% of projected GGR lift (${ggrLiftFmt} ${cur}), ROI ≈ 80–120%`;
 
+  const totalPlayers = p.totalPlayers || 5000;
+  const segRatio     = getSegRatio(p.segment);
+  const eligible     = Math.round(totalPlayers * segRatio);
+  const eligiblePct  = Math.round(segRatio * 100);
+  const prizeUSD     = Math.round((p.prizePool || 0) / (deriveLocalFxRateForUI(p.geo) || 1));
+  const recUSD       = Math.round(suggestedPrize / (deriveLocalFxRateForUI(p.geo) || 1));
+  const prizeBarPct  = recUSD > 0 ? Math.min(100, Math.round((p.prizePool / (recUSD * (deriveLocalFxRateForUI(p.geo) || 1))) * 100)) : 0;
+  const prizeBarColor = prizeBarPct >= 80 && prizeBarPct <= 130 ? 'var(--success)' : prizeBarPct < 50 ? '#ef4444' : 'var(--warn)';
+
   return `
+${wizProgressHTML(2)}
 <div class="step-header">
-  <div class="step-badge">Step 2</div>
+  <div class="step-badge">Step 2 / 4</div>
   <div class="step-title">Tournament Parameters</div>
   <div class="step-sub">Configure geo, mechanics, and prize pool</div>
 </div>
@@ -475,12 +518,21 @@ function renderStep2() {
       <input type="range" min="100" max="100000" step="100" id="f-tp"
              value="${p.totalPlayers||5000}"
              oninput="draft.params.totalPlayers=+this.value;document.getElementById('tp-out').textContent=Number(+this.value).toLocaleString();updateEligibleHint();updatePrizeHint()"
-             style="flex:1">
+             style="flex:1;accent-color:var(--accent)">
       <span id="tp-out" style="min-width:64px;font-weight:600;text-align:right">${(p.totalPlayers||5000).toLocaleString()}</span>
     </div>
-    <div style="font-size:.73rem;color:var(--muted);margin-top:5px">
-      Eligible for this segment: <strong id="tp-eligible">${Math.round((p.totalPlayers||5000)*getSegRatio(p.segment)).toLocaleString()}</strong> players
+  </div>
+  <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px">
+    <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-bottom:8px">
+      <span>All players</span><strong style="color:var(--text)" id="funnel-total">${totalPlayers.toLocaleString()}</strong>
     </div>
+    <div class="funnel-bar"><div class="funnel-fill" style="width:100%;background:var(--border)"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-top:8px;margin-bottom:4px">
+      <span>Eligible <span style="opacity:.6">(${p.segment||'all'} segment)</span></span>
+      <strong style="color:var(--accent)" id="funnel-eligible">${eligible.toLocaleString()}</strong>
+    </div>
+    <div class="funnel-bar"><div class="funnel-fill" id="funnel-bar-eligible" style="width:${eligiblePct}%;background:var(--accent)"></div></div>
+    <div style="font-size:.7rem;color:var(--muted);margin-top:6px;text-align:right" id="funnel-pct">${eligiblePct}% of base</div>
   </div>
 </div>
 
@@ -517,8 +569,17 @@ function renderStep2() {
   <div class="form-row">
     <label class="form-label">${isRu ? 'Призовой фонд' : 'Prize Pool Amount'}</label>
     <input class="form-input" type="number" min="100" id="f-pp" value="${p.prizePool}"
-           onchange="draft.params._prizeAutoSet=false;draft.params.prizePool=Math.max(100,+this.value)">
-    <div id="prize-hint" style="font-size:.73rem;color:var(--muted);margin-top:5px">${prizeHintLabel}</div>
+           onchange="draft.params._prizeAutoSet=false;draft.params.prizePool=Math.max(100,+this.value);renderStep()">
+    <div style="margin-top:8px">
+      <div style="display:flex;justify-content:space-between;font-size:.73rem;color:var(--muted);margin-bottom:4px">
+        <span>${isRu ? 'Ваш фонд' : 'Your pool'}</span>
+        <span>${isRu ? 'Рекомендация' : 'Recommended'}: <strong style="color:var(--accent)">${prizeHintLabel.replace(/.*<strong>([^<]+)<\/strong>.*/, '$1')}</strong></span>
+      </div>
+      <div class="funnel-bar" style="height:6px">
+        <div class="funnel-fill" style="width:${prizeBarPct}%;background:${prizeBarColor}"></div>
+      </div>
+      <div style="font-size:.7rem;color:var(--muted);margin-top:4px" id="prize-hint">${prizeHintLabel}</div>
+    </div>
   </div>
   <div class="form-row">
     <label class="form-label">Pool Model</label>
@@ -620,8 +681,9 @@ function renderStep3() {
   const totClass = totVal >= 0 ? 'pos' : 'neg';
 
   return `
+${wizProgressHTML(3)}
 <div class="step-header">
-  <div class="step-badge">Step 3</div>
+  <div class="step-badge">Step 3 / 4</div>
   <div class="step-title">Tournament Spec & Economics</div>
   <div class="step-sub">Prize distribution and projected ROI</div>
 </div>
@@ -728,8 +790,9 @@ function renderStep4() {
   const hasAudit = !!lastAudit;
 
   return `
+${wizProgressHTML(4)}
 <div class="step-header">
-  <div class="step-badge">Step 4</div>
+  <div class="step-badge">Step 4 / 4</div>
   <div class="step-title">AI Texts & Compliance</div>
   <div class="step-sub">Generate CRM copy and compliance audit for your tournament</div>
 </div>
@@ -862,29 +925,75 @@ function exportTournamentPDF() {
 }
 
 // ── API calls ────────────────────────────────────────────────────────────────
-async function runGenerate() {
-  const btn = document.getElementById('btn-generate');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Generating…'; }
+const TOURN_GEN_STEPS = [
+  'Analysing tournament type',
+  'Calculating prize pool',
+  'Building prize distribution',
+  'Running economics model',
+  'Preparing tournament spec',
+];
 
-  try {
-    const resp = await fetch('/api/tournament/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: draft.type, params: draft.params }),
-    });
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({ message: resp.statusText }));
-      throw new Error(err.message || resp.statusText);
+function runGenerate() {
+  const lang = localStorage.getItem('bonusLang') || 'en';
+  const isRu = lang === 'ru';
+  const steps = isRu ? [
+    'Анализ типа турнира',
+    'Расчёт призового фонда',
+    'Распределение призов',
+    'Экономическая модель',
+    'Подготовка спецификации',
+  ] : TOURN_GEN_STEPS;
+
+  step = 0; hasActiveGenerator = true;
+  document.getElementById('topbar-step').textContent = isRu ? 'Генерация…' : 'Generating…';
+
+  const c = document.getElementById('content');
+  c.innerHTML = `
+    <div class="prog-wrap">
+      <div class="prog-title">${isRu ? 'AI генерирует турнир…' : 'AI is generating tournament…'}</div>
+      <div class="prog-sub">${isRu ? 'Анализируем параметры и рассчитываем экономику' : 'Analysing parameters and calculating economics'}</div>
+      <ul class="prog-list" id="tg-prog-list">
+        ${steps.map((s, i) => `<li class="pl-item" id="tg-pl-${i}"><span class="pl-icon">⏳</span>${s}</li>`).join('')}
+      </ul>
+    </div>`;
+
+  // Fire API call immediately, in parallel with animation
+  const apiPromise = fetch('/api/tournament/generate', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ type: draft.type, params: draft.params }),
+  })
+  .then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(new Error(e.message || r.statusText))))
+  .then(data => { lastResult = data; lastTexts = null; lastAudit = null; lastOptimize = null; })
+  .catch(err => { lastResult = { _error: err.message }; });
+
+  let i = 0;
+  (function tick() {
+    if (i > 0) {
+      const prev = document.getElementById('tg-pl-' + (i - 1));
+      if (prev) { prev.className = 'pl-item done'; prev.innerHTML = `<span class="pl-icon">✅</span>${steps[i - 1]}`; }
     }
-    lastResult   = await resp.json();
-    lastTexts    = null;
-    lastAudit    = null;
-    lastOptimize = null;
-    goStep(3);
-  } catch (e) {
-    alert('Error: ' + e.message);
-    if (btn) { btn.disabled = false; btn.textContent = 'Generate Tournament Spec →'; }
-  }
+    if (i < steps.length) {
+      const cur = document.getElementById('tg-pl-' + i);
+      if (cur) { cur.className = 'pl-item running'; cur.innerHTML = `<div class="spinner"></div>${steps[i]}`; }
+      i++;
+      setTimeout(tick, 700);
+    } else {
+      // Animation done — wait for API if still pending, then proceed
+      Promise.resolve(apiPromise).then(() => {
+        setTimeout(() => {
+          if (lastResult?._error) {
+            c.innerHTML = `<div class="alert alert-warn" style="max-width:480px;margin:40px auto">
+              Error: ${lastResult._error}
+              <button class="btn btn-outline btn-sm" style="margin-top:10px;display:block" onclick="goStep(2)">← Back</button>
+            </div>`;
+          } else {
+            goStep(3);
+          }
+        }, 300);
+      });
+    }
+  })();
 }
 
 async function runTexts() {
@@ -1476,18 +1585,18 @@ function renderList() {
   }
 
   return `
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-  <div>
-    <div style="font-size:1.1rem;font-weight:700;color:var(--text)">Tournaments</div>
-    <div style="font-size:.8rem;color:var(--muted);margin-top:2px">${list.length} saved</div>
-  </div>
-  <button class="btn btn-primary btn-sm" onclick="goStep(1)">+ New Tournament</button>
+<div style="margin-bottom:16px">
+  <div style="font-size:1.1rem;font-weight:700;color:var(--text)">Tournaments</div>
+  <div style="font-size:.8rem;color:var(--muted);margin-top:2px">${list.length} saved</div>
 </div>
 <div class="ctable">
   <div class="ct-hd">
     <span>Name</span><span>Prize pool</span><span>ROI</span><span>Date</span><span></span>
   </div>
   ${list.map(tournRowHTML).join('')}
+</div>
+<div style="margin-top:16px;text-align:center">
+  <button class="btn btn-primary" onclick="goStep(1)">+ New Tournament</button>
 </div>`;
 }
 

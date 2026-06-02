@@ -2,6 +2,14 @@ import { z }               from 'zod';
 import { tryRepairJSON }   from '../domain/ai/parser.js';
 import { AIProviderError } from '../errors/AIProviderError.js';
 
+// Preprocessors — defined first so all schemas can reference them
+const numberToString = z.preprocess((val) => typeof val === 'number' ? String(val) : val, z.string());
+const anyToString    = z.preprocess((val) => {
+  if (val === null || val === undefined) return '';
+  if (typeof val === 'object') return JSON.stringify(val);
+  return String(val);
+}, z.string());
+
 const EmailVariant = z.object({ subject: z.string(), body: z.string() });
 const PopupVariant = z.object({ headline: z.string(), subtext: z.string(), cta: z.string() });
 
@@ -16,7 +24,7 @@ const TextsResponseSchema = z.object({
 const AuditCheckSchema = z.object({
   label:  z.string(),
   status: z.enum(['ok', 'warn']),
-  note:   z.string(),
+  note:   anyToString,
   rule:   z.string().optional(),
 });
 
@@ -28,9 +36,9 @@ const AuditResponseSchema = z.object({
 const OptimizeRecommendationSchema = z.object({
   factor:  z.string(),
   param:   z.string(),
-  current: z.string(),
-  target:  z.string(),
-  reason:  z.string(),
+  current: anyToString,
+  target:  anyToString,
+  reason:  anyToString,
   impact:  z.enum(['high', 'med', 'low']),
 });
 
@@ -38,14 +46,13 @@ const OptimizeResponseSchema = z.object({
   recommendations: z.array(OptimizeRecommendationSchema).min(1).max(5),
 });
 
-const numberToString = z.preprocess((val) => typeof val === 'number' ? String(val) : val, z.string());
 const PARAM_ENUM = ['duration','segment','prizePool','poolModel','rake','totalPlayers'] as const;
 const paramNormalizer = z.preprocess((val) => {
   if (typeof val !== 'string') return val;
   const original = val.trim();
   if ((PARAM_ENUM as readonly string[]).includes(original)) return original;
   const normalized = original.toLowerCase().replace(/[\s-]+/g, '_');
-  if (normalized === 'prize_pool' || normalized === 'prizepool') return 'prizePool';
+  if (normalized === 'prize_pool' || normalized === 'prize pool' || normalized === 'prizepool') return 'prizePool';
   if (normalized === 'pool_model' || normalized === 'poolmodel') return 'poolModel';
   if (normalized === 'total_players' || normalized === 'totalplayers') return 'totalPlayers';
   return normalized;
@@ -76,21 +83,21 @@ function parseRaw(raw: string): unknown {
 export function parseTextsResponse(raw: string): TextsResponse {
   const parsed = parseRaw(raw);
   const result = TextsResponseSchema.safeParse(parsed);
-  if (!result.success) throw new AIProviderError('AI texts response failed schema validation');
+  if (!result.success) throw new AIProviderError(`AI texts response failed schema validation: ${JSON.stringify(result.error.flatten())}`);
   return result.data;
 }
 
 export function parseAuditResponse(raw: string): AuditResponse {
   const parsed = parseRaw(raw);
   const result = AuditResponseSchema.safeParse(parsed);
-  if (!result.success) throw new AIProviderError('AI audit response failed schema validation');
+  if (!result.success) throw new AIProviderError(`AI audit response failed schema validation: ${JSON.stringify(result.error.flatten())}`);
   return result.data;
 }
 
 export function parseOptimizeResponse(raw: string): OptimizeResponse {
   const parsed = parseRaw(raw);
   const result = OptimizeResponseSchema.safeParse(parsed);
-  if (!result.success) throw new AIProviderError('AI optimize response failed schema validation');
+  if (!result.success) throw new AIProviderError(`AI optimize response failed schema validation: ${JSON.stringify(result.error.flatten())}`);
   return result.data;
 }
 
@@ -103,8 +110,8 @@ const TournamentTextsResponseSchema = z.object({
 });
 
 const TournamentAuditResponseSchema = z.object({
-  checks:          z.array(z.object({ label: z.string(), status: z.enum(['ok', 'warn']), note: z.string(), rule: z.string().optional() })).min(1),
-  recommendations: z.array(z.object({ text: z.string(), impact: z.string() })).min(1),
+  checks:          z.array(z.object({ label: z.string(), status: z.enum(['ok', 'warn']), note: anyToString, rule: z.string().optional() })).min(1),
+  recommendations: z.array(z.object({ text: anyToString, impact: anyToString })).min(1),
 });
 
 export type TournamentTextsResponse = z.infer<typeof TournamentTextsResponseSchema>;
@@ -113,36 +120,36 @@ export type TournamentAuditResponse = z.infer<typeof TournamentAuditResponseSche
 export function parseTournamentTextsResponse(raw: string): TournamentTextsResponse {
   const parsed = parseRaw(raw);
   const result = TournamentTextsResponseSchema.safeParse(parsed);
-  if (!result.success) throw new AIProviderError('AI tournament texts response failed schema validation');
+  if (!result.success) throw new AIProviderError(`AI tournament texts response failed schema validation: ${JSON.stringify(result.error.flatten())}`);
   return result.data;
 }
 
 export function parseTournamentAuditResponse(raw: string): TournamentAuditResponse {
   const parsed = parseRaw(raw);
   const result = TournamentAuditResponseSchema.safeParse(parsed);
-  if (!result.success) throw new AIProviderError('AI tournament audit response failed schema validation');
+  if (!result.success) throw new AIProviderError(`AI tournament audit response failed schema validation: ${JSON.stringify(result.error.flatten())}`);
   return result.data;
 }
 
 const TournamentOptimizeRealismCheckSchema = z.object({
   metric:    z.preprocess((val) => typeof val === 'string' ? val.trim().toLowerCase().replace(/\s+/g, '_') : val, z.enum(['participation', 'engagement', 'roi', 'cost_per_active', 'retention', 'arpu'])),
-  forecast:  numberToString,
-  benchmark: numberToString,
+  forecast:  anyToString,
+  benchmark: anyToString,
   verdict:   verdictNormalizer,
-  note:      numberToString,
+  note:      anyToString,
 });
 
 const TournamentOptimizeResponseSchema = z.object({
   realism: z.object({
     verdict: verdictNormalizer,
-    summary: numberToString,
+    summary: anyToString,
     checks:  z.array(TournamentOptimizeRealismCheckSchema).min(3).max(6),
   }),
   recommendations: z.array(z.object({
     param:   paramNormalizer,
-    current: numberToString,
-    target:  numberToString,
-    reason:  numberToString,
+    current: anyToString,
+    target:  anyToString,
+    reason:  anyToString,
     impact:  impactNormalizer,
   })).min(1).max(3),
 });
@@ -152,7 +159,7 @@ export type TournamentOptimizeResponse = z.infer<typeof TournamentOptimizeRespon
 export function parseTournamentOptimizeResponse(raw: string): TournamentOptimizeResponse {
   const parsed = parseRaw(raw);
   const result = TournamentOptimizeResponseSchema.safeParse(parsed);
-  if (!result.success) throw new AIProviderError('AI tournament optimize response failed schema validation');
+  if (!result.success) throw new AIProviderError(`AI tournament optimize response failed schema validation: ${JSON.stringify(result.error.flatten())}`);
   return result.data;
 }
 
@@ -166,6 +173,66 @@ export type GamesResponse = z.infer<typeof GamesResponseSchema>;
 export function parseGamesResponse(raw: string): GamesResponse {
   const parsed = parseRaw(raw);
   const result = GamesResponseSchema.safeParse(parsed);
-  if (!result.success) throw new AIProviderError('AI games response failed schema validation');
+  if (!result.success) throw new AIProviderError(`AI games response failed schema validation: ${JSON.stringify(result.error.flatten())}`);
+  return result.data;
+}
+
+// ── LOYALTY ───────────────────────────────────────────────────────────────────
+
+const LoyaltyTextsResponseSchema = z.object({
+  push:     z.array(z.string()).min(1),
+  email:    z.array(z.object({ subject: z.string(), body: z.string() })).min(1),
+  sms:      z.array(z.string()).min(1),
+  telegram: z.array(z.string()).min(1),
+  popup:    z.array(z.object({ headline: z.string(), subtext: z.string(), cta: z.string() })).min(1),
+});
+
+const LoyaltyAuditResponseSchema = z.object({
+  checks:          z.array(z.object({ label: z.string(), status: z.enum(['ok', 'warn']), note: anyToString, rule: z.string().optional() })).min(1),
+  recommendations: z.array(z.object({ text: anyToString, impact: anyToString })).min(1),
+});
+
+const LOYALTY_PARAM_ENUM = ['topCashbackRate','earnRateDeposit','earnRateWager','redeemRate','missionCount','numTiers','mode','pointsExpiry'] as const;
+const loyaltyParamNormalizer = z.preprocess((val) => {
+  if (typeof val !== 'string') return val;
+  const s = val.trim();
+  if ((LOYALTY_PARAM_ENUM as readonly string[]).includes(s)) return s;
+  const n = s.replace(/[-\s]+(.)/g, (_, c: string) => c.toUpperCase());
+  if ((LOYALTY_PARAM_ENUM as readonly string[]).includes(n)) return n;
+  return s;
+}, z.enum(LOYALTY_PARAM_ENUM));
+
+const LoyaltyOptimizeResponseSchema = z.object({
+  recommendations: z.array(z.object({
+    param:   loyaltyParamNormalizer,
+    current: anyToString,
+    target:  anyToString,
+    reason:  anyToString,
+    impact:  impactNormalizer,
+  })).min(1).max(4),
+});
+
+export type LoyaltyTextsResponse   = z.infer<typeof LoyaltyTextsResponseSchema>;
+export type LoyaltyAuditResponse   = z.infer<typeof LoyaltyAuditResponseSchema>;
+export type LoyaltyOptimizeResponse = z.infer<typeof LoyaltyOptimizeResponseSchema>;
+
+export function parseLoyaltyTextsResponse(raw: string): LoyaltyTextsResponse {
+  const parsed = parseRaw(raw);
+  const result = LoyaltyTextsResponseSchema.safeParse(parsed);
+  if (!result.success) throw new AIProviderError(`AI loyalty texts response failed schema validation: ${JSON.stringify(result.error.flatten())}`);
+  return result.data;
+}
+
+export function parseLoyaltyAuditResponse(raw: string): LoyaltyAuditResponse {
+  const parsed = parseRaw(raw);
+  const result = LoyaltyAuditResponseSchema.safeParse(parsed);
+  if (!result.success) throw new AIProviderError(`AI loyalty audit response failed schema validation: ${JSON.stringify(result.error.flatten())}`);
+  return result.data;
+}
+
+export function parseLoyaltyOptimizeResponse(raw: string): LoyaltyOptimizeResponse {
+  const parsed = parseRaw(raw);
+  const result = LoyaltyOptimizeResponseSchema.safeParse(parsed);
+  if (!result.success) throw new AIProviderError(`AI loyalty optimize response failed schema validation: ${JSON.stringify(result.error.flatten())}`);
   return result.data;
 }

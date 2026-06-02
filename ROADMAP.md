@@ -11,7 +11,9 @@
 | `CLAUDE.md` | Pending work: Task A/B/C/D, тесты, frontend debt |
 | `UX_DEV_PLAN.md` | P0 (R1–R4) и P1 (R5–R8) из UX-исследования |
 | `FEATURE_CAMPAIGN_ANALYTICS.md` | Post-campaign аналитика (факт vs прогноз) |
-| `FEATURE_PRIORITIZATION.md` | RICE-скоринг 20 фич ретеншен-арсенала |
+| `FEATURE_PRIORITIZATION.md` | RICE-скоринг фич ретеншен-арсенала (#21 — лояльность, Score 25.0) |
+| `LOYALTY_SPEC.md` + `LOYALTY_BUILD_INSTRUCTION.md` | Генератор программ лояльности: модель + пошаговый build |
+| `SPORTSBOOK_SPEC.md` | Калькулятор бонусов спортбука (новая вертикаль) |
 | `AUTH_WORKSPACE_DESIGN.md` | Авторизация + workspace + БД (4 фазы) |
 | `REFACTORING_PLAN.md` | Технический долг (11 задач, 4 фазы) |
 
@@ -130,12 +132,24 @@
 | H2 | Approval-flow + аудиторский след кампании | 33.3 | ⏳ После auth |
 | H3 | Шаблоны / библиотека кампаний | 30.0 | ⏳ Sprint 7 |
 | H4 | Детекция бонус-абьюза / уязвимостей механики | 20.0 | ⏳ Sprint 7 |
-| H5 | Лестница лояльности / VIP-тиры | 20.0 | ⏳ Q3 |
+| H5 | ~~Лестница лояльности / VIP-тиры~~ → консолидирована в группу I | 20.0 | ➡️ см. I |
 | H6 | A/B-тестирование механик и текстов | 16.0 | ⏳ Q3 |
 | H7 | RG-гейты внутри механики (ROFUS/GAMSTOP) | 16.0 | ⏳ Q3 |
 | H8 | Динамические сегменты + поведенческие триггеры | 16.0 | ⏳ Q4 |
 | H9 | Импорт реальных данных игроков | 15.0 | ⏳ Q4 |
-| H10 | Миссии и квесты | 20.0 | ⏳ Q4 |
+| H10 | ~~Миссии и квесты~~ → как hybrid-слой в группе I (полная геймификация — позже) | 20.0 | ➡️ см. I |
+
+### Группа I — Генератор программ лояльности (RICE 25.0, NEXT-топ)
+
+Консолидирует H5 (тиры) + H10 (миссии) в единый hybrid-генератор. Спек: `LOYALTY_SPEC.md`, build: `LOYALTY_BUILD_INSTRUCTION.md`. **Не зависит от auth** (localStorage-first). Каждый шаг: план → подтверждение → реализация → тесты.
+
+| ID | Задача | Размер | Статус |
+|---|---|---|---|
+| I1 | Доменное ядро `src/domain/loyalty/` (tiers, earnRedeem, missions, rewardCatalog, retentionLift) + тесты | L | ⏳ Sprint 7 |
+| I2 | Zod-схемы + use-case + service + controller + `/api/loyalty/generate|recalc` + интеграционный тест | M | ⏳ Sprint 7 |
+| I3 | Frontend `loyalty-generator.html` + `.js` (Step 1–4, hybrid, live-превью, совокупный costRatio, save-библиотека) | L | ⏳ Sprint 7 |
+| I4 | AI-слой: prompts + parser-схемы + `/texts|audit|optimize` (UKGC safer-gambling hard-fail) + Mock-тесты | L | ⏳ Sprint 8 |
+| I5 | Optimize-solver (бюджет→параметры) + регуляторные снапшоты (UK/EU/DK) + обновить CLAUDE.md | M | ⏳ Sprint 8 |
 
 ---
 
@@ -150,8 +164,9 @@
 | E — Analytics | 6 | **4** | 2 |
 | G — Refactor | 14 | **14** ✅ | 0 |
 | F — Auth + DB | 18 | 0 | **18** |
-| H — Feature Expansion | 10 | 0 | **10** |
-| **Итого** | **78** | **45** (58%) | **33** |
+| H — Feature Expansion | 10 | 0 | **10** (H5/H10 → группа I) |
+| I — Loyalty Generator | 5 | 0 | **5** |
+| **Итого** | **83** | **45** (54%) | **38** |
 
 ---
 
@@ -165,10 +180,12 @@
    ↓
 ⏳ DB Migration (F13–F15) + Auth Phases 3–4 (F16–F18) — Sprint 6
    ↓
-⏳ Feature expansion (H1, H3, H4) + B4/B5/D9 — Sprint 7
+⏳ Loyalty Generator core (I1–I3) + Feature expansion (H1, H3, H4) — Sprint 7
    ↓
-⏳ Scale & Advanced (H5–H10) — Sprint 8+
+⏳ Loyalty AI/solver (I4–I5) + Scale & Advanced (H6–H9) — Sprint 8+
 ```
+
+**Параллельный трек:** I1–I5 не зависят от auth (localStorage-first) — могут идти независимо от F-группы, ограничены только командной ёмкостью.
 
 **Разблокировано сейчас:** G5–G10 выполнены → Auth (F1–F12) можно начинать немедленно.
 
@@ -249,15 +266,18 @@
 
 ### Sprint 7 — Feature Expansion (2 недели)
 
-**Цель:** приоритетные фичи ретеншена. G11–G13 уже сделаны.
+**Цель:** приоритетные фичи ретеншена + старт генератора лояльности (RICE-топ NEXT, без auth-зависимости).
 
 | ID | Задача | ~Hours |
 |---|---|---|
+| I1 | Loyalty: доменное ядро + тесты | 10h |
+| I2 | Loyalty: API generate/recalc | 5h |
+| I3 | Loyalty: frontend Step 1–4 | 10h |
 | H1 | CRM/CDP export + интеграции | 6h |
 | H3 | Шаблоны / библиотека кампаний | 6h |
 | H4 | Детекция бонус-абьюза | 5h |
 
-**Deliverable:** оператор переиспользует удачные конфиги. Система детектирует уязвимые механики.
+**Deliverable:** работающий генератор программ лояльности (без AI). Оператор переиспользует удачные конфиги, система детектирует уязвимые механики.
 
 ---
 
@@ -265,13 +285,15 @@
 
 | ID | Задача | Когда |
 |---|---|---|
+| I4 | Loyalty: AI-слой (texts/audit/optimize) | Sprint 8 |
+| I5 | Loyalty: optimize-solver + регуляторные снапшоты | Sprint 8 |
 | H2 | Approval-flow + аудиторский след | После auth |
-| H5 | Лестница лояльности / VIP-тиры | Q3 |
 | H6 | A/B-тестирование | Q3 |
 | H7 | RG-гейты (ROFUS/GAMSTOP) | Q3 |
 | H8 | Динамические сегменты | Q4 |
 | H9 | Импорт данных игроков | Q4 |
-| H10 | Миссии и квесты | Q4 |
+| — | Sportsbook MVP (free bet) — новая вертикаль, `SPORTSBOOK_SPEC.md` | Q4 (после loyalty) |
+| — | Полная геймификация (streak/динамические челленджи) поверх I | Q4 |
 | — | AI response caching (Redis) | При cost > $50/mo |
 | — | Queue для тяжёлых генераций (Bull) | При >20 concurrent users |
 | — | OpenAPI от Zod-схем | Перед публичным API |
@@ -294,10 +316,10 @@
   ⏳ Sprint 6 (2 нед) — DB Migration + Invite Flow + Analytics v2
 
 Август 2026
-  ⏳ Sprint 7 (2 нед) — Feature Expansion (H1, H3, H4)
+  ⏳ Sprint 7 (2 нед) — Loyalty Generator core (I1–I3) + Feature Expansion (H1, H3, H4)
 
 Q3–Q4 2026
-  ⏳ Sprint 8+        — Scale & Advanced Features
+  ⏳ Sprint 8+        — Loyalty AI/solver (I4–I5) + Scale & Advanced + Sportsbook MVP
 ```
 
 ---
@@ -313,7 +335,9 @@ Q3–Q4 2026
 ⏳ E5–E6 (Analytics v2)               → зависит от: F13 (campaigns в БД)
 ⏳ H1, H3 (Feature NOW)               → зависит от: F14–F15 (DB migration)
 ⏳ H2 (Approval-flow)                 → зависит от: F1–F12 (auth) + H3
-⏳ H5–H10 (Feature NEXT)              → зависит от: H9 для H6/H8
+⏳ I1–I5 (Loyalty Generator)          → зависит от: ничего (localStorage-first) — можно начинать сразу
+⏳ H6, H8 (Feature NEXT)              → зависит от: H9 (импорт данных)
+⏳ Sportsbook MVP                     → зависит от: I (после loyalty, переиспользует паттерн вертикали)
 ```
 
 ---

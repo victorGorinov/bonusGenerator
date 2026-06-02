@@ -79,20 +79,24 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   ├── use-cases/
 │   │   ├── GenerateBonusConfig.ts   # generateBonusConfig(), recalcBonusConfig()
 │   │   ├── GenerateCampaign.ts      # generateCampaign(), texts, audit, optimize (inject AIProvider)
-│   │   └── GenerateTournament.ts    # generateTournament(), texts, audit, optimize (inject AIProvider)
+│   │   ├── GenerateTournament.ts    # generateTournament(), texts, audit, optimize (inject AIProvider)
+│   │   └── GenerateLoyalty.ts       # generateLoyaltyConfig(), recalcLoyaltyConfig()
 │   ├── controllers/                 # All use createXxxController(deps) factory pattern
 │   │   ├── generate.controller.ts   # createGenerateController()
 │   │   ├── campaign.controller.ts   # createCampaignController({ ai })
 │   │   ├── tournament.controller.ts # createTournamentController({ ai })
+│   │   ├── loyalty.controller.ts    # createLoyaltyController() — no AI dep (pure domain)
 │   │   └── signup.controller.ts     # createSignupController()
 │   ├── services/
 │   │   ├── bonus.service.ts         # generate(), recalc() — thin wrappers
 │   │   ├── campaign.service.ts      # generateCampaign() — geo+scenario → config+explanations
-│   │   └── tournament.service.ts    # generateTournament() — type+params → spec+econ
+│   │   ├── tournament.service.ts    # generateTournament() — type+params → spec+econ
+│   │   └── loyalty.service.ts       # generate() → buildLoyaltyConfig + calcLoyaltyEconomics
 │   ├── routes/                      # Wire deps at startup: createXxxController({ ai: getAIProvider() })
 │   │   ├── generate.routes.ts
 │   │   ├── campaign.routes.ts
 │   │   ├── tournament.routes.ts
+│   │   ├── loyalty.routes.ts        # POST /api/loyalty/generate (20/min) + /recalc (30/min)
 │   │   ├── signup.routes.ts
 │   │   └── health.routes.ts
 │   ├── middleware/
@@ -109,6 +113,7 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │   ├── audit.schema.ts          # AuditSchema + AuditInput
 │   │   ├── optimize.schema.ts       # OptimizeSchema + OptimizeInput
 │   │   ├── tournament.schema.ts     # TournamentGenerateSchema + Input types (Generate/Texts/Audit/Optimize)
+│   │   ├── loyalty.schema.ts        # LoyaltyGenerateSchema + LoyaltyRecalcSchema + Input types
 │   │   └── signup.schema.ts         # SignupSchema + SignupInput
 │   └── errors/
 │       ├── AppError.ts              # Base error with status + isOperational
@@ -154,8 +159,11 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
     ├── domain/retention.repository.test.js # 10 tests
     ├── domain/retention.mapper.test.js     # 10 tests
     ├── ai/parser.test.js
+    ├── domain/loyalty.buildConfig.test.js   # 20 tests
+    ├── domain/loyalty.calcEconomics.test.js # 24 tests
     └── integration/
         ├── api.generate.test.js
+        ├── api.loyalty.test.js              # 11 tests
         ├── api.tournament.optimize.test.js
         └── security.headers.test.js  # CSP assertions
 ```
@@ -215,6 +223,8 @@ Exponential backoff with full jitter. Only retryable errors (429, 5xx, network) 
 | POST | `/api/tournament/audit` | 15/min | TournamentAuditSchema | `createTournamentController().audit` |
 | POST | `/api/tournament/games` | 15/min | TournamentGamesSchema | `createTournamentController().games` |
 | POST | `/api/tournament/optimize` | 15/min | TournamentOptimizeSchema | `createTournamentController().optimize` |
+| POST | `/api/loyalty/generate` | 20/min | LoyaltyGenerateSchema | `createLoyaltyController().generate` |
+| POST | `/api/loyalty/recalc` | 30/min | LoyaltyRecalcSchema | `createLoyaltyController().recalc` |
 | POST | `/api/signup` | 5/hr | SignupSchema | `createSignupController().signup` |
 | GET | `/api/health` | — | — | `{ status: 'ok' }` |
 | GET | `/privacy` | — | — | `public/privacy.html` |
@@ -356,6 +366,23 @@ Tournament Generator SPA.
 
 **Save/library**: `savedTournaments` localStorage. `saveTournament()`, `deleteTournament(id)`.
 
+### `public/loyalty-generator.html` + `public/loyalty-generator.js`
+
+Loyalty Generator SPA.
+
+**Views**: `showView('list')`, `showView('setup')`, `showView('detail', id)`.
+
+**Steps (setup flow):**
+- Step 1 — Basics: mode chip (tiers/missions/hybrid), region select, segment chips, players/avgdep/arpu inputs
+- Step 2 — Program Design: tier count (3/4/5), top cashback rate slider, earn rates, redeem config, mission count; live tier preview (client-side, no API)
+- Step 3 — Results: API call to `/api/loyalty/generate` → economics grid (6 cards) + tier table + mission list; Save + Add to Calendar buttons; AI stubs (disabled, I4)
+
+**Client-side tier preview**: `calcTiersPreview(draft)` — minPoints = thresholdMonths × avgdep × earnRateDeposit; cashback linear from 0 to topCashbackRate.
+
+**Add to Calendar**: `addLoyaltyToCalendar()` / `addDetailToCalendar(id)` — creates `type:'vip'` entry in `rc_campaigns` localStorage with `sourceType:'loyalty_generator'`.
+
+**Save/library**: `savedLoyaltyPrograms` localStorage key.
+
 ### `public/retention-calendar.html` + `public/retention-calendar.js` + `public/retention-calendar/`
 
 **Retention Calendar SPA** — central CRM planning hub.
@@ -493,7 +520,7 @@ NODE_ENV=            # development | production | staging | test
 ## Tests
 
 ```bash
-npm test             # 248 tests, 16 files
+npm test             # 303 tests, 19 files
 npm run test:watch   # vitest watch mode
 ```
 
@@ -516,6 +543,7 @@ npm run test:watch   # vitest watch mode
 **P2 (features):**
 - Task A: Projected result per AI recommendation (apply param-change to 5-factor formula, show lift delta)
 - Retention Calendar: read `?rcDate=` query param in tournament-generator.js to pre-fill date from calendar redirect
+- **I4 (Loyalty AI):** texts/audit/optimize endpoints + prompts + parser schemas + mock tests; unlock AI buttons in loyalty-generator.js
 
 **P3 (frontend):**
 - Convert `onclick=` handlers to `addEventListener` → remove `scriptSrcAttr: 'unsafe-inline'` from CSP

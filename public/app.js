@@ -2423,6 +2423,7 @@ function initAppPage() {
   initFromCampaignURL();
   const hint = document.getElementById('cfg-hint');
   if (hint && !localStorage.getItem('cfg_hint_dismissed')) hint.style.display = 'flex';
+  if (typeof updateAllBadges === 'function') updateAllBadges();
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initAppPage);

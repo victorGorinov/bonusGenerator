@@ -30,7 +30,7 @@ let draft = { scenario: null, params: { vertical:'casino', segment:'mid', games:
 function showView(name) {
   if (typeof closeMenu === 'function') closeMenu();
   currentView = name;
-  ['dashboard','campaigns','configurator','wizard','campaign-detail'].forEach(v => {
+  ['dashboard','campaigns','offer-gen','configurator','wizard','campaign-detail'].forEach(v => {
     const el = document.getElementById('view-'+v);
     if (!el) return;
     if (v === name) el.style.display = v === 'campaign-detail' ? 'flex' : '';
@@ -45,12 +45,12 @@ function showView(name) {
     el.classList.toggle('active',
       (name==='dashboard'    && onclick.includes("'dashboard'")) ||
       (name==='campaigns'    && onclick.includes("'campaigns'")) ||
+      (name==='offer-gen'    && href.includes('view=offer-gen')) ||
       (name==='wizard'       && href.includes('view=wizard')) ||
       (name==='detail'       && onclick.includes("'campaigns'"))
     );
   });
-  if (name === 'campaigns') renderCampaignViews();
-  // Always update campaign badge when switching views
+  if (name === 'campaigns' || name === 'offer-gen') renderCampaignViews();
   updateCampaignBadge();
 }
 
@@ -2261,6 +2261,10 @@ function getTournaments() {
   try { return JSON.parse(localStorage.getItem('savedTournaments') || '[]'); } catch { return []; }
 }
 
+function getLoyaltyPrograms() {
+  try { return JSON.parse(localStorage.getItem('savedLoyaltyPrograms') || '[]'); } catch { return []; }
+}
+
 function tournamentRowHTML(t) {
   const date = t.createdAt ? new Date(t.createdAt).toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '—';
   const TYPE_ICON = { slot:'🎰', live:'🃏', mixed:'🎲', prize_drop:'💎' };
@@ -2278,19 +2282,41 @@ function tournamentRowHTML(t) {
   </div>`;
 }
 
-function renderCampaignViews() {
-  const camps = getCampaigns();
-  const tourns = getTournaments();
+function loyaltyRowHTML(p) {
+  const date  = p.createdAt ? new Date(p.createdAt).toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '—';
+  const econ  = p.result?.econ;
+  const cfg   = p.result?.config;
+  const MODE_ICON  = { tiers:'🏅', missions:'🎯', hybrid:'⭐' };
+  const MODE_LABEL = { tiers:'Tiers', missions:'Missions', hybrid:'Hybrid' };
+  const mode  = cfg?.mode || 'hybrid';
+  const icon  = MODE_ICON[mode] || '⭐';
+  const label = MODE_LABEL[mode] || mode;
+  const lift  = econ?.retentionLiftPct != null ? `${econ.retentionLiftPct.toFixed(1)}% lift` : '';
+  const meta  = [cfg?.region?.toUpperCase(), cfg?.segment, lift].filter(Boolean).join(' · ');
+  return `<div class="ct-row clickable" onclick="window.location.href='/loyalty-generator.html'">
+    <div><div class="ct-name">${icon} ${esc(p.name)}</div><div class="ct-meta">${esc(meta)}</div></div>
+    <div class="ct-cell">⭐ ${esc(label)}</div>
+    <div><span style="background:rgba(245,158,11,.15);color:#f59e0b;padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:700">Loyalty</span></div>
+    <div class="ct-cell">${date}</div>
+    <div></div>
+  </div>`;
+}
 
-  // Dashboard: merged last 5 items (campaigns + tournaments) sorted by date desc
+function renderCampaignViews() {
+  const camps     = getCampaigns();
+  const tourns    = getTournaments();
+  const loyalties = getLoyaltyPrograms();
+
+  // Dashboard: all saved items merged, sorted by date desc
   const dash = document.getElementById('dash-camp-body');
   if (dash) {
-    const campItems = camps.map(c => ({ ...c, _kind: 'camp', _ts: new Date(c.date || 0).getTime() }));
-    const tournItems = tourns.map(t => ({ ...t, _kind: 'tourn', _ts: new Date(t.createdAt || 0).getTime() }));
-    const merged = [...campItems, ...tournItems].sort((a, b) => b._ts - a._ts).slice(0, 5);
+    const campItems    = camps.map(c =>    ({ ...c, _kind: 'camp',    _ts: new Date(c.date || 0).getTime() }));
+    const tournItems   = tourns.map(t =>   ({ ...t, _kind: 'tourn',   _ts: new Date(t.createdAt || 0).getTime() }));
+    const loyaltyItems = loyalties.map(p => ({ ...p, _kind: 'loyalty', _ts: new Date(p.createdAt || 0).getTime() }));
+    const merged = [...campItems, ...tournItems, ...loyaltyItems].sort((a, b) => b._ts - a._ts);
     if (merged.length) {
       dash.innerHTML = merged.map(item =>
-        item._kind === 'camp' ? campaignRowHTML(item) : tournamentRowHTML(item)
+        item._kind === 'camp' ? campaignRowHTML(item) : item._kind === 'loyalty' ? loyaltyRowHTML(item) : tournamentRowHTML(item)
       ).join('');
     } else {
       dash.innerHTML = `
@@ -2302,17 +2328,22 @@ function renderCampaignViews() {
     }
   }
 
-  // Bonus Offers view: campaigns only
+  // Bonus Offers + Offer Gen views: campaigns only
   const emptyCard = `
 <div class="card" style="text-align:center;padding:40px 20px;margin:0;border-radius:0 0 12px 12px;border-top:none">
   <div style="font-size:2.5rem;margin-bottom:14px">📁</div>
   <div style="color:var(--muted);font-size:.88rem;margin-bottom:20px">${t('camp_empty')}</div>
   <button class="btn btn-primary" onclick="startWizard()">⚡ ${t('dash_create')}</button>
 </div>`;
+  const campRows = camps.length ? camps.map(campaignRowHTML).join('') : emptyCard;
   const all = document.getElementById('all-camp-body');
-  if (all)  all.innerHTML = camps.length ? camps.map(campaignRowHTML).join('') : emptyCard;
+  if (all) all.innerHTML = campRows;
   const hd = document.getElementById('all-camp-hd');
   if (hd) hd.style.display = camps.length ? '' : 'none';
+  const og = document.getElementById('offer-gen-body');
+  if (og) og.innerHTML = campRows;
+  const ogh = document.getElementById('offer-gen-hd');
+  if (ogh) ogh.style.display = camps.length ? '' : 'none';
 
   updateAllBadges();
 }

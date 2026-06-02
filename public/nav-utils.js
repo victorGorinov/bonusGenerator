@@ -13,9 +13,41 @@ function updateBadge(elementId, storageKey) {
 }
 
 function updateAllBadges() {
-  updateBadge('camp-nav-badge',  'be_campaigns');
-  updateBadge('nav-tourn-badge', 'savedTournaments');
+  updateBadge('nav-offer-gen-badge',  'be_campaigns');
+  updateBadge('nav-tourn-gen-badge',  'savedTournaments');
+  updateBadge('nav-loyalty-badge',    'savedLoyaltyPrograms');
 }
+
+// ── NAV SUBGROUP TOGGLE ───────────────────────────────────────────────────────
+// .nav-sub items are hidden via CSS (display:none in each page's <style>).
+// .nav-chevron is a static <span> in the HTML inside the parent nav-item.
+// This function wires up click handlers and restores expanded state.
+
+(function initNavSubgroups() {
+  const LS_KEY  = 'nav-sub-tourn-expanded';
+  const expanded = localStorage.getItem(LS_KEY) === '1'; // default: collapsed
+
+  document.querySelectorAll('.nav-chevron').forEach(chev => {
+    // Find the adjacent .nav-sub (next sibling of the parent nav-item)
+    const parent = chev.closest('.nav-item');
+    if (!parent) return;
+    const sub = parent.nextElementSibling;
+    if (!sub || !sub.classList.contains('nav-sub')) return;
+
+    // Restore expanded state
+    chev.textContent = expanded ? '▾' : '▸';
+    if (expanded) sub.style.display = 'flex';
+
+    chev.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      const isVisible = getComputedStyle(sub).display !== 'none';
+      sub.style.display = isVisible ? 'none' : 'flex';
+      chev.textContent  = isVisible ? '▸' : '▾';
+      localStorage.setItem(LS_KEY, isVisible ? '0' : '1');
+    });
+  });
+})();
 
 // ── VIEW PARAM HELPERS ───────────────────────────────────────────────────────
 
