@@ -23,6 +23,11 @@ export function initCalendar(el, onEventClick, onDateClick) {
       center: 'title',
       right:  '',
     },
+    buttonText: {
+      prev:  '‹',
+      next:  '›',
+      today: (function() { try { return localStorage.getItem('bonusLang') === 'ru' ? 'Сегодня' : 'Today'; } catch(e) { return 'Today'; } })(),
+    },
     height:      '100%',
     editable:    true,
     eventResizableFromStart: true,

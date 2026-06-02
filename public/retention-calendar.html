@@ -33,13 +33,21 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .sb-back:hover{color:#fff}
 
 /* ── Main area ──────────────────────────────────────────────────────────── */
-.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;opacity:0;transition:opacity .15s ease}
+.main.ready{opacity:1}
 
 /* ── Topbar ─────────────────────────────────────────────────────────────── */
 .topbar{height:54px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:10px;flex-shrink:0;z-index:40}
 .topbar-title{font-weight:700;font-size:.95rem}
+.lang-toggle{display:flex;background:var(--bg2);border:1px solid var(--border);border-radius:100px;padding:2px;gap:1px;flex-shrink:0}
+.lt-btn{padding:3px 10px;border-radius:100px;font-size:.68rem;font-weight:700;cursor:pointer;border:none;background:none;color:var(--muted);font-family:inherit;transition:all .15s;letter-spacing:.05em}
+.lt-btn:hover{color:var(--text)}
+.lt-btn.active{background:var(--accent);color:#fff}
 
-/* ── View toggle (Month / Week / Agenda) next to topbar title ─────────── */
+/* ── Controls bar (view toggle + action buttons) ─────────────────────── */
+#controls-bar{display:flex;align-items:center;gap:8px;padding:7px 24px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0}
+
+/* ── View toggle (Month / Week / Agenda) ─────────────────────────────── */
 .view-toggle{display:flex;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:2px;gap:1px;flex-shrink:0}
 .vt-btn{padding:4px 12px;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;border:none;background:none;color:var(--muted);font-family:inherit;transition:all .15s;white-space:nowrap}
 .vt-btn:hover{color:var(--text)}
@@ -120,6 +128,7 @@ select.form-input{cursor:pointer}
 
 @media(max-width:640px){
   .topbar{padding:0 12px;gap:6px;height:auto;min-height:54px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px}
+  #controls-bar{padding:6px 12px;flex-wrap:wrap}
   #calendar-wrap{padding:10px 12px}
   #filters-bar{padding:6px 12px}
 }
@@ -133,21 +142,21 @@ select.form-input{cursor:pointer}
     <div class="sb-logo-tag">AI</div>
   </div>
   <nav class="sb-nav">
-    <div class="nav-lbl">Main</div>
-    <a href="/retention-calendar.html" class="nav-item active"><span class="nav-icon">📅</span> Retention Calendar</a>
-    <a href="/campaign-generator.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
-    <div class="nav-lbl" style="margin-top:6px">Tools</div>
-    <a href="/configurator.html" class="nav-item"><span class="nav-icon">⚙️</span> Configurator</a>
-    <a href="/campaign-generator.html?view=offer-gen" class="nav-item"><span class="nav-icon">🚀</span> Bonuses<span class="nav-badge" id="nav-offer-gen-badge" style="display:none"></span></a>
-    <a href="/tournament-generator.html?view=list" class="nav-item"><span class="nav-icon">🏆</span> Tournaments<span class="nav-chevron">▸</span><span class="nav-badge" id="nav-tourn-gen-badge" style="display:none"></span></a>
-    <a href="/tournament-generator.html#setup" class="nav-item nav-sub"><span class="nav-icon" style="font-size:11px;opacity:.55">└</span> Setup Guide</a>
-    <a href="/loyalty-generator.html" class="nav-item"><span class="nav-icon">⭐</span> Loyalty Program<span class="nav-badge" id="nav-loyalty-badge" style="display:none"></span></a>
-    <div class="nav-lbl" style="margin-top:6px">Soon</div>
-    <button class="nav-item off"><span class="nav-icon">📈</span> Analytics</button>
-    <button class="nav-item off"><span class="nav-icon">⚙️</span> Settings</button>
+    <div class="nav-lbl" data-i18n="nav_main">Main</div>
+    <a href="/retention-calendar.html" class="nav-item active"><span class="nav-icon">📅</span><span data-i18n="nav_calendar">Retention Calendar</span></a>
+    <a href="/campaign-generator.html" class="nav-item"><span class="nav-icon">📊</span><span data-i18n="nav_dashboard">Dashboard</span></a>
+    <div class="nav-lbl" style="margin-top:6px" data-i18n="nav_tools">Tools</div>
+    <a href="/configurator.html" class="nav-item" style="display:none"><span class="nav-icon">⚙️</span> Configurator</a>
+    <a href="/campaign-generator.html?view=offer-gen" class="nav-item"><span class="nav-icon">🚀</span><span data-i18n="nav_bonuses">Bonuses</span><span class="nav-badge" id="nav-offer-gen-badge" style="display:none"></span></a>
+    <a href="/tournament-generator.html?view=list" class="nav-item"><span class="nav-icon">🏆</span><span data-i18n="nav_tournament">Tournaments</span><span class="nav-chevron">▸</span><span class="nav-badge" id="nav-tourn-gen-badge" style="display:none"></span></a>
+    <a href="/tournament-generator.html#setup" class="nav-item nav-sub"><span class="nav-icon" style="font-size:11px;opacity:.55">└</span><span data-i18n="nav_setup_guide">Setup Guide</span></a>
+    <a href="/loyalty-generator.html" class="nav-item"><span class="nav-icon">⭐</span><span data-i18n="nav_loyalty">Loyalty Program</span><span class="nav-badge" id="nav-loyalty-badge" style="display:none"></span></a>
+    <div class="nav-lbl" style="margin-top:6px" data-i18n="nav_soon">Soon</div>
+    <button class="nav-item off"><span class="nav-icon">📈</span><span data-i18n="nav_analytics">Analytics</span></button>
+    <button class="nav-item off"><span class="nav-icon">⚙️</span><span data-i18n="nav_settings">Settings</span></button>
   </nav>
   <div class="sb-foot">
-    <a href="/" class="sb-back">← Back to home</a>
+    <a href="/" class="sb-back" data-i18n="nav_back">← Back to home</a>
   </div>
 </aside>
 
@@ -155,20 +164,27 @@ select.form-input{cursor:pointer}
   <!-- Topbar -->
   <div class="topbar">
     <span class="topbar-title">📅 Retention Calendar</span>
-
-    <!-- Month / Week / Agenda switcher right next to the title -->
-    <div class="view-toggle" id="view-toggle">
-      <button class="vt-btn active" data-fc-view="dayGridMonth">Month</button>
-      <button class="vt-btn" data-fc-view="timeGridWeek">Week</button>
-      <button class="vt-btn" data-fc-view="listMonth">Agenda</button>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+      <button class="btn btn-primary btn-sm" onclick="window._rcOpenNew()" data-i18n="nav_rc_new">+ New Campaign</button>
+      <div class="lang-toggle">
+        <button class="lt-btn" id="lt-ru" onclick="setRCLang('ru')">RU</button>
+        <button class="lt-btn" id="lt-en" onclick="setRCLang('en')">EN</button>
+      </div>
     </div>
+  </div>
 
-    <div style="margin-left:auto;display:flex;gap:8px">
-      <button class="btn btn-outline btn-sm" onclick="window._rcOpenAI()">🤖 AI-Assisted</button>
-      <button class="btn btn-outline btn-sm" onclick="window._rcOpenTemplates()">📄 Templates</button>
+  <!-- Controls bar: view toggle + action buttons -->
+  <div id="controls-bar">
+    <div class="view-toggle" id="view-toggle">
+      <button class="vt-btn active" data-fc-view="dayGridMonth" data-i18n="nav_rc_month">Month</button>
+      <button class="vt-btn" data-fc-view="timeGridWeek" data-i18n="nav_rc_week">Week</button>
+      <button class="vt-btn" data-fc-view="listMonth" data-i18n="nav_rc_agenda">Agenda</button>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:6px">
+      <button class="btn btn-outline btn-sm" onclick="window._rcOpenAI()" data-i18n="nav_rc_ai">🤖 AI-Assisted</button>
+      <button class="btn btn-outline btn-sm" onclick="window._rcOpenTemplates()" data-i18n="nav_rc_templates">📄 Templates</button>
       <button class="btn btn-outline btn-sm" onclick="window._rcExportCSV()">⬇ CSV</button>
       <button class="btn btn-outline btn-sm" onclick="window._rcExportJSON()">⬇ JSON</button>
-      <button class="btn btn-primary btn-sm" onclick="window._rcOpenNew()">+ New Campaign</button>
     </div>
   </div>
 
@@ -189,7 +205,23 @@ select.form-input{cursor:pointer}
   <div id="modal-box"></div>
 </div>
 
+<script src="/nav-utils.js"></script>
 <!-- Load the Vite-built bundle (FullCalendar needs bundling — can't load npm imports raw) -->
 <script type="module" src="/dist/retention-calendar.js"></script>
+<script>
+function setRCLang(lang) {
+  try { localStorage.setItem('bonusLang', lang); } catch(e) {}
+  location.reload();
+}
+(function() {
+  var lang = (function() { try { return localStorage.getItem('bonusLang') || 'en'; } catch(e) { return 'en'; } })();
+  document.querySelectorAll('.lt-btn').forEach(function(b) {
+    b.classList.toggle('active', b.id === 'lt-' + lang);
+  });
+  if (typeof applyNavLang === 'function') applyNavLang(lang);
+  if (typeof updateAllBadges === 'function') updateAllBadges();
+  document.querySelector('.main').classList.add('ready');
+})();
+</script>
 </body>
 </html>

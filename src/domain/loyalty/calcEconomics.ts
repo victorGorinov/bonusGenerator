@@ -73,10 +73,10 @@ export function calcLoyaltyEconomics(cfg: LoyaltyConfig): LoyaltyEcon {
   const additionalRevenue3m = monthlyLiftRevenue * 3;
   const roi3m               = monthlyCostUSD > 0 ? additionalRevenue3m / (monthlyCostUSD * 3) : 0;
 
-  // breakEvenMonths: how many months until cumulative lift covers 3× program cost
-  const breakEvenMonths = monthlyLiftRevenue > 0
-    ? Math.min(36, (3 * monthlyCostUSD) / monthlyLiftRevenue)
-    : 36;
+  // breakEvenMonths: months until program breaks even; null when unprofitable (lift < cost).
+  const breakEvenMonths: number | null = monthlyLiftRevenue >= monthlyCostUSD
+    ? monthlyCostUSD / (monthlyLiftRevenue - monthlyCostUSD)
+    : null;
 
   return {
     avgEarnedPointsPerPlayer,

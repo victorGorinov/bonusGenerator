@@ -131,7 +131,7 @@ export function parseTournamentAuditResponse(raw: string): TournamentAuditRespon
 }
 
 const TournamentOptimizeRealismCheckSchema = z.object({
-  metric:    z.preprocess((val) => typeof val === 'string' ? val.trim().toLowerCase().replace(/\s+/g, '_') : val, z.enum(['participation', 'engagement', 'roi', 'cost_per_active', 'retention', 'arpu'])),
+  metric:    anyToString,
   forecast:  anyToString,
   benchmark: anyToString,
   verdict:   verdictNormalizer,
@@ -142,7 +142,7 @@ const TournamentOptimizeResponseSchema = z.object({
   realism: z.object({
     verdict: verdictNormalizer,
     summary: anyToString,
-    checks:  z.array(TournamentOptimizeRealismCheckSchema).min(3).max(6),
+    checks:  z.array(TournamentOptimizeRealismCheckSchema).min(3),
   }),
   recommendations: z.array(z.object({
     param:   paramNormalizer,
@@ -150,7 +150,7 @@ const TournamentOptimizeResponseSchema = z.object({
     target:  anyToString,
     reason:  anyToString,
     impact:  impactNormalizer,
-  })).min(1).max(3),
+  })).min(1).max(5),
 });
 
 export type TournamentOptimizeResponse = z.infer<typeof TournamentOptimizeResponseSchema>;

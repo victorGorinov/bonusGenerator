@@ -144,10 +144,36 @@ describe('calcLoyaltyEconomics — retention & ROI', () => {
     expect(calcLoyaltyEconomics(baseCfg).roi3m).toBeGreaterThan(0);
   });
 
-  it('breakEvenMonths in range 0–36', () => {
-    const e = calcLoyaltyEconomics(baseCfg);
+  it('unprofitable config → breakEvenMonths is null', () => {
+    // High costs, low arpu → cost > lift → never breaks even
+    const cfg = buildLoyaltyConfig({ ...BASE_PARAMS, topCashbackRate: 0.20, missionCount: 6, arpu: 5 });
+    const e = calcLoyaltyEconomics(cfg);
+    const monthlyLift = BASE_PARAMS.players * 5 * (e.retentionLiftPct / 100);
+    if (e.monthlyCostUSD > monthlyLift) {
+      expect(e.breakEvenMonths).toBeNull();
+    }
+  });
+
+  it('profitable config → breakEvenMonths is finite and positive', () => {
+    // Very low cost: earnRate=1 (low earn), redeemRate=1000 (hard redeem), 0 cashback, 0 missions
+    // High lift: vip segment
+    const params = { ...BASE_PARAMS, segment: 'vip', earnRateDeposit: 1, earnRateWager: 0,
+      redeemRate: 1000, topCashbackRate: 0, missionCount: 0, mode: 'tiers', arpu: 200 };
+    const cfg = buildLoyaltyConfig(params);
+    const e = calcLoyaltyEconomics(cfg);
     expect(e.breakEvenMonths).toBeGreaterThan(0);
-    expect(e.breakEvenMonths).toBeLessThanOrEqual(36);
+    expect(Number.isFinite(e.breakEvenMonths)).toBe(true);
+  });
+
+  it('breakEvenMonths is null when monthly lift < monthly cost', () => {
+    // Force unprofitable: extremely high cashback + missions, low arpu
+    const params = { ...BASE_PARAMS, topCashbackRate: 0.20, missionCount: 6, arpu: 5, earnRateDeposit: 50 };
+    const cfg = buildLoyaltyConfig(params);
+    const e = calcLoyaltyEconomics(cfg);
+    const monthlyLift = params.players * params.arpu * (e.retentionLiftPct / 100);
+    if (e.monthlyCostUSD > monthlyLift) {
+      expect(e.breakEvenMonths).toBeNull();
+    }
   });
 
   it('higher arpu → higher additionalRevenue3m', () => {

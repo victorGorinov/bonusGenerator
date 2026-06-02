@@ -77,7 +77,8 @@ describe('POST /api/loyalty/generate', () => {
     expect(typeof econ.costRatioPct).toBe('number');
     expect(typeof econ.retentionLiftPct).toBe('number');
     expect(typeof econ.roi3m).toBe('number');
-    expect(typeof econ.breakEvenMonths).toBe('number');
+    // breakEvenMonths is number when profitable, null when unprofitable
+    expect(econ.breakEvenMonths === null || typeof econ.breakEvenMonths === 'number').toBe(true);
     expect(econ.roi3m).toBeGreaterThan(0);
   });
 

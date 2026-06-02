@@ -15,7 +15,10 @@
       "Bash(rm \"/Users/victorgorinov/Documents/Claude/Projects/Bonus system/.git/index.lock\")",
       "Bash(node -e '*)",
       "Bash(python3 *)",
-      "Read(//private/tmp/**)"
+      "Read(//private/tmp/**)",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\)\\); const e=d.econ; console.log\\('KZ Weekly 150,000 KZT pool'\\); console.log\\('prizePool:', d.spec.prizePool, d.cur\\); console.log\\('arpu:', e.arpu, 'KZT/mo'\\); console.log\\('ggrLiftMid:', e.ggrLiftMid\\); console.log\\('netMid:', e.netMarginMid\\); console.log\\('roi:', e.roi + '%'\\);\")",
+      "Bash(npx tsx -e ' *)",
+      "Bash(node --check public/configurator-extra.js)"
     ]
   }
 }

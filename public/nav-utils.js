@@ -1,5 +1,60 @@
 // Shared navigation and badge utilities — included on all pages
 
+// ── NAV LANGUAGE ─────────────────────────────────────────────────────────────
+
+const _NAV_I18N = {
+  en: {
+    nav_main:        'Main',
+    nav_dashboard:   'Dashboard',
+    nav_tools:       'Tools',
+    nav_calendar:    'Retention Calendar',
+    nav_bonuses:     'Bonuses',
+    nav_tournament:  'Tournaments',
+    nav_setup_guide: 'Setup Guide',
+    nav_loyalty:     'Loyalty Program',
+    nav_soon:        'Soon',
+    nav_analytics:   'Analytics',
+    nav_settings:    'Settings',
+    nav_back:        '← Back to home',
+    nav_rc_new:      '+ New Campaign',
+    nav_rc_ai:       '🤖 AI-Assisted',
+    nav_rc_templates:'📄 Templates',
+    nav_rc_month:    'Month',
+    nav_rc_week:     'Week',
+    nav_rc_agenda:   'Agenda',
+    nav_rc_today:    'Today',
+  },
+  ru: {
+    nav_main:        'Главное',
+    nav_dashboard:   'Дашборд',
+    nav_tools:       'Инструменты',
+    nav_calendar:    'Retention Calendar',
+    nav_bonuses:     'Бонусы',
+    nav_tournament:  'Турниры',
+    nav_setup_guide: 'Гайд настройки',
+    nav_loyalty:     'Лояльность',
+    nav_soon:        'Скоро',
+    nav_analytics:   'Аналитика',
+    nav_settings:    'Настройки',
+    nav_back:        '← На главную',
+    nav_rc_new:      '+ Новая кампания',
+    nav_rc_ai:       '🤖 AI-генерация',
+    nav_rc_templates:'📄 Шаблоны',
+    nav_rc_month:    'Месяц',
+    nav_rc_week:     'Неделя',
+    nav_rc_agenda:   'Список',
+    nav_rc_today:    'Сегодня',
+  },
+};
+
+function applyNavLang(lang) {
+  const dict = _NAV_I18N[lang] || _NAV_I18N.en;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (dict[key] !== undefined) el.textContent = dict[key];
+  });
+}
+
 // ── BADGES ───────────────────────────────────────────────────────────────────
 
 function updateBadge(elementId, storageKey) {

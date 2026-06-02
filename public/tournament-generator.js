@@ -69,9 +69,151 @@ const SEGMENTS = [
   { val:'dormant',    lbl:'Dormant' },
 ];
 
+let _tgCurrentView = 'list';
+
 function setTournLang(lang) {
   try { localStorage.setItem('bonusLang', lang); } catch(e) {}
   document.querySelectorAll('.lt-btn').forEach(b => b.classList.toggle('active', b.id === 'lt-' + lang));
+  applyNavLang(lang);
+  if (_tgCurrentView === 'list') showView('list');
+  else if (_tgCurrentView === 'detail') showView('detail', detailId);
+  else if (_tgCurrentView === 'setup') showView('setup');
+  else if (hasActiveGenerator && step > 0) renderStep();
+}
+
+// ── TRANSLATION DICTIONARY ───────────────────────────────────────────────────
+const TG = {
+  en: {
+    wiz_type:'Type', wiz_params:'Parameters', wiz_economics:'Economics', wiz_texts:'Texts & Audit',
+    step_of: (n) => `Step ${n} of 4`,
+    topbar_list:'Tournaments', topbar_setup:'Setup Guide', topbar_gen:'Tournament Generator',
+    s1_badge:'Step 1 / 4', s1_title:'Select Tournament Type', s1_sub:'Choose the game type for your tournament', s1_next:'Configure Parameters →',
+    s2_badge:'Step 2 / 4', s2_title:'Tournament Parameters', s2_sub:'Configure geo, mechanics, and prize pool',
+    geo_title:'Geography & Audience', geo_market:'Market / GEO', geo_segment:'Segment',
+    geo_total:'Total Active Players in Casino', geo_allplayers:'All players', geo_eligible:'Eligible', geo_pct_base:'% of base',
+    entry_title:'Entry & Scoring', entry_model:'Entry Model', scoring_lbl:'Scoring Method', reentry_lbl:'Re-entry',
+    prize_title:'Prize Pool & Duration', duration_lbl:'Duration', prize_lbl:'Prize Pool Amount',
+    your_pool:'Your pool', recommended:'Recommended',
+    pool_model:'Pool Model', rake_lbl:'Rake % (player contributions)', distribution:'Prize Distribution',
+    lang_title:'Language & Tone', lang_lbl:'Language', tone_lbl:'Tone',
+    btn_back:'← Back', btn_generate:'Generate Tournament Spec →',
+    s3_badge:'Step 3 / 4', s3_title:'Tournament Spec & Economics', s3_sub:'Prize distribution and projected ROI',
+    summary_title:'Tournament Summary',
+    field_type:'Type:', field_dur:'Duration:', field_entry:'Entry:', field_scoring:'Scoring:',
+    field_pool:'Pool model:', field_reentry:'Re-entry:', field_prize:'Prize pool:', field_dist:'Distribution:', field_roi:'ROI:',
+    breakeven_hint: (n) => `Break-even: ${n} participants at 30% GGR lift`,
+    prize_dist: (cur, pool) => `Prize Distribution (${cur} ${pool} pool)`,
+    econ_title:'Economic Scenarios',
+    low_lbl: (p) => `Low (${p} participation)`,
+    exp_lbl: (p) => `Expected (${p} participation)`,
+    high_lbl: (p) => `High (${p} participation)`,
+    players_ggr: (pl, lift) => `${pl} players · GGR: +${lift}`,
+    cost_active: (cpp) => `Cost/active: ${cpp}`,
+    total_val:'Total value (expected)', ggr_plus_ret:'GGR lift + post-tournament retention',
+    engagement_lbl:'Engagement', vs_normal:'vs normal play',
+    retention_val:'Retention value', uplift:'next-month uplift',
+    full_roi:'Full ROI', on_prize:'on prize pool',
+    eligible_note: (el, seg, pct, total, arpu, eng) => `Based on ${el} eligible ${seg} players (${pct}% of ${total} total casino players) · ARPU ${arpu} USD/mo · engagement ×${eng} vs normal play`,
+    guide_ready:'Setup Guide ready', guide_view_sub:'View the detailed setup guide for this tournament', view_guide:'View Guide →',
+    btn_reconfig:'← Reconfigure', btn_save:'💾 Save', btn_calendar:'📅 Add to Calendar',
+    btn_pdf:'⬇ PDF', btn_ai_texts:'Generate AI Texts →',
+    s4_badge:'Step 4 / 4', s4_title:'AI Texts & Compliance', s4_sub:'Generate CRM copy and compliance audit for your tournament',
+    btn_gen_texts:'🤖 Generate CRM Texts', btn_regen_texts:'↺ Regenerate Texts',
+    btn_audit_lbl:'🔍 Compliance Audit', btn_reaudit:'↺ Re-run Audit',
+    btn_back_spec:'← Back to Spec', btn_start_over:'Start Over',
+    crm_copy:'CRM Copy', audit_title:'Compliance Audit', recommendations:'Recommendations',
+    list_title:'Tournaments', list_lib_title:'Your Tournament Library',
+    list_empty:'No tournaments saved yet',
+    list_empty_sub:'Generate a tournament and click "Save" to build your library.',
+    list_create:'Create a Tournament →',
+    list_saved: (n) => `${n} saved`,
+    list_hdr_name:'Name', list_hdr_prize:'Prize pool', list_hdr_roi:'ROI', list_hdr_date:'Date',
+    list_new:'+ New Tournament',
+    det_back:'← Tournaments', det_saved: (d) => `Saved ${d}`,
+    det_not_found:'Tournament not found.',
+    det_setup_guide:'📋 Setup Guide →', det_ai_texts:'✦ AI Texts', det_delete:'🗑 Delete',
+    toast_saved:'Tournament saved to your library', toast_deleted:'Tournament deleted',
+    confirm_delete:'Delete this tournament from your library?',
+    type_names: { slot:'Slots', live:'Live Casino', mixed:'Mixed', prize_drop:'Prize Drop' },
+    type_descs: { slot:'Leaderboard based on slot performance', live:'Live table game tournament', mixed:'Slots + live games combined', prize_drop:'Random prizes during gameplay' },
+    entry_labels: { freeroll:'Freeroll', buyin:'Buy-in', ticket:'Ticket' },
+    scoring_labels: { total_wins:'Total Wins', highest_multiplier:'Highest Multiplier', most_spins:'Most Spins', mission_based:'Mission-Based' },
+    duration_labels: { flash:'Flash (< 1h)', daily:'Daily', weekly:'Weekly', monthly:'Monthly', multi_round:'Multi-Round' },
+    pool_labels: { fixed:'Fixed', dynamic:'Dynamic', hybrid:'Hybrid' },
+    pool_descs: { fixed:'Guaranteed pool, operator bears risk', dynamic:'Pool grows from player rake/fees', hybrid:'Guaranteed base + rake contribution' },
+    dist_labels: { top_n:'Top N', linear_decay:'Linear Decay', flat_tier:'Flat Tier', prize_drop:'Prize Drop' },
+    reentry_labels: { single:'Single Entry', rebuy:'Rebuy Allowed', unlimited:'Unlimited' },
+    seg_labels: { all:'All Players', depositors:'Depositors', new:'New Players', vip:'VIP', dormant:'Dormant' },
+  },
+  ru: {
+    wiz_type:'Тип', wiz_params:'Параметры', wiz_economics:'Экономика', wiz_texts:'Тексты и аудит',
+    step_of: (n) => `Шаг ${n} из 4`,
+    topbar_list:'Турниры', topbar_setup:'Гайд по настройке', topbar_gen:'Генератор турниров',
+    s1_badge:'Шаг 1 / 4', s1_title:'Выбор типа турнира', s1_sub:'Выберите тип игр для вашего турнира', s1_next:'Настроить параметры →',
+    s2_badge:'Шаг 2 / 4', s2_title:'Параметры турнира', s2_sub:'Гео, механика и призовой фонд',
+    geo_title:'География и аудитория', geo_market:'Рынок / GEO', geo_segment:'Сегмент',
+    geo_total:'Всего активных игроков в казино', geo_allplayers:'Все игроки', geo_eligible:'Подходящие', geo_pct_base:'% от базы',
+    entry_title:'Вход и скоринг', entry_model:'Модель входа', scoring_lbl:'Метод скоринга', reentry_lbl:'Повторный вход',
+    prize_title:'Призовой фонд и длительность', duration_lbl:'Длительность', prize_lbl:'Размер призового фонда',
+    your_pool:'Ваш фонд', recommended:'Рекомендовано',
+    pool_model:'Модель фонда', rake_lbl:'Рейк % (взносы игроков)', distribution:'Распределение призов',
+    lang_title:'Язык и тон', lang_lbl:'Язык', tone_lbl:'Тон',
+    btn_back:'← Назад', btn_generate:'Сгенерировать спецификацию →',
+    s3_badge:'Шаг 3 / 4', s3_title:'Спецификация и экономика', s3_sub:'Распределение призов и прогнозный ROI',
+    summary_title:'Сводка по турниру',
+    field_type:'Тип:', field_dur:'Длительность:', field_entry:'Вход:', field_scoring:'Скоринг:',
+    field_pool:'Модель фонда:', field_reentry:'Повторный вход:', field_prize:'Призовой фонд:', field_dist:'Распределение:', field_roi:'ROI:',
+    breakeven_hint: (n) => `Безубыток: ${n} участников при GGR-лифте 30%`,
+    prize_dist: (cur, pool) => `Распределение призов (фонд ${cur} ${pool})`,
+    econ_title:'Экономические сценарии',
+    low_lbl: (p) => `Низкий (${p} участие)`,
+    exp_lbl: (p) => `Ожидаемый (${p} участие)`,
+    high_lbl: (p) => `Высокий (${p} участие)`,
+    players_ggr: (pl, lift) => `${pl} игр. · GGR: +${lift}`,
+    cost_active: (cpp) => `Стоимость/акт.: ${cpp}`,
+    total_val:'Суммарная ценность (ожидаемая)', ggr_plus_ret:'GGR-лифт + удержание после турнира',
+    engagement_lbl:'Вовлечённость', vs_normal:'vs обычная игра',
+    retention_val:'Ценность удержания', uplift:'прирост след. месяца',
+    full_roi:'Полный ROI', on_prize:'на призовой фонд',
+    eligible_note: (el, seg, pct, total, arpu, eng) => `Расчёт: ${el} подходящих игроков (${seg}), ${pct}% из ${total} всего · ARPU ${arpu} USD/мес · ×${eng} vs обычная игра`,
+    guide_ready:'Гайд по настройке готов', guide_view_sub:'Просмотр подробного гайда для этого турнира', view_guide:'Открыть гайд →',
+    btn_reconfig:'← Переконфигурировать', btn_save:'💾 Сохранить', btn_calendar:'📅 Добавить в календарь',
+    btn_pdf:'⬇ PDF', btn_ai_texts:'Сгенерировать AI тексты →',
+    s4_badge:'Шаг 4 / 4', s4_title:'AI тексты и compliance', s4_sub:'Генерация CRM-копии и аудит соответствия требованиям',
+    btn_gen_texts:'🤖 Сгенерировать CRM тексты', btn_regen_texts:'↺ Перегенерировать тексты',
+    btn_audit_lbl:'🔍 Аудит соответствия', btn_reaudit:'↺ Повторный аудит',
+    btn_back_spec:'← К спецификации', btn_start_over:'Начать заново',
+    crm_copy:'CRM копия', audit_title:'Аудит соответствия', recommendations:'Рекомендации',
+    list_title:'Турниры', list_lib_title:'Библиотека турниров',
+    list_empty:'Турниров пока нет',
+    list_empty_sub:'Создайте турнир и нажмите «Сохранить», чтобы наполнить библиотеку.',
+    list_create:'Создать турнир →',
+    list_saved: (n) => `${n} сохранено`,
+    list_hdr_name:'Название', list_hdr_prize:'Призовой фонд', list_hdr_roi:'ROI', list_hdr_date:'Дата',
+    list_new:'+ Новый турнир',
+    det_back:'← Турниры', det_saved: (d) => `Сохранено ${d}`,
+    det_not_found:'Турнир не найден.',
+    det_setup_guide:'📋 Гайд по настройке →', det_ai_texts:'✦ AI тексты', det_delete:'🗑 Удалить',
+    toast_saved:'Турнир сохранён в библиотеке', toast_deleted:'Турнир удалён',
+    confirm_delete:'Удалить этот турнир из библиотеки?',
+    type_names: { slot:'Слоты', live:'Живое казино', mixed:'Смешанный', prize_drop:'Рандомные призы' },
+    type_descs: { slot:'Рейтинг по результатам в слотах', live:'Турнир на живых столах', mixed:'Слоты + живые игры', prize_drop:'Случайные призы в процессе игры' },
+    entry_labels: { freeroll:'Фриролл', buyin:'Байин', ticket:'Тикет' },
+    scoring_labels: { total_wins:'Всего побед', highest_multiplier:'Макс. множитель', most_spins:'Макс. спинов', mission_based:'Миссии' },
+    duration_labels: { flash:'Флэш (< 1ч)', daily:'Дневной', weekly:'Недельный', monthly:'Месячный', multi_round:'Мульти-раунд' },
+    pool_labels: { fixed:'Фиксированный', dynamic:'Динамический', hybrid:'Гибридный' },
+    pool_descs: { fixed:'Гарантированный фонд, оператор несёт риск', dynamic:'Фонд растёт за счёт рейка игроков', hybrid:'Гарантированная база + рейк' },
+    dist_labels: { top_n:'Топ-N', linear_decay:'Линейный спад', flat_tier:'Плоские тиры', prize_drop:'Рандомный приз' },
+    reentry_labels: { single:'Одиночный', rebuy:'Ребай разрешён', unlimited:'Неограниченно' },
+    seg_labels: { all:'Все игроки', depositors:'Депозиторы', new:'Новые', vip:'VIP', dormant:'Дормантные' },
+  },
+};
+
+function tg(key, ...args) {
+  const lang = localStorage.getItem('bonusLang') || 'en';
+  const dict = TG[lang] || TG.en;
+  const val  = Object.prototype.hasOwnProperty.call(dict, key) ? dict[key] : (TG.en[key] ?? key);
+  return typeof val === 'function' ? val(...args) : val;
 }
 
 let step            = 1;
@@ -102,6 +244,11 @@ let lastAudit    = null;
 let lastOptimize = null;
 let activeTab    = 'push';
 let activeAudit  = false;
+
+// ── BALANCE / UNDO STATE ─────────────────────────────────────────────────────
+let _tgUndoStack    = null;  // { params, econ } — 1-step undo
+let _tgPrevEcon     = null;  // econ before last apply (for delta rendering)
+let _tgLastOptRecs  = [];    // last optimize recommendations
 
 // ── LOCALSTORAGE HELPERS ─────────────────────────────────────────────────────
 function loadTournaments() {
@@ -273,9 +420,8 @@ function gamesSection() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-const WIZ_STEP_LABELS = ['Type', 'Parameters', 'Economics', 'Texts & Audit'];
-
 function wizProgressHTML(current) {
+  const WIZ_STEP_LABELS = [tg('wiz_type'), tg('wiz_params'), tg('wiz_economics'), tg('wiz_texts')];
   return `<div class="wiz-progress">
     ${WIZ_STEP_LABELS.map((lbl, i) => {
       const n = i + 1;
@@ -294,7 +440,8 @@ function wizProgressHTML(current) {
 function goStep(n) {
   step = n;
   hasActiveGenerator = true;
-  document.getElementById('topbar-step').textContent = `Step ${n} of 4`;
+  _tgCurrentView = 'generator';
+  document.getElementById('topbar-step').textContent = tg('step_of', n);
   setSidebarActive('nav-tournament');
   renderStep();
 }
@@ -319,30 +466,28 @@ function showSetupGuide() { showView('setup'); }
 function showView(view, id) {
   const c  = document.getElementById('content');
   const tb = document.getElementById('topbar-step');
+  _tgCurrentView = view;
   if (view === 'list') {
-    tb.textContent = 'Tournaments';
-    // Highlight Tournament Gen nav when accessed from that link (?view=list)
+    tb.textContent = tg('topbar_list');
     const fromTournGen = new URLSearchParams(location.search).get('view') === 'list';
     setSidebarActive(fromTournGen ? 'nav-tourn-gen' : 'nav-tournament');
     c.innerHTML = renderList();
   } else if (view === 'detail') {
     detailId = id;
     const t = loadTournaments().find(t => t.id === id);
-    tb.textContent = t ? t.name : 'Tournament';
+    tb.textContent = t ? t.name : tg('topbar_list');
     setSidebarActive('nav-tourn-gen');
     c.innerHTML = renderDetail(id);
   } else if (view === 'setup' || view === 'generator') {
-    // If view is 'setup', show setup guide; if 'generator', show tournament wizard
     if (view === 'setup') {
-      tb.textContent = 'Setup Guide';
+      tb.textContent = tg('topbar_setup');
       setSidebarActive('nav-setup-guide');
       c.innerHTML = renderSetupGuide();
     } else {
-      // Initialize draft and step if needed
       if (!draft.type) draft.type = 'slot';
       if (!draft.params) draft.params = { segment: 'all', totalPlayers: 5000 };
       if (step === 0) step = 1;
-      tb.textContent = 'Tournament Generator';
+      tb.textContent = tg('topbar_gen');
       setSidebarActive('nav-tourn-gen');
       renderStep();
     }
@@ -441,34 +586,34 @@ function updatePrizeHint() {
 
 // ── STEP 1: Tournament type ──────────────────────────────────────────────────
 function renderStep1() {
+  const typeNames = tg('type_names');
+  const typeDescs = tg('type_descs');
   return `
 ${wizProgressHTML(1)}
 <div class="step-header">
-  <div class="step-badge">Step 1 / 4</div>
-  <div class="step-title">Select Tournament Type</div>
-  <div class="step-sub">Choose the game type for your tournament</div>
+  <div class="step-badge">${tg('s1_badge')}</div>
+  <div class="step-title">${tg('s1_title')}</div>
+  <div class="step-sub">${tg('s1_sub')}</div>
 </div>
 <div class="chips" style="gap:12px;margin-bottom:28px">
   ${TOURNAMENT_TYPES.map(t => `
     <div class="chip type-card${draft.type===t.val?' on':''}" onclick="draft.type='${t.val}';renderStep()">
       <span class="tc-icon">${t.icon}</span>
-      <span class="tc-name">${t.name}</span>
-      <span class="tc-desc">${t.desc}</span>
+      <span class="tc-name">${typeNames[t.val] || t.name}</span>
+      <span class="tc-desc">${typeDescs[t.val] || t.desc}</span>
     </div>`).join('')}
 </div>
 <div class="nav-footer">
   <span></span>
-  <button class="btn btn-primary btn-lg" onclick="goStep(2)">Configure Parameters →</button>
+  <button class="btn btn-primary btn-lg" onclick="goStep(2)">${tg('s1_next')}</button>
 </div>`;
 }
 
 // ── STEP 2: Parameters ───────────────────────────────────────────────────────
 function renderStep2() {
   const p = draft.params;
-  const lang = localStorage.getItem('bonusLang') || 'en';
-  const isRu = lang === 'ru';
+  const isRu = (localStorage.getItem('bonusLang') || 'en') === 'ru';
 
-  // Auto-set prize pool to recommendation when params change (unless user manually overrode it)
   const { prize: suggestedPrize, ggrLift: suggestedGgrLift } = calcSuggestedPrize(p);
   if (p._prizeAutoSet !== false) {
     p.prizePool = suggestedPrize;
@@ -485,35 +630,43 @@ function renderStep2() {
   const segRatio     = getSegRatio(p.segment);
   const eligible     = Math.round(totalPlayers * segRatio);
   const eligiblePct  = Math.round(segRatio * 100);
-  const prizeUSD     = Math.round((p.prizePool || 0) / (deriveLocalFxRateForUI(p.geo) || 1));
   const recUSD       = Math.round(suggestedPrize / (deriveLocalFxRateForUI(p.geo) || 1));
   const prizeBarPct  = recUSD > 0 ? Math.min(100, Math.round((p.prizePool / (recUSD * (deriveLocalFxRateForUI(p.geo) || 1))) * 100)) : 0;
   const prizeBarColor = prizeBarPct >= 80 && prizeBarPct <= 130 ? 'var(--success)' : prizeBarPct < 50 ? '#ef4444' : 'var(--warn)';
 
+  const segLabels    = tg('seg_labels');
+  const entryLabels  = tg('entry_labels');
+  const scoringLbls  = tg('scoring_labels');
+  const reentryLbls  = tg('reentry_labels');
+  const durLabels    = tg('duration_labels');
+  const poolLabels   = tg('pool_labels');
+  const poolDescs    = tg('pool_descs');
+  const distLabels   = tg('dist_labels');
+
   return `
 ${wizProgressHTML(2)}
 <div class="step-header">
-  <div class="step-badge">Step 2 / 4</div>
-  <div class="step-title">Tournament Parameters</div>
-  <div class="step-sub">Configure geo, mechanics, and prize pool</div>
+  <div class="step-badge">${tg('s2_badge')}</div>
+  <div class="step-title">${tg('s2_title')}</div>
+  <div class="step-sub">${tg('s2_sub')}</div>
 </div>
 
 <div class="card">
-  <div class="card-title">Geography & Audience</div>
+  <div class="card-title">${tg('geo_title')}</div>
   <div class="form-row">
-    <label class="form-label">Market / GEO</label>
+    <label class="form-label">${tg('geo_market')}</label>
     <select class="form-input" id="f-geo" onchange="draft.params.geo=this.value;draft.params._prizeAutoSet=true;renderStep()">
       ${GEO_OPTIONS.map(g => `<option value="${g.val}"${p.geo===g.val?' selected':''}>${g.lbl}</option>`).join('')}
     </select>
   </div>
   <div class="form-row">
-    <label class="form-label">Segment</label>
+    <label class="form-label">${tg('geo_segment')}</label>
     <div class="chips">
-      ${SEGMENTS.map(s => `<div class="chip${p.segment===s.val?' on':''}" onclick="draft.params.segment='${s.val}';draft.params.totalPlayers=draft.params.totalPlayers||5000;renderStep();updateEligibleHint()">${s.lbl}</div>`).join('')}
+      ${SEGMENTS.map(s => `<div class="chip${p.segment===s.val?' on':''}" onclick="draft.params.segment='${s.val}';draft.params.totalPlayers=draft.params.totalPlayers||5000;renderStep();updateEligibleHint()">${segLabels[s.val] || s.lbl}</div>`).join('')}
     </div>
   </div>
   <div class="form-row">
-    <label class="form-label">Total Active Players in Casino</label>
+    <label class="form-label">${tg('geo_total')}</label>
     <div style="display:flex;align-items:center;gap:12px">
       <input type="range" min="100" max="100000" step="100" id="f-tp"
              value="${p.totalPlayers||5000}"
@@ -524,56 +677,56 @@ ${wizProgressHTML(2)}
   </div>
   <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px">
     <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-bottom:8px">
-      <span>All players</span><strong style="color:var(--text)" id="funnel-total">${totalPlayers.toLocaleString()}</strong>
+      <span>${tg('geo_allplayers')}</span><strong style="color:var(--text)" id="funnel-total">${totalPlayers.toLocaleString()}</strong>
     </div>
     <div class="funnel-bar"><div class="funnel-fill" style="width:100%;background:var(--border)"></div></div>
     <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-top:8px;margin-bottom:4px">
-      <span>Eligible <span style="opacity:.6">(${p.segment||'all'} segment)</span></span>
+      <span>${tg('geo_eligible')} <span style="opacity:.6">(${segLabels[p.segment||'all'] || p.segment || 'all'})</span></span>
       <strong style="color:var(--accent)" id="funnel-eligible">${eligible.toLocaleString()}</strong>
     </div>
     <div class="funnel-bar"><div class="funnel-fill" id="funnel-bar-eligible" style="width:${eligiblePct}%;background:var(--accent)"></div></div>
-    <div style="font-size:.7rem;color:var(--muted);margin-top:6px;text-align:right" id="funnel-pct">${eligiblePct}% of base</div>
+    <div style="font-size:.7rem;color:var(--muted);margin-top:6px;text-align:right" id="funnel-pct">${eligiblePct}${tg('geo_pct_base')}</div>
   </div>
 </div>
 
 <div class="card">
-  <div class="card-title">Entry & Scoring</div>
+  <div class="card-title">${tg('entry_title')}</div>
   <div class="form-row">
-    <label class="form-label">Entry Model</label>
+    <label class="form-label">${tg('entry_model')}</label>
     <div class="chips">
-      ${ENTRY_MODELS.map(e => `<div class="chip${p.entryModel===e.val?' on':''}" onclick="draft.params.entryModel='${e.val}';renderStep()">${e.lbl}</div>`).join('')}
+      ${ENTRY_MODELS.map(e => `<div class="chip${p.entryModel===e.val?' on':''}" onclick="draft.params.entryModel='${e.val}';renderStep()">${entryLabels[e.val] || e.lbl}</div>`).join('')}
     </div>
   </div>
   <div class="form-row">
-    <label class="form-label">Scoring Method</label>
+    <label class="form-label">${tg('scoring_lbl')}</label>
     <div class="chips">
-      ${SCORING.map(s => `<div class="chip${p.scoring===s.val?' on':''}" onclick="draft.params.scoring='${s.val}';renderStep()">${s.lbl}</div>`).join('')}
+      ${SCORING.map(s => `<div class="chip${p.scoring===s.val?' on':''}" onclick="draft.params.scoring='${s.val}';renderStep()">${scoringLbls[s.val] || s.lbl}</div>`).join('')}
     </div>
   </div>
   <div class="form-row">
-    <label class="form-label">Re-entry</label>
+    <label class="form-label">${tg('reentry_lbl')}</label>
     <div class="chips">
-      ${REENTRY.map(r => `<div class="chip${p.reentry===r.val?' on':''}" onclick="draft.params.reentry='${r.val}';renderStep()">${r.lbl}</div>`).join('')}
+      ${REENTRY.map(r => `<div class="chip${p.reentry===r.val?' on':''}" onclick="draft.params.reentry='${r.val}';renderStep()">${reentryLbls[r.val] || r.lbl}</div>`).join('')}
     </div>
   </div>
 </div>
 
 <div class="card">
-  <div class="card-title">Prize Pool & Duration</div>
+  <div class="card-title">${tg('prize_title')}</div>
   <div class="form-row">
-    <label class="form-label">Duration</label>
+    <label class="form-label">${tg('duration_lbl')}</label>
     <div class="chips">
-      ${DURATIONS.map(d => `<div class="chip${p.duration===d.val?' on':''}" onclick="draft.params.duration='${d.val}';renderStep()">${d.lbl}</div>`).join('')}
+      ${DURATIONS.map(d => `<div class="chip${p.duration===d.val?' on':''}" onclick="draft.params.duration='${d.val}';renderStep()">${durLabels[d.val] || d.lbl}</div>`).join('')}
     </div>
   </div>
   <div class="form-row">
-    <label class="form-label">${isRu ? 'Призовой фонд' : 'Prize Pool Amount'}</label>
+    <label class="form-label">${tg('prize_lbl')}</label>
     <input class="form-input" type="number" min="100" id="f-pp" value="${p.prizePool}"
            onchange="draft.params._prizeAutoSet=false;draft.params.prizePool=Math.max(100,+this.value);renderStep()">
     <div style="margin-top:8px">
       <div style="display:flex;justify-content:space-between;font-size:.73rem;color:var(--muted);margin-bottom:4px">
-        <span>${isRu ? 'Ваш фонд' : 'Your pool'}</span>
-        <span>${isRu ? 'Рекомендация' : 'Recommended'}: <strong style="color:var(--accent)">${prizeHintLabel.replace(/.*<strong>([^<]+)<\/strong>.*/, '$1')}</strong></span>
+        <span>${tg('your_pool')}</span>
+        <span>${tg('recommended')}: <strong style="color:var(--accent)">${prizeHintLabel.replace(/.*<strong>([^<]+)<\/strong>.*/, '$1')}</strong></span>
       </div>
       <div class="funnel-bar" style="height:6px">
         <div class="funnel-fill" style="width:${prizeBarPct}%;background:${prizeBarColor}"></div>
@@ -582,29 +735,29 @@ ${wizProgressHTML(2)}
     </div>
   </div>
   <div class="form-row">
-    <label class="form-label">Pool Model</label>
+    <label class="form-label">${tg('pool_model')}</label>
     <div class="chips">
-      ${POOL_MODELS.map(m => `<div class="chip${p.poolModel===m.val?' on':''}" onclick="draft.params.poolModel='${m.val}';renderStep()" title="${m.desc}">${m.lbl}</div>`).join('')}
+      ${POOL_MODELS.map(m => `<div class="chip${p.poolModel===m.val?' on':''}" onclick="draft.params.poolModel='${m.val}';renderStep()" title="${poolDescs[m.val] || m.desc}">${poolLabels[m.val] || m.lbl}</div>`).join('')}
     </div>
   </div>
   ${p.poolModel==='dynamic'?`
   <div class="form-row">
-    <label class="form-label">Rake % (player contributions)</label>
+    <label class="form-label">${tg('rake_lbl')}</label>
     <input class="form-input" type="number" min="0" max="40" value="${p.rake||10}" onchange="draft.params.rake=+this.value" style="max-width:120px">
   </div>`:''}
   <div class="form-row">
-    <label class="form-label">Prize Distribution</label>
+    <label class="form-label">${tg('distribution')}</label>
     <div class="chips">
-      ${DISTRIBUTIONS.map(d => `<div class="chip${p.distribution===d.val?' on':''}" onclick="draft.params.distribution='${d.val}';renderStep()">${d.lbl}</div>`).join('')}
+      ${DISTRIBUTIONS.map(d => `<div class="chip${p.distribution===d.val?' on':''}" onclick="draft.params.distribution='${d.val}';renderStep()">${distLabels[d.val] || d.lbl}</div>`).join('')}
     </div>
   </div>
 </div>
 
 <div class="card">
-  <div class="card-title">Language & Tone</div>
+  <div class="card-title">${tg('lang_title')}</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
     <div class="form-row" style="margin:0">
-      <label class="form-label">Language</label>
+      <label class="form-label">${tg('lang_lbl')}</label>
       <select class="form-input" onchange="draft.params.lang=this.value">
         <option value="en"${p.lang==='en'?' selected':''}>English</option>
         <option value="ru"${p.lang==='ru'?' selected':''}>Russian</option>
@@ -615,7 +768,7 @@ ${wizProgressHTML(2)}
       </select>
     </div>
     <div class="form-row" style="margin:0">
-      <label class="form-label">Tone</label>
+      <label class="form-label">${tg('tone_lbl')}</label>
       <select class="form-input" onchange="draft.params.tone=this.value">
         <option value="professional"${p.tone==='professional'?' selected':''}>Professional</option>
         <option value="casual"${p.tone==='casual'?' selected':''}>Casual</option>
@@ -626,8 +779,8 @@ ${wizProgressHTML(2)}
 </div>
 
 <div class="nav-footer">
-  <button class="btn btn-outline" onclick="goStep(1)">← Back</button>
-  <button class="btn btn-primary btn-lg" id="btn-generate" onclick="runGenerate()">Generate Tournament Spec →</button>
+  <button class="btn btn-outline" onclick="goStep(1)">${tg('btn_back')}</button>
+  <button class="btn btn-primary btn-lg" id="btn-generate" onclick="runGenerate()">${tg('btn_generate')}</button>
 </div>`;
 }
 
@@ -650,9 +803,9 @@ function renderStep3() {
     multi_round:{lo:'6%',mi:'12%',hi:'20%'} };
   const pct = pctMap[dur] || pctMap['weekly'];
   const scenarios = [
-    { label:`Low (${pct.lo} participation)`,      lift:e.ggrLiftLow,  net:e.netMarginLow,  pl:e.participantsLow,  cpp:e.costPerActiveLow  },
-    { label:`Expected (${pct.mi} participation)`, lift:e.ggrLiftMid,  net:e.netMarginMid,  pl:e.participantsMid,  cpp:e.costPerActiveMid  },
-    { label:`High (${pct.hi} participation)`,     lift:e.ggrLiftHigh, net:e.netMarginHigh, pl:e.participantsHigh, cpp:e.costPerActiveHigh },
+    { label:tg('low_lbl', pct.lo),  lift:e.ggrLiftLow,  net:e.netMarginLow,  pl:e.participantsLow,  cpp:e.costPerActiveLow  },
+    { label:tg('exp_lbl', pct.mi),  lift:e.ggrLiftMid,  net:e.netMarginMid,  pl:e.participantsMid,  cpp:e.costPerActiveMid  },
+    { label:tg('high_lbl', pct.hi), lift:e.ggrLiftHigh, net:e.netMarginHigh, pl:e.participantsHigh, cpp:e.costPerActiveHigh },
   ];
 
   const prizeRows = (spec.prizes||[]).map((pr,i) => {
@@ -665,13 +818,19 @@ function renderStep3() {
     </div>`;
   }).join('');
 
-  const econCards = scenarios.map(s => {
+  const prev = _tgPrevEcon;
+  const econCards = scenarios.map((s, idx) => {
     const netClass = s.net >= 0 ? 'pos' : 'neg';
-    return `<div class="econ-card">
+    const prevNets = prev ? [prev.netMarginLow, prev.netMarginMid, prev.netMarginHigh] : [];
+    const prevCpps = prev ? [prev.costPerActiveLow, prev.costPerActiveMid, prev.costPerActiveHigh] : [];
+    const netDelta = prevNets[idx] !== undefined ? _tgDeltaBadge(s.net, prevNets[idx], { fmt: d => (d>=0?'+':'') + fmtCur(d) }) : '';
+    const cppDelta = prevCpps[idx] !== undefined ? _tgDeltaBadge(s.cpp, prevCpps[idx], { lowerBetter: true, fmt: d => (d>=0?'+':'') + fmtCur(d) }) : '';
+    const flashStyle = prev && s.net >= 0 && prevNets[idx] < 0 ? ' style="animation:tgCardFlash .6s ease"' : '';
+    return `<div class="econ-card"${flashStyle}>
       <div class="econ-label">${s.label}</div>
-      <div class="econ-val ${netClass}">${s.net>=0?'+':''}${fmtCur(s.net)}</div>
-      <div class="econ-sub">${s.pl} players · GGR: +${fmtCur(s.lift)}</div>
-      <div class="econ-sub">Cost/active: ${fmtCur(s.cpp)}</div>
+      <div class="econ-val ${netClass}">${s.net>=0?'+':''}${fmtCur(s.net)}${netDelta}</div>
+      <div class="econ-sub">${tg('players_ggr', s.pl, fmtCur(s.lift))}</div>
+      <div class="econ-sub">${tg('cost_active', fmtCur(s.cpp))}${cppDelta}</div>
     </div>`;
   }).join('');
 
@@ -680,68 +839,72 @@ function renderStep3() {
   const totVal  = e.totalValueMid  || e.netMarginMid || 0;
   const totClass = totVal >= 0 ? 'pos' : 'neg';
 
+  // ROI delta badge
+  const roiDelta = prev ? _tgDeltaBadge(roi, prev.roi ?? 0, {}) : '';
+
   return `
 ${wizProgressHTML(3)}
 <div class="step-header">
-  <div class="step-badge">Step 3 / 4</div>
-  <div class="step-title">Tournament Spec & Economics</div>
-  <div class="step-sub">Prize distribution and projected ROI</div>
+  <div class="step-badge">${tg('s3_badge')}</div>
+  <div class="step-title">${tg('s3_title')}</div>
+  <div class="step-sub">${tg('s3_sub')}</div>
 </div>
 
 <div class="card">
-  <div class="card-title">Tournament Summary</div>
+  <div class="card-title">${tg('summary_title')}</div>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-size:.82rem">
-    <div><span style="color:var(--muted)">Type:</span> ${spec.type}</div>
-    <div><span style="color:var(--muted)">Duration:</span> ${spec.duration}</div>
-    <div><span style="color:var(--muted)">Entry:</span> ${spec.entryModel}</div>
-    <div><span style="color:var(--muted)">Scoring:</span> ${spec.scoring}</div>
-    <div><span style="color:var(--muted)">Pool model:</span> ${spec.poolModel}</div>
-    <div><span style="color:var(--muted)">Re-entry:</span> ${spec.reentry}</div>
-    <div><span style="color:var(--muted)">Prize pool:</span> <strong>${fmtCur(spec.prizePool)}</strong></div>
-    <div><span style="color:var(--muted)">Distribution:</span> ${spec.distribution}</div>
-    <div><span style="color:var(--muted)">ROI:</span> <strong style="color:${roi>=0?'var(--success)':'#ef4444'}">${roi}%</strong></div>
+    <div><span style="color:var(--muted)">${tg('field_type')}</span> ${spec.type}</div>
+    <div><span style="color:var(--muted)">${tg('field_dur')}</span> ${spec.duration}</div>
+    <div><span style="color:var(--muted)">${tg('field_entry')}</span> ${spec.entryModel}</div>
+    <div><span style="color:var(--muted)">${tg('field_scoring')}</span> ${spec.scoring}</div>
+    <div><span style="color:var(--muted)">${tg('field_pool')}</span> ${spec.poolModel}</div>
+    <div><span style="color:var(--muted)">${tg('field_reentry')}</span> ${spec.reentry}</div>
+    <div><span style="color:var(--muted)">${tg('field_prize')}</span> <strong>${fmtCur(spec.prizePool)}</strong></div>
+    <div><span style="color:var(--muted)">${tg('field_dist')}</span> ${spec.distribution}</div>
+    <div><span style="color:var(--muted)">${tg('field_roi')}</span> <strong style="color:${roi>=0?'var(--success)':'#ef4444'}">${roi}%${roiDelta}</strong></div>
   </div>
-  ${e.breakEvenParticipants > 0 ? `<div style="margin-top:10px;font-size:.78rem;color:var(--muted)">Break-even: <strong style="color:var(--text)">${e.breakEvenParticipants} participants</strong> at 30% GGR lift</div>` : ''}
+  ${e.breakEvenParticipants > 0 ? `<div style="margin-top:10px;font-size:.78rem;color:var(--muted)">${tg('breakeven_hint', e.breakEvenParticipants)}</div>` : ''}
 </div>
 
 <div class="card">
-  <div class="card-title">Prize Distribution (${cur} ${spec.prizePool.toLocaleString()} pool)</div>
+  <div class="card-title">${tg('prize_dist', cur, spec.prizePool.toLocaleString())}</div>
   ${prizeRows}
 </div>
 
 <div class="card">
-  <div class="card-title">Economic Scenarios</div>
+  <div class="card-title">${tg('econ_title')}</div>
+  ${tgActionPanelHTML(e)}
   <div class="econ-grid">${econCards}</div>
   <div style="margin-top:14px;padding:12px 14px;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:8px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
     <div style="flex:1;min-width:160px">
-      <div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Total value (expected)</div>
+      <div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">${tg('total_val')}</div>
       <div style="font-size:1.1rem;font-weight:700;color:${totClass==='pos'?'var(--success)':'#ef4444'}">${totVal>=0?'+':''}${fmtCur(totVal)}</div>
-      <div style="font-size:.72rem;color:var(--muted);margin-top:2px">GGR lift + post-tournament retention</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-top:2px">${tg('ggr_plus_ret')}</div>
     </div>
     <div style="display:flex;gap:16px;flex-wrap:wrap">
       <div style="text-align:center">
-        <div style="font-size:.68rem;color:var(--muted);margin-bottom:2px">Engagement</div>
+        <div style="font-size:.68rem;color:var(--muted);margin-bottom:2px">${tg('engagement_lbl')}</div>
         <div style="font-size:.88rem;font-weight:600;color:#a0b0ff">×${engMul.toFixed(1)}</div>
-        <div style="font-size:.65rem;color:var(--muted)">vs normal play</div>
+        <div style="font-size:.65rem;color:var(--muted)">${tg('vs_normal')}</div>
       </div>
       <div style="text-align:center">
-        <div style="font-size:.68rem;color:var(--muted);margin-bottom:2px">Retention value</div>
+        <div style="font-size:.68rem;color:var(--muted);margin-bottom:2px">${tg('retention_val')}</div>
         <div style="font-size:.88rem;font-weight:600;color:var(--success)">+${fmtCur(retVal)}</div>
-        <div style="font-size:.65rem;color:var(--muted)">next-month uplift</div>
+        <div style="font-size:.65rem;color:var(--muted)">${tg('uplift')}</div>
       </div>
       <div style="text-align:center">
-        <div style="font-size:.68rem;color:var(--muted);margin-bottom:2px">Full ROI</div>
+        <div style="font-size:.68rem;color:var(--muted);margin-bottom:2px">${tg('full_roi')}</div>
         <div style="font-size:.88rem;font-weight:600;color:${roi>=0?'var(--success)':'#ef4444'}">${roi>=0?'+':''}${roi}%</div>
-        <div style="font-size:.65rem;color:var(--muted)">on prize pool</div>
+        <div style="font-size:.65rem;color:var(--muted)">${tg('on_prize')}</div>
       </div>
     </div>
   </div>
   <div style="font-size:.7rem;color:var(--muted);margin-top:10px">
-    Based on ${e.eligible} eligible ${draft.params.segment} players (${Math.round(e.segmentRatio*100)}% of ${(draft.params.totalPlayers||5000).toLocaleString()} total casino players) · ARPU ${e.arpu} USD/mo · engagement ×${engMul.toFixed(1)} vs normal play
+    ${tg('eligible_note', e.eligible, draft.params.segment, Math.round(e.segmentRatio*100), (draft.params.totalPlayers||5000).toLocaleString(), e.arpu, engMul.toFixed(1))}
   </div>
   <div style="margin-top:14px;display:flex;gap:10px;align-items:center">
     <button class="btn btn-outline btn-sm" onclick="runOptimize()" id="btn-optimize">
-      ${(function(){ const l=localStorage.getItem('bonusLang')||'en'; return l==='ru'?'🤖 AI-ревью прогноза':'🤖 AI Review'; })()}
+      ${(localStorage.getItem('bonusLang')||'en')==='ru' ? '🤖 AI-ревью прогноза' : '🤖 AI Review'}
     </button>
   </div>
 </div>
@@ -753,33 +916,33 @@ ${gamesSection()}
 <div style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.25);border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:14px">
   <span style="font-size:1.4rem;flex-shrink:0">📋</span>
   <div style="flex:1;min-width:0">
-    <div style="font-size:.85rem;font-weight:600;color:#c4b5fd;margin-bottom:2px">Setup Guide ready</div>
-    <div style="font-size:.77rem;color:var(--muted)">View the detailed setup guide for this tournament</div>
+    <div style="font-size:.85rem;font-weight:600;color:#c4b5fd;margin-bottom:2px">${tg('guide_ready')}</div>
+    <div style="font-size:.77rem;color:var(--muted)">${tg('guide_view_sub')}</div>
   </div>
   <div style="display:flex;gap:8px;flex-shrink:0">
     <button class="btn btn-outline btn-sm"
             style="border-color:rgba(124,58,237,.4);color:#c4b5fd"
             onclick="showSetupGuide()">
-      View Guide →
+      ${tg('view_guide')}
     </button>
   </div>
 </div>
 
 <div class="nav-footer">
   <div style="display:flex;gap:9px;align-items:center">
-    <button class="btn btn-outline" onclick="goStep(2)">← Reconfigure</button>
+    <button class="btn btn-outline" onclick="goStep(2)">${tg('btn_reconfig')}</button>
     <button id="btn-save-tournament" class="btn btn-outline"
             style="border-color:rgba(79,110,247,.4);color:#a0b0ff"
             onclick="saveTournament()">
-      💾 Save
+      ${tg('btn_save')}
     </button>
     <button class="btn btn-outline" style="border-color:var(--gold);color:var(--gold)" onclick="addTournamentToCalendar()">
-      📅 Add to Calendar
+      ${tg('btn_calendar')}
     </button>
   </div>
   <div style="display:flex;gap:9px">
-    <button class="btn btn-outline btn-sm" onclick="exportTournamentPDF()">⬇ PDF</button>
-    <button class="btn btn-primary btn-lg" onclick="goStep(4)">Generate AI Texts →</button>
+    <button class="btn btn-outline btn-sm" onclick="exportTournamentPDF()">${tg('btn_pdf')}</button>
+    <button class="btn btn-primary btn-lg" onclick="goStep(4)">${tg('btn_ai_texts')}</button>
   </div>
 </div>`;
 }
@@ -792,22 +955,22 @@ function renderStep4() {
   return `
 ${wizProgressHTML(4)}
 <div class="step-header">
-  <div class="step-badge">Step 4 / 4</div>
-  <div class="step-title">AI Texts & Compliance</div>
-  <div class="step-sub">Generate CRM copy and compliance audit for your tournament</div>
+  <div class="step-badge">${tg('s4_badge')}</div>
+  <div class="step-title">${tg('s4_title')}</div>
+  <div class="step-sub">${tg('s4_sub')}</div>
 </div>
 
 <div style="display:flex;gap:10px;margin-bottom:20px">
-  <button class="btn btn-primary" onclick="runTexts()" id="btn-texts">${hasTexts ? '↺ Regenerate Texts' : '🤖 Generate CRM Texts'}</button>
-  <button class="btn btn-outline" onclick="runAudit()" id="btn-audit">${hasAudit ? '↺ Re-run Audit' : '🔍 Compliance Audit'}</button>
+  <button class="btn btn-primary" onclick="runTexts()" id="btn-texts">${hasTexts ? tg('btn_regen_texts') : tg('btn_gen_texts')}</button>
+  <button class="btn btn-outline" onclick="runAudit()" id="btn-audit">${hasAudit ? tg('btn_reaudit') : tg('btn_audit_lbl')}</button>
 </div>
 
 <div id="texts-area">${hasTexts ? renderTextsHTML(lastTexts) : ''}</div>
 <div id="audit-area">${hasAudit ? renderAuditHTML(lastAudit) : ''}</div>
 
 <div class="nav-footer">
-  <button class="btn btn-outline" onclick="goStep(3)">← Back to Spec</button>
-  <button class="btn btn-ghost" onclick="goStep(1)">Start Over</button>
+  <button class="btn btn-outline" onclick="goStep(3)">${tg('btn_back_spec')}</button>
+  <button class="btn btn-ghost" onclick="goStep(1)">${tg('btn_start_over')}</button>
 </div>`;
 }
 
@@ -823,7 +986,7 @@ function renderTextsHTML(texts) {
         <div class="text-variant-label">Variant ${i+1}</div>
         <div style="font-weight:600;font-size:.82rem;margin-bottom:4px">${v.subject||''}</div>
         <div class="text-variant-body">${v.body||''}</div>
-        <button class="copy-btn" onclick="navigator.clipboard.writeText(${JSON.stringify((v.subject||'')+'\n\n'+(v.body||''))})">⎘ Copy</button>
+        <button class="copy-btn" onclick="navigator.clipboard.writeText(${JSON.stringify((v.subject||'')+'\n\n'+(v.body||''))})">› Copy</button>
       </div>`).join('');
   } else if (activeTab === 'popup') {
     body = variants.map((v,i) => `
@@ -832,19 +995,19 @@ function renderTextsHTML(texts) {
         <div style="font-weight:700;font-size:.95rem;margin-bottom:3px">${v.headline||''}</div>
         <div style="color:var(--muted);font-size:.82rem;margin-bottom:6px">${v.subtext||''}</div>
         <div style="display:inline-block;background:var(--accent);color:#fff;padding:4px 12px;border-radius:6px;font-size:.78rem;font-weight:700">${v.cta||''}</div>
-        <button class="copy-btn" onclick="navigator.clipboard.writeText(${JSON.stringify((v.headline||'')+'\n'+(v.subtext||'')+'\nCTA: '+(v.cta||''))})">⎘ Copy</button>
+        <button class="copy-btn" onclick="navigator.clipboard.writeText(${JSON.stringify((v.headline||'')+'\n'+(v.subtext||'')+'\nCTA: '+(v.cta||''))})">› Copy</button>
       </div>`).join('');
   } else {
     body = variants.map((v,i) => `
       <div class="text-variant">
         <div class="text-variant-label">Variant ${i+1}</div>
         <div class="text-variant-body">${typeof v === 'string' ? v : JSON.stringify(v)}</div>
-        <button class="copy-btn" onclick="navigator.clipboard.writeText(${JSON.stringify(typeof v === 'string' ? v : '')})">⎘ Copy</button>
+        <button class="copy-btn" onclick="navigator.clipboard.writeText(${JSON.stringify(typeof v === 'string' ? v : '')})">› Copy</button>
       </div>`).join('');
   }
 
   return `<div class="card" style="margin-bottom:16px">
-    <div class="card-title">CRM Copy</div>
+    <div class="card-title">${tg('crm_copy')}</div>
     <div class="tab-row">${tabs}</div>
     ${body}
   </div>`;
@@ -863,9 +1026,9 @@ function renderAuditHTML(audit) {
     </div>`).join('');
 
   return `<div class="card">
-    <div class="card-title">Compliance Audit</div>
+    <div class="card-title">${tg('audit_title')}</div>
     ${checks}
-    ${recs ? `<div style="margin-top:14px;font-size:.8rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Recommendations</div>${recs}` : ''}
+    ${recs ? `<div style="margin-top:14px;font-size:.8rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">${tg('recommendations')}</div>${recs}` : ''}
   </div>`;
 }
 
@@ -964,7 +1127,7 @@ function runGenerate() {
     body:    JSON.stringify({ type: draft.type, params: draft.params }),
   })
   .then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(new Error(e.message || r.statusText))))
-  .then(data => { lastResult = data; lastTexts = null; lastAudit = null; lastOptimize = null; })
+  .then(data => { lastResult = data; lastTexts = null; lastAudit = null; lastOptimize = null; _tgUndoStack = null; _tgPrevEcon = null; _tgLastOptRecs = []; })
   .catch(err => { lastResult = { _error: err.message }; });
 
   let i = 0;
@@ -1099,14 +1262,235 @@ async function runOptimize() {
       throw new Error(err?.message || resp.statusText);
     }
     lastOptimize = await resp.json();
+    _tgLastOptRecs = lastOptimize.recommendations || [];
     area.innerHTML = renderOptimizeHTML(lastOptimize, mode);
     btn.textContent = isRu ? '↺ Обновить ревью' : '↺ Re-run Review';
+    // Refresh action panel to enable Apply button
+    const ap = document.getElementById('tg-action-panel');
+    if (ap && lastResult) ap.outerHTML = tgActionPanelHTML(lastResult.econ);
   } catch (e) {
     area.innerHTML = `<div class="alert alert-warn">${isRu?'Ошибка AI-ревью':'AI review failed'}: ${e?.message||String(e)}</div>`;
     btn.textContent = isRu ? '🤖 AI-ревью прогноза' : '🤖 AI Review';
   }
   btn.disabled = false;
 }
+
+// ── BALANCE TO PROFIT: helpers ────────────────────────────────────────────────
+
+const TG_TARGET_ROI_KEY = 'tg_target_roi';
+
+function _getTgTargetRoi() {
+  try { return parseFloat(localStorage.getItem(TG_TARGET_ROI_KEY) || '100'); } catch { return 100; }
+}
+
+function _recalcTournLocal(p) {
+  if (window._tournamentEcon) return window._tournamentEcon.recalcTournamentEconLocal(p).econ;
+  return null;
+}
+
+const TG_UI_BOUNDS = {
+  prizePool: { min: 10, max: 10_000_000 },
+  rake:      { min: 0,  max: 30 },
+};
+
+function parseTgRecTarget(param, target) {
+  const s = String(target);
+  // Enum params
+  if (param === 'poolModel') {
+    const m = /fixed|dynamic|hybrid/.exec(s);
+    return m ? m[0] : draft.params.poolModel;
+  }
+  if (param === 'duration') {
+    const m = /flash|daily|weekly|monthly|multi_round/.exec(s);
+    return m ? m[0] : draft.params.duration;
+  }
+  if (param === 'segment') {
+    const m = /all|new|vip|dormant|depositors/.exec(s);
+    return m ? m[0] : draft.params.segment;
+  }
+  // Numeric params — extract first number only
+  const match = s.match(/\d+\.?\d*/);
+  const num   = match ? parseFloat(match[0]) : NaN;
+  if (isNaN(num)) return draft.params[param];
+  const b = TG_UI_BOUNDS[param];
+  return b ? Math.max(b.min, Math.min(b.max, num)) : num;
+}
+
+function applyTgAiRecs(recs) {
+  if (!lastResult) return;
+  const beforeParams = { ...draft.params };
+  const beforeEcon   = { ...lastResult.econ };
+
+  for (const rec of recs) {
+    if (rec.param && rec.target !== undefined && draft.params[rec.param] !== undefined) {
+      const val = parseTgRecTarget(rec.param, rec.target);
+      draft.params[rec.param] = val;
+    }
+  }
+  draft.params._prizeAutoSet = false;
+  finishTgApply(beforeParams, beforeEcon);
+}
+
+async function balanceTgToProfit(targetRoi) {
+  const lang = localStorage.getItem('bonusLang') || 'en';
+  const isRu = lang === 'ru';
+
+  if (!lastResult) {
+    showToast(isRu ? 'Сначала сгенерируйте турнир' : 'Generate a tournament first');
+    return;
+  }
+  if (!window._tournamentEcon || !window._balanceSolver) {
+    showToast(isRu ? 'Модули ещё загружаются, попробуйте ещё раз' : 'Modules still loading, try again');
+    return;
+  }
+
+  // If already at target, nothing to do
+  const currentRoi = lastResult.econ ? (lastResult.econ.roi ?? 0) : 0;
+  if (currentRoi >= targetRoi) {
+    showToast(isRu
+      ? `Турнир уже прибылен: ROI ${Math.round(currentRoi)}% ≥ цели ${targetRoi}%`
+      : `Already profitable: ROI ${Math.round(currentRoi)}% ≥ target ${targetRoi}%`);
+    return;
+  }
+
+  try {
+    const suggestedFloor = Math.round(calcSuggestedPrize(draft.params).prize * 0.3);
+    const prizeFloor = Math.max(10, suggestedFloor);
+
+    const beforeParams = { ...draft.params };
+    const beforeEcon   = { ...lastResult.econ };
+
+    const LEVERS = [
+      // Switch fixed→hybrid first: -40% prizePoolCost in one step (hybrid always cheaper than dynamic at rake<40%)
+      { p:'poolModel', mode:'enum', enum:['fixed','hybrid'] },
+      // Then reduce prize iteratively
+      { p:'prizePool', mode:'mul',  f:0.9, bounds:{ min: prizeFloor, max: 10_000_000 } },
+      // Increase rake (reduces cost only for dynamic model; no-op for fixed/hybrid)
+      { p:'rake',      mode:'add',  f:2,   bounds:{ min: 0, max: 30 } },
+    ];
+
+    const { draft: solvedParams, reached } = window._balanceSolver.solveToTarget({
+      draft:    { ...draft.params },
+      levers:   LEVERS,
+      recalc:   p => window._tournamentEcon.recalcTournamentEconLocal(p).econ,
+      metricOf: e => e.roi,
+      target:   targetRoi,
+    });
+
+    Object.assign(draft.params, solvedParams);
+    draft.params._prizeAutoSet = false;
+
+    if (!reached) {
+      const msg = isRu
+        ? `Не удалось достичь ROI ${targetRoi}% — упёрлись в минимальный приз (${prizeFloor.toLocaleString()} ${lastResult.cur || ''}). Применены лучшие параметры.`
+        : `Could not reach ROI ${targetRoi}% — hit prize floor (${prizeFloor.toLocaleString()} ${lastResult.cur || ''}). Best parameters applied.`;
+      showToast(msg);
+    }
+
+    await finishTgApply(beforeParams, beforeEcon);
+  } catch (err) {
+    console.error('[balanceTgToProfit]', err);
+    showToast(isRu ? 'Ошибка при балансировке — см. консоль' : 'Balance error — see console');
+  }
+}
+
+async function finishTgApply(beforeParams, beforeEcon) {
+  // Save undo state
+  _tgUndoStack = { params: beforeParams, econ: beforeEcon };
+  _tgPrevEcon  = beforeEcon;
+
+  // Re-fetch canonical econ from server
+  try {
+    const resp = await fetch('/api/tournament/generate', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ type: draft.type, params: draft.params }),
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      lastResult = data;
+      lastOptimize = null;
+      _tgLastOptRecs = [];
+    }
+  } catch (_) { /* use local econ as fallback */ }
+
+  renderStep();
+}
+
+function undoTgApply() {
+  if (!_tgUndoStack) return;
+  draft.params = { ..._tgUndoStack.params };
+  lastResult   = lastResult ? { ...lastResult, econ: _tgUndoStack.econ } : null;
+  _tgPrevEcon  = null;
+  _tgUndoStack = null;
+  _tgLastOptRecs = [];
+  lastOptimize = null;
+  renderStep();
+}
+
+function _tgDeltaBadge(cur, prev, opts) {
+  if (prev === undefined || prev === null) return '';
+  const diff = cur - prev;
+  if (Math.abs(diff) < 0.5) return '';
+  const lowerBetter = opts && opts.lowerBetter;
+  const improved = lowerBetter ? diff < 0 : diff > 0;
+  const color = improved ? '#10b981' : '#ef4444';
+  const sign  = diff > 0 ? '+' : '';
+  const fmt   = opts && opts.fmt ? opts.fmt(diff) : (sign + Math.round(diff));
+  return `<span style="font-size:.65rem;font-weight:700;padding:1px 5px;border-radius:4px;background:${color}22;color:${color};margin-left:5px">${fmt}</span>`;
+}
+
+function tgActionPanelHTML(econ) {
+  const lang = localStorage.getItem('bonusLang') || 'en';
+  const isRu = lang === 'ru';
+  const roi   = econ ? (econ.roi ?? 0) : 0;
+  const targetRoi = _getTgTargetRoi();
+  const hasRecs   = _tgLastOptRecs.length > 0;
+  const hasUndo   = !!_tgUndoStack;
+  const needBalance = roi < targetRoi;
+
+  const labels = {
+    applyRecs:    isRu ? '⚡ Применить рекомендации' : '⚡ Apply Recommendations',
+    balance:      isRu ? '⚖️ Сбалансировать под прибыль' : '⚖️ Balance to Profit',
+    undo:         isRu ? '↩ Отменить' : '↩ Undo',
+    targetRoi:    isRu ? 'Целевой ROI' : 'Target ROI',
+    applyHint:    isRu ? 'Сначала запустите AI-ревью' : 'Run AI Review first',
+  };
+
+  const applyBtn = `<button class="btn btn-outline btn-sm"
+    style="white-space:nowrap"
+    ${hasRecs ? '' : 'disabled title="' + labels.applyHint + '"'}
+    onclick="applyTgAiRecs(window._tgLastOptRecs||[])">${labels.applyRecs}</button>`;
+
+  const balanceBtn = `<button class="btn btn-sm"
+    style="white-space:nowrap;${needBalance ? 'background:linear-gradient(135deg,#4f6ef7,#7c3aed);color:#fff;box-shadow:0 2px 10px rgba(79,110,247,.3)' : 'background:transparent;border:1px solid var(--border);color:var(--text)'}"
+    onclick="balanceTgToProfit(window._getTgTargetRoi())">${labels.balance}</button>`;
+
+  const undoBtn = hasUndo
+    ? `<button class="btn btn-ghost btn-sm" onclick="undoTgApply()">${labels.undo}</button>`
+    : '';
+
+  return `<div id="tg-action-panel" style="background:rgba(79,110,247,.06);border:1px solid rgba(79,110,247,.2);border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+  <div style="display:flex;align-items:center;gap:7px;flex-shrink:0">
+    <label style="font-size:.72rem;font-weight:600;color:var(--muted);white-space:nowrap">${labels.targetRoi}:</label>
+    <input type="range" min="50" max="200" step="5" value="${targetRoi}"
+      style="width:90px;accent-color:var(--accent)"
+      oninput="this.nextElementSibling.textContent=this.value+'%';localStorage.setItem('${TG_TARGET_ROI_KEY}',this.value)"
+    ><span style="font-size:.82rem;font-weight:700;color:var(--text);min-width:38px">${targetRoi}%</span>
+  </div>
+  <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+    ${applyBtn}
+    ${balanceBtn}
+    ${undoBtn}
+  </div>
+</div>`;
+}
+
+// Expose globals for onclick handlers
+window._getTgTargetRoi   = _getTgTargetRoi;
+window._tgLastOptRecs    = _tgLastOptRecs;
+window._balanceSolver    = window._balanceSolver || null; // loaded from balance-solver.js
+window._tournamentEcon   = window._tournamentEcon || null; // loaded from tournament-econ.js
 
 function renderOptimizeHTML(data, mode) {
   const lang = localStorage.getItem('bonusLang') || 'en';
@@ -1478,15 +1862,15 @@ function saveTournament() {
   saveTournaments(list);
   const btn = document.getElementById('btn-save-tournament');
   if (btn) { btn.textContent = '✓ Saved'; btn.disabled = true; btn.style.opacity = '.5'; }
-  showToast('Tournament saved to your library');
+  showToast(tg('toast_saved'));
   updateNavBadge();
 }
 
 function deleteTournament(id) {
-  if (!confirm('Delete this tournament from your library?')) return;
+  if (!confirm(tg('confirm_delete'))) return;
   saveTournaments(loadTournaments().filter(t => t.id !== id));
   updateNavBadge();
-  showToast('Tournament deleted');
+  showToast(tg('toast_deleted'));
   showView('list');
 }
 
@@ -1573,37 +1957,37 @@ function renderList() {
   if (list.length === 0) {
     return `
 <div class="step-header">
-  <div class="step-badge">🏆 Tournaments</div>
-  <div class="step-title">Your Tournament Library</div>
-  <div class="step-sub">No tournaments saved yet</div>
+  <div class="step-badge">🏆 ${tg('list_title')}</div>
+  <div class="step-title">${tg('list_lib_title')}</div>
+  <div class="step-sub">${tg('list_empty')}</div>
 </div>
 <div class="card" style="text-align:center;padding:40px 20px">
   <div style="font-size:2.5rem;margin-bottom:14px">🏆</div>
-  <div style="color:var(--muted);font-size:.88rem;margin-bottom:20px">Generate a tournament and click "Save" to build your library.</div>
-  <button class="btn btn-primary" onclick="goStep(1)">Create a Tournament →</button>
+  <div style="color:var(--muted);font-size:.88rem;margin-bottom:20px">${tg('list_empty_sub')}</div>
+  <button class="btn btn-primary" onclick="goStep(1)">${tg('list_create')}</button>
 </div>`;
   }
 
   return `
 <div style="margin-bottom:16px">
-  <div style="font-size:1.1rem;font-weight:700;color:var(--text)">Tournaments</div>
-  <div style="font-size:.8rem;color:var(--muted);margin-top:2px">${list.length} saved</div>
+  <div style="font-size:1.1rem;font-weight:700;color:var(--text)">${tg('list_title')}</div>
+  <div style="font-size:.8rem;color:var(--muted);margin-top:2px">${tg('list_saved', list.length)}</div>
 </div>
 <div class="ctable">
   <div class="ct-hd">
-    <span>Name</span><span>Prize pool</span><span>ROI</span><span>Date</span><span></span>
+    <span>${tg('list_hdr_name')}</span><span>${tg('list_hdr_prize')}</span><span>${tg('list_hdr_roi')}</span><span>${tg('list_hdr_date')}</span><span></span>
   </div>
   ${list.map(tournRowHTML).join('')}
 </div>
 <div style="margin-top:16px;text-align:center">
-  <button class="btn btn-primary" onclick="goStep(1)">+ New Tournament</button>
+  <button class="btn btn-primary" onclick="goStep(1)">${tg('list_new')}</button>
 </div>`;
 }
 
 // ── DETAIL VIEW ──────────────────────────────────────────────────────────────
 function renderDetail(id) {
   const t = loadTournaments().find(t => t.id === id);
-  if (!t) return `<div class="card">Tournament not found. <button class="btn btn-ghost" onclick="showView('list')">← Back</button></div>`;
+  if (!t) return `<div class="card">${tg('det_not_found')} <button class="btn btn-ghost" onclick="showView('list')">${tg('det_back')}</button></div>`;
 
   const e    = t.econ || {};
   const spec = t.spec || {};
@@ -1621,9 +2005,9 @@ function renderDetail(id) {
   const pct = pctMap[dur] || pctMap['weekly'];
 
   const scenarios = [
-    { label:`Low (${pct.lo} participation)`,      lift:e.ggrLiftLow,  net:e.netMarginLow,  pl:e.participantsLow,  cpp:e.costPerActiveLow  },
-    { label:`Expected (${pct.mi} participation)`, lift:e.ggrLiftMid,  net:e.netMarginMid,  pl:e.participantsMid,  cpp:e.costPerActiveMid  },
-    { label:`High (${pct.hi} participation)`,     lift:e.ggrLiftHigh, net:e.netMarginHigh, pl:e.participantsHigh, cpp:e.costPerActiveHigh },
+    { label:tg('low_lbl', pct.lo),  lift:e.ggrLiftLow,  net:e.netMarginLow,  pl:e.participantsLow,  cpp:e.costPerActiveLow  },
+    { label:tg('exp_lbl', pct.mi),  lift:e.ggrLiftMid,  net:e.netMarginMid,  pl:e.participantsMid,  cpp:e.costPerActiveMid  },
+    { label:tg('high_lbl', pct.hi), lift:e.ggrLiftHigh, net:e.netMarginHigh, pl:e.participantsHigh, cpp:e.costPerActiveHigh },
   ];
 
   const econCards = scenarios.map(s => {
@@ -1631,8 +2015,8 @@ function renderDetail(id) {
     return `<div class="econ-card">
       <div class="econ-label">${s.label}</div>
       <div class="econ-val ${netClass}">${s.net>=0?'+':''}${fmtCur(s.net)}</div>
-      <div class="econ-sub">${s.pl} players · GGR: +${fmtCur(s.lift)}</div>
-      <div class="econ-sub">Cost/active: ${fmtCur(s.cpp)}</div>
+      <div class="econ-sub">${tg('players_ggr', s.pl, fmtCur(s.lift))}</div>
+      <div class="econ-sub">${tg('cost_active', fmtCur(s.cpp))}</div>
     </div>`;
   }).join('');
 
@@ -1653,7 +2037,7 @@ function renderDetail(id) {
 
   return `
 <div style="margin-bottom:18px">
-  <button class="btn btn-ghost btn-sm" onclick="showView('list')" style="padding:0;margin-bottom:10px;color:var(--muted);font-size:.8rem">← Tournaments</button>
+  <button class="btn btn-ghost btn-sm" onclick="showView('list')" style="padding:0;margin-bottom:10px;color:var(--muted);font-size:.8rem">${tg('det_back')}</button>
   <div style="display:flex;align-items:flex-start;gap:14px">
     <div style="width:46px;height:46px;border-radius:10px;background:rgba(79,110,247,.15);border:1px solid rgba(79,110,247,.3);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">
       ${{ slot:'🎰', live:'🃏', mixed:'🎲', prize_drop:'💎' }[t.type] || '🏆'}
@@ -1664,71 +2048,71 @@ function renderDetail(id) {
         <span style="font-size:.75rem;padding:2px 8px;border-radius:99px;background:rgba(79,110,247,.15);color:#a0b0ff">${t.lic?.toUpperCase() || 'NONE'}</span>
         <span style="font-size:.75rem;padding:2px 8px;border-radius:99px;background:rgba(79,110,247,.12);color:#a0b0ff">${t.params?.segment || 'all'}</span>
         <span style="font-size:.75rem;padding:2px 8px;border-radius:99px;background:rgba(79,110,247,.12);color:#a0b0ff">${dur}</span>
-        <span style="font-size:.75rem;color:var(--muted)">Saved ${date}</span>
+        <span style="font-size:.75rem;color:var(--muted)">${tg('det_saved', date)}</span>
       </div>
     </div>
   </div>
 </div>
 
 <div class="card">
-  <div class="card-title">Tournament Summary</div>
+  <div class="card-title">${tg('summary_title')}</div>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-size:.82rem">
-    <div><span style="color:var(--muted)">Type:</span> ${spec.type || t.type}</div>
-    <div><span style="color:var(--muted)">Duration:</span> ${spec.duration || dur}</div>
-    <div><span style="color:var(--muted)">Entry:</span> ${spec.entryModel || '—'}</div>
-    <div><span style="color:var(--muted)">Scoring:</span> ${spec.scoring || '—'}</div>
-    <div><span style="color:var(--muted)">Pool model:</span> ${spec.poolModel || '—'}</div>
-    <div><span style="color:var(--muted)">Re-entry:</span> ${spec.reentry || '—'}</div>
-    <div><span style="color:var(--muted)">Prize pool:</span> <strong>${fmtCur(spec.prizePool || 0)}</strong></div>
-    <div><span style="color:var(--muted)">Distribution:</span> ${spec.distribution || '—'}</div>
-    <div><span style="color:var(--muted)">ROI:</span> <strong style="color:${roi>=0?'var(--success)':'#ef4444'}">${roi>=0?'+':''}${roi}%</strong></div>
+    <div><span style="color:var(--muted)">${tg('field_type')}</span> ${spec.type || t.type}</div>
+    <div><span style="color:var(--muted)">${tg('field_dur')}</span> ${spec.duration || dur}</div>
+    <div><span style="color:var(--muted)">${tg('field_entry')}</span> ${spec.entryModel || '—'}</div>
+    <div><span style="color:var(--muted)">${tg('field_scoring')}</span> ${spec.scoring || '—'}</div>
+    <div><span style="color:var(--muted)">${tg('field_pool')}</span> ${spec.poolModel || '—'}</div>
+    <div><span style="color:var(--muted)">${tg('field_reentry')}</span> ${spec.reentry || '—'}</div>
+    <div><span style="color:var(--muted)">${tg('field_prize')}</span> <strong>${fmtCur(spec.prizePool || 0)}</strong></div>
+    <div><span style="color:var(--muted)">${tg('field_dist')}</span> ${spec.distribution || '—'}</div>
+    <div><span style="color:var(--muted)">${tg('field_roi')}</span> <strong style="color:${roi>=0?'var(--success)':'#ef4444'}">${roi>=0?'+':''}${roi}%</strong></div>
   </div>
-  ${e.breakEvenParticipants > 0 ? `<div style="margin-top:10px;font-size:.78rem;color:var(--muted)">Break-even: <strong style="color:var(--text)">${e.breakEvenParticipants} participants</strong> at 30% GGR lift</div>` : ''}
+  ${e.breakEvenParticipants > 0 ? `<div style="margin-top:10px;font-size:.78rem;color:var(--muted)">${tg('breakeven_hint', e.breakEvenParticipants)}</div>` : ''}
 </div>
 
 <div class="card">
-  <div class="card-title">Prize Distribution (${cur} ${(spec.prizePool||0).toLocaleString()} pool)</div>
+  <div class="card-title">${tg('prize_dist', cur, (spec.prizePool||0).toLocaleString())}</div>
   ${prizeRows}
 </div>
 
 <div class="card">
-  <div class="card-title">Economic Scenarios</div>
+  <div class="card-title">${tg('econ_title')}</div>
   <div class="econ-grid">${econCards}</div>
   <div style="margin-top:14px;padding:12px 14px;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:8px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
     <div style="flex:1;min-width:160px">
-      <div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Total value (expected)</div>
+      <div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">${tg('total_val')}</div>
       <div style="font-size:1.1rem;font-weight:700;color:${totClass==='pos'?'var(--success)':'#ef4444'}">${totVal>=0?'+':''}${fmtCur(totVal)}</div>
-      <div style="font-size:.72rem;color:var(--muted);margin-top:2px">GGR lift + post-tournament retention</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-top:2px">${tg('ggr_plus_ret')}</div>
     </div>
     <div style="display:flex;gap:16px;flex-wrap:wrap">
       <div style="text-align:center">
-        <div style="font-size:.68rem;color:var(--muted);margin-bottom:2px">Engagement</div>
+        <div style="font-size:.68rem;color:var(--muted);margin-bottom:2px">${tg('engagement_lbl')}</div>
         <div style="font-size:.88rem;font-weight:600;color:#a0b0ff">×${engMul.toFixed(1)}</div>
-        <div style="font-size:.65rem;color:var(--muted)">vs normal play</div>
+        <div style="font-size:.65rem;color:var(--muted)">${tg('vs_normal')}</div>
       </div>
       <div style="text-align:center">
-        <div style="font-size:.68rem;color:var(--muted);margin-bottom:2px">Retention value</div>
+        <div style="font-size:.68rem;color:var(--muted);margin-bottom:2px">${tg('retention_val')}</div>
         <div style="font-size:.88rem;font-weight:600;color:var(--success)">+${fmtCur(retVal)}</div>
-        <div style="font-size:.65rem;color:var(--muted)">next-month uplift</div>
+        <div style="font-size:.65rem;color:var(--muted)">${tg('uplift')}</div>
       </div>
       <div style="text-align:center">
-        <div style="font-size:.68rem;color:var(--muted);margin-bottom:2px">Full ROI</div>
+        <div style="font-size:.68rem;color:var(--muted);margin-bottom:2px">${tg('full_roi')}</div>
         <div style="font-size:.88rem;font-weight:600;color:${roi>=0?'var(--success)':'#ef4444'}">${roi>=0?'+':''}${roi}%</div>
-        <div style="font-size:.65rem;color:var(--muted)">on prize pool</div>
+        <div style="font-size:.65rem;color:var(--muted)">${tg('on_prize')}</div>
       </div>
     </div>
   </div>
   <div style="font-size:.7rem;color:var(--muted);margin-top:10px">
-    Based on ${e.eligible || 0} eligible ${t.params?.segment || 'all'} players (${Math.round((e.segmentRatio||1)*100)}% of ${(t.params?.totalPlayers||e.totalPlayers||5000).toLocaleString()} total casino players) · ARPU ${e.arpu || 0} ${cur}/mo · engagement ×${engMul.toFixed(1)} vs normal play
+    ${tg('eligible_note', e.eligible || 0, t.params?.segment || 'all', Math.round((e.segmentRatio||1)*100), (t.params?.totalPlayers||e.totalPlayers||5000).toLocaleString(), e.arpu || 0, engMul.toFixed(1))}
   </div>
 </div>
 
 ${gamesSectionFromData(t.games)}
 
 <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap">
-  <button class="btn btn-outline" style="flex:1;border-color:rgba(124,58,237,.4);color:#c4b5fd" onclick="loadAndShowGuide('${t.id}')">📋 Setup Guide →</button>
-  <button class="btn btn-outline" style="flex:1;border-color:rgba(79,110,247,.4);color:#a0b0ff" onclick="loadAndRegenTexts('${t.id}')">✦ AI Texts</button>
-  <button class="btn btn-outline btn-sm" style="color:var(--muted);border-color:var(--border)" onclick="deleteTournament('${t.id}')">🗑 Delete</button>
+  <button class="btn btn-outline" style="flex:1;border-color:rgba(124,58,237,.4);color:#c4b5fd" onclick="loadAndShowGuide('${t.id}')">${tg('det_setup_guide')}</button>
+  <button class="btn btn-outline" style="flex:1;border-color:rgba(79,110,247,.4);color:#a0b0ff" onclick="loadAndRegenTexts('${t.id}')">${tg('det_ai_texts')}</button>
+  <button class="btn btn-outline btn-sm" style="color:var(--muted);border-color:var(--border)" onclick="deleteTournament('${t.id}')">${tg('det_delete')}</button>
 </div>`;
 }
 
@@ -1772,6 +2156,7 @@ function resolveInitialTournamentView() {
 updateAllBadges();
 setTournLang(localStorage.getItem('bonusLang') || 'en');
 resolveInitialTournamentView();
+document.querySelector('.main').classList.add('ready');
 
 window.addEventListener('pageshow', function() {
   updateAllBadges();

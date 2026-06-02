@@ -19,6 +19,13 @@ function syncRtp(v) {
 (function patchLang() {
   const extra = {
     ru: {
+      apply_recs: '⚡ Применить рекомендации',
+      balance_profit: '⚖️ Сбалансировать',
+      target_margin: 'Запас',
+      undo: '↩ Отменить',
+      cannot_balance_regulatory: 'Невозможно выйти в плюс в рамках лицензионных лимитов — снизьте охват или сегмент',
+      balance_done: 'Сбалансировано ✓',
+      balance_delta_title: 'Результат балансировки',
       camps_btn: 'Кампании',
       camps_drawer_title: 'Сохранённые кампании',
       camps_empty_t: 'Нет сохранённых кампаний',
@@ -40,6 +47,13 @@ function syncRtp(v) {
       audit_saved: 'Кампания обновлена ✓',
     },
     en: {
+      apply_recs: '⚡ Apply Recommendations',
+      balance_profit: '⚖️ Balance to Profit',
+      target_margin: 'Margin',
+      undo: '↩ Undo',
+      cannot_balance_regulatory: 'Cannot reach breakeven within regulatory limits — reduce audience or segment',
+      balance_done: 'Balanced ✓',
+      balance_delta_title: 'Balance result',
       camps_btn: 'Campaigns',
       camps_drawer_title: 'Saved Campaigns',
       camps_empty_t: 'No saved campaigns',
@@ -497,6 +511,7 @@ function confirmSaveCampaign() {
     }
     await _orig.apply(this, arguments);
     _injectSaveButton();
+    _injectBalancePanel();
     if (window._editMode?.active) {
       // If campaign has saved overrides, apply them then audit will render via recalc intercept
       const orig = window._editMode.originalCampaign;
@@ -538,20 +553,22 @@ function _injectSaveButton() {
 // ══════════════════════════════════════════════════════════════════════
 // TOAST
 // ══════════════════════════════════════════════════════════════════════
-function _showToast(msg) {
+function _showToast(msg, type) {
   const existing = document.getElementById('cfg-toast');
   if (existing) existing.remove();
+  const bg = type === 'warn' ? '#f59e0b' : type === 'err' ? '#ef4444' : '#10b981';
   const toast = document.createElement('div');
   toast.id = 'cfg-toast';
   toast.textContent = msg;
   Object.assign(toast.style, {
     position:'fixed', bottom:'24px', left:'50%', transform:'translateX(-50%) translateY(0)',
-    background:'#10b981', color:'#fff', padding:'10px 22px', borderRadius:'10px',
+    background: bg, color:'#fff', padding:'10px 22px', borderRadius:'10px',
     fontSize:'13px', fontWeight:'700', zIndex:'999', boxShadow:'0 4px 20px rgba(0,0,0,.4)',
-    transition:'opacity .3s', fontFamily:'Inter,sans-serif',
+    transition:'opacity .3s', fontFamily:'Inter,sans-serif', maxWidth:'420px', textAlign:'center',
   });
   document.body.appendChild(toast);
-  setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 320); }, 2200);
+  const delay = type === 'warn' ? 4000 : 2200;
+  setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 320); }, delay);
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -886,6 +903,290 @@ function updateAllBadges() {
     }
   } catch (e) {}
 }
+
+// ══════════════════════════════════════════════════════════════════════
+// BALANCE / SOLVER — state + helpers
+// ══════════════════════════════════════════════════════════════════════
+window._lastAiRecs    = null;   // latest AI optimize recommendations
+window._beforeBalance = null;   // { overrides, econ } snapshot before apply/balance
+
+function _getTargetMargin() {
+  const el = document.getElementById('cfg-margin-slider');
+  return el ? parseInt(el.value, 10) / 100 : 0.10;
+}
+
+function _captureIncrEcon() {
+  const cfg = window._lastCfg;
+  if (!cfg || !cfg.econ) return null;
+  const E     = cfg.econ;
+  const ratio = cfg._recalcRatio ?? E.costRatio ?? 0;
+  const ovWager = parseFloat(document.getElementById('ov_w_wager')?.value);
+  const v     = (typeof _calcRetentionV2 === 'function')
+    ? _calcRetentionV2(cfg, isNaN(ovWager) ? 0 : ovWager)
+    : { lift: 0 };
+  const incrPl   = Math.round(E.pl * v.lift);
+  const incrRev  = Math.round(incrPl * (E.ltv3 || 0));
+  const campCost = Math.round(3 * ratio * E.pl * E.arpu);
+  const netIncr  = incrRev - campCost;
+  return { netIncr, incrRev, campCost, lift: v.lift, ratio, cur: cfg.cur || (typeof S !== 'undefined' ? S.sitecur : '') };
+}
+
+function _buildSolverDraft() {
+  const cfg = window._lastCfg;
+  if (!cfg) return null;
+  const E  = cfg.econ     || {};
+  const W  = cfg.welcome  || {};
+  const RL = cfg.reload   || {};
+  const FS = cfg.fsSpec   || null;
+  const CB = cfg.cashback || {};
+
+  const gvEl = (id, def) => {
+    const el = document.getElementById(id);
+    const v  = el ? parseFloat(el.value) : NaN;
+    return isNaN(v) ? def : v;
+  };
+
+  return {
+    wager:       gvEl('ov_w_wager', E.wagerX || 30),
+    matchPct:    gvEl('ov_w_pct',   W.pct    || 100),
+    addFS:       gvEl('ov_w_fs',    W.fs     || 0) > 0 || gvEl('ov_fs_count', FS ? FS.count : 0) > 0,
+    addCashback: (CB.pct >= 5) || CB.model === 'tier',
+    addReload:   gvEl('ov_rl_pct',  RL.pct   || 0) > 0,
+    segment:     (typeof S !== 'undefined' ? S.segment : '') || 'mid',
+    plat:        (typeof S !== 'undefined' ? S.plat    : '') || 'both',
+  };
+}
+
+function _applyDraftToDOM(draft) {
+  function _setOv(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  }
+  if (draft.wager    != null)        _setOv('ov_w_wager', draft.wager);
+  if (draft.matchPct != null)        _setOv('ov_w_pct',   draft.matchPct);
+  if (draft.addFS    === false) { _setOv('ov_w_fs', 0); _setOv('ov_fs_count', 0); }
+  if (draft.addReload === false)     _setOv('ov_rl_pct',  0);
+  if (typeof recalcEcon === 'function') recalcEcon();
+}
+
+// ── parseRecTarget ────────────────────────────────────────────────────────────
+// Delegates to bonus-cost.js module export (available via window._bonusCost after module load).
+function parseRecTarget(param, target) {
+  if (window._bonusCost && window._bonusCost.parseRecTarget) {
+    return window._bonusCost.parseRecTarget(param, target);
+  }
+  // Fallback (module not yet loaded) — handle the most common case
+  const num = parseFloat(target);
+  if (param === 'wager'    && !isNaN(num)) return { 'ov_w_wager': num };
+  if (param === 'matchPct' && !isNaN(num)) return { 'ov_w_pct':   num };
+  return {};
+}
+
+// ── applyAiRecs ───────────────────────────────────────────────────────────────
+function applyAiRecs(recs) {
+  if (!recs || !recs.length || !window._lastCfg) return;
+  const beforeOverrides = _captureOverrides();
+  const beforeEcon      = _captureIncrEcon();
+  window._beforeBalance = { overrides: beforeOverrides, econ: beforeEcon };
+
+  recs.forEach(rec => {
+    const pairs = parseRecTarget(rec.param, rec.target);
+    Object.entries(pairs).forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    });
+  });
+
+  if (typeof recalcEcon === 'function') recalcEcon();
+  setTimeout(() => finishApply(beforeOverrides, beforeEcon), 350);
+}
+
+// ── balanceToProfit ───────────────────────────────────────────────────────────
+function balanceToProfit(targetMargin) {
+  const cfg = window._lastCfg;
+  if (!cfg) return;
+
+  const bonusCost   = window._bonusCost;
+  const solverLib   = window._balanceSolver;
+  if (!bonusCost || !solverLib) {
+    _showToast('Balance solver not loaded yet — please try again');
+    return;
+  }
+
+  const BONUS_LEVERS = [
+    { p: 'wager',       mode: 'add',  f: +5,  bounds: { min: 1,  max: 200 }, isInt: true },
+    { p: 'addFS',       mode: 'enum', enum: [true, false] },
+    { p: 'addCashback', mode: 'enum', enum: [true, false] },
+    { p: 'addReload',   mode: 'enum', enum: [true, false] },
+    { p: 'matchPct',    mode: 'add',  f: -10, bounds: { min: 0,  max: 200 }, isInt: true },
+  ];
+
+  const beforeOverrides = _captureOverrides();
+  const beforeEcon      = _captureIncrEcon();
+  window._beforeBalance = { overrides: beforeOverrides, econ: beforeEcon };
+
+  const draft       = _buildSolverDraft();
+  const constraints = bonusCost.buildRegConstraints(cfg);
+  const recalc      = d => bonusCost.recalcBonusEconLocal(cfg, d);
+  const metricOf    = e => e.netIncr;
+
+  // Target: netIncr must exceed campCost × targetMargin
+  const initialEcon = recalc(draft);
+  const target      = Math.max(0, initialEcon.campCost * targetMargin);
+
+  const btn = document.getElementById('cfg-balance-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+
+  setTimeout(() => {
+    const { reached, draft: solvedDraft, econ: solvedEcon } = solverLib.solveToTarget({
+      draft, levers: BONUS_LEVERS, recalc, metricOf, target, constraints, cfg, maxIter: 120,
+    });
+
+    if (!reached) {
+      if (btn) { btn.disabled = false; btn.textContent = typeof t === 'function' ? t('balance_profit') : '⚖️ Сбалансировать'; }
+      _showToast(typeof t === 'function' ? t('cannot_balance_regulatory') : 'Cannot balance within regulatory limits', 'warn');
+      window._beforeBalance = null;
+      return;
+    }
+
+    _applyDraftToDOM(solvedDraft);
+    if (btn) { btn.disabled = false; btn.textContent = typeof t === 'function' ? t('balance_profit') : '⚖️ Сбалансировать'; }
+    finishApply(beforeOverrides, beforeEcon, solvedEcon);
+  }, 0);
+}
+
+// ── finishApply ───────────────────────────────────────────────────────────────
+function finishApply(beforeOverrides, beforeEcon, newEconHint) {
+  const cfg   = window._lastCfg;
+  if (!cfg) return;
+
+  const newEcon = newEconHint || _captureIncrEcon();
+
+  _renderBalanceDelta(beforeEcon, newEcon);
+  _showUndoButton(true);
+  _showToast(typeof t === 'function' ? t('balance_done') : 'Balanced ✓');
+}
+
+// ── _undoBalance ──────────────────────────────────────────────────────────────
+function _undoBalance() {
+  const snap = window._beforeBalance;
+  if (!snap) return;
+
+  _applyOverrides(snap.overrides || {});
+  window._beforeBalance = null;
+  _showUndoButton(false);
+
+  const delta = document.getElementById('cfg-balance-delta');
+  if (delta) delta.remove();
+}
+
+// ── Balance panel DOM helpers ─────────────────────────────────────────────────
+
+function _showUndoButton(show) {
+  const btn = document.getElementById('cfg-undo-btn');
+  if (btn) btn.style.display = show ? 'inline-flex' : 'none';
+}
+
+function _updateApplyRecsButton() {
+  const btn = document.getElementById('cfg-apply-recs');
+  if (!btn) return;
+  const hasRecs = window._lastAiRecs && window._lastAiRecs.length > 0;
+  btn.disabled = !hasRecs;
+  btn.style.opacity = hasRecs ? '1' : '0.45';
+}
+
+function _renderBalanceDelta(before, after) {
+  const existing = document.getElementById('cfg-balance-delta');
+  if (existing) existing.remove();
+  if (!before || !after) return;
+
+  const cur    = after.cur || '';
+  const fmtU   = n => '$' + Math.abs(n).toLocaleString('ru') + ' ~USD';
+  const netOld = fmtU(before.netIncr);
+  const netNew = fmtU(after.netIncr);
+  const netCls = after.netIncr >= 0 ? 'econ-improved' : 'econ-worsened';
+
+  const delta = document.createElement('div');
+  delta.id = 'cfg-balance-delta';
+  delta.style.cssText = 'margin-top:8px;padding:8px 10px;background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:8px;font-size:11px';
+  delta.innerHTML = `
+    <div style="font-size:10px;color:#8892a4;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">
+      ${typeof t === 'function' ? t('balance_delta_title') : 'Balance result'}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+      ${_metricCard('Net Incr.', (after.netIncr >= 0 ? '+' : '−') + fmtU(after.netIncr), (before.netIncr >= 0 ? '+' : '−') + netOld)}
+      ${_metricCard('Camp. Cost', fmtU(after.campCost), fmtU(before.campCost))}
+      ${_metricCard('Lift', (after.lift * 100).toFixed(1) + '%', (before.lift * 100).toFixed(1) + '%')}
+    </div>`;
+
+  const panel = document.getElementById('cfg-balance-panel');
+  if (panel) panel.after(delta);
+}
+
+function _injectBalancePanel() {
+  const existing = document.getElementById('cfg-balance-panel');
+  if (existing) existing.remove();
+  const existingDelta = document.getElementById('cfg-balance-delta');
+  if (existingDelta) existingDelta.remove();
+
+  window._lastAiRecs    = null;
+  window._beforeBalance = null;
+
+  const anchor = document.getElementById('incr_net')?.closest('.pr');
+  if (!anchor) return;
+
+  const savedMargin = localStorage.getItem('cfg_target_margin') || '10';
+  const marginVal   = parseInt(savedMargin, 10);
+
+  const panel = document.createElement('div');
+  panel.id = 'cfg-balance-panel';
+  panel.style.cssText = 'margin-top:10px;padding:10px 0 4px;border-top:1px solid rgba(255,255,255,.07)';
+  panel.innerHTML = `
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+      <span style="font-size:10px;color:#8892a4;white-space:nowrap">${typeof t === 'function' ? t('target_margin') : 'Запас'}:</span>
+      <input type="range" id="cfg-margin-slider" min="0" max="50" step="5" value="${marginVal}"
+        style="flex:1;min-width:80px;max-width:120px;accent-color:#10b981;cursor:pointer"
+        oninput="document.getElementById('cfg-margin-val').textContent='+'+this.value+'%';localStorage.setItem('cfg_target_margin',this.value)">
+      <span id="cfg-margin-val" style="font-size:10px;color:#10b981;font-weight:700;min-width:30px">+${marginVal}%</span>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <button id="cfg-apply-recs"
+        onclick="applyAiRecs(window._lastAiRecs)"
+        disabled
+        style="padding:5px 10px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid rgba(99,102,241,.4);background:rgba(99,102,241,.12);color:#a5b4fc;opacity:0.45;transition:all .15s">
+        ${typeof t === 'function' ? t('apply_recs') : '⚡ Применить рекомендации'}
+      </button>
+      <button id="cfg-balance-btn"
+        onclick="balanceToProfit(_getTargetMargin())"
+        style="padding:5px 10px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid rgba(16,185,129,.4);background:rgba(16,185,129,.12);color:#34d399;transition:all .15s">
+        ${typeof t === 'function' ? t('balance_profit') : '⚖️ Сбалансировать'}
+      </button>
+      <button id="cfg-undo-btn"
+        onclick="_undoBalance()"
+        style="display:none;padding:5px 10px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid rgba(245,158,11,.35);background:rgba(245,158,11,.1);color:#fbbf24;transition:all .15s">
+        ${typeof t === 'function' ? t('undo') : '↩ Отменить'}
+      </button>
+    </div>`;
+
+  anchor.after(panel);
+}
+
+// ── Patch _runOptimize to store AI recs and enable Apply button ───────────────
+(function patchRunOptimize() {
+  const _origFetch2 = window.fetch;
+  window.fetch = async function(url, opts) {
+    const res = await _origFetch2.apply(this, arguments);
+    if (typeof url === 'string' && url.includes('/api/campaign/optimize')) {
+      res.clone().json().then(data => {
+        if (data && data.recommendations && data.recommendations.length) {
+          window._lastAiRecs = data.recommendations;
+          _updateApplyRecsButton();
+        }
+      }).catch(() => {});
+    }
+    return res;
+  };
+})();
 
 // ── GLOSSARY ──────────────────────────────────────────────────────────────────
 function toggleCfgGlossary() {

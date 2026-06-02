@@ -13,6 +13,8 @@
 | `FEATURE_CAMPAIGN_ANALYTICS.md` | Post-campaign аналитика (факт vs прогноз) |
 | `FEATURE_PRIORITIZATION.md` | RICE-скоринг фич ретеншен-арсенала (#21 — лояльность, Score 25.0) |
 | `LOYALTY_SPEC.md` + `LOYALTY_BUILD_INSTRUCTION.md` | Генератор программ лояльности: модель + пошаговый build |
+| `LOYALTY_APPLY_RECS_DESIGN.md` | Дизайн кнопок «Применить рекомендации» / «Сбалансировать» |
+| `TASK_LOYALTY_BALANCE_BUTTON.md` + `TASK_TOURNAMENT_BALANCE_BUTTON.md` + `TASK_BONUS_BALANCE_BUTTON.md` | Auto-Balance: задачи для Code (группа J) |
 | `SPORTSBOOK_SPEC.md` | Калькулятор бонусов спортбука (новая вертикаль) |
 | `AUTH_WORKSPACE_DESIGN.md` | Авторизация + workspace + БД (4 фазы) |
 | `REFACTORING_PLAN.md` | Технический долг (11 задач, 4 фазы) |
@@ -151,6 +153,19 @@
 | I4 | AI-слой: prompts + parser-схемы + `/texts|audit|optimize` (UKGC safer-gambling hard-fail) + Mock-тесты | L | ⏳ Sprint 8 |
 | I5 | Optimize-solver (бюджет→параметры) + регуляторные снапшоты (UK/EU/DK) + обновить CLAUDE.md | M | ⏳ Sprint 8 |
 
+### Группа J — Auto-Balance (кнопки «Сбалансировать под прибыль»)
+
+Мгновенный вывод экономики в плюс + применение AI-рекомендаций с пересчётом на UI. Клиентский солвер, две кнопки на раздел. Общий модуль `public/balance-solver.js` (метрика + рычаги + constraints параметризуются). Задачи: `TASK_LOYALTY_BALANCE_BUTTON.md`, `TASK_TOURNAMENT_BALANCE_BUTTON.md`, `TASK_BONUS_BALANCE_BUTTON.md`. **Не зависит от auth.**
+
+| ID | Задача | Сложность | Статус |
+|---|---|---|---|
+| J0 | Общий `public/balance-solver.js` (`solveToTarget` + constraints) + фикс break-even в loyalty `calcEconomics` | M | ⏳ Sprint 7 |
+| J1 | **Loyalty** balance: порт econ-модуля + слайдер ROI + 2 кнопки + дельта-рендер + тесты | L | ⏳ Sprint 7 |
+| J2 | **Tournaments** balance: порт econ + слайдер ROI + 2 кнопки + prizeFloor + тесты (чистый рычаг `prizePool`) | M | ⏳ Sprint 8 |
+| J3 | **Bonuses** balance: порт `recalcCosts`+`payout` + цель `netIncr≥0` + регуляторные constraints + 2 кнопки + тесты | L | ⏳ Sprint 8 |
+
+Порядок: J0 → J1 (эталон) → J2 (дешёвая копия, чистый рычаг) → J3 (сложнее: netIncr-цель + лицензионные капы).
+
 ---
 
 ## Прогресс
@@ -166,7 +181,8 @@
 | F — Auth + DB | 18 | 0 | **18** |
 | H — Feature Expansion | 10 | 0 | **10** (H5/H10 → группа I) |
 | I — Loyalty Generator | 5 | 0 | **5** |
-| **Итого** | **83** | **45** (54%) | **38** |
+| J — Auto-Balance | 4 | 0 | **4** |
+| **Итого** | **87** | **45** (52%) | **42** |
 
 ---
 
@@ -180,9 +196,9 @@
    ↓
 ⏳ DB Migration (F13–F15) + Auth Phases 3–4 (F16–F18) — Sprint 6
    ↓
-⏳ Loyalty Generator core (I1–I3) + Feature expansion (H1, H3, H4) — Sprint 7
+⏳ Loyalty core (I1–I3) + Auto-Balance J0–J1 + Feature expansion (H1, H3, H4) — Sprint 7
    ↓
-⏳ Loyalty AI/solver (I4–I5) + Scale & Advanced (H6–H9) — Sprint 8+
+⏳ Loyalty AI/solver (I4–I5) + Auto-Balance J2–J3 + Scale & Advanced (H6–H9) — Sprint 8+
 ```
 
 **Параллельный трек:** I1–I5 не зависят от auth (localStorage-first) — могут идти независимо от F-группы, ограничены только командной ёмкостью.
@@ -273,11 +289,13 @@
 | I1 | Loyalty: доменное ядро + тесты | 10h |
 | I2 | Loyalty: API generate/recalc | 5h |
 | I3 | Loyalty: frontend Step 1–4 | 10h |
+| J0 | Общий `balance-solver.js` + фикс break-even | 4h |
+| J1 | Loyalty balance: 2 кнопки + слайдер + дельта | 8h |
 | H1 | CRM/CDP export + интеграции | 6h |
 | H3 | Шаблоны / библиотека кампаний | 6h |
 | H4 | Детекция бонус-абьюза | 5h |
 
-**Deliverable:** работающий генератор программ лояльности (без AI). Оператор переиспользует удачные конфиги, система детектирует уязвимые механики.
+**Deliverable:** генератор программ лояльности (без AI) + кнопка «Сбалансировать под прибыль» в loyalty. Оператор переиспользует удачные конфиги, система детектирует уязвимые механики.
 
 ---
 
@@ -287,6 +305,8 @@
 |---|---|---|
 | I4 | Loyalty: AI-слой (texts/audit/optimize) | Sprint 8 |
 | I5 | Loyalty: optimize-solver + регуляторные снапшоты | Sprint 8 |
+| J2 | Tournaments balance: 2 кнопки + слайдер ROI (чистый рычаг prizePool) | Sprint 8 |
+| J3 | Bonuses balance: netIncr-цель + регуляторные constraints | Sprint 8 |
 | H2 | Approval-flow + аудиторский след | После auth |
 | H6 | A/B-тестирование | Q3 |
 | H7 | RG-гейты (ROFUS/GAMSTOP) | Q3 |
@@ -316,10 +336,10 @@
   ⏳ Sprint 6 (2 нед) — DB Migration + Invite Flow + Analytics v2
 
 Август 2026
-  ⏳ Sprint 7 (2 нед) — Loyalty Generator core (I1–I3) + Feature Expansion (H1, H3, H4)
+  ⏳ Sprint 7 (2 нед) — Loyalty core (I1–I3) + Auto-Balance (J0–J1) + Feature Expansion (H1, H3, H4)
 
 Q3–Q4 2026
-  ⏳ Sprint 8+        — Loyalty AI/solver (I4–I5) + Scale & Advanced + Sportsbook MVP
+  ⏳ Sprint 8+        — Loyalty AI/solver (I4–I5) + Auto-Balance (J2–J3) + Scale & Advanced + Sportsbook MVP
 ```
 
 ---
@@ -336,6 +356,10 @@ Q3–Q4 2026
 ⏳ H1, H3 (Feature NOW)               → зависит от: F14–F15 (DB migration)
 ⏳ H2 (Approval-flow)                 → зависит от: F1–F12 (auth) + H3
 ⏳ I1–I5 (Loyalty Generator)          → зависит от: ничего (localStorage-first) — можно начинать сразу
+⏳ J0 (общий solver + break-even fix) → зависит от: ничего
+⏳ J1 (Loyalty balance)               → зависит от: I1–I3 (econ-модуль) + J0
+⏳ J2 (Tournaments balance)           → зависит от: J0
+⏳ J3 (Bonuses balance)               → зависит от: J0 (порт recalcCosts) — auth не нужен
 ⏳ H6, H8 (Feature NEXT)              → зависит от: H9 (импорт данных)
 ⏳ Sportsbook MVP                     → зависит от: I (после loyalty, переиспользует паттерн вертикали)
 ```

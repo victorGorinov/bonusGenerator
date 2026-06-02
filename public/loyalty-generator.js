@@ -85,6 +85,7 @@ function getLang() {
 function setLang(lang) {
   try { localStorage.setItem('bonusLang', lang); } catch {}
   document.querySelectorAll('.lt-btn').forEach(b => b.classList.toggle('active', b.id === 'lt-' + lang));
+  applyNavLang(lang);
   render();
 }
 
@@ -120,6 +121,42 @@ const L = {
     calendar_toast: '📅 Added to Retention Calendar',
     calendar_dupe: (title, date) => `"${title}" is already in the calendar (${date}).\nAdd again?`,
     detail_lbl:   'Saved', list_roi: 'ROI', list_lift: 'Lift', list_cost: 'Cost/mo', list_mode: 'Mode', list_tiers: 'Tiers',
+    apply_recs:          '⚡ Apply Recommendations',
+    balance_profit:      '⚖️ Balance to Profit',
+    target_roi:          'Target ROI',
+    undo:                '↩ Undo',
+    cannot_reach_target: 'Cannot reach target ROI at current parameter bounds.',
+    never_breakeven:     'never',
+    delta_improved:      'improved',
+    delta_worsened:      'worsened',
+    apply_recs_hint:     'Run Optimize first to enable this button',
+    changed_params:      'Changed:',
+    list_heading:        'Loyalty Programs',
+    list_count:          (n) => `${n} saved`,
+    list_name_hdr:       'Name',
+    topbar_list:         'Programs',
+    step1_topbar:        (t) => `Step 1 of 3 — ${t}`,
+    step2_topbar:        (t) => `Step 2 of 3 — ${t}`,
+    step3_topbar:        (t) => `Step 3 of 3 — ${t}`,
+    redeem_expiry_title: 'Redeem & Expiry',
+    tier_count_chip:     (n) => `${n} tiers`,
+    tab_economics:       '📊 Economics',
+    tab_texts:           '✍ Texts',
+    tab_audit:           '🔍 Audit',
+    tab_optimize:        '⚡ Optimize',
+    econ_card_title:     '📊 Economics',
+    econ_sub_mo:         '/mo',
+    econ_sub_ggr:        'of GGR',
+    econ_sub_ret:        'retention',
+    econ_sub_3mo:        '3-month',
+    econ_sub_be:         'break-even',
+    econ_sub_pts:        'unredeemed pts',
+    mission_target:      'Target:',
+    mission_reward:      'Reward:',
+    mode_tiers:          'Tiers',
+    mode_missions:       'Missions',
+    mode_hybrid:         'Hybrid',
+    pts_formula:         (avgdep, rate) => `Points = months on ladder × ${avgdep} avgdep × ${rate} pts/$1`,
   },
   ru: {
     list_empty:   'Программ пока нет. Создайте первую программу лояльности.',
@@ -152,6 +189,42 @@ const L = {
     calendar_toast: '📅 Добавлено в Retention Calendar',
     calendar_dupe: (title, date) => `"${title}" уже добавлена в календарь (${date}).\nДобавить снова?`,
     detail_lbl:   'Сохранено', list_roi: 'ROI', list_lift: 'Удержание', list_cost: 'Расходы', list_mode: 'Режим', list_tiers: 'Тиры',
+    apply_recs:          '⚡ Применить рекомендации',
+    balance_profit:      '⚖️ Сбалансировать под прибыль',
+    target_roi:          'Целевой ROI',
+    undo:                '↩ Отменить',
+    cannot_reach_target: 'Не удаётся достичь целевого ROI на текущих ограничениях.',
+    never_breakeven:     'не окупается',
+    delta_improved:      'улучшено',
+    delta_worsened:      'ухудшено',
+    apply_recs_hint:     'Сначала запустите Optimize',
+    changed_params:      'Изменено:',
+    list_heading:        'Программы лояльности',
+    list_count:          (n) => `${n} сохранено`,
+    list_name_hdr:       'Название',
+    topbar_list:         'Программы',
+    step1_topbar:        (ti) => `Шаг 1 из 3 — ${ti}`,
+    step2_topbar:        (ti) => `Шаг 2 из 3 — ${ti}`,
+    step3_topbar:        (ti) => `Шаг 3 из 3 — ${ti}`,
+    redeem_expiry_title: 'Вывод и срок действия',
+    tier_count_chip:     (n) => `${n} тира`,
+    tab_economics:       '📊 Экономика',
+    tab_texts:           '✍ Тексты',
+    tab_audit:           '🔍 Аудит',
+    tab_optimize:        '⚡ Оптимизация',
+    econ_card_title:     '📊 Экономика',
+    econ_sub_mo:         '/мес',
+    econ_sub_ggr:        'от GGR',
+    econ_sub_ret:        'удержание',
+    econ_sub_3mo:        '3 мес.',
+    econ_sub_be:         'окупаемость',
+    econ_sub_pts:        'неиспользованные баллы',
+    mission_target:      'Цель:',
+    mission_reward:      'Награда:',
+    mode_tiers:          'Тиры',
+    mode_missions:       'Миссии',
+    mode_hybrid:         'Гибрид',
+    pts_formula:         (avgdep, rate) => `Баллы = месяцы на ступени × ${avgdep} avg × ${rate} б/$1`,
   },
 };
 
@@ -176,9 +249,20 @@ function fmtX(n) {
   return (n === undefined || n === null) ? '—' : '×' + (n * 1).toFixed(1);
 }
 function fmtMo(n) {
-  if (n === undefined || n === null) return '—';
+  if (n === undefined || n === null || !isFinite(n)) return t('never_breakeven');
   if (n >= 36) return '36+ mo';
   return n.toFixed(1) + ' mo';
+}
+
+function deltaBadge(cur, prev, opts = {}) {
+  if (prev == null || prev === undefined) return '';
+  const d = cur - prev;
+  if (Math.abs(d) < 1e-6) return '';
+  const good = opts.lowerBetter ? d < 0 : d > 0;
+  const sign = d > 0 ? '+' : '';
+  const cls  = good ? 'pos' : 'neg';
+  const fmt  = opts.fmt ? opts.fmt(d) : d.toFixed(1);
+  return `<div class="econ-delta ${cls}">${sign}${fmt}</div>`;
 }
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -196,6 +280,196 @@ function showToast(msg) {
   el.textContent = msg;
   document.body.appendChild(el);
   setTimeout(() => el && el.remove(), 3000);
+}
+
+// ── ACTION PANEL (Apply / Balance) ───────────────────────────────────────────
+
+const UI_BOUNDS = {
+  redeemRate:      { min: 10,   max: 1000 },
+  topCashbackRate: { min: 0.01, max: 0.20 },
+  missionCount:    { min: 0,    max: 6    },
+  earnRateDeposit: { min: 1,    max: 50   },
+};
+
+function parseRecTarget(param, target) {
+  const s = String(target);
+  // Extract the first number in the string (stops at first non-digit/dot after leading digits)
+  const match = s.match(/\d+\.?\d*/);
+  const num = match ? parseFloat(match[0]) : NaN;
+
+  let val;
+  switch (param) {
+    case 'topCashbackRate': val = num > 1 ? num / 100 : num; break;
+    case 'mode':            return /hybrid|tiers|missions/.exec(s)?.[0] ?? draft.mode;
+    case 'numTiers':        return Math.max(3, Math.min(5, Math.round(num)));
+    case 'missionCount':    return Math.max(0, Math.min(6, Math.round(isNaN(num) ? 0 : num)));
+    default:                val = num;
+  }
+
+  // Clamp to UI_BOUNDS so the value always passes Zod validation
+  if (isNaN(val)) return draft[param];
+  const b = UI_BOUNDS[param];
+  return b ? Math.max(b.min, Math.min(b.max, val)) : val;
+}
+
+function _getTargetRoi() {
+  const el = document.getElementById('lg-target-roi');
+  if (el) return +el.value;
+  try { return +(localStorage.getItem('lg_target_roi') || '1.20'); } catch { return 1.20; }
+}
+window._getTargetRoi = _getTargetRoi;
+
+function _recalcLocal(d) {
+  if (window._loyaltyEcon) return window._loyaltyEcon.recalcEconLocal(d);
+  return null;
+}
+
+function applyAiRecs(recs) {
+  const beforeDraft = { ...draft };
+  const beforeEcon  = _lastData?.econ || null;
+  for (const r of (recs || [])) {
+    if (r.param in draft) draft[r.param] = parseRecTarget(r.param, r.target);
+  }
+  finishApply(beforeDraft, beforeEcon);
+}
+
+function balanceToProfit(targetRoi) {
+  const beforeDraft = { ...draft };
+  const beforeEcon  = _lastData?.econ || null;
+
+  const LEVERS = [
+    { p: 'redeemRate',      mode: 'mul', f: 1.25 },
+    { p: 'topCashbackRate', mode: 'mul', f: 0.85 },
+    { p: 'missionCount',    mode: 'add', f: -1   },
+    { p: 'earnRateDeposit', mode: 'mul', f: 0.90 },
+  ];
+
+  const local = _recalcLocal(draft);
+  if (!local) { showToast('Client econ not loaded'); return; }
+
+  let econ  = local.econ;
+  let guard = 0;
+  while (econ.roi3m < targetRoi && guard++ < 60) {
+    let moved = false;
+    for (const L of LEVERS) {
+      const b = UI_BOUNDS[L.p]; if (!b) continue;
+      const cur     = draft[L.p];
+      const next    = L.mode === 'mul' ? cur * L.f : cur + L.f;
+      const clamped = Math.max(b.min, Math.min(b.max, next));
+      const val     = L.p === 'missionCount' ? Math.round(clamped) : clamped;
+      if (Math.abs(val - cur) > 1e-9) { draft[L.p] = val; moved = true; break; }
+    }
+    if (!moved) break;
+    econ = (_recalcLocal(draft) || {}).econ || econ;
+  }
+
+  if (econ.roi3m < targetRoi) showToast(t('cannot_reach_target'));
+  finishApply(beforeDraft, beforeEcon);
+}
+
+async function finishApply(beforeDraft, beforeEcon) {
+  _undoStack = { draft: beforeDraft, econ: beforeEcon };
+  _prevEcon  = beforeEcon;
+
+  const body = document.getElementById('ai-tab-body');
+  if (body) body.innerHTML = `<div class="loader"><div class="spinner"></div><span>Recalculating…</span></div>`;
+
+  try {
+    const res = await fetch('/api/loyalty/generate', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(draft),
+    });
+    if (!res.ok) throw new Error('API error ' + res.status);
+    const data = await res.json();
+    _lastData  = data;
+    lastResult = data;
+
+    if (!lastResult) return;
+    const tiers    = data.config.tiers || [];
+    const missions = data.config.missions || [];
+    const missionSection = missions.length > 0
+      ? `<div class="card"><div class="card-title">🎯 ${t('missions_lbl')} (${missions.length})</div>${missionListHTML(missions)}</div>` : '';
+
+    _aiTab = 'econ';
+    document.querySelectorAll('.tab-row .tab').forEach(b => {
+      b.classList.toggle('active', b.textContent.toLowerCase().includes('econ'));
+    });
+    if (body) {
+      body.innerHTML = renderAiTabBody(data, tiers, missions, missionSection);
+      // Flash cards that improved
+      setTimeout(() => {
+        document.querySelectorAll('.econ-card').forEach(card => {
+          const delta = card.querySelector('.econ-delta');
+          if (delta && delta.classList.contains('pos')) card.classList.add('flash-good');
+        });
+      }, 50);
+    }
+
+    _showChangedParams(beforeDraft, draft);
+  } catch(e) {
+    if (body) body.innerHTML = `<div class="alert alert-warn">Error: ${esc(e.message)}</div>`;
+  }
+}
+
+function _showChangedParams(before, after) {
+  const changes = [];
+  for (const key of Object.keys(UI_BOUNDS).concat(['numTiers', 'mode'])) {
+    if (!(key in before) || !(key in after)) continue;
+    const bv = before[key], av = after[key];
+    if (Math.abs(bv - av) < 1e-9 || bv === av) continue;
+    const label = PARAM_LABELS[key] || key;
+    const fmtV  = key === 'topCashbackRate'
+      ? v => Math.round(v * 100) + '%'
+      : v => typeof v === 'number' ? +v.toFixed(2) : v;
+    changes.push(`<strong>${esc(label)}</strong>: ${fmtV(bv)} → ${fmtV(av)}`);
+  }
+  const existing = document.getElementById('ly-changed-params');
+  if (existing) existing.remove();
+  if (!changes.length) return;
+  const el = document.createElement('div');
+  el.id        = 'ly-changed-params';
+  el.className = 'changed-params';
+  el.innerHTML = `${t('changed_params')} ${changes.join(' · ')}`;
+  const grid = document.querySelector('.econ-grid');
+  if (grid) grid.insertAdjacentElement('afterend', el);
+}
+
+function undoApply() {
+  if (!_undoStack) return;
+  Object.assign(draft, _undoStack.draft);
+  _lastData  = _undoStack.econ ? { ...(lastResult || {}), econ: _undoStack.econ } : lastResult;
+  lastResult = _lastData;
+  _prevEcon  = null;
+  _undoStack = null;
+  const el = document.getElementById('ly-changed-params');
+  if (el) el.remove();
+  switchAiTab('econ');
+}
+
+function actionPanelHTML(econ) {
+  const targetRoi = _getTargetRoi();
+  const needBalance = econ && econ.roi3m < targetRoi;
+  const hasOpt = !!_aiOpt;
+
+  return `<div class="action-panel">
+    <div class="roi-slider-wrap">
+      <span class="roi-slider-label">${t('target_roi')}:</span>
+      <input type="range" id="lg-target-roi" min="1.0" max="3.0" step="0.05"
+        value="${targetRoi}"
+        oninput="document.getElementById('lg-roi-val').textContent=parseFloat(this.value).toFixed(2)+'×';try{localStorage.setItem('lg_target_roi',this.value)}catch{}">
+      <span class="roi-slider-val" id="lg-roi-val">${parseFloat(targetRoi).toFixed(2)}×</span>
+    </div>
+    <button class="btn btn-sm btn-outline" ${hasOpt ? '' : 'disabled title="' + t('apply_recs_hint') + '"'}
+      onclick="applyAiRecs(window._lastOptRecs)">
+      ${t('apply_recs')}
+    </button>
+    <button class="btn btn-sm ${needBalance ? 'btn-primary' : 'btn-outline'}"
+      onclick="balanceToProfit(_getTargetRoi())">
+      ${t('balance_profit')}
+    </button>
+    ${_undoStack ? `<button class="btn btn-sm btn-ghost" onclick="undoApply()">${t('undo')}</button>` : ''}
+  </div>`;
 }
 
 // ── CLIENT-SIDE TIER CALC ─────────────────────────────────────────────────────
@@ -260,49 +534,56 @@ function missionListHTML(missions) {
       <div class="mission-name">${icon} ${esc(m.name)}</div>
       <div class="mission-meta">
         <span class="mission-tag">${esc(freq)}</span>
-        <span>Target: ${m.target} ${m.objective.replace('_', ' ')}</span>
-        <span>Reward: <strong>${reward}</strong></span>
+        <span>${t('mission_target')} ${m.target} ${m.objective.replace('_', ' ')}</span>
+        <span>${t('mission_reward')} <strong>${reward}</strong></span>
       </div>
     </div>`;
   }).join('');
 }
 
-function econGridHTML(econ) {
+function econGridHTML(econ, prevEcon) {
+  const p = prevEcon || null;
   const roi3m = econ.roi3m;
-  const roiClass = roi3m >= 1.5 ? 'pos' : roi3m >= 0.8 ? 'neu' : 'neg';
+  const roiClass  = roi3m >= 1.5 ? 'pos' : roi3m >= 0.8 ? 'neu' : 'neg';
   const liftClass = econ.retentionLiftPct >= 15 ? 'pos' : econ.retentionLiftPct >= 8 ? 'neu' : 'neg';
   const costClass = econ.costRatioPct <= 10 ? 'pos' : econ.costRatioPct <= 20 ? 'neu' : 'neg';
+  const beClass   = (econ.breakEvenMonths === null || !isFinite(econ.breakEvenMonths)) ? 'neg' : 'neu';
 
   return `<div class="econ-grid">
     <div class="econ-card">
       <div class="econ-label">${t('cost_lbl')}</div>
       <div class="econ-val ${costClass}">${fmtUSD(econ.monthlyCostUSD)}</div>
-      <div class="econ-sub">/mo</div>
+      <div class="econ-sub">${t('econ_sub_mo')}</div>
+      ${deltaBadge(econ.monthlyCostUSD, p?.monthlyCostUSD, { lowerBetter: true, fmt: d => (d > 0 ? '+' : '') + fmtUSD(Math.abs(d)).replace('$', '') })}
     </div>
     <div class="econ-card">
       <div class="econ-label">${t('cost_ratio')}</div>
       <div class="econ-val ${costClass}">${fmtPct(econ.costRatioPct)}</div>
-      <div class="econ-sub">of GGR</div>
+      <div class="econ-sub">${t('econ_sub_ggr')}</div>
+      ${deltaBadge(econ.costRatioPct, p?.costRatioPct, { lowerBetter: true, fmt: d => (d > 0 ? '+' : '') + d.toFixed(1) + '%' })}
     </div>
     <div class="econ-card">
       <div class="econ-label">${t('lift_lbl')}</div>
       <div class="econ-val ${liftClass}">${fmtPct(econ.retentionLiftPct)}</div>
-      <div class="econ-sub">retention</div>
+      <div class="econ-sub">${t('econ_sub_ret')}</div>
+      ${deltaBadge(econ.retentionLiftPct, p?.retentionLiftPct, { lowerBetter: false, fmt: d => (d > 0 ? '+' : '') + d.toFixed(1) + '%' })}
     </div>
     <div class="econ-card">
       <div class="econ-label">${t('roi_lbl')}</div>
       <div class="econ-val ${roiClass}">${fmtX(econ.roi3m)}</div>
-      <div class="econ-sub">3-month</div>
+      <div class="econ-sub">${t('econ_sub_3mo')}</div>
+      ${deltaBadge(econ.roi3m, p?.roi3m, { lowerBetter: false, fmt: d => (d > 0 ? '+' : '') + d.toFixed(2) + '×' })}
     </div>
     <div class="econ-card">
       <div class="econ-label">${t('breakeven')}</div>
-      <div class="econ-val neu">${fmtMo(econ.breakEvenMonths)}</div>
-      <div class="econ-sub">break-even</div>
+      <div class="econ-val ${beClass}">${fmtMo(econ.breakEvenMonths)}</div>
+      <div class="econ-sub">${t('econ_sub_be')}</div>
     </div>
     <div class="econ-card">
       <div class="econ-label">${t('liability')}</div>
       <div class="econ-val neu">${fmtUSD(econ.totalLiabilityUSD)}</div>
-      <div class="econ-sub">unredeemed pts</div>
+      <div class="econ-sub">${t('econ_sub_pts')}</div>
+      ${deltaBadge(econ.totalLiabilityUSD, p?.totalLiabilityUSD, { lowerBetter: true, fmt: d => (d > 0 ? '+' : '') + fmtUSD(Math.abs(d)).replace('$', '') })}
     </div>
   </div>`;
 }
@@ -327,7 +608,7 @@ function render() {
 // ── LIST VIEW ─────────────────────────────────────────────────────────────────
 
 function renderListView() {
-  document.getElementById('topbar-step').textContent = 'Programs';
+  document.getElementById('topbar-step').textContent = t('topbar_list');
   const programs = loadPrograms();
   const isRu = getLang() === 'ru';
 
@@ -345,7 +626,7 @@ function renderListView() {
       const roi      = econ ? fmtX(econ.roi3m) : '—';
       const lift     = econ ? fmtPct(econ.retentionLiftPct) : '—';
       const cost     = econ ? fmtUSD(econ.monthlyCostUSD) : '—';
-      const modeLabel = { tiers:'Tiers', missions:'Missions', hybrid:'Hybrid' };
+      const modeLabel = { tiers: t('mode_tiers'), missions: t('mode_missions'), hybrid: t('mode_hybrid') };
       const mode     = modeLabel[cfg?.mode] || '—';
       const tiers    = cfg?.tiers?.length ?? '—';
       const date     = p.createdAt ? new Date(p.createdAt).toLocaleDateString() : '';
@@ -366,12 +647,12 @@ function renderListView() {
 
     body = `
     <div style="margin-bottom:16px">
-      <div style="font-size:1.1rem;font-weight:700;color:var(--text)">Loyalty Programs</div>
-      <div style="font-size:.8rem;color:var(--muted);margin-top:2px">${programs.length} saved</div>
+      <div style="font-size:1.1rem;font-weight:700;color:var(--text)">${t('list_heading')}</div>
+      <div style="font-size:.8rem;color:var(--muted);margin-top:2px">${t('list_count', programs.length)}</div>
     </div>
     <div class="ctable">
       <div class="ct-hd">
-        <div>Name</div>
+        <div>${t('list_name_hdr')}</div>
         <div>${t('list_mode')}</div>
         <div>${t('list_tiers')}</div>
         <div>${t('list_lift')}</div>
@@ -406,7 +687,7 @@ function goStep(n) {
 }
 
 function renderStep1() {
-  document.getElementById('topbar-step').textContent = 'Step 1 of 3 — ' + t('step1_title');
+  document.getElementById('topbar-step').textContent = t('step1_topbar', t('step1_title'));
 
   const modeCards = MODES.map(m => `
     <div class="chip type-card ${draft.mode === m.val ? 'on' : ''}" onclick="setDraft('mode','${m.val}');renderStep1()">
@@ -426,7 +707,7 @@ function renderStep1() {
 
   document.getElementById('content').innerHTML = `
   <div class="step-header">
-    <div class="step-badge">Step 1 / 3</div>
+    <div class="step-badge">${getLang()==='ru'?'Шаг 1 / 3':'Step 1 / 3'}</div>
     <div class="step-title">${t('step1_title')}</div>
     <div class="step-sub">${t('step1_sub')}</div>
   </div>
@@ -474,10 +755,10 @@ function renderStep1() {
 }
 
 function renderStep2() {
-  document.getElementById('topbar-step').textContent = 'Step 2 of 3 — ' + t('step2_title');
+  document.getElementById('topbar-step').textContent = t('step2_topbar', t('step2_title'));
 
   const tierChips = [3, 4, 5].map(n => `
-    <div class="chip ${draft.numTiers === n ? 'on' : ''}" onclick="setDraft('numTiers',${n});renderStep2()">${n} tiers</div>
+    <div class="chip ${draft.numTiers === n ? 'on' : ''}" onclick="setDraft('numTiers',${n});renderStep2()">${t('tier_count_chip', n)}</div>
   `).join('');
 
   const cbPct = Math.round(draft.topCashbackRate * 100);
@@ -502,7 +783,7 @@ function renderStep2() {
 
   document.getElementById('content').innerHTML = `
   <div class="step-header">
-    <div class="step-badge">Step 2 / 3</div>
+    <div class="step-badge">${getLang()==='ru'?'Шаг 2 / 3':'Step 2 / 3'}</div>
     <div class="step-title">${t('step2_title')}</div>
     <div class="step-sub">${t('step2_sub')}</div>
   </div>
@@ -538,7 +819,7 @@ function renderStep2() {
       </div>
 
       <div class="card">
-        <div class="card-title">Redeem & Expiry</div>
+        <div class="card-title">${t('redeem_expiry_title')}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div class="form-row" style="margin-bottom:0">
             <label class="form-label">${t('redeem_rate')}</label>
@@ -567,7 +848,7 @@ function renderStep2() {
       <div class="card-title">🔍 ${t('tier_preview')}</div>
       <div id="tier-preview">${tierTableHTML(preview)}</div>
       <div style="margin-top:12px;font-size:.73rem;color:var(--muted)">
-        Points = months on ladder × ${draft.avgdep} avgdep × ${draft.earnRateDeposit} pts/$1
+        ${t('pts_formula', draft.avgdep, draft.earnRateDeposit)}
       </div>
     </div>
   </div>
@@ -586,10 +867,10 @@ function updateTierPreview() {
 
 async function generateProgram() {
   _aiTab = 'econ'; _aiTexts = null; _aiAudit = null; _aiOpt = null;
-  document.getElementById('topbar-step').textContent = 'Step 3 of 3 — ' + t('step3_title');
+  document.getElementById('topbar-step').textContent = t('step3_topbar', t('step3_title'));
   document.getElementById('content').innerHTML = `
     <div class="step-header">
-      <div class="step-badge">Step 3 / 3</div>
+      <div class="step-badge">${getLang()==='ru'?'Шаг 3 / 3':'Step 3 / 3'}</div>
       <div class="step-title">${t('step3_title')}</div>
     </div>
     <div class="loader"><div class="spinner"></div><span>${t('generating')}</span></div>`;
@@ -605,6 +886,9 @@ async function generateProgram() {
       throw new Error(err.message || 'API error ' + res.status);
     }
     lastResult = await res.json();
+    _lastData  = lastResult;
+    _prevEcon  = null;
+    _undoStack = null;
     renderStep3(lastResult);
   } catch (e) {
     document.getElementById('content').innerHTML = `
@@ -619,8 +903,13 @@ let _aiTexts  = null;
 let _aiAudit  = null;
 let _aiOpt    = null;
 
+// Action panel state
+let _lastData    = null;  // { config, econ } from last /api/loyalty/generate response
+let _undoStack   = null;  // { draft, econ } snapshot for Undo (1 step)
+let _prevEcon    = null;  // econ before last apply — shown as delta
+
 function renderStep3(data) {
-  document.getElementById('topbar-step').textContent = 'Step 3 of 3 — ' + t('step3_title');
+  document.getElementById('topbar-step').textContent = t('step3_topbar', t('step3_title'));
   const { config, econ } = data;
   const tiers    = config.tiers || [];
   const missions = config.missions || [];
@@ -633,16 +922,16 @@ function renderStep3(data) {
 
   document.getElementById('content').innerHTML = `
   <div class="step-header">
-    <div class="step-badge">Step 3 / 3</div>
+    <div class="step-badge">${getLang()==='ru'?'Шаг 3 / 3':'Step 3 / 3'}</div>
     <div class="step-title">${t('step3_title')}</div>
     <div class="step-sub">${t('step3_sub')}</div>
   </div>
 
   <div class="tab-row" style="margin-bottom:16px">
-    <button class="tab ${_aiTab==='econ'     ?'active':''}" onclick="switchAiTab('econ')">📊 Economics</button>
-    <button class="tab ${_aiTab==='texts'    ?'active':''}" onclick="switchAiTab('texts')">✍ Texts</button>
-    <button class="tab ${_aiTab==='audit'    ?'active':''}" onclick="switchAiTab('audit')">🔍 Audit</button>
-    <button class="tab ${_aiTab==='optimize' ?'active':''}" onclick="switchAiTab('optimize')">⚡ Optimize</button>
+    <button class="tab ${_aiTab==='econ'     ?'active':''}" onclick="switchAiTab('econ')">${t('tab_economics')}</button>
+    <button class="tab ${_aiTab==='texts'    ?'active':''}" onclick="switchAiTab('texts')">${t('tab_texts')}</button>
+    <button class="tab ${_aiTab==='audit'    ?'active':''}" onclick="switchAiTab('audit')">${t('tab_audit')}</button>
+    <button class="tab ${_aiTab==='optimize' ?'active':''}" onclick="switchAiTab('optimize')">${t('tab_optimize')}</button>
   </div>
 
   <div id="ai-tab-body">
@@ -663,8 +952,9 @@ function renderAiTabBody(data, tiers, missions, missionSection) {
   if (_aiTab === 'econ') {
     return `
       <div class="card">
-        <div class="card-title">📊 Economics</div>
-        ${econGridHTML(econ)}
+        <div class="card-title">${t('econ_card_title')}</div>
+        ${actionPanelHTML(econ)}
+        ${econGridHTML(econ, _prevEcon)}
       </div>
       <div class="card">
         <div class="card-title">🏅 ${t('tiers_lbl')}</div>
@@ -737,7 +1027,7 @@ async function fetchAI(tabKey) {
 
     if (tabKey === 'texts')    _aiTexts = data;
     if (tabKey === 'audit')    _aiAudit = data;
-    if (tabKey === 'optimize') _aiOpt   = data;
+    if (tabKey === 'optimize') { _aiOpt = data; window._lastOptRecs = data.recommendations || []; }
 
     switchAiTab(tabKey);
   } catch(e) {
@@ -984,6 +1274,7 @@ function addDetailToCalendar(id) {
 (function init() {
   const lang = getLang();
   document.querySelectorAll('.lt-btn').forEach(b => b.classList.toggle('active', b.id === 'lt-' + lang));
+  applyNavLang(lang);
 
   updateAllBadges();
 
@@ -994,4 +1285,6 @@ function addDetailToCalendar(id) {
   } else {
     showView('list');
   }
+
+  document.querySelector('.main').classList.add('ready');
 })();

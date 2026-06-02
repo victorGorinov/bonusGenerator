@@ -63,7 +63,7 @@ export interface LoyaltyEcon {
   // Retention impact
   retentionLiftPct: number;       // estimated churn reduction %
   additionalRevenue3m: number;    // extra revenue over 3 months from lift
-  breakEvenMonths: number;        // months until cumulative lift covers 3× program cost
+  breakEvenMonths: number | null; // months until program breaks even; null = never (unprofitable)
   roi3m: number;                  // additionalRevenue3m / (3 × monthlyCostUSD)
 }
 
