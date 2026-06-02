@@ -1,6 +1,6 @@
 # CLAUDE.md — Retomat: Retention OS for iGaming
 
-Complete architecture reference for Claude Code sessions. Updated: 2026-06-01.
+Complete architecture reference for Claude Code sessions. Updated: 2026-06-02.
 
 ---
 
@@ -19,7 +19,7 @@ Complete architecture reference for Claude Code sessions. Updated: 2026-06-01.
 
 ```bash
 npm start            # Express on http://localhost:3000
-npm test             # vitest run (248 tests)
+npm test             # vitest run (393 tests, 28 files)
 npm run typecheck    # tsc --noEmit
 npm run lint         # eslint src --ext .ts
 npm run build        # vite build → public/dist/
@@ -124,16 +124,23 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   ├── index.js                     # Landing i18n (EN/RU) + particles + sticky CTA
 │   ├── styles.css                   # Configurator shared CSS
 │   ├── app.js                       # Configurator logic + i18n (RU/EN/MN/ES) — external file
+│   ├── nav-utils.js                 # Shared across all pages: updateAllBadges(), applyNavLang(), initNavSubgroups()
+│   ├── balance-solver.js            # solveToTarget() — generic parameter solver for Balance-to-Profit
+│   ├── bonus-cost.js                # Client-side bonus cost model (parity with backend recalcCosts)
+│   ├── loyalty-econ.js              # Client-side loyalty economics (parity with backend calcLoyaltyEconomics)
+│   ├── tournament-econ.js           # Client-side tournament economics (parity with backend calcTournamentEconomics)
 │   ├── configurator.html            # Bonus Configurator SPA (loads app.js + configurator-extra.js)
-│   ├── configurator-extra.js        # Configurator page-specific JS (RTP sync, edit mode, etc.)
+│   ├── configurator-extra.js        # Configurator page-specific JS (RTP sync, edit mode, audit panel, balance)
 │   ├── campaign-generator.html      # AI Campaign Generator SPA
-│   ├── campaign-generator.js        # Campaign Generator logic (2134 lines)
+│   ├── campaign-generator.js        # Campaign Generator logic — i18n via setUILang() + data-i18n attrs
 │   ├── tournament-generator.html    # Tournament Generator SPA
-│   ├── tournament-generator.js      # Tournament Generator logic (983 lines)
-│   ├── retention-calendar.html      # Retention Calendar SPA — dark theme, inline styles
+│   ├── tournament-generator.js      # Tournament Generator — TG dict + tg() i18n, balance-solver, tournament-econ
+│   ├── loyalty-generator.html       # Loyalty Generator SPA
+│   ├── loyalty-generator.js         # Loyalty Generator — L dict + t() i18n, loyalty-econ, balance-solver
+│   ├── retention-calendar.html      # Retention Calendar SPA — dark theme; loads nav-utils.js + RC bundle
 │   ├── retention-calendar.js        # RC entry point — imports FullCalendar modules, init
 │   ├── retention-calendar/          # RC module files (calendar, store, repo, i18n, conflicts, export…)
-│   │   ├── calendar.js              # initCalendar(el, onEventClick, onDateClick) — FullCalendar wrapper
+│   │   ├── calendar.js              # initCalendar() — FullCalendar wrapper; buttonText: prev ‹ / next › / today localised
 │   │   ├── store.js                 # Reactive state: campaigns, templates, filters, view
 │   │   ├── repository.js            # Async localStorage: listCampaigns, saveCampaign, etc.
 │   │   ├── types.js                 # JSDoc types, TYPE_COLORS, CAMPAIGN_TYPES, SEGMENTS
@@ -151,21 +158,29 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 └── tests/
     ├── domain/buildConfig.test.js
     ├── domain/recalcCosts.test.js
-    ├── domain/calcEconomics.test.js   # 25 tests (totalPlayers/segmentRatio coverage)
+    ├── domain/calcEconomics.test.js              # 25 tests (totalPlayers/segmentRatio coverage)
     ├── domain/payout.test.js
-    ├── domain/benchmarks.test.js      # Tournament benchmarks tests
-    ├── domain/retention.conflicts.test.js  # 9 tests
-    ├── domain/retention.export.test.js     # 8 tests
-    ├── domain/retention.repository.test.js # 10 tests
-    ├── domain/retention.mapper.test.js     # 10 tests
+    ├── domain/benchmarks.test.js                 # Tournament benchmarks tests
+    ├── domain/retention.conflicts.test.js        # 9 tests
+    ├── domain/retention.export.test.js           # 8 tests
+    ├── domain/retention.repository.test.js       # 10 tests
+    ├── domain/retention.mapper.test.js           # 10 tests
     ├── ai/parser.test.js
-    ├── domain/loyalty.buildConfig.test.js   # 20 tests
-    ├── domain/loyalty.calcEconomics.test.js # 24 tests
+    ├── domain/loyalty.buildConfig.test.js        # 20 tests
+    ├── domain/loyalty.calcEconomics.test.js      # 24 tests
+    ├── domain/loyalty.solver.test.js             # loyalty balance-solver parity tests
+    ├── domain/loyalty.econ.parity.test.js        # loyalty-econ.js ↔ backend parity
+    ├── domain/tournament.balance.test.js         # tournament balance-solver tests
+    ├── domain/tournament.econ.parity.test.js     # tournament-econ.js ↔ backend parity
+    ├── domain/balance.solver.test.js             # balance-solver.js unit tests
+    ├── domain/bonus.cost.parity.test.js          # bonus-cost.js ↔ backend recalcCosts parity
+    ├── domain/bonus.parseRecTarget.test.js       # parseRecTarget() edge cases
+    ├── domain/bonus.solver.constraints.test.js   # solver constraint bounds tests
     └── integration/
         ├── api.generate.test.js
-        ├── api.loyalty.test.js              # 11 tests
+        ├── api.loyalty.test.js                   # 11 tests
         ├── api.tournament.optimize.test.js
-        └── security.headers.test.js  # CSP assertions
+        └── security.headers.test.js              # CSP assertions
 ```
 
 ---
@@ -354,13 +369,29 @@ Key state: `draft = { scenario, _step, params }`. Key functions: `startWizard()`
 
 **Add to Calendar**: `addCampaignToCalendar()` — duplicate check via `confirm()`, saves to RC localStorage.
 
+### `public/nav-utils.js` — shared across all pages
+
+Loaded on every page (tournament, loyalty, retention-calendar). Three responsibilities:
+
+1. **`applyNavLang(lang)`** — translates all `[data-i18n]` elements using `_NAV_I18N` dict (EN/RU). Keys: `nav_main`, `nav_dashboard`, `nav_tools`, `nav_calendar`, `nav_bonuses`, `nav_tournament`, `nav_setup_guide`, `nav_loyalty`, `nav_soon`, `nav_analytics`, `nav_settings`, `nav_back`, plus RC-specific: `nav_rc_new`, `nav_rc_ai`, `nav_rc_templates`, `nav_rc_month`, `nav_rc_week`, `nav_rc_agenda`, `nav_rc_today`.
+2. **`updateAllBadges()`** — refreshes badge counts from localStorage (`be_campaigns`, `savedTournaments`, `savedLoyaltyPrograms`).
+3. **`initNavSubgroups()`** — wires collapse/expand for `.nav-chevron` → `.nav-sub` items (Tournaments submenu). State in `nav-sub-tourn-expanded` localStorage key.
+
+**Campaign-generator** does NOT use nav-utils — it has its own `setUILang()` + i18n dict.
+
 ### `public/tournament-generator.html` + `public/tournament-generator.js`
 
 Tournament Generator SPA.
 
 **Views**: `showView('list')`, `showView('detail', id)`, `showView('setup')`, `goStep(1–4)`.
 
+**i18n**: `TG` dict object (EN + RU, ~80 keys) + `tg(key, ...args)` helper. Covers all step labels, form fields, chip options, econ cards, list/detail views. `setTournLang(lang)` saves to localStorage, calls `applyNavLang(lang)`, re-renders the current view via `_tgCurrentView` state variable. Chip labels for segments/entry/scoring/duration/pool/distribution/reentry come from `tg('seg_labels')` etc. (nested objects in TG dict).
+
+**Flash prevention**: `.main{opacity:0;transition:opacity .15s}` + JS adds `.main.ready` after init (same pattern as campaign-generator).
+
 **Step 2:** Prize pool recommendation — `calcSuggestedPrize()` auto-sets based on GEO/segment/duration/totalPlayers (60% of projected GGR lift). Auto-set flag `_prizeAutoSet`.
+
+**Balance to Profit**: `balanceTgToProfit(targetRoi)` uses `window._balanceSolver` (balance-solver.js) + `window._tournamentEcon` (tournament-econ.js) to solve prize pool / pool model levers. `tgActionPanelHTML()` renders the action panel with Apply Recs / Balance / Undo buttons.
 
 **Add to Calendar**: `addTournamentToCalendar()` — duplicate check via `confirm()`.
 
@@ -372,12 +403,18 @@ Loyalty Generator SPA.
 
 **Views**: `showView('list')`, `showView('setup')`, `showView('detail', id)`.
 
+**i18n**: `L` dict object (EN + RU) + `t(key, ...args)` helper. `setLang(lang)` saves to localStorage, calls `applyNavLang(lang)`, calls `render()`. All step badges, topbar labels, econ-card subtitles (`/mo`, `of GGR`, `retention`, etc.), mission `Target:`/`Reward:`, tab names (Economics/Audit/Optimize), list heading and counters use `t()`.
+
+**Flash prevention**: `.main{opacity:0;transition:opacity .15s}` + JS adds `.main.ready` after init.
+
 **Steps (setup flow):**
 - Step 1 — Basics: mode chip (tiers/missions/hybrid), region select, segment chips, players/avgdep/arpu inputs
 - Step 2 — Program Design: tier count (3/4/5), top cashback rate slider, earn rates, redeem config, mission count; live tier preview (client-side, no API)
 - Step 3 — Results: API call to `/api/loyalty/generate` → economics grid (6 cards) + tier table + mission list; Save + Add to Calendar buttons; AI stubs (disabled, I4)
 
 **Client-side tier preview**: `calcTiersPreview(draft)` — minPoints = thresholdMonths × avgdep × earnRateDeposit; cashback linear from 0 to topCashbackRate.
+
+**Balance to Profit**: `balanceToProfit(targetRoi)` uses `window._loyaltyEcon` (loyalty-econ.js) + `window._balanceSolver`. Levers: earnRateDeposit, topCashbackRate, redeemRate.
 
 **Add to Calendar**: `addLoyaltyToCalendar()` / `addDetailToCalendar(id)` — creates `type:'vip'` entry in `rc_campaigns` localStorage with `sourceType:'loyalty_generator'`.
 
@@ -387,7 +424,11 @@ Loyalty Generator SPA.
 
 **Retention Calendar SPA** — central CRM planning hub.
 
-**Bundle:** FullCalendar 6 requires bundling (bare npm imports not browser-resolvable). Vite builds `public/retention-calendar.js` → `public/dist/retention-calendar.js` (no hash, committed to git via `.gitignore` exception).
+**Bundle:** FullCalendar 6 requires bundling (bare npm imports not browser-resolvable). Vite builds `public/retention-calendar.js` → `public/dist/retention-calendar.js` (no hash, committed to git via `.gitignore` exception). **After any change to `retention-calendar/` source files, run `npm run build`.**
+
+**Flash prevention**: `.main{opacity:0;transition:opacity .15s}` + `.main.ready`. Applied by inline init script after `applyNavLang()` + `updateAllBadges()`.
+
+**i18n**: Loads `nav-utils.js` for nav/sidebar translation. All nav items have `data-i18n` attributes. View toggle buttons (Month/Week/Agenda), action buttons (AI-Assisted, Templates, New Campaign) also use `data-i18n`. FullCalendar `buttonText`: `prev:'‹'`, `next:'›'`, `today` localised from localStorage at calendar init time. `setRCLang(lang)` saves lang + `location.reload()` (module bundle reads lang on init).
 
 **Views:** Month / Week / List (FullCalendar built-in).
 
@@ -520,11 +561,54 @@ NODE_ENV=            # development | production | staging | test
 ## Tests
 
 ```bash
-npm test             # 303 tests, 19 files
+npm test             # 393 tests, 28 files
 npm run test:watch   # vitest watch mode
 ```
 
 **MockAIProvider** (`src/ai/providers/mock.ts`): inject via `setAIProvider(new MockAIProvider([...]))` or `createCampaignController({ ai: new MockAIProvider([...]) })`.
+
+**Client-side parity tests** (`tests/domain/*.parity.test.js`): verify that the browser-side JS modules (`bonus-cost.js`, `loyalty-econ.js`, `tournament-econ.js`) produce identical results to the backend domain functions for the same inputs.
+
+---
+
+## i18n architecture
+
+**Language key**: `bonusLang` in localStorage. Values: `'en'` | `'ru'`.
+
+**Per-page pattern:**
+
+| Page | Switch fn | Dict | Flash prevention |
+|------|-----------|------|-----------------|
+| campaign-generator | `setUILang(lang)` | inline i18n object | `.main{opacity:0}` + `.main.ready` via JS |
+| tournament-generator | `setTournLang(lang)` | `TG` dict + `tg()` | same |
+| loyalty-generator | `setLang(lang)` | `L` dict + `t()` | same |
+| retention-calendar | `setRCLang(lang)` → reload | `getT()` from `i18n.js` | same |
+
+**nav-utils.js** handles nav sidebar translation on all pages except campaign-generator (which has its own `setUILang` covering nav via `data-i18n`).
+
+**Adding a new translatable string:**
+1. If in nav sidebar → add key to `_NAV_I18N` in `nav-utils.js` + `data-i18n="key"` attribute in HTML
+2. If in tournament-generator → add key to `TG.en` + `TG.ru`, use `tg('key')`
+3. If in loyalty-generator → add key to `L.en` + `L.ru`, use `t('key')`
+4. If in retention-calendar module → add key to `EN`/`RU` in `retention-calendar/i18n.js`, use `getT()` at call site; then rebuild bundle with `npm run build`
+5. If in campaign-generator → add key to both locale objects in `setUILang()`, add `data-i18n="key"` to HTML element
+
+---
+
+## Client-side economics modules
+
+Four browser-side JS modules mirror backend domain logic for real-time recalculation without API round-trips:
+
+| File | Mirrors | Used by |
+|------|---------|---------|
+| `public/bonus-cost.js` | `src/domain/bonus/recalcCosts.ts` | configurator-extra.js |
+| `public/loyalty-econ.js` | `src/domain/loyalty/calcEconomics.ts` | loyalty-generator.js |
+| `public/tournament-econ.js` | `src/domain/tournament/calcEconomics.ts` | tournament-generator.js |
+| `public/balance-solver.js` | — (generic solver) | tournament/loyalty/configurator |
+
+**balance-solver.js** — `solveToTarget({ draft, levers, recalc, metricOf, target })`: iterates over `levers` (enum swaps + multiplicative steps) until `metricOf(recalc(draft)) >= target` or all levers exhausted. Returns `{ draft, reached }`.
+
+**Parity tests** in `tests/domain/*.parity.test.js` assert identical output between JS modules and backend TypeScript for the same inputs. Run before shipping changes to either side.
 
 ---
 
