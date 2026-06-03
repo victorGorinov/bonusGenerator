@@ -1929,7 +1929,7 @@ const I18N = {
     // Sidebar
     nav_main:'Главное', nav_dashboard:'Дашборд', nav_campaigns:'Бонусные акции',
     nav_tools:'Инструменты', nav_configurator:'Конфигуратор', nav_campaign_gen:'Генератор акций', nav_tournament:'Турниры', nav_tournament_gen:'Tournament Gen', nav_setup_guide:'Setup Guide',
-    nav_scenarios:'Сценарии', nav_calendar:'Календарь', nav_ai:'AI Ассистент',
+    nav_scenarios:'Сценарии', nav_calendar:'Retention Calendar', nav_bonuses:'Бонусы', nav_loyalty:'Лояльность', nav_ai:'AI Ассистент',
     nav_soon:'Скоро', nav_analytics:'Аналитика', nav_settings:'Настройки',
     // Topbar view titles
     view_dashboard:'Дашборд', view_campaigns:'Бонусные акции',
@@ -2056,7 +2056,7 @@ const I18N = {
     // Sidebar
     nav_main:'Main', nav_dashboard:'Dashboard', nav_campaigns:'Bonus Offers',
     nav_tools:'Tools', nav_configurator:'Configurator', nav_campaign_gen:'Offer Gen', nav_tournament:'Tournaments', nav_tournament_gen:'Tournament Gen', nav_setup_guide:'Setup Guide',
-    nav_scenarios:'Scenarios', nav_calendar:'Calendar', nav_ai:'AI Assistant',
+    nav_scenarios:'Scenarios', nav_calendar:'Retention Calendar', nav_bonuses:'Bonuses', nav_loyalty:'Loyalty Program', nav_ai:'AI Assistant',
     nav_soon:'Soon', nav_analytics:'Analytics', nav_settings:'Settings',
     // Topbar view titles
     view_dashboard:'Dashboard', view_campaigns:'Bonus Offers',
