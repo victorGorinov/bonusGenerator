@@ -235,3 +235,20 @@ export function parseLoyaltyOptimizeResponse(raw: string): LoyaltyOptimizeRespon
   if (!result.success) throw new AIProviderError(`AI loyalty optimize response failed schema validation: ${JSON.stringify(result.error.flatten())}`);
   return result.data;
 }
+
+const LoyaltyMissionsResponseSchema = z.object({
+  missions: z.array(z.object({
+    id:         z.string(),
+    narrative:  anyToString,
+    tierEffect: anyToString.optional(),
+  })).min(1),
+});
+
+export type LoyaltyMissionsResponse = z.infer<typeof LoyaltyMissionsResponseSchema>;
+
+export function parseLoyaltyMissionsResponse(raw: string): LoyaltyMissionsResponse {
+  const parsed = parseRaw(raw);
+  const result = LoyaltyMissionsResponseSchema.safeParse(parsed);
+  if (!result.success) throw new AIProviderError(`AI loyalty missions response failed schema validation: ${JSON.stringify(result.error.flatten())}`);
+  return result.data;
+}

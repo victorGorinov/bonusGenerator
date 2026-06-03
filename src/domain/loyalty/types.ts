@@ -23,6 +23,15 @@ export interface EarnRedeemConfig {
   pointsExpiry: number;     // days (0 = no expiry)
 }
 
+export interface MissionTierLink {
+  tierPointsContribution: number;   // points per completion → tier progress
+  monthlyTierPoints:      number;   // steady-state monthly contribution (one_time → 0)
+  multiplierBoost:        number;   // temporary +Δ to bonusMultiplier on completion (0–0.5)
+  boostDurationDays:      number;   // duration of the multiplier boost
+  eligibleTiers:          TierName[]; // tiers where this mission is active
+  acceleratesUpgrade:     boolean;  // monthlyTierPoints > 0
+}
+
 export interface Mission {
   id: string;
   name: string;
@@ -31,6 +40,8 @@ export interface Mission {
   rewardType: MissionRewardType;
   rewardValue: number;
   frequency: MissionFrequency;
+  link?:      MissionTierLink;  // populated only for mode==='hybrid'
+  narrative?: string;           // filled by AI layer (Phase 2)
 }
 
 export interface LoyaltyConfig {

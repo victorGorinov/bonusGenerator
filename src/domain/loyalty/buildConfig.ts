@@ -2,6 +2,7 @@ import type {
   LoyaltyBuildParams, LoyaltyConfig, LoyaltyTier, EarnRedeemConfig, Mission,
   TierName, MissionObjective, MissionRewardType, MissionFrequency,
 } from './types.js';
+import { linkMissionsToTiers } from './linkMissions.js';
 
 // Static tier ladder: always 5 definitions; numTiers slices from index 0
 const TIER_DEFS: Array<{
@@ -63,7 +64,11 @@ function buildMissions(params: LoyaltyBuildParams): Mission[] {
 
 export function buildLoyaltyConfig(params: LoyaltyBuildParams): LoyaltyConfig {
   const hasMissions = params.mode !== 'tiers' && params.missionCount > 0;
-  const missions    = hasMissions ? buildMissions(params) : [];
+  const rawMissions = hasMissions ? buildMissions(params) : [];
+  const tiers       = buildTiers(params);
+  const missions    = params.mode === 'hybrid' && rawMissions.length > 0
+    ? linkMissionsToTiers(rawMissions, tiers, params)
+    : rawMissions;
 
   const earnRedeem: EarnRedeemConfig = {
     earnRateDeposit: params.earnRateDeposit,
@@ -75,7 +80,7 @@ export function buildLoyaltyConfig(params: LoyaltyBuildParams): LoyaltyConfig {
 
   return {
     mode:        params.mode,
-    tiers:       buildTiers(params),
+    tiers,
     earnRedeem,
     missions,
     hasMissions,

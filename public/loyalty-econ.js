@@ -1,6 +1,8 @@
 // Client-side port of loyalty domain functions.
 // Keep in sync with src/domain/loyalty/{buildConfig,retentionLift,calcEconomics}.ts
 
+import { linkMissionsToTiers } from './loyalty-missions-link.js';
+
 // ── buildLoyaltyConfig ────────────────────────────────────────────────────────
 
 const TIER_DEFS = [
@@ -51,11 +53,15 @@ function _buildMissions(params) {
 }
 
 export function buildLoyaltyConfig(params) {
-  const hasMissions = params.mode !== 'tiers' && params.missionCount > 0;
-  const missions    = hasMissions ? _buildMissions(params) : [];
+  const hasMissions  = params.mode !== 'tiers' && params.missionCount > 0;
+  const rawMissions  = hasMissions ? _buildMissions(params) : [];
+  const tiers        = _buildTiers(params);
+  const missions     = params.mode === 'hybrid' && rawMissions.length > 0
+    ? linkMissionsToTiers(rawMissions, tiers, params)
+    : rawMissions;
   return {
     mode:       params.mode,
-    tiers:      _buildTiers(params),
+    tiers,
     earnRedeem: {
       earnRateDeposit: params.earnRateDeposit,
       earnRateWager:   params.earnRateWager,
@@ -83,12 +89,24 @@ function _earnFactor(earnRateDeposit) {
   return Math.min(1.10, 0.90 + earnRateDeposit / 100);
 }
 
+function _synergyFactor(cfg) {
+  if (cfg.mode !== 'hybrid') return 1;
+  const monthlyEarnBaseline = cfg.avgdep * cfg.earnRedeem.earnRateDeposit;
+  if (monthlyEarnBaseline <= 0) return 1;
+  const totalMonthlyMissionPts = (cfg.missions || []).reduce((acc, m) => {
+    return acc + (m.link ? m.link.monthlyTierPoints : 0);
+  }, 0);
+  const tierAccel = Math.min(0.5, totalMonthlyMissionPts / monthlyEarnBaseline);
+  return 1 + 0.20 * tierAccel;
+}
+
 export function calcRetentionLift(cfg) {
   const base     = SEG_BASE[cfg.segment] ?? SEG_BASE['mid'];
   const modeMult = MODE_MULT[cfg.mode] ?? 1.00;
   const tierMult = TIER_DEPTH_MULT[cfg.tiers.length] ?? 1.00;
   const earn     = _earnFactor(cfg.earnRedeem.earnRateDeposit);
-  return Math.min(0.35, base * modeMult * tierMult * earn);
+  const synergy  = _synergyFactor(cfg);
+  return Math.min(0.35, base * modeMult * tierMult * earn * synergy);
 }
 
 // ── calcLoyaltyEconomics ──────────────────────────────────────────────────────

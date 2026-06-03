@@ -45,6 +45,7 @@ let lastResult  = null;
 let _view       = 'list';
 let _detailId   = null;
 let _menuOpen   = false;
+let _aiMissions = null;  // cached narrative response for current session
 
 const draft = {
   mode:            'hybrid',
@@ -167,12 +168,21 @@ const L = {
     econ_sub_3mo:        '3-month',
     econ_sub_be:         'break-even',
     econ_sub_pts:        'unredeemed pts',
-    mission_target:      'Target:',
-    mission_reward:      'Reward:',
-    mode_tiers:          'Tiers',
-    mode_missions:       'Missions',
-    mode_hybrid:         'Hybrid',
-    pts_formula:         (avgdep, rate) => `Points = months on ladder × ${avgdep} avgdep × ${rate} pts/$1`,
+    mission_target:           'Target:',
+    mission_reward:           'Reward:',
+    mission_tier_points:      'tier pts/mo',
+    mission_accelerates:      'speeds up upgrade',
+    mission_boost:            (x, d) => `+${x}× multiplier for ${d}d`,
+    mission_eligible:         'Available on:',
+    mission_describe_btn:     '✨ Describe Missions',
+    tab_missions:             '🎯 Missions',
+    mission_narrative_loading: 'Generating mission descriptions…',
+    mission_narrative_error:   'Error generating descriptions. Retry?',
+    mode_tiers:               'Tiers',
+    mode_missions:            'Missions',
+    mode_hybrid:              'Hybrid',
+    pts_formula:              (avgdep, rate) => `Points = months on ladder × ${avgdep} avgdep × ${rate} pts/$1`,
+    opt_fetch_missions:       '✨ Generate mission descriptions',
   },
   ru: {
     list_empty:   'Программ пока нет. Создайте первую программу лояльности.',
@@ -251,12 +261,21 @@ const L = {
     econ_sub_3mo:        '3 мес.',
     econ_sub_be:         'окупаемость',
     econ_sub_pts:        'неиспользованные баллы',
-    mission_target:      'Цель:',
-    mission_reward:      'Награда:',
-    mode_tiers:          'Тиры',
-    mode_missions:       'Миссии',
-    mode_hybrid:         'Гибрид',
-    pts_formula:         (avgdep, rate) => `Баллы = месяцы на ступени × ${avgdep} avg × ${rate} б/$1`,
+    mission_target:           'Цель:',
+    mission_reward:           'Награда:',
+    mission_tier_points:      'баллов тира/мес',
+    mission_accelerates:      'ускоряет апгрейд',
+    mission_boost:            (x, d) => `+${x}× к множителю на ${d} дн.`,
+    mission_eligible:         'Доступно:',
+    mission_describe_btn:     '✨ Описать миссии',
+    tab_missions:             '🎯 Миссии',
+    mission_narrative_loading: 'Генерируем описания миссий…',
+    mission_narrative_error:   'Ошибка генерации. Повторить?',
+    mode_tiers:               'Тиры',
+    mode_missions:            'Миссии',
+    mode_hybrid:              'Гибрид',
+    pts_formula:              (avgdep, rate) => `Баллы = месяцы на ступени × ${avgdep} avg × ${rate} б/$1`,
+    opt_fetch_missions:       '✨ Сгенерировать описания миссий',
   },
 };
 
@@ -552,6 +571,30 @@ function tierTableHTML(tiers) {
   </table>`;
 }
 
+function missionLinkHTML(link) {
+  if (!link) return '';
+  const tierLabels = link.eligibleTiers.map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(', ');
+  const boostFmt   = link.multiplierBoost.toFixed(2).replace(/\.?0+$/, '');
+  const accelBadge = link.acceleratesUpgrade
+    ? `<span class="mission-tag" style="color:#10b981">⬆ ${esc(t('mission_accelerates'))}</span>`
+    : '';
+  return `<div class="mission-link-block">
+    <div class="mission-link-row">
+      <span class="mission-tag">⬆ ${link.monthlyTierPoints} ${esc(t('mission_tier_points'))}</span>
+      ${accelBadge}
+    </div>
+    <div class="mission-link-row">
+      <span class="mission-tag" style="color:#a0b0ff">⚡ ${esc(t('mission_boost', boostFmt, link.boostDurationDays))}</span>
+    </div>
+    <div class="mission-link-row" style="font-size:.72rem;color:var(--muted)">
+      📊 ${esc(t('mission_eligible'))} ${esc(tierLabels)}
+    </div>
+    ${m_narrativeHTML(link)}
+  </div>`;
+}
+
+function m_narrativeHTML(_link) { return ''; }  // placeholder; Phase 2 replaces this
+
 function missionListHTML(missions) {
   if (!missions || missions.length === 0) return '';
   return missions.map(m => {
@@ -562,15 +605,36 @@ function missionListHTML(missions) {
       : m.rewardType === 'free_spins'
         ? m.rewardValue + ' FS'
         : m.rewardValue + ' pts';
-    return `<div class="mission-row">
+    const linkBlock = missionLinkHTML(m.link);
+    const narrative = m.narrative
+      ? `<div class="mission-narrative">💬 ${esc(m.narrative)}</div>`
+      : '';
+    return `<div class="mission-row${linkBlock ? ' has-link' : ''}">
       <div class="mission-name">${icon} ${esc(m.name)}</div>
       <div class="mission-meta">
         <span class="mission-tag">${esc(freq)}</span>
         <span>${t('mission_target')} ${m.target} ${m.objective.replace('_', ' ')}</span>
         <span>${t('mission_reward')} <strong>${reward}</strong></span>
       </div>
+      ${linkBlock}
+      ${narrative}
     </div>`;
   }).join('');
+}
+
+function previewMissionLinks(params) {
+  if (!window._loyaltyMissionsLink || params.mode !== 'hybrid' || params.missionCount === 0) return;
+  // Build a minimal tiers array for preview (mirrors buildConfig tier logic)
+  const monthlyBase = params.avgdep * params.earnRateDeposit;
+  const tierDefs = [
+    { name: 'bronze', thresholdMonths: 0 },
+    { name: 'silver', thresholdMonths: 1 },
+    { name: 'gold',   thresholdMonths: 3 },
+    { name: 'platinum', thresholdMonths: 8 },
+    { name: 'diamond', thresholdMonths: 20 },
+  ].slice(0, params.numTiers);
+  const tiers = tierDefs.map(d => ({ name: d.name, minPoints: Math.round(d.thresholdMonths * monthlyBase) }));
+  return window._loyaltyMissionsLink.linkMissionsToTiers([], tiers, params);
 }
 
 function econGridHTML(econ, prevEcon) {
@@ -718,6 +782,23 @@ function goStep(n) {
   render();
 }
 
+function wizProgressHTML(current) {
+  const labels = [t('step1_title'), t('step2_title'), t('step3_title')];
+  return `<div class="wiz-progress">
+    ${labels.map((lbl, i) => {
+      const n      = i + 1;
+      const done   = n < current;
+      const active = n === current;
+      const conn   = i < labels.length - 1
+        ? `<div class="wp-conn${done ? ' done' : ''}"></div>` : '';
+      return `<div class="wp-step">
+        <div class="wp-circle${done ? ' done' : active ? ' active' : ''}">${done ? '✓' : n}</div>
+        <div class="wp-lbl${active ? ' active' : ''}">${lbl}</div>
+      </div>${conn}`;
+    }).join('')}
+  </div>`;
+}
+
 function renderStep1() {
   document.getElementById('topbar-step').textContent = t('step1_topbar', t('step1_title'));
 
@@ -738,8 +819,8 @@ function renderStep1() {
     </div>`).join('');
 
   document.getElementById('content').innerHTML = `
+  ${wizProgressHTML(1)}
   <div class="step-header">
-    <div class="step-badge">${getLang()==='ru'?'Шаг 1 / 3':'Step 1 / 3'}</div>
     <div class="step-title">${t('step1_title')}</div>
     <div class="step-sub">${t('step1_sub')}</div>
   </div>
@@ -814,8 +895,8 @@ function renderStep2() {
     </div>` : '';
 
   document.getElementById('content').innerHTML = `
+  ${wizProgressHTML(2)}
   <div class="step-header">
-    <div class="step-badge">${getLang()==='ru'?'Шаг 2 / 3':'Step 2 / 3'}</div>
     <div class="step-title">${t('step2_title')}</div>
     <div class="step-sub">${t('step2_sub')}</div>
   </div>
@@ -898,35 +979,61 @@ function updateTierPreview() {
 }
 
 async function generateProgram() {
-  _aiTab = 'econ'; _aiTexts = null; _aiAudit = null; _aiOpt = null;
-  document.getElementById('topbar-step').textContent = t('step3_topbar', t('step3_title'));
-  document.getElementById('content').innerHTML = `
-    <div class="step-header">
-      <div class="step-badge">${getLang()==='ru'?'Шаг 3 / 3':'Step 3 / 3'}</div>
-      <div class="step-title">${t('step3_title')}</div>
-    </div>
-    <div class="loader"><div class="spinner"></div><span>${t('generating')}</span></div>`;
+  _aiTab = 'econ'; _aiTexts = null; _aiAudit = null; _aiOpt = null; _aiMissions = null;
+  const isRu = getLang() === 'ru';
 
-  try {
-    const res = await fetch('/api/loyalty/generate', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(draft),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || 'API error ' + res.status);
+  const steps = isRu
+    ? ['Проверяем параметры программы', 'Строим структуру тиров', 'Рассчитываем экономику', 'Связываем миссии с тирами', 'Финализируем модель']
+    : ['Validating program parameters', 'Building tier structure', 'Calculating economics', 'Linking missions to tiers', 'Finalising model'];
+
+  document.getElementById('topbar-step').textContent = isRu ? 'Генерация…' : 'Generating…';
+
+  const c = document.getElementById('content');
+  c.innerHTML = `
+    <div class="prog-wrap">
+      <div class="prog-title">${isRu ? 'Строим программу лояльности…' : 'Building loyalty program…'}</div>
+      <div class="prog-sub">${isRu ? 'Анализируем параметры и рассчитываем экономику' : 'Analysing parameters and calculating economics'}</div>
+      <ul class="prog-list" id="ly-prog-list">
+        ${steps.map((s, i) => `<li class="pl-item" id="ly-pl-${i}"><span class="pl-icon">⏳</span>${s}</li>`).join('')}
+      </ul>
+    </div>`;
+
+  // Fire API immediately, in parallel with animation
+  const apiPromise = fetch('/api/loyalty/generate', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(draft),
+  })
+  .then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(new Error(e.message || r.statusText))))
+  .then(data => { lastResult = data; _lastData = data; _prevEcon = null; _undoStack = null; })
+  .catch(err => { lastResult = { _error: err.message }; });
+
+  let i = 0;
+  (function tick() {
+    if (i > 0) {
+      const prev = document.getElementById('ly-pl-' + (i - 1));
+      if (prev) { prev.className = 'pl-item done'; prev.innerHTML = `<span class="pl-icon">✅</span>${steps[i - 1]}`; }
     }
-    lastResult = await res.json();
-    _lastData  = lastResult;
-    _prevEcon  = null;
-    _undoStack = null;
-    renderStep3(lastResult);
-  } catch (e) {
-    document.getElementById('content').innerHTML = `
-      <div class="alert alert-warn">Error: ${esc(e.message)}</div>
-      <button class="btn btn-outline" onclick="goStep(2)">${t('back')}</button>`;
-  }
+    if (i < steps.length) {
+      const cur = document.getElementById('ly-pl-' + i);
+      if (cur) { cur.className = 'pl-item running'; cur.innerHTML = `<div class="spinner"></div>${steps[i]}`; }
+      i++;
+      setTimeout(tick, 600);
+    } else {
+      Promise.resolve(apiPromise).then(() => {
+        setTimeout(() => {
+          if (lastResult?._error) {
+            c.innerHTML = `<div class="alert alert-warn" style="max-width:480px;margin:40px auto">
+              Error: ${esc(lastResult._error)}
+              <button class="btn btn-outline" style="margin-top:10px;display:block" onclick="goStep(2)">${t('back')}</button>
+            </div>`;
+          } else {
+            renderStep3(lastResult);
+          }
+        }, 300);
+      });
+    }
+  })();
 }
 
 // AI state for step 3 tabs
@@ -953,8 +1060,8 @@ function renderStep3(data) {
     </div>` : '';
 
   document.getElementById('content').innerHTML = `
+  ${wizProgressHTML(3)}
   <div class="step-header">
-    <div class="step-badge">${getLang()==='ru'?'Шаг 3 / 3':'Step 3 / 3'}</div>
     <div class="step-title">${t('step3_title')}</div>
     <div class="step-sub">${t('step3_sub')}</div>
   </div>
@@ -964,6 +1071,7 @@ function renderStep3(data) {
     <button class="tab ${_aiTab==='texts'    ?'active':''}" data-tab="texts"    onclick="switchAiTab('texts')">${t('tab_texts')}</button>
     <button class="tab ${_aiTab==='audit'    ?'active':''}" data-tab="audit"    onclick="switchAiTab('audit')">${t('tab_audit')}</button>
     <button class="tab ${_aiTab==='optimize' ?'active':''}" data-tab="optimize" onclick="switchAiTab('optimize')">${t('tab_optimize')}</button>
+    ${(data.config.missions || []).length > 0 ? `<button class="tab ${_aiTab==='missions'?'active':''}" data-tab="missions" onclick="switchAiTab('missions')">${t('tab_missions')}</button>` : ''}
   </div>
 
   <div id="ai-tab-body">
@@ -1006,16 +1114,35 @@ function renderAiTabBody(data, tiers, missions, missionSection) {
     if (!_aiOpt) return renderAiFetchPrompt('optimize', t('opt_fetch_optimize'));
     return renderOptimizeHTML(_aiOpt);
   }
+  if (_aiTab === 'missions') {
+    if (!_aiMissions) return renderAiFetchPrompt('missions', t('opt_fetch_missions'));
+    return renderMissionsNarrativeHTML(missions);
+  }
   return '';
 }
 
 function renderAiFetchPrompt(tabKey, label) {
-  const icon = tabKey === 'texts' ? '✍' : tabKey === 'audit' ? '🔍' : '⚡';
+  const iconMap = { texts: '✍', audit: '🔍', optimize: '⚡', missions: '✨' };
+  const icon = iconMap[tabKey] || '⚡';
   return `<div class="card" style="text-align:center;padding:32px 20px">
     <div style="font-size:1.8rem;margin-bottom:10px">${icon}</div>
     <div style="font-size:.9rem;font-weight:600;margin-bottom:16px">${esc(label)}</div>
     <button class="btn btn-primary" onclick="fetchAI('${tabKey}')">${esc(label)} →</button>
   </div>`;
+}
+
+function renderMissionsNarrativeHTML(missions) {
+  if (!missions || missions.length === 0) return '<div class="card"><p style="color:var(--muted)">No missions in this program.</p></div>';
+  return missions.map(m => {
+    const icon = MISSION_ICONS[m.objective] || '🎯';
+    const narrative = m.narrative ? `<div class="mission-narrative">💬 ${esc(m.narrative)}</div>` : '';
+    const tierEffect = m.tierEffect ? `<div style="font-size:.72rem;color:#a0b0ff;margin-top:4px">⚡ ${esc(m.tierEffect)}</div>` : '';
+    return `<div class="card" style="margin-bottom:10px">
+      <div style="font-weight:700;margin-bottom:6px">${icon} ${esc(m.name)}</div>
+      ${narrative}
+      ${tierEffect}
+    </div>`;
+  }).join('');
 }
 
 function switchAiTab(tab) {
@@ -1033,21 +1160,27 @@ function switchAiTab(tab) {
   if (body) body.innerHTML = renderAiTabBody(lastResult, tiers, missions, missionSection);
 }
 
-async function fetchAI(tabKey) {
+async function fetchAI(tabKey, detailId) {
   const body = document.getElementById('ai-tab-body');
   if (body) body.innerHTML = `<div class="loader"><div class="spinner"></div><span>Generating with AI…</span></div>`;
+
+  const source = detailId ? loadPrograms().find(p => p.id === detailId)?.result : lastResult;
+  if (!source) return;
 
   try {
     let url, payload;
     if (tabKey === 'texts') {
       url     = '/api/loyalty/texts';
-      payload = { config: lastResult.config, econ: lastResult.econ };
+      payload = { config: source.config, econ: source.econ };
     } else if (tabKey === 'audit') {
       url     = '/api/loyalty/audit';
-      payload = { config: lastResult.config };
+      payload = { config: source.config };
+    } else if (tabKey === 'missions') {
+      url     = '/api/loyalty/missions';
+      payload = { config: source.config, econ: source.econ, uiLang: getLang() };
     } else {
       url     = '/api/loyalty/optimize';
-      payload = { config: lastResult.config, econ: lastResult.econ };
+      payload = { config: source.config, econ: source.econ };
     }
 
     const res = await fetch(url, {
@@ -1061,12 +1194,62 @@ async function fetchAI(tabKey) {
     if (tabKey === 'texts')    _aiTexts = data;
     if (tabKey === 'audit')    _aiAudit = data;
     if (tabKey === 'optimize') { _aiOpt = data; window._lastOptRecs = data.recommendations || []; }
+    if (tabKey === 'missions') {
+      _aiMissions = data;
+      mergeMissionNarratives(data.missions, detailId);
+    }
 
-    switchAiTab(tabKey);
+    if (detailId) {
+      renderDetailMissionsTab(detailId);
+    } else {
+      switchAiTab(tabKey);
+    }
   } catch(e) {
+    const retryArg = detailId ? `'${tabKey}','${detailId}'` : `'${tabKey}'`;
     if (body) body.innerHTML = `<div class="alert alert-warn">Error: ${esc(e.message)}
-      <button class="btn btn-sm btn-outline" style="margin-left:10px" onclick="fetchAI('${tabKey}')">${t('opt_retry')}</button></div>`;
+      <button class="btn btn-sm btn-outline" style="margin-left:10px" onclick="fetchAI(${retryArg})">${t('opt_retry')}</button></div>`;
   }
+}
+
+function mergeMissionNarratives(narratives, detailId) {
+  const byId = Object.fromEntries((narratives || []).map(n => [n.id, n]));
+
+  if (detailId) {
+    updateProgramMissions(detailId, byId);
+  } else if (lastResult) {
+    const missions = lastResult.config.missions || [];
+    missions.forEach(m => {
+      const n = byId[m.id];
+      if (n) {
+        m.narrative  = n.narrative;
+        m.tierEffect = n.tierEffect;
+      }
+    });
+  }
+}
+
+function updateProgramMissions(id, narrativeById) {
+  const list = loadPrograms();
+  const p    = list.find(x => x.id === id);
+  if (!p) return;
+  const missions = p.result.config.missions || [];
+  missions.forEach(m => {
+    const n = narrativeById[m.id];
+    if (n) {
+      m.narrative  = n.narrative;
+      m.tierEffect = n.tierEffect;
+    }
+  });
+  p.updatedAt = new Date().toISOString();
+  savePrograms(list);
+}
+
+function renderDetailMissionsTab(id) {
+  const p = loadPrograms().find(x => x.id === id);
+  if (!p) return;
+  const missions = p.result.config.missions || [];
+  const body     = document.getElementById('ai-tab-body');
+  if (body) body.innerHTML = renderMissionsNarrativeHTML(missions);
 }
 
 function renderTextsHTML(texts) {
@@ -1161,6 +1344,10 @@ function renderDetailView(id) {
       ${missionListHTML(missions)}
     </div>` : '';
 
+  const missionTab = missions.length > 0
+    ? `<button class="tab" data-tab="missions-detail" onclick="fetchAI('missions','${esc(id)}')" style="margin-top:8px">${t('mission_describe_btn')}</button>`
+    : '';
+
   const date = p.createdAt ? new Date(p.createdAt).toLocaleDateString() : '';
 
   document.getElementById('content').innerHTML = `
@@ -1180,6 +1367,8 @@ function renderDetailView(id) {
   </div>
 
   ${missionSection}
+
+  ${missionTab ? `<div id="ai-tab-body">${missionTab}</div>` : ''}
 
   <div class="nav-footer">
     <button class="btn btn-ghost" onclick="showView('list')">${t('back')}</button>
