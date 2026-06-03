@@ -144,6 +144,22 @@ const L = {
     tab_texts:           '✍ Texts',
     tab_audit:           '🔍 Audit',
     tab_optimize:        '⚡ Optimize',
+    impact_high:         '↑ High impact',
+    impact_med:          '→ Medium impact',
+    impact_low:          '↓ Low impact',
+    opt_now:             'Now',
+    opt_fetch_texts:     '✍ Generate CRM copy for this loyalty program',
+    opt_fetch_audit:     '🔍 Run compliance audit',
+    opt_fetch_optimize:  '⚡ Get optimization recommendations',
+    opt_retry:           'Retry',
+    param_topCashbackRate: 'Top-tier Cashback Rate',
+    param_earnRateDeposit: 'Points per $1 Deposited',
+    param_earnRateWager:   'Points per $1 Wagered',
+    param_redeemRate:      'Points per $1 Redeemed',
+    param_missionCount:    'Number of Missions',
+    param_numTiers:        'Number of Tiers',
+    param_mode:            'Program Mode',
+    param_pointsExpiry:    'Points Expiry',
     econ_card_title:     '📊 Economics',
     econ_sub_mo:         '/mo',
     econ_sub_ggr:        'of GGR',
@@ -212,6 +228,22 @@ const L = {
     tab_texts:           '✍ Тексты',
     tab_audit:           '🔍 Аудит',
     tab_optimize:        '⚡ Оптимизация',
+    impact_high:         '↑ Высокий эффект',
+    impact_med:          '→ Средний эффект',
+    impact_low:          '↓ Низкий эффект',
+    opt_now:             'Сейчас',
+    opt_fetch_texts:     '✍ Сгенерировать CRM-тексты',
+    opt_fetch_audit:     '🔍 Запустить аудит соответствия',
+    opt_fetch_optimize:  '⚡ Получить рекомендации',
+    opt_retry:           'Повторить',
+    param_topCashbackRate: 'Кешбэк на топ-тире',
+    param_earnRateDeposit: 'Очков за $1 депозита',
+    param_earnRateWager:   'Очков за $1 вейджера',
+    param_redeemRate:      'Очков за $1 вывода',
+    param_missionCount:    'Количество миссий',
+    param_numTiers:        'Количество тиров',
+    param_mode:            'Режим программы',
+    param_pointsExpiry:    'Срок действия очков',
     econ_card_title:     '📊 Экономика',
     econ_sub_mo:         '/мес',
     econ_sub_ggr:        'от GGR',
@@ -418,7 +450,7 @@ function _showChangedParams(before, after) {
     if (!(key in before) || !(key in after)) continue;
     const bv = before[key], av = after[key];
     if (Math.abs(bv - av) < 1e-9 || bv === av) continue;
-    const label = PARAM_LABELS[key] || key;
+    const label = getParamLabel(key);
     const fmtV  = key === 'topCashbackRate'
       ? v => Math.round(v * 100) + '%'
       : v => typeof v === 'number' ? +v.toFixed(2) : v;
@@ -928,10 +960,10 @@ function renderStep3(data) {
   </div>
 
   <div class="tab-row" style="margin-bottom:16px">
-    <button class="tab ${_aiTab==='econ'     ?'active':''}" onclick="switchAiTab('econ')">${t('tab_economics')}</button>
-    <button class="tab ${_aiTab==='texts'    ?'active':''}" onclick="switchAiTab('texts')">${t('tab_texts')}</button>
-    <button class="tab ${_aiTab==='audit'    ?'active':''}" onclick="switchAiTab('audit')">${t('tab_audit')}</button>
-    <button class="tab ${_aiTab==='optimize' ?'active':''}" onclick="switchAiTab('optimize')">${t('tab_optimize')}</button>
+    <button class="tab ${_aiTab==='econ'     ?'active':''}" data-tab="econ"     onclick="switchAiTab('econ')">${t('tab_economics')}</button>
+    <button class="tab ${_aiTab==='texts'    ?'active':''}" data-tab="texts"    onclick="switchAiTab('texts')">${t('tab_texts')}</button>
+    <button class="tab ${_aiTab==='audit'    ?'active':''}" data-tab="audit"    onclick="switchAiTab('audit')">${t('tab_audit')}</button>
+    <button class="tab ${_aiTab==='optimize' ?'active':''}" data-tab="optimize" onclick="switchAiTab('optimize')">${t('tab_optimize')}</button>
   </div>
 
   <div id="ai-tab-body">
@@ -963,23 +995,24 @@ function renderAiTabBody(data, tiers, missions, missionSection) {
       ${missionSection}`;
   }
   if (_aiTab === 'texts') {
-    if (!_aiTexts) return renderAiFetchPrompt('texts', '✍ Generate CRM copy for this loyalty program');
+    if (!_aiTexts) return renderAiFetchPrompt('texts', t('opt_fetch_texts'));
     return renderTextsHTML(_aiTexts);
   }
   if (_aiTab === 'audit') {
-    if (!_aiAudit) return renderAiFetchPrompt('audit', '🔍 Run compliance audit');
+    if (!_aiAudit) return renderAiFetchPrompt('audit', t('opt_fetch_audit'));
     return renderAuditHTML(_aiAudit);
   }
   if (_aiTab === 'optimize') {
-    if (!_aiOpt) return renderAiFetchPrompt('optimize', '⚡ Get optimization recommendations');
+    if (!_aiOpt) return renderAiFetchPrompt('optimize', t('opt_fetch_optimize'));
     return renderOptimizeHTML(_aiOpt);
   }
   return '';
 }
 
 function renderAiFetchPrompt(tabKey, label) {
+  const icon = tabKey === 'texts' ? '✍' : tabKey === 'audit' ? '🔍' : '⚡';
   return `<div class="card" style="text-align:center;padding:32px 20px">
-    <div style="font-size:1.8rem;margin-bottom:10px">${tabKey === 'texts' ? '✍' : tabKey === 'audit' ? '🔍' : '⚡'}</div>
+    <div style="font-size:1.8rem;margin-bottom:10px">${icon}</div>
     <div style="font-size:.9rem;font-weight:600;margin-bottom:16px">${esc(label)}</div>
     <button class="btn btn-primary" onclick="fetchAI('${tabKey}')">${esc(label)} →</button>
   </div>`;
@@ -992,9 +1025,9 @@ function switchAiTab(tab) {
   const missions = lastResult.config.missions || [];
   const missionSection = missions.length > 0
     ? `<div class="card"><div class="card-title">🎯 ${t('missions_lbl')} (${missions.length})</div>${missionListHTML(missions)}</div>` : '';
-  // Update tabs active state
+  // Update tabs active state by data-tab attribute (locale-independent)
   document.querySelectorAll('.tab-row .tab').forEach(b => {
-    b.classList.toggle('active', b.textContent.toLowerCase().includes(tab === 'econ' ? 'econ' : tab));
+    b.classList.toggle('active', b.dataset.tab === tab);
   });
   const body = document.getElementById('ai-tab-body');
   if (body) body.innerHTML = renderAiTabBody(lastResult, tiers, missions, missionSection);
@@ -1032,7 +1065,7 @@ async function fetchAI(tabKey) {
     switchAiTab(tabKey);
   } catch(e) {
     if (body) body.innerHTML = `<div class="alert alert-warn">Error: ${esc(e.message)}
-      <button class="btn btn-sm btn-outline" style="margin-left:10px" onclick="fetchAI('${tabKey}')">Retry</button></div>`;
+      <button class="btn btn-sm btn-outline" style="margin-left:10px" onclick="fetchAI('${tabKey}')">${t('opt_retry')}</button></div>`;
   }
 }
 
@@ -1083,30 +1116,25 @@ function renderAuditHTML(audit) {
     ${recs ? `<div class="card"><div class="card-title">💡 Recommendations</div>${recs}</div>` : ''}`;
 }
 
-const PARAM_LABELS = {
-  topCashbackRate:  'Top-tier Cashback Rate',
-  earnRateDeposit:  'Points per $1 Deposited',
-  earnRateWager:    'Points per $1 Wagered',
-  redeemRate:       'Points per $1 Redeemed',
-  missionCount:     'Number of Missions',
-  numTiers:         'Number of Tiers',
-  mode:             'Program Mode',
-  pointsExpiry:     'Points Expiry',
-};
+function getParamLabel(param) {
+  const key = 'param_' + param;
+  const val  = t(key);
+  return val !== key ? val : param;
+}
 
 function renderOptimizeHTML(opt) {
   const impactColor = { high: '#10b981', med: '#f59e0b', low: '#8892a4' };
-  const impactLabel = { high: '↑ High impact', med: '→ Medium impact', low: '↓ Low impact' };
+  const impactLabel = { high: t('impact_high'), med: t('impact_med'), low: t('impact_low') };
   const recs = (opt.recommendations || []).map(r => {
     const ic    = impactColor[r.impact] || 'var(--muted)';
-    const label = PARAM_LABELS[r.param] || r.param;
+    const label = getParamLabel(r.param);
     return `<div class="card" style="border-color:${ic}22;margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px">
         <div style="font-weight:700;font-size:.88rem">${esc(label)}</div>
         <span class="badge" style="background:${ic}20;color:${ic};white-space:nowrap">${esc(impactLabel[r.impact] || r.impact)}</span>
       </div>
       <div style="display:flex;gap:10px;font-size:.8rem;margin-bottom:8px">
-        <div style="color:var(--muted)">Now: <strong style="color:var(--text)">${esc(r.current)}</strong></div>
+        <div style="color:var(--muted)">${t('opt_now')}: <strong style="color:var(--text)">${esc(r.current)}</strong></div>
         <div style="color:var(--muted)">→ <strong style="color:${ic}">${esc(r.target)}</strong></div>
       </div>
       <div style="font-size:.79rem;color:var(--muted);line-height:1.5">${esc(r.reason)}</div>
