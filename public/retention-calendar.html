@@ -207,19 +207,8 @@ select.form-input{cursor:pointer}
 <script src="/nav-utils.js"></script>
 <!-- Load the Vite-built bundle (FullCalendar needs bundling — can't load npm imports raw) -->
 <script type="module" src="/dist/retention-calendar.js"></script>
-<script>
-function setRCLang(lang) {
-  try { localStorage.setItem('bonusLang', lang); } catch(e) {}
-  location.reload();
-}
-(function() {
-  var lang = (function() { try { return localStorage.getItem('bonusLang') || 'en'; } catch(e) { return 'en'; } })();
-  document.querySelectorAll('.lt-btn').forEach(function(b) {
-    b.classList.toggle('active', b.id === 'lt-' + lang);
-  });
-  if (typeof applyNavLang === 'function') applyNavLang(lang);
-  if (typeof updateAllBadges === 'function') updateAllBadges();
-})();
-</script>
+<!-- External init: sets lang toggle active state + applies nav translations.
+     Must be external — CSP script-src 'self' blocks inline <script> blocks. -->
+<script src="/retention-calendar-init.js"></script>
 </body>
 </html>
