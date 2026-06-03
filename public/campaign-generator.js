@@ -1932,7 +1932,7 @@ const I18N = {
     nav_scenarios:'Сценарии', nav_calendar:'Retention Calendar', nav_bonuses:'Бонусы', nav_loyalty:'Лояльность', nav_ai:'AI Ассистент',
     nav_soon:'Скоро', nav_analytics:'Аналитика', nav_settings:'Настройки',
     // Topbar view titles
-    view_dashboard:'Дашборд', view_campaigns:'Бонусные акции',
+    view_dashboard:'Дашборд', view_campaigns:'Бонусные акции', 'view_offer-gen':'Бонусы',
     view_configurator:'Конфигуратор', view_wizard:'Новая кампания',
     // Quick start cards
     qc_launch_n:'Первый запуск казино',
@@ -2059,7 +2059,7 @@ const I18N = {
     nav_scenarios:'Scenarios', nav_calendar:'Retention Calendar', nav_bonuses:'Bonuses', nav_loyalty:'Loyalty Program', nav_ai:'AI Assistant',
     nav_soon:'Soon', nav_analytics:'Analytics', nav_settings:'Settings',
     // Topbar view titles
-    view_dashboard:'Dashboard', view_campaigns:'Bonus Offers',
+    view_dashboard:'Dashboard', view_campaigns:'Bonus Offers', 'view_offer-gen':'Bonuses',
     view_configurator:'Configurator', view_wizard:'New Campaign',
     // Quick start cards
     qc_launch_n:'Casino First Launch',
@@ -2138,6 +2138,7 @@ function updateTopbar(name) {
 function setUILang(lang) {
   currentLang = lang;
   try { localStorage.setItem('bonusLang', lang); } catch(e) {}
+  document.documentElement.setAttribute('data-lang', lang);
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const v = t(el.dataset.i18n);
     if (v && v !== el.dataset.i18n) el.textContent = v;
@@ -2565,7 +2566,9 @@ showView(getViewParam() || _hashView || 'dashboard');
 renderScenarios();
 renderCampaignViews();
 document.querySelector('.main').classList.add('ready');
-if (!localStorage.getItem('cg_onboarding_done')) showOnboarding();
+// Old page-specific onboarding replaced by the global Retomat welcome popup
+// (showRetomatWelcome in nav-utils.js, gated by 'retomat_welcome_done').
+// if (!localStorage.getItem('cg_onboarding_done')) showOnboarding();
 
 window.addEventListener('pageshow', function() {
   renderCampaignViews();

@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+<script src="/lang-init.js"></script>
+<style>html[data-lang="en"] [data-tr-ru]{display:none}html[data-lang="ru"] [data-tr-en]{display:none}</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI Campaign Generator — Retomat</title>
@@ -17,8 +19,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{height:100%;background:#0a0d14}
 body{height:100%}
-.main{opacity:0;transition:opacity .15s ease}
-.main.ready{opacity:1}
+
 body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);font-size:14px;display:flex;min-height:100vh}
 
 /* SIDEBAR */
@@ -47,9 +48,8 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .exit-actions{display:flex;gap:10px;justify-content:flex-end}
 
 /* MAIN */
-.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh;opacity:0;transition:opacity .15s}
-.main.ready{opacity:1}
-.topbar{height:54px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:10px;position:sticky;top:0;z-index:40}
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{height:64px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:10px;position:sticky;top:0;z-index:40}
 .topbar-title{font-weight:600;font-size:.92rem}
 .topbar-sep,.topbar-sub{color:var(--muted);font-size:.8rem}
 .topbar-right{margin-left:auto}
@@ -255,7 +255,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 }
 
 /* ── CAMPAIGN DETAIL ────────────────────────────────────────────────────────── */
-#view-campaign-detail{margin:-26px -30px;height:calc(100vh - 54px);flex-direction:column}
+#view-campaign-detail{margin:-26px -30px;height:calc(100vh - 64px);flex-direction:column}
 .det-hd{padding:14px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex-shrink:0;background:var(--bg2)}
 .det-back{background:none;border:1px solid var(--border);color:var(--muted);font-size:.8rem;cursor:pointer;font-family:inherit;padding:5px 12px;border-radius:7px;transition:all .15s;flex-shrink:0}
 .det-back:hover{background:rgba(255,255,255,.07);color:var(--text)}
@@ -342,18 +342,18 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     <div class="sb-logo-tag">AI</div>
   </div>
   <nav class="sb-nav">
-    <div class="nav-lbl" data-i18n="nav_main">Main</div>
-    <a href="/retention-calendar.html" class="nav-item"><span class="nav-icon">📅</span><span data-i18n="nav_calendar">Retention Calendar</span></a>
-    <button class="nav-item" onclick="showView('dashboard')"><span class="nav-icon">📊</span><span data-i18n="nav_dashboard">Dashboard</span></button>
-    <div class="nav-lbl" data-i18n="nav_tools" style="margin-top:6px">Tools</div>
-    <a class="nav-item" href="/configurator.html" style="display:none"><span class="nav-icon">⚙️</span><span data-i18n="nav_configurator">Configurator</span></a>
-    <a class="nav-item" href="/campaign-generator.html?view=offer-gen"><span class="nav-icon">🚀</span><span data-i18n="nav_bonuses">Bonuses</span><span class="nav-badge" id="nav-offer-gen-badge" style="display:none"></span></a>
-    <a class="nav-item" href="/tournament-generator.html?view=list"><span class="nav-icon">🏆</span><span data-i18n="nav_tournament">Tournaments</span><span class="nav-chevron">▸</span><span class="nav-badge" id="nav-tourn-gen-badge" style="display:none"></span></a>
-    <a class="nav-item nav-sub" href="/tournament-generator.html#setup"><span class="nav-icon" style="font-size:11px;opacity:.55">└</span><span data-i18n="nav_setup_guide">Setup Guide</span></a>
-    <a class="nav-item" href="/loyalty-generator.html"><span class="nav-icon">⭐</span><span data-i18n="nav_loyalty">Loyalty Program</span><span class="nav-badge" id="nav-loyalty-badge" style="display:none"></span></a>
-    <div class="nav-lbl" data-i18n="nav_soon" style="margin-top:6px">Soon</div>
-    <button class="nav-item off"><span class="nav-icon">📈</span><span data-i18n="nav_analytics">Analytics</span></button>
-    <button class="nav-item off"><span class="nav-icon">⚙️</span><span data-i18n="nav_settings">Settings</span></button>
+    <div class="nav-lbl"><span data-tr-en>Main</span><span data-tr-ru>Главное</span></div>
+    <a href="/retention-calendar.html" class="nav-item"><span class="nav-icon">📅</span><span data-tr-en>Retention Calendar</span><span data-tr-ru>Календарь</span></a>
+    <button class="nav-item" onclick="showView('dashboard')"><span class="nav-icon">📊</span><span data-tr-en>Dashboard</span><span data-tr-ru>Дашборд</span></button>
+    <div class="nav-lbl" style="margin-top:6px"><span data-tr-en>Tools</span><span data-tr-ru>Инструменты</span></div>
+    <a class="nav-item" href="/configurator.html" style="display:none"><span class="nav-icon">⚙️</span><span>Configurator</span></a>
+    <a class="nav-item" href="/campaign-generator.html?view=offer-gen"><span class="nav-icon">🚀</span><span data-tr-en>Bonuses</span><span data-tr-ru>Бонусы</span><span class="nav-badge" id="nav-offer-gen-badge" style="display:none"></span></a>
+    <a class="nav-item" href="/tournament-generator.html?view=list"><span class="nav-icon">🏆</span><span data-tr-en>Tournaments</span><span data-tr-ru>Турниры</span><span class="nav-chevron">▸</span><span class="nav-badge" id="nav-tourn-gen-badge" style="display:none"></span></a>
+    <a class="nav-item nav-sub" href="/tournament-generator.html#setup"><span class="nav-icon" style="font-size:11px;opacity:.55">└</span><span data-tr-en>Setup Guide</span><span data-tr-ru>Гайд настройки</span></a>
+    <a class="nav-item" href="/loyalty-generator.html"><span class="nav-icon">⭐</span><span data-tr-en>Loyalty Program</span><span data-tr-ru>Лояльность</span><span class="nav-badge" id="nav-loyalty-badge" style="display:none"></span></a>
+    <div class="nav-lbl" style="margin-top:6px"><span data-tr-en>Soon</span><span data-tr-ru>Скоро</span></div>
+    <button class="nav-item off"><span class="nav-icon">📈</span><span data-tr-en>Analytics</span><span data-tr-ru>Аналитика</span></button>
+    <button class="nav-item off"><span class="nav-icon">⚙️</span><span data-tr-en>Settings</span><span data-tr-ru>Настройки</span></button>
   </nav>
   <div class="sb-foot">
     <button class="sb-back" onclick="confirmExit()" data-i18n="wb_back">← Back to home</button>

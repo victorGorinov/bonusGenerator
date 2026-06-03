@@ -898,6 +898,7 @@ function t(k){ return (LANG[L] && LANG[L][k]) || (LANG.ru && LANG.ru[k]) || k; }
 function setLang(lang){
   L = lang;
   try { localStorage.setItem('bonusLang', lang); } catch(e) {}
+  document.documentElement.setAttribute('data-lang', lang);
   document.querySelectorAll('.lchip').forEach(c=>{
     c.classList.toggle('on', c.dataset.l===lang);
   });

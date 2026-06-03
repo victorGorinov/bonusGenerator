@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="/lang-init.js"></script>
+<style>html[data-lang="en"] [data-tr-ru]{display:none}html[data-lang="ru"] [data-tr-en]{display:none}</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Retention Calendar — Retomat</title>
@@ -26,6 +28,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .nav-item.active{background:rgba(79,110,247,.25);color:#a0b0ff}
 .nav-item.active::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
 .nav-item.off{opacity:.38;cursor:default;pointer-events:none}
+.nav-badge{margin-left:auto;background:rgba(79,110,247,.3);color:#a0b0ff;font-size:.6rem;padding:1px 5px;border-radius:100px;font-weight:700}
 .nav-sub{padding-left:30px;font-size:.77rem;display:none}.nav-chevron{margin-left:auto;font-size:16px;color:rgba(255,255,255,.7);flex-shrink:0;padding:0 4px;cursor:pointer;user-select:none;transition:color .15s;line-height:1}.nav-chevron:hover{color:#fff}
 .nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
 .sb-foot{padding:12px 16px;border-top:1px solid rgba(255,255,255,.06)}
@@ -141,30 +144,34 @@ select.form-input{cursor:pointer}
     <div class="sb-logo-tag">AI</div>
   </div>
   <nav class="sb-nav">
-    <div class="nav-lbl" data-i18n="nav_main">Main</div>
-    <a href="/retention-calendar.html" class="nav-item active"><span class="nav-icon">📅</span><span data-i18n="nav_calendar">Retention Calendar</span></a>
-    <a href="/campaign-generator.html" class="nav-item"><span class="nav-icon">📊</span><span data-i18n="nav_dashboard">Dashboard</span></a>
-    <div class="nav-lbl" style="margin-top:6px" data-i18n="nav_tools">Tools</div>
+    <div class="nav-lbl"><span data-tr-en>Main</span><span data-tr-ru>Главное</span></div>
+    <a href="/retention-calendar.html" class="nav-item active"><span class="nav-icon">📅</span><span data-tr-en>Retention Calendar</span><span data-tr-ru>Календарь</span></a>
+    <a href="/campaign-generator.html" class="nav-item"><span class="nav-icon">📊</span><span data-tr-en>Dashboard</span><span data-tr-ru>Дашборд</span></a>
+    <div class="nav-lbl" style="margin-top:6px"><span data-tr-en>Tools</span><span data-tr-ru>Инструменты</span></div>
     <a href="/configurator.html" class="nav-item" style="display:none"><span class="nav-icon">⚙️</span> Configurator</a>
-    <a href="/campaign-generator.html?view=offer-gen" class="nav-item"><span class="nav-icon">🚀</span><span data-i18n="nav_bonuses">Bonuses</span><span class="nav-badge" id="nav-offer-gen-badge" style="display:none"></span></a>
-    <a href="/tournament-generator.html?view=list" class="nav-item"><span class="nav-icon">🏆</span><span data-i18n="nav_tournament">Tournaments</span><span class="nav-chevron">▸</span><span class="nav-badge" id="nav-tourn-gen-badge" style="display:none"></span></a>
-    <a href="/tournament-generator.html#setup" class="nav-item nav-sub"><span class="nav-icon" style="font-size:11px;opacity:.55">└</span><span data-i18n="nav_setup_guide">Setup Guide</span></a>
-    <a href="/loyalty-generator.html" class="nav-item"><span class="nav-icon">⭐</span><span data-i18n="nav_loyalty">Loyalty Program</span><span class="nav-badge" id="nav-loyalty-badge" style="display:none"></span></a>
-    <div class="nav-lbl" style="margin-top:6px" data-i18n="nav_soon">Soon</div>
-    <button class="nav-item off"><span class="nav-icon">📈</span><span data-i18n="nav_analytics">Analytics</span></button>
-    <button class="nav-item off"><span class="nav-icon">⚙️</span><span data-i18n="nav_settings">Settings</span></button>
+    <a href="/campaign-generator.html?view=offer-gen" class="nav-item"><span class="nav-icon">🚀</span><span data-tr-en>Bonuses</span><span data-tr-ru>Бонусы</span><span class="nav-badge" id="nav-offer-gen-badge" style="display:none"></span></a>
+    <a href="/tournament-generator.html?view=list" class="nav-item"><span class="nav-icon">🏆</span><span data-tr-en>Tournaments</span><span data-tr-ru>Турниры</span><span class="nav-chevron">▸</span><span class="nav-badge" id="nav-tourn-gen-badge" style="display:none"></span></a>
+    <a href="/tournament-generator.html#setup" class="nav-item nav-sub"><span class="nav-icon" style="font-size:11px;opacity:.55">└</span><span data-tr-en>Setup Guide</span><span data-tr-ru>Гайд настройки</span></a>
+    <a href="/loyalty-generator.html" class="nav-item"><span class="nav-icon">⭐</span><span data-tr-en>Loyalty Program</span><span data-tr-ru>Лояльность</span><span class="nav-badge" id="nav-loyalty-badge" style="display:none"></span></a>
+    <div class="nav-lbl" style="margin-top:6px"><span data-tr-en>Soon</span><span data-tr-ru>Скоро</span></div>
+    <button class="nav-item off"><span class="nav-icon">📈</span><span data-tr-en>Analytics</span><span data-tr-ru>Аналитика</span></button>
+    <button class="nav-item off"><span class="nav-icon">⚙️</span><span data-tr-en>Settings</span><span data-tr-ru>Настройки</span></button>
   </nav>
   <div class="sb-foot">
-    <a href="/" class="sb-back" data-i18n="nav_back">← Back to home</a>
+    <a href="/" class="sb-back"><span data-tr-en>← Back to home</span><span data-tr-ru>← На главную</span></a>
   </div>
 </aside>
 
 <main class="main">
   <!-- Topbar -->
   <div class="topbar">
-    <span class="topbar-title">📅 Retention Calendar</span>
+    <span class="topbar-title">📅 <span data-tr-en>Retention Calendar</span><span data-tr-ru>Календарь</span></span>
     <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
-      <button class="btn btn-primary btn-sm" onclick="window._rcOpenNew()" data-i18n="nav_rc_new">+ New Campaign</button>
+      <button class="btn btn-primary btn-sm" onclick="window._rcOpenNew()"><span data-tr-en>+ New Campaign</span><span data-tr-ru>+ Новая кампания</span></button>
+      <button onclick="toggleRCGlossary()" title="Glossary"
+        style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);width:28px;height:28px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s"
+        onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">?</button>
       <div class="lang-toggle">
         <button class="lt-btn" id="lt-ru" onclick="setRCLang('ru')">RU</button>
         <button class="lt-btn" id="lt-en" onclick="setRCLang('en')">EN</button>
@@ -175,13 +182,13 @@ select.form-input{cursor:pointer}
   <!-- Controls bar: view toggle + action buttons -->
   <div id="controls-bar">
     <div class="view-toggle" id="view-toggle">
-      <button class="vt-btn active" data-fc-view="dayGridMonth" data-i18n="nav_rc_month">Month</button>
-      <button class="vt-btn" data-fc-view="timeGridWeek" data-i18n="nav_rc_week">Week</button>
-      <button class="vt-btn" data-fc-view="listMonth" data-i18n="nav_rc_agenda">Agenda</button>
+      <button class="vt-btn active" data-fc-view="dayGridMonth"><span data-tr-en>Month</span><span data-tr-ru>Месяц</span></button>
+      <button class="vt-btn" data-fc-view="timeGridWeek"><span data-tr-en>Week</span><span data-tr-ru>Неделя</span></button>
+      <button class="vt-btn" data-fc-view="listMonth"><span data-tr-en>Agenda</span><span data-tr-ru>Список</span></button>
     </div>
     <div style="margin-left:auto;display:flex;gap:6px">
-      <button class="btn btn-outline btn-sm" onclick="window._rcOpenAI()" data-i18n="nav_rc_ai">🤖 AI-Assisted</button>
-      <button class="btn btn-outline btn-sm" onclick="window._rcOpenTemplates()" data-i18n="nav_rc_templates">📄 Templates</button>
+      <button class="btn btn-outline btn-sm" onclick="window._rcOpenAI()"><span data-tr-en>🤖 AI-Assisted</span><span data-tr-ru>🤖 AI-генерация</span></button>
+      <button class="btn btn-outline btn-sm" onclick="window._rcOpenTemplates()"><span data-tr-en>📄 Templates</span><span data-tr-ru>📄 Шаблоны</span></button>
       <button class="btn btn-outline btn-sm" onclick="window._rcExportCSV()">⬇ CSV</button>
       <button class="btn btn-outline btn-sm" onclick="window._rcExportJSON()">⬇ JSON</button>
     </div>

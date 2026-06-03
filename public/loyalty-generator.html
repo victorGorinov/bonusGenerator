@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="/lang-init.js"></script>
+<style>html[data-lang="en"] [data-tr-ru]{display:none}html[data-lang="ru"] [data-tr-en]{display:none}</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Loyalty Generator — Retomat</title>
@@ -12,8 +14,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{height:100%;background:#0a0d14}
 body{height:100%;font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);font-size:14px;display:flex;min-height:100vh}
-.main{opacity:0;transition:opacity .15s ease}
-.main.ready{opacity:1}
+
 .sidebar{width:var(--sidebar-w);min-height:100vh;background:#1E1B4B;border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50}
 .sb-logo{padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px}
 .sb-logo-img{height:28px;width:auto;display:block;flex-shrink:0}
@@ -153,31 +154,35 @@ input[type=range]{flex:1;accent-color:var(--accent);cursor:pointer;height:4px}
     <div class="sb-logo-tag">AI</div>
   </div>
   <nav class="sb-nav">
-    <div class="nav-lbl" data-i18n="nav_main">Main</div>
-    <a href="/retention-calendar.html" class="nav-item"><span class="nav-icon">📅</span><span data-i18n="nav_calendar">Retention Calendar</span></a>
-    <a href="/campaign-generator.html" class="nav-item"><span class="nav-icon">📊</span><span data-i18n="nav_dashboard">Dashboard</span></a>
-    <div class="nav-lbl" style="margin-top:6px" data-i18n="nav_tools">Tools</div>
+    <div class="nav-lbl"><span data-tr-en>Main</span><span data-tr-ru>Главное</span></div>
+    <a href="/retention-calendar.html" class="nav-item"><span class="nav-icon">📅</span><span data-tr-en>Retention Calendar</span><span data-tr-ru>Календарь</span></a>
+    <a href="/campaign-generator.html" class="nav-item"><span class="nav-icon">📊</span><span data-tr-en>Dashboard</span><span data-tr-ru>Дашборд</span></a>
+    <div class="nav-lbl" style="margin-top:6px"><span data-tr-en>Tools</span><span data-tr-ru>Инструменты</span></div>
     <a href="/configurator.html" class="nav-item" style="display:none"><span class="nav-icon">⚙️</span> Configurator</a>
-    <a href="/campaign-generator.html?view=offer-gen" class="nav-item"><span class="nav-icon">🚀</span><span data-i18n="nav_bonuses">Bonuses</span><span class="nav-badge" id="nav-offer-gen-badge" style="display:none"></span></a>
-    <a href="/tournament-generator.html?view=list" class="nav-item"><span class="nav-icon">🏆</span><span data-i18n="nav_tournament">Tournaments</span><span class="nav-chevron">▸</span><span class="nav-badge" id="nav-tourn-gen-badge" style="display:none"></span></a>
-    <a href="/tournament-generator.html#setup" class="nav-item nav-sub"><span class="nav-icon" style="font-size:11px;opacity:.55">└</span><span data-i18n="nav_setup_guide">Setup Guide</span></a>
-    <button class="nav-item active" onclick="showView('list')"><span class="nav-icon">⭐</span><span data-i18n="nav_loyalty">Loyalty Program</span><span class="nav-badge" id="nav-loyalty-badge" style="display:none"></span></button>
-    <div class="nav-lbl" style="margin-top:6px" data-i18n="nav_soon">Soon</div>
-    <button class="nav-item off"><span class="nav-icon">📈</span><span data-i18n="nav_analytics">Analytics</span></button>
-    <button class="nav-item off"><span class="nav-icon">⚙️</span><span data-i18n="nav_settings">Settings</span></button>
+    <a href="/campaign-generator.html?view=offer-gen" class="nav-item"><span class="nav-icon">🚀</span><span data-tr-en>Bonuses</span><span data-tr-ru>Бонусы</span><span class="nav-badge" id="nav-offer-gen-badge" style="display:none"></span></a>
+    <a href="/tournament-generator.html?view=list" class="nav-item"><span class="nav-icon">🏆</span><span data-tr-en>Tournaments</span><span data-tr-ru>Турниры</span><span class="nav-chevron">▸</span><span class="nav-badge" id="nav-tourn-gen-badge" style="display:none"></span></a>
+    <a href="/tournament-generator.html#setup" class="nav-item nav-sub"><span class="nav-icon" style="font-size:11px;opacity:.55">└</span><span data-tr-en>Setup Guide</span><span data-tr-ru>Гайд настройки</span></a>
+    <button class="nav-item active" onclick="showView('list')"><span class="nav-icon">⭐</span><span data-tr-en>Loyalty Program</span><span data-tr-ru>Лояльность</span><span class="nav-badge" id="nav-loyalty-badge" style="display:none"></span></button>
+    <div class="nav-lbl" style="margin-top:6px"><span data-tr-en>Soon</span><span data-tr-ru>Скоро</span></div>
+    <button class="nav-item off"><span class="nav-icon">📈</span><span data-tr-en>Analytics</span><span data-tr-ru>Аналитика</span></button>
+    <button class="nav-item off"><span class="nav-icon">⚙️</span><span data-tr-en>Settings</span><span data-tr-ru>Настройки</span></button>
   </nav>
   <div class="sb-foot">
-    <a href="/" class="sb-back" data-i18n="nav_back">← Back to home</a>
+    <a href="/" class="sb-back"><span data-tr-en>← Back to home</span><span data-tr-ru>← На главную</span></a>
   </div>
 </aside>
 
 <main class="main">
   <div class="topbar">
-    <span class="topbar-title">Loyalty Generator</span>
+    <span class="topbar-title"><span data-tr-en>Loyalty Generator</span><span data-tr-ru>Программа лояльности</span></span>
     <span class="topbar-sep">/</span>
     <span class="topbar-sub" id="topbar-step"></span>
     <div class="topbar-right"></div>
-    <button onclick="showView('setup')" class="btn btn-primary btn-sm" id="btn-new-program">+ New Program</button>
+    <button onclick="showView('setup')" class="btn btn-primary btn-sm" id="btn-new-program"><span data-tr-en>+ New Program</span><span data-tr-ru>+ Новая программа</span></button>
+    <button onclick="toggleLoyaltyGlossary()" title="Glossary"
+      style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);width:28px;height:28px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s"
+      onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+      onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">?</button>
     <div class="lang-toggle">
       <button class="lt-btn" id="lt-ru" onclick="setLang('ru')">RU</button>
       <button class="lt-btn" id="lt-en" onclick="setLang('en')">EN</button>

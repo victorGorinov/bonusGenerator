@@ -1288,3 +1288,36 @@ function addDetailToCalendar(id) {
 
   document.querySelector('.main').classList.add('ready');
 })();
+
+function toggleLoyaltyGlossary() {
+  let panel = document.getElementById('loyalty-glossary-panel');
+  if (panel) { panel.remove(); return; }
+  panel = document.createElement('div');
+  panel.id = 'loyalty-glossary-panel';
+  panel.style.cssText = 'position:fixed;top:54px;right:0;width:360px;max-width:100vw;height:calc(100vh - 54px);background:#0f1420;border-left:1px solid #1e2740;z-index:200;display:flex;flex-direction:column;box-shadow:-8px 0 32px rgba(0,0,0,.5);overflow-y:auto;padding:20px';
+  panel.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <span style="font-size:.88rem;font-weight:700;color:#e8eaf0">Glossary</span>
+      <button onclick="document.getElementById('loyalty-glossary-panel').remove()"
+        style="background:rgba(255,255,255,.08);border:none;color:#8892a4;width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    ${[
+      ['Tier','Loyalty level a player reaches by accumulating enough points (e.g. Bronze → Silver → Gold)'],
+      ['Points','Currency earned by players through deposits and gameplay activity'],
+      ['Earn Rate','Points awarded per unit of deposit or wagering amount'],
+      ['Redeem Rate','Points required to redeem 1 unit of real currency'],
+      ['Cashback','Percentage of net losses returned to the player as bonus or cash'],
+      ['Threshold','Minimum points required to reach or maintain a tier'],
+      ['Mission','A one-time task players complete to earn bonus points (e.g. "Deposit 3 days in a row")'],
+      ['Hybrid','Program combining both tier progression and missions'],
+      ['LTV','Lifetime Value — projected total revenue from a player over their lifetime'],
+      ['Retention Rate','Percentage of players who remain active month-over-month'],
+      ['ARPU','Average Revenue Per User — average monthly revenue per active player'],
+    ].map(([term, def]) => `
+      <div style="padding:10px 0;border-bottom:1px solid #1e2740">
+        <div style="font-size:.8rem;font-weight:700;color:#a0b0ff;margin-bottom:3px">${term}</div>
+        <div style="font-size:.76rem;color:#8892a4;line-height:1.5">${def}</div>
+      </div>`).join('')}
+  `;
+  document.body.appendChild(panel);
+}

@@ -7,7 +7,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<script src="/lang-init.js"></script>
 <style>
+html[data-lang="en"] [data-tr-ru]{display:none}
+html[data-lang="ru"] [data-tr-en]{display:none}
 /* ── BASE (identical to campaign-generator / tournament-generator) ── */
 :root{--bg:#0a0d14;--bg2:#0f1420;--bg3:#141926;--card:#161c2d;--border:#1e2740;--accent:#4f6ef7;--accent2:#7c3aed;--text:#e8eaf0;--muted:#8892a4;--success:#10b981;--warn:#f59e0b;--sidebar-w:220px;
   /* configurator palette aliases */
@@ -41,6 +44,7 @@ body{height:100%;font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif
 .main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh}
 .topbar{height:54px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:10px;position:sticky;top:0;z-index:40}
 .topbar-title{font-weight:600;font-size:.92rem;color:var(--text)}
+.topbar-sep,.topbar-sub{color:var(--muted);font-size:.8rem}
 .content{flex:1;display:flex;flex-direction:column;padding:0}
 
 /* ── BTN ── */
@@ -370,27 +374,27 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:16px 0}
     <div class="sb-logo-tag">AI</div>
   </div>
   <nav class="sb-nav">
-    <div class="nav-lbl">Main</div>
-    <a href="/retention-calendar.html" class="nav-item"><span class="nav-icon">📅</span> Retention Calendar</a>
-    <a class="nav-item" href="/campaign-generator.html"><span class="nav-icon">📊</span> Dashboard</a>
-    <div class="nav-lbl" style="margin-top:6px">Tools</div>
-    <a class="nav-item active" href="/configurator.html"><span class="nav-icon">⚙️</span> Configurator</a>
-    <a class="nav-item" href="/campaign-generator.html?view=offer-gen"><span class="nav-icon">🚀</span> Bonuses<span class="nav-badge" id="nav-offer-gen-badge" style="display:none"></span></a>
-    <a class="nav-item" href="/tournament-generator.html?view=list"><span class="nav-icon">🏆</span> Tournaments<span class="nav-chevron">▸</span><span class="nav-badge" id="nav-tourn-gen-badge" style="display:none"></span></a>
-    <a class="nav-item nav-sub" href="/tournament-generator.html#setup"><span class="nav-icon" style="font-size:11px;opacity:.55">└</span> Setup Guide</a>
-    <a class="nav-item" href="/loyalty-generator.html"><span class="nav-icon">⭐</span> Loyalty Program<span class="nav-badge" id="nav-loyalty-badge" style="display:none"></span></a>
-    <div class="nav-lbl" style="margin-top:6px">Soon</div>
-    <button class="nav-item off"><span class="nav-icon">📈</span> Analytics</button>
-    <button class="nav-item off"><span class="nav-icon">⚙️</span> Settings</button>
+    <div class="nav-lbl"><span data-tr-en>Main</span><span data-tr-ru>Главное</span></div>
+    <a href="/retention-calendar.html" class="nav-item"><span class="nav-icon">📅</span><span>Retention Calendar</span></a>
+    <a class="nav-item" href="/campaign-generator.html"><span class="nav-icon">📊</span><span data-tr-en>Dashboard</span><span data-tr-ru>Дашборд</span></a>
+    <div class="nav-lbl" style="margin-top:6px"><span data-tr-en>Tools</span><span data-tr-ru>Инструменты</span></div>
+    <a class="nav-item active" href="/configurator.html"><span class="nav-icon">⚙️</span><span data-tr-en>Configurator</span><span data-tr-ru>Конфигуратор</span></a>
+    <a class="nav-item" href="/campaign-generator.html?view=offer-gen"><span class="nav-icon">🚀</span><span data-tr-en>Bonuses</span><span data-tr-ru>Бонусы</span><span class="nav-badge" id="nav-offer-gen-badge" style="display:none"></span></a>
+    <a class="nav-item" href="/tournament-generator.html?view=list"><span class="nav-icon">🏆</span><span data-tr-en>Tournaments</span><span data-tr-ru>Турниры</span><span class="nav-chevron">▸</span><span class="nav-badge" id="nav-tourn-gen-badge" style="display:none"></span></a>
+    <a class="nav-item nav-sub" href="/tournament-generator.html#setup"><span class="nav-icon" style="font-size:11px;opacity:.55">└</span><span data-tr-en>Setup Guide</span><span data-tr-ru>Гайд настройки</span></a>
+    <a class="nav-item" href="/loyalty-generator.html"><span class="nav-icon">⭐</span><span data-tr-en>Loyalty Program</span><span data-tr-ru>Лояльность</span><span class="nav-badge" id="nav-loyalty-badge" style="display:none"></span></a>
+    <div class="nav-lbl" style="margin-top:6px"><span data-tr-en>Soon</span><span data-tr-ru>Скоро</span></div>
+    <button class="nav-item off"><span class="nav-icon">📈</span><span data-tr-en>Analytics</span><span data-tr-ru>Аналитика</span></button>
+    <button class="nav-item off"><span class="nav-icon">⚙️</span><span data-tr-en>Settings</span><span data-tr-ru>Настройки</span></button>
   </nav>
   <div class="sb-foot">
-    <a href="/" class="sb-back">← Back to home</a>
+    <a href="/" class="sb-back"><span data-tr-en>← Back to home</span><span data-tr-ru>← На главную</span></a>
   </div>
 </aside>
 
 <main class="main">
   <div class="topbar">
-    <span class="topbar-title">Bonus Configurator</span>
+    <span class="topbar-title"><span data-tr-en>Bonus Configurator</span><span data-tr-ru>Конфигуратор бонусов</span></span>
     <div class="topbar-right"></div>
     <button onclick="openCampaignsDrawer()" id="hdr-camps-btn"
       style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:#10b981;transition:opacity .15s"
