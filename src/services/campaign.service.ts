@@ -1,4 +1,5 @@
 import { buildConfig }                              from '../domain/bonus/buildConfig.js';
+import { computeSelectedEcon }                      from '../domain/bonus/selectedEcon.js';
 import { GEO_CFG }                                 from '../domain/campaign/scenarios.js';
 import { campaignExplanation, campaignAlternatives } from '../domain/campaign/explanation.js';
 
@@ -71,6 +72,32 @@ export function generateCampaign({ scenario, params }: { scenario?: ScenarioRef 
 
   const uiLang: 'ru' | 'en' = params.lang === 'ru' ? 'ru' : 'en';
 
+  const baseEcon = cfg['econ'] as Record<string, unknown>;
+  const isChain = effectiveTypes.includes('dep2') && effectiveTypes.includes('dep3');
+
+  // Selection-aware economics: aggregate cost across the actually-selected
+  // bonuses so adding/removing any bonus changes sP10/sP50/sP90, costRatio
+  // and maxRisk. Falls back to the full preset econ if no valid selection.
+  const sel = computeSelectedEcon(cfg, effectiveTypes);
+  const baseSP10 = (baseEcon?.['sP10'] as Record<string, unknown>) ?? {};
+  const baseSP50 = (baseEcon?.['sP50'] as Record<string, unknown>) ?? {};
+  const baseSP90 = (baseEcon?.['sP90'] as Record<string, unknown>) ?? {};
+  const econData: Record<string, unknown> = {
+    ...baseEcon,
+    sP10: { ...baseSP10, cost: sel.sP10.cost },
+    sP50: { ...baseSP50, cost: sel.sP50.cost },
+    sP90: { ...baseSP90, cost: sel.sP90.cost },
+    costRatio: sel.costRatio,
+    // acqCostRatio drives the campaign-cost / incremental-revenue block on the
+    // frontend; keep it selection-aware too so toggling any bonus (incl. dep3,
+    // cashback) moves the budget and net figures, not just the scenario cards.
+    acqCostRatio: sel.costRatio,
+    maxRisk:   sel.maxRisk,
+    breakdown: sel.breakdown,
+    selectedTypes: sel.selectedTypes,
+  };
+  const primaryCostRatio = sel.costRatio;
+
   return {
     mechanic:          selectedMechanics[primaryType],
     mechanicType:      primaryType,
@@ -83,7 +110,9 @@ export function generateCampaign({ scenario, params }: { scenario?: ScenarioRef 
     alternatives:      campaignAlternatives(cfg, effectiveTypes, uiLang),
     alternativesRu:    campaignAlternatives(cfg, effectiveTypes, 'ru'),
     alternativesEn:    campaignAlternatives(cfg, effectiveTypes, 'en'),
-    econ:              cfg['econ'],
+    econ:              econData,
+    isChain,
+    primaryCostRatio,
     wager:             cfg['wager'],
     fsSpec:            cfg['fsSpec'],
     contrib:           cfg['contrib'],

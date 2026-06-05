@@ -1,6 +1,8 @@
 // Client-side port of bonus domain cost functions.
 // Keep in sync with src/domain/bonus/{payout,recalcCosts}.ts
 
+const CHAIN_PROGRESSION = { dep2: 0.45, dep3: 0.25 };
+
 // ── Payout math (port of payout.ts) ─────────────────────────────────────────
 
 function _erf(x) {
@@ -96,14 +98,14 @@ export function recalcCostsLocal(cfg, overrides) {
   const d2_maxB  = gv('ov_d2_maxB',  dep2.maxB  || 0);
   const d2_fs    = gv('ov_d2_fs',    dep2.fs    || 0);
   const d2_bonus = Math.min(dep * d2_pct / 100, d2_maxB) + d2_fs * spinV;
-  const c_d2     = svCost(d2_bonus, d2_wager, 0.20, 0, 0);
+  const c_d2     = svCost(d2_bonus, d2_wager, 0.20 * CHAIN_PROGRESSION.dep2, 0, 0);
 
   const d3_pct   = gv('ov_d3_pct',   dep3.pct   || 50);
   const d3_wager = gv('ov_d3_wager', dep3.wager || econ.wagerX || 30);
   const d3_maxB  = gv('ov_d3_maxB',  dep3.maxB  || 0);
   const d3_fs    = gv('ov_d3_fs',    dep3.fs    || 0);
   const d3_bonus = Math.min(dep * d3_pct / 100, d3_maxB) + d3_fs * spinV;
-  const c_d3     = svCost(d3_bonus, d3_wager, 0.20, 0, 0);
+  const c_d3     = svCost(d3_bonus, d3_wager, 0.20 * CHAIN_PROGRESSION.dep3, 0, 0);
 
   const fs_wager = gv('ov_fs_wager', fsSpec ? fsSpec.wager : 30);
   const fs_count = gv('ov_fs_count', fsSpec ? fsSpec.count : 0);

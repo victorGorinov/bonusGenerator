@@ -7,6 +7,7 @@ import { repo } from './retention-calendar/repository.js';
 import { CAMPAIGN_TYPES, CAMPAIGN_STATUSES, SEGMENTS, TYPE_COLORS } from './retention-calendar/types.js';
 import { getT } from './retention-calendar/i18n.js';
 import { campaignFromAI, tournamentFromAI } from './retention-calendar/ai-to-campaign.js';
+import { initForecastPanel, refreshForecast, toggleForecastPanel } from './retention-calendar/forecast-panel.js';
 
 // ── State ────────────────────────────────────────────────────────────────────
 
@@ -18,9 +19,10 @@ let modalMode    = 'view'; // 'view'|'edit'|'new'|'template'|'ai'
 document.addEventListener('DOMContentLoaded', async () => {
   await loadAll();
   initCalendar(document.getElementById('calendar'), openCampaignModal, openDatePickerPopup);
+  initForecastPanel();
   renderFilters();
   renderStats();
-  subscribe(() => { renderStats(); renderFilters(); });
+  subscribe(() => { renderStats(); renderFilters(); refreshForecast(); });
   setupSidebarNav();
 
   // Accept campaigns added from other generators via localStorage event
@@ -53,9 +55,13 @@ function setupSidebarNav() {
       setCalendarView(fcView);
       document.querySelectorAll('#view-toggle .vt-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      // Slight delay so FullCalendar has updated its view before we read activeStart/activeEnd
+      setTimeout(refreshForecast, 50);
     });
   });
 }
+
+window._rcToggleForecast = () => toggleForecastPanel();
 
 // ── Date-click popup ──────────────────────────────────────────────────────────
 

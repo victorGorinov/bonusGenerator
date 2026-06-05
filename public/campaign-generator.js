@@ -81,7 +81,17 @@ function goStep(n) {
   document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('step-'+n).classList.add('active');
   if (n === 2) {
-    syncLangToGeo(document.getElementById('p-geo').value);
+    // Restore step-2 DOM state from draft.params (don't call syncLangToGeo —
+    // it resets lang/lic/euPending which destroys user's edits on back-navigation).
+    const geo = document.getElementById('p-geo').value;
+    const euWrap = document.getElementById('eu-ctry-wrap');
+    if (euWrap) euWrap.style.display = geo === 'eu' ? 'block' : 'none';
+    if (geo === 'eu' && draft.params.geo && draft.params.geo !== 'eu') {
+      document.querySelectorAll('.chip[data-g="eu-ctry"]').forEach(c => {
+        c.classList.toggle('active', c.dataset.v === draft.params.geo);
+      });
+      draft.params._euPending = false;
+    }
     updateRiskHint(draft.params.risk || 'low');
   }
   if (n === 3) {
@@ -638,6 +648,34 @@ function renderEconScenarios(econ, _unused, _unused2, cur, lang, fullData) {
               </div>
               <div id="cg_incr_ai_result"></div>`;
             })() : ''}
+          </div>`;
+      } catch(e) { return ''; }
+    })()}
+    ${(()=>{
+      try {
+        const ch = econ.chain;
+        if (!ch || !ch.chainCost) return '';
+        // Only show the deposit funnel when the chain is actually selected
+        // (both dep2 and dep3 in the campaign), and only its selected steps.
+        const sel = econ.selectedTypes || (fullData && fullData.requestedTypes) || [];
+        if (!(sel.includes('dep2') && sel.includes('dep3'))) return '';
+        const stepLbls = { welcome: t('chain_step_welcome'), dep2: t('chain_step_dep2'), dep3: t('chain_step_dep3') };
+        const rClr = ch.chainCostRatio < 0.10 ? '#10b981' : ch.chainCostRatio < 0.25 ? '#10b981' : ch.chainCostRatio < 0.40 ? '#f59e0b' : '#ef4444';
+        const stepRows = (ch.steps || []).filter(s => s.cost > 0 && (s.key === 'welcome' || sel.includes(s.key))).map(s => `
+          <div style="display:flex;align-items:baseline;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:11px">
+            <span style="color:#8892a4;flex:1">${stepLbls[s.key] || s.key}</span>
+            <span style="color:#8892a4;margin:0 8px;font-size:10px">×${Math.round(s.cohort*100)}% ${t('chain_cohort')}</span>
+            <span style="font-family:monospace;font-weight:700;color:var(--text)">${fmt(s.cost)}</span>
+          </div>`).join('');
+        return `
+          <div style="margin-top:12px;padding:10px 12px;background:rgba(160,176,255,.04);border-radius:9px;border:1px solid rgba(160,176,255,.14)">
+            <div style="font-size:11px;font-weight:700;color:#a0b0ff;margin-bottom:8px">⛓ ${t('chain_title')}</div>
+            ${stepRows}
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.08)">
+              <span style="font-size:11px;font-weight:700;color:var(--text)">${t('chain_total')}</span>
+              <span style="font-family:monospace;font-weight:800;color:var(--text)">${fmt(ch.chainCost)}</span>
+              <span style="font-size:11px;font-weight:700;color:${rClr};margin-left:10px">${(ch.chainCostRatio*100).toFixed(1)}% ${t('chain_ratio_lbl')}</span>
+            </div>
           </div>`;
       } catch(e) { return ''; }
     })()}
@@ -1388,6 +1426,49 @@ function addCampaignToCalendar() {
   showToast(`${msg} · ${link}`);
 }
 
+function addDetailToCalendar() {
+  const c = getCampaigns().find(x => x.id === _detailId);
+  if (!c) return;
+  const mechanic = c.mechanicType || c.scenario?.cat || 'custom';
+  const MECH_TO_TYPE = { reload:'reload', cashback:'cashback', freespins:'freespins', free_spins:'freespins', vip:'vip', reactivation:'reactivation', welcome:'reload', ndb:'freespins', dep2:'reload', dep3:'reload' };
+  const type   = MECH_TO_TYPE[mechanic?.toLowerCase()] || 'custom';
+  const today  = new Date();
+  const monday = new Date(today); monday.setDate(today.getDate() + ((today.getDay() === 0 ? 1 : 8 - today.getDay())));
+  const addD   = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r.toISOString().slice(0, 10); };
+  const entry  = {
+    title:      c.name || c.scenario?.lbl || mechanic || 'Campaign',
+    type,
+    segment:    c.params?.segment || 'all',
+    geo:        c.params?.geo || '',
+    startDate:  monday.toISOString().slice(0, 10),
+    endDate:    addD(monday, 6),
+    status:     'draft',
+    brands:     ['default'],
+    mechanic:   String(mechanic || ''),
+    econ:       c.econ || null,
+    sourceType: 'campaign_generator',
+    sourceId:   c.id,
+  };
+  const isRu = currentLang === 'ru';
+  try {
+    const camps = JSON.parse(localStorage.getItem('rc_campaigns') || '[]');
+    const dupe  = camps.find(x => x.sourceId === c.id);
+    if (dupe) {
+      const added = new Date(dupe.createdAt).toLocaleDateString();
+      const msg   = isRu
+        ? `Эта кампания уже добавлена в календарь (добавлена ${added}).\nДобавить ещё раз?`
+        : `This campaign is already in the calendar (added ${added}).\nAdd again?`;
+      if (!confirm(msg)) return;
+    }
+    const now = new Date().toISOString();
+    camps.push({ ...entry, id: 'cg_' + Date.now(), createdAt: now, updatedAt: now });
+    localStorage.setItem('rc_campaigns', JSON.stringify(camps));
+  } catch {}
+  const msg  = isRu ? '📅 Кампания добавлена в Retention Calendar' : '📅 Campaign added to Retention Calendar';
+  const link = '<a href="/retention-calendar.html" style="color:var(--gold);font-weight:600">' + (isRu ? 'Открыть →' : 'Open →') + '</a>';
+  showToast(`${msg} · ${link}`);
+}
+
 function showToast(html) {
   let t = document.getElementById('rc-toast');
   if (!t) {
@@ -1899,6 +1980,13 @@ const I18N = {
     btn_export_pdf:'⬇ PDF',
     econ_show_analysis:'Показать полный анализ ▾',
     econ_collapse:'Свернуть ▴',
+    chain_title:'Цепочка депозитов',
+    chain_step_welcome:'1-й депозит',
+    chain_step_dep2:'2-й депозит',
+    chain_step_dep3:'3-й депозит',
+    chain_cohort:'доля когорты',
+    chain_total:'Итого по цепочке',
+    chain_ratio_lbl:'Нагрузка цепочки',
     s4_variant:'Вариант', s4_copy_btn:'› Копировать',
     s4_more_variants:'+ Ещё варианты', s4_generating:'⏳ Генерирую...',
     s4_email_subject_lbl:'Тема', s4_chars:'симв.',
@@ -1975,7 +2063,7 @@ const I18N = {
     sc_sport_event:'Спортивное событие', sc_tournament:'Турнир / Ивент',
     sc_cashback:'Cashback кампания', sc_custom:'Кастомный сценарий',
     // Detail view
-    det_back:'← Акции', det_dup:'⎘ Дублировать', det_edit:'✏ Редактировать',
+    det_back:'← Акции', det_dup:'⎘ Дублировать', det_edit:'✏ Редактировать', det_cal:'📅 В календарь',
     det_tab_ov:'Обзор', det_tab_mech:'Механика', det_tab_texts:'Тексты', det_tab_audit:'Аудит', det_tab_export:'Экспорт', det_tab_analytics:'📊 Факт',
     det_ov_scenario:'Сценарий', det_ov_geo:'Регион', det_ov_segment:'Сегмент',
     det_ov_budget:'Бюджет', det_ov_tone:'Тон', det_ov_lang:'Язык текстов',
@@ -2026,6 +2114,13 @@ const I18N = {
     btn_export_pdf:'⬇ PDF',
     econ_show_analysis:'Show full analysis ▾',
     econ_collapse:'Collapse ▴',
+    chain_title:'Deposit chain',
+    chain_step_welcome:'1st deposit',
+    chain_step_dep2:'2nd deposit',
+    chain_step_dep3:'3rd deposit',
+    chain_cohort:'cohort share',
+    chain_total:'Chain total',
+    chain_ratio_lbl:'Chain load',
     s4_variant:'Variant', s4_copy_btn:'› Copy',
     s4_more_variants:'+ More variants', s4_generating:'⏳ Generating...',
     s4_email_subject_lbl:'Subject', s4_chars:'chars',
@@ -2102,7 +2197,7 @@ const I18N = {
     sc_sport_event:'Sport Event', sc_tournament:'Tournament / Event',
     sc_cashback:'Cashback Campaign', sc_custom:'Custom Scenario',
     // Detail view
-    det_back:'← Offers', det_dup:'⎘ Duplicate', det_edit:'✏ Edit',
+    det_back:'← Offers', det_dup:'⎘ Duplicate', det_edit:'✏ Edit', det_cal:'📅 Add to Calendar',
     det_tab_ov:'Overview', det_tab_mech:'Mechanics', det_tab_texts:'Texts', det_tab_audit:'Audit', det_tab_export:'Export', det_tab_analytics:'📊 Actuals',
     det_ov_scenario:'Scenario', det_ov_geo:'Region', det_ov_segment:'Segment',
     det_ov_budget:'Budget', det_ov_tone:'Tone', det_ov_lang:'Text Language',

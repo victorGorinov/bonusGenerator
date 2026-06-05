@@ -42,7 +42,8 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   ├── server/app.ts                # Express: helmet CSP, requestId, pino-http, routes, static
 │   ├── config/
 │   │   ├── index.ts                 # Zod EnvSchema (fail-fast), ENV, PORT, API keys, AI_MODEL, AI_TIMEOUT
-│   │   └── geo/                     # eu.ts, cis.ts, crypto.ts, sweep.ts, mn.ts, latam.ts
+│   │   ├── geo/                     # eu.ts, cis.ts, crypto.ts, sweep.ts, mn.ts, latam.ts
+│   │   └── games/                   # catalog.json (day-1 snapshot, ~15–20 games/geo) + catalog.ts (types + loader)
 │   ├── domain/
 │   │   ├── shared/
 │   │   │   ├── Segment.ts           # 'new'|'mid'|'vip' + isSegment()
@@ -51,13 +52,21 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │   ├── bonus/
 │   │   │   ├── buildConfig.ts       # Pure: params → full bonus config
 │   │   │   ├── recalcCosts.ts       # Pure: cfg + overrides → { costs, ratio, maxRisk }
-│   │   │   └── payout.ts            # truncNormalPayout: statistical cost model
+│   │   │   ├── payout.ts            # truncNormalPayout: statistical cost model
+│   │   │   └── chainModel.ts        # CHAIN_PROGRESSION = { dep2: 0.45, dep3: 0.25 }
 │   │   ├── campaign/
 │   │   │   ├── scenarios.ts         # GEO_CFG, LANG_NAME, SEG_DESC, SCENARIO_MSG
 │   │   │   └── explanation.ts       # campaignExplanation(), campaignAlternatives()
 │   │   ├── tournament/
 │   │   │   ├── calcEconomics.ts     # calcTournamentEconomics() — SEGMENT_RATIO × totalPlayers → eligible
-│   │   │   └── benchmarks.ts        # tournamentBenchmarks() — deterministic realism checks
+│   │   │   ├── benchmarks.ts        # tournamentBenchmarks() — deterministic realism checks
+│   │   │   └── recommendGames.ts    # Pure: catalog scoring → top-5 primary + 5 alternatives
+│   │   ├── forecast/
+│   │   │   ├── normalizeCampaign.ts # Campaign → NormalizedActivity | null (by sourceType)
+│   │   │   ├── cannibalization.ts   # MECHANIC_AFFINITY, audienceOverlap, overlapDaysFactor, pairCannibalization
+│   │   │   └── aggregateForecast.ts # aggregateForecast(campaigns, start, end) → Forecast
+│   │   ├── analytics/
+│   │   │   └── compareCampaign.ts   # Pure: ForecastSnapshot + CampaignActuals → CampaignComparison
 │   │   └── ai/
 │   │       └── parser.ts            # tryRepairJSON — JSON repair utility
 │   ├── ai/
@@ -86,12 +95,14 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │   ├── campaign.controller.ts   # createCampaignController({ ai })
 │   │   ├── tournament.controller.ts # createTournamentController({ ai })
 │   │   ├── loyalty.controller.ts    # createLoyaltyController() — no AI dep (pure domain)
+│   │   ├── analytics.controller.ts  # createAnalyticsController() — analyze, saveActuals, explain
 │   │   └── signup.controller.ts     # createSignupController()
 │   ├── services/
 │   │   ├── bonus.service.ts         # generate(), recalc() — thin wrappers
 │   │   ├── campaign.service.ts      # generateCampaign() — geo+scenario → config+explanations
 │   │   ├── tournament.service.ts    # generateTournament() — type+params → spec+econ
-│   │   └── loyalty.service.ts       # generate() → buildLoyaltyConfig + calcLoyaltyEconomics
+│   │   ├── loyalty.service.ts       # generate() → buildLoyaltyConfig + calcLoyaltyEconomics
+│   │   └── analytics.service.ts     # compareCampaign() thin wrapper
 │   ├── routes/                      # Wire deps at startup: createXxxController({ ai: getAIProvider() })
 │   │   ├── generate.routes.ts
 │   │   ├── campaign.routes.ts
@@ -114,6 +125,7 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │   ├── optimize.schema.ts       # OptimizeSchema + OptimizeInput
 │   │   ├── tournament.schema.ts     # TournamentGenerateSchema + Input types (Generate/Texts/Audit/Optimize)
 │   │   ├── loyalty.schema.ts        # LoyaltyGenerateSchema + LoyaltyRecalcSchema + Input types
+│   │   ├── analysis.schema.ts       # AnalysisSchema + ActualsSchema + ExplainSchema + Input types
 │   │   └── signup.schema.ts         # SignupSchema + SignupInput
 │   └── errors/
 │       ├── AppError.ts              # Base error with status + isOperational
@@ -129,6 +141,7 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   ├── bonus-cost.js                # Client-side bonus cost model (parity with backend recalcCosts)
 │   ├── loyalty-econ.js              # Client-side loyalty economics (parity with backend calcLoyaltyEconomics)
 │   ├── tournament-econ.js           # Client-side tournament economics (parity with backend calcTournamentEconomics)
+│   ├── forecast.js                  # Client-side port of src/domain/forecast/ — normalizeCampaign, aggregateForecast, MECHANIC_AFFINITY
 │   ├── configurator.html            # Bonus Configurator SPA (loads app.js + configurator-extra.js)
 │   ├── configurator-extra.js        # Configurator page-specific JS (RTP sync, edit mode, audit panel, balance)
 │   ├── campaign-generator.html      # AI Campaign Generator SPA
@@ -149,6 +162,7 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │   ├── filters.js               # applyFilters(), toggleFilter(), clearFilters()
 │   │   ├── templates.js             # saveAsTemplate(), createFromTemplate(), duplicateCampaign()
 │   │   ├── ai-to-campaign.js        # campaignFromAI(), tournamentFromAI()
+│   │   ├── forecast-panel.js        # initForecastPanel(), refreshForecast(), toggleForecastPanel() — imports ../forecast.js
 │   │   └── i18n.js                  # getT() → RU/EN string map
 │   ├── generator.html               # Legacy — 301 → /campaign-generator.html
 │   ├── privacy.html                 # Privacy Policy (EN/RU)
@@ -176,6 +190,13 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
     ├── domain/bonus.cost.parity.test.js          # bonus-cost.js ↔ backend recalcCosts parity
     ├── domain/bonus.parseRecTarget.test.js       # parseRecTarget() edge cases
     ├── domain/bonus.solver.constraints.test.js   # solver constraint bounds tests
+    ├── domain/bonus.chain.test.js                # chain cohort sums, chainCostRatio, edge cases (pl=0, dep=0)
+    ├── domain/forecast.normalize.test.js         # normalizeCampaign: tournament/campaign/loyalty/null inputs
+    ├── domain/forecast.cannibalization.test.js   # matrix symmetry, audienceOverlap, overlapDaysFactor, pairLoss
+    ├── domain/forecast.aggregate.test.js         # 0/1/N activities, byDay integrity, pairs ordering
+    ├── domain/forecast.parity.test.js            # forecast.js ↔ backend identical Forecast for same inputs
+    ├── domain/recommendGames.test.js             # scoring determinism, type gating (live/slot), geo/segment rules
+    ├── domain/compareCampaign.test.js            # percentile bands, flags, currency separation, division-by-zero
     └── integration/
         ├── api.generate.test.js
         ├── api.loyalty.test.js                   # 11 tests
@@ -240,6 +261,9 @@ Exponential backoff with full jitter. Only retryable errors (429, 5xx, network) 
 | POST | `/api/tournament/optimize` | 15/min | TournamentOptimizeSchema | `createTournamentController().optimize` |
 | POST | `/api/loyalty/generate` | 20/min | LoyaltyGenerateSchema | `createLoyaltyController().generate` |
 | POST | `/api/loyalty/recalc` | 30/min | LoyaltyRecalcSchema | `createLoyaltyController().recalc` |
+| POST | `/api/campaign/actuals` | 30/min | ActualsSchema | `createAnalyticsController().saveActuals` |
+| POST | `/api/campaign/analysis` | 30/min | AnalysisSchema | `createAnalyticsController().analyze` |
+| POST | `/api/campaign/analysis/explain` | 15/min | ExplainSchema | `createAnalyticsController().explain` |
 | POST | `/api/signup` | 5/hr | SignupSchema | `createSignupController().signup` |
 | GET | `/api/health` | — | — | `{ status: 'ok' }` |
 | GET | `/privacy` | — | — | `public/privacy.html` |
@@ -264,6 +288,12 @@ Active licenses: `mga` (EU default), `ukgc` (UK), `dga` (Denmark), `none` (CIS/l
 
 **Payout fallback** — `truncNormalPayout` underflows for large-denomination currencies (RUB/KZT/MNT). Fix: if `payoutStat < bonusSize × 1e-6`, use deterministic breakeven-efficiency estimate instead.
 
+### `computeSelectedEcon(cfg, selectedTypes)` — `src/domain/bonus/selectedEcon.ts`
+
+Pure. Aggregates expected cost across the **actually-selected** bonuses so the Campaign Generator economics react to adding/removing any bonus (welcome, ndb, dep2, dep3, reload, cashback). `campaign.service.ts` calls it with `effectiveTypes` and merges the result into the returned `econ` (overrides `sP10/sP50/sP90.cost`, `costRatio`, `maxRisk`; adds `breakdown[]`, `selectedTypes`). `buildConfig` itself is **not** changed (Configurator + snapshots unaffected). Frontend gates the deposit-chain block on `selectedTypes` containing both dep2 and dep3.
+
+Per-mechanic cost: `payout(bSize, wx, adjWCR_s, adjRTP_s) × cohort_s × pl`, scenarios P10/P50/P90 with the same WCR/RTP deltas as `buildConfig.calcScenario`. Cohorts (calibrated 2026-06-03): welcome `conv_s`; ndb 0.40; dep2 `conv_s×0.45`; dep3 `conv_s×0.25`; reload 0.10; cashback `cbPct × dep×(1−mixedRTP) × 0.30 × cbScale{0.5/1.0/1.6}`. Tier-cashback `pct` parsed from "5%" strings. Client mirror: `public/bonus-selected-econ.js` (parity test `bonus.selectedEcon.parity.test.js`).
+
 ### `recalcCosts(cfg, overrides)` — `src/domain/bonus/recalcCosts.ts`
 
 Returns `{ costs: { w_p10, w_p50, w_p90, ndb, rl, d2, d3, fs, total }, ratio, maxRisk }`.
@@ -286,6 +316,19 @@ Key fields: `arpu` (USD/mo), `cac` (USD), `bpct`, `ltv3`, `mBudget`, `roi3`, `be
 
 - `arpu`, `cac`, `ltv3`, `mBudget` — **USD** benchmarks
 - `dep`, `sP{n}.cost`, `bonusSize` — **sitecur** (local currency)
+
+**`econ.chain`** — present when `dep2`/`dep3` mechanics are active. Deposit-funnel aggregate using `CHAIN_PROGRESSION = { dep2: 0.45, dep3: 0.25 }` (fraction of welcome cohort reaching each step):
+
+```
+chain: {
+  steps: [{ key, bonusSize, cohort, cost }, …],  // welcome/dep2/dep3
+  chainCost,       // Σ cost × cohort × pl
+  chainCostRatio,  // chainCost / (pl × dep)
+  chainMaxRisk,    // Σ bonusSize × cohort × pl
+}
+```
+
+Single-step fields (`costRatio`, `sP50`, etc.) are preserved for backward compat. `campaign.service.ts` exposes `isChain` + `primaryCostRatio` (chainCostRatio when chain, costRatio otherwise).
 
 ---
 
@@ -442,6 +485,14 @@ Loyalty Generator SPA.
 - `exportCSV()` / `exportJSON()`
 - "Add to Calendar" from CG and TG with duplicate detection
 - AI-assisted campaign creation from CG/TG results
+- **Period Forecast panel** — "Forecast" toggle in controls-bar opens panel with Брутто → −Наложение → Нетто, cost, coverage, top-pairs breakdown
+
+**Forecast panel** (`retention-calendar/forecast-panel.js`):
+- Toggle: `window._rcToggleForecast()` → `toggleForecastPanel()` in forecast-panel.js
+- Period: defaults to current FullCalendar view (`getCalendarPeriod()` from `calendar.js`); custom date range via two `<input type="date">` inputs
+- Recalculates on: store change (campaigns added/deleted/dragged), view toggle click, custom range input
+- i18n: reads `window._NAV_I18N[lang][fc_*]` keys set by `nav-utils.js`
+- No API calls — pure client-side via `aggregateForecast()` from `../forecast.js`
 
 **State:** `rc_campaigns` + `rc_templates` localStorage keys.
 
@@ -492,6 +543,19 @@ retention-calendar.js (Vite bundle from /dist/)
   → detectConflicts() → red outline events
   → exportCSV() / exportJSON()
   → AI: window._rcNewCampaignOnDate(dateStr) / window._rcNewTournamentOnDate(dateStr)
+```
+
+### Period Forecast
+```
+retention-calendar/forecast-panel.js (bundled)
+  ← rc_campaigns (via store.getState())
+  ← current view period (via calendar.getCalendarPeriod()) OR custom date inputs
+  → forecast.js: aggregateForecast(campaigns, start, end)
+      → normalizeCampaign() per campaign (by sourceType)
+      → pairCannibalization() for all overlapping pairs
+      ← Forecast { gross, overlapLoss, net, netProfit, byDay[], pairs[], coverage }
+  → renders panel: Брутто / −Наложение / Нетто / Прибыль + coverage + top pairs
+  Trigger: store change, view toggle, custom range input change
 ```
 
 ---
@@ -592,6 +656,9 @@ npm run test:watch   # vitest watch mode
 3. If in loyalty-generator → add key to `L.en` + `L.ru`, use `t('key')`
 4. If in retention-calendar module → add key to `EN`/`RU` in `retention-calendar/i18n.js`, use `getT()` at call site; then rebuild bundle with `npm run build`
 5. If in campaign-generator → add key to both locale objects in `setUILang()`, add `data-i18n="key"` to HTML element
+6. If in forecast-panel → add key to `_NAV_I18N` in `nav-utils.js` (no rebuild needed); read via `window._NAV_I18N[lang][key]`
+
+**Forecast i18n keys** (in `_NAV_I18N`, EN + RU): `fc_toggle`, `fc_title`, `fc_gross`, `fc_overlap`, `fc_net`, `fc_profit`, `fc_coverage`, `fc_pairs_title`, `fc_no_econ`, `fc_range`
 
 ---
 
@@ -602,11 +669,13 @@ Four browser-side JS modules mirror backend domain logic for real-time recalcula
 | File | Mirrors | Used by |
 |------|---------|---------|
 | `public/bonus-cost.js` | `src/domain/bonus/recalcCosts.ts` | configurator-extra.js |
+| `public/bonus-selected-econ.js` | `src/domain/bonus/selectedEcon.ts` | campaign-generator.js (selection-aware econ) |
 | `public/loyalty-econ.js` | `src/domain/loyalty/calcEconomics.ts` | loyalty-generator.js |
 | `public/tournament-econ.js` | `src/domain/tournament/calcEconomics.ts` | tournament-generator.js |
 | `public/balance-solver.js` | — (generic solver) | tournament/loyalty/configurator |
+| `public/forecast.js` | `src/domain/forecast/` (3 files) | retention-calendar/forecast-panel.js |
 
-**balance-solver.js** — `solveToTarget({ draft, levers, recalc, metricOf, target })`: iterates over `levers` (enum swaps + multiplicative steps) until `metricOf(recalc(draft)) >= target` or all levers exhausted. Returns `{ draft, reached }`.
+**balance-solver.js** — `solveToTarget({ draft, levers, recalc, metricOf, target, constraints?, maxIter? })`: iterates over `levers` (enum swaps + multiplicative steps) until `metricOf(recalc(draft)) >= target` or all levers exhausted. `constraints` — optional array of `{ check(draft, cfg) → bool }` guards; a lever step is skipped if it would violate any constraint (used by bonus solver to enforce license wager/bonus caps). Returns `{ draft, reached }`.
 
 **Parity tests** in `tests/domain/*.parity.test.js` assert identical output between JS modules and backend TypeScript for the same inputs. Run before shipping changes to either side.
 

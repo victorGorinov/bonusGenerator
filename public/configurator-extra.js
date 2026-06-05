@@ -45,6 +45,13 @@ function syncRtp(v) {
       btn_update_camp: '💾 Обновить кампанию',
       btn_updated: '✓ Обновлено',
       audit_saved: 'Кампания обновлена ✓',
+      chain_title: 'Цепочка депозитов',
+      chain_step_welcome: '1-й депозит',
+      chain_step_dep2: '2-й депозит',
+      chain_step_dep3: '3-й депозит',
+      chain_cohort: 'доля когорты',
+      chain_total: 'Итого по цепочке',
+      chain_ratio_lbl: 'нагрузка',
     },
     en: {
       apply_recs: '⚡ Apply Recommendations',
@@ -73,6 +80,13 @@ function syncRtp(v) {
       btn_update_camp: '💾 Update Campaign',
       btn_updated: '✓ Updated',
       audit_saved: 'Campaign updated ✓',
+      chain_title: 'Deposit chain',
+      chain_step_welcome: '1st deposit',
+      chain_step_dep2: '2nd deposit',
+      chain_step_dep3: '3rd deposit',
+      chain_cohort: 'cohort share',
+      chain_total: 'Chain total',
+      chain_ratio_lbl: 'load',
     },
     mn: {
       camps_btn: 'Кампани',
@@ -681,6 +695,7 @@ function renderAuditPanel() {
         ${_econCard('P90', origE?.p90Cost, newE?.p90Cost, cur, false)}
       </div>
       ${_ratioRow(origE, newE)}
+      ${_chainSection(cfg)}
     </div>
 
     <div class="audit-section">
@@ -841,6 +856,30 @@ function _metricCard(label, newVal, origVal) {
     <div class="audit-econ-label">${label}</div>
     ${origVal ? `<div class="audit-econ-before">${origVal}</div>` : ''}
     <div class="audit-econ-after econ-neutral">${newVal || '—'}</div>
+  </div>`;
+}
+
+function _chainSection(cfg) {
+  const ch = cfg?.econ?.chain;
+  if (!ch || !ch.chainCost) return '';
+  const cur = cfg.cur || '';
+  const fmt = n => Math.round(n).toLocaleString('en') + ' ' + cur;
+  const rClr = ch.chainCostRatio < 0.10 ? '#10b981' : ch.chainCostRatio < 0.25 ? '#10b981' : ch.chainCostRatio < 0.40 ? '#f59e0b' : '#ef4444';
+  const stepLbls = { welcome: t('chain_step_welcome'), dep2: t('chain_step_dep2'), dep3: t('chain_step_dep3') };
+  const stepRows = (ch.steps || []).filter(s => s.cost > 0).map(s => `
+    <div style="display:flex;align-items:baseline;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:11px">
+      <span style="color:#8892a4;flex:1">${stepLbls[s.key] || s.key}</span>
+      <span style="color:#8892a4;margin:0 8px;font-size:10px">×${Math.round(s.cohort*100)}% ${t('chain_cohort')}</span>
+      <span style="font-family:monospace;font-weight:700;color:#e2e8f0">${fmt(s.cost)}</span>
+    </div>`).join('');
+  return `<div style="margin-top:10px;padding:9px 11px;background:rgba(160,176,255,.04);border-radius:8px;border:1px solid rgba(160,176,255,.13)">
+    <div style="font-size:10px;font-weight:700;color:#a0b0ff;margin-bottom:6px">⛓ ${t('chain_title')}</div>
+    ${stepRows}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;padding-top:5px;border-top:1px solid rgba(255,255,255,.08)">
+      <span style="font-size:11px;font-weight:700;color:#e2e8f0">${t('chain_total')}</span>
+      <span style="font-family:monospace;font-weight:800;color:#e2e8f0">${fmt(ch.chainCost)}</span>
+      <span style="font-size:11px;font-weight:700;color:${rClr};margin-left:8px">${(ch.chainCostRatio*100).toFixed(1)}% ${t('chain_ratio_lbl')}</span>
+    </div>
   </div>`;
 }
 

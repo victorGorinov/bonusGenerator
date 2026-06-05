@@ -23,6 +23,21 @@ const _NAV_I18N = {
     nav_rc_week:     'Week',
     nav_rc_agenda:   'Agenda',
     nav_rc_today:    'Today',
+    fc_toggle:       'Forecast',
+    fc_title:        'Period Forecast',
+    fc_gross:        'Gross Revenue',
+    fc_overlap:      'Cannibalization',
+    fc_net:          'Net Revenue',
+    fc_profit:       'Net Profit',
+    fc_coverage:     'Coverage',
+    fc_pairs_title:  'Top overlaps',
+    fc_no_econ:      'no economics data',
+    fc_range:        'Date range',
+    fc_chart_title:  'Net revenue by day',
+    fc_click_hint:   'click a bar for the daily breakdown',
+    fc_day_active:   'Active that day',
+    fc_day_none:     'No activity this day',
+    fc_overlap_help: 'Revenue lost because overlapping activities compete for the same players — the combined lift is lower than the sum of each on its own.',
   },
   ru: {
     nav_main:        'Главное',
@@ -44,8 +59,25 @@ const _NAV_I18N = {
     nav_rc_week:     'Неделя',
     nav_rc_agenda:   'Список',
     nav_rc_today:    'Сегодня',
+    fc_toggle:       'Прогноз',
+    fc_title:        'Прогноз периода',
+    fc_gross:        'Брутто',
+    fc_overlap:      'Наложение',
+    fc_net:          'Нетто',
+    fc_profit:       'Прибыль',
+    fc_coverage:     'Покрытие',
+    fc_pairs_title:  'Топ наложений',
+    fc_no_econ:      'нет данных экономики',
+    fc_range:        'Диапазон дат',
+    fc_chart_title:  'Нетто-доход по дням',
+    fc_click_hint:   'клик по столбцу — детализация дня',
+    fc_day_active:   'Активны в этот день',
+    fc_day_none:     'Нет активности в этот день',
+    fc_overlap_help: 'Потеря дохода из-за того, что пересекающиеся активности конкурируют за одних игроков — совокупный прирост ниже, чем сумма каждой по отдельности.',
   },
 };
+
+window._NAV_I18N = _NAV_I18N;
 
 function applyNavLang(lang) {
   // Primary: set data-lang on <html> — CSS handles all [data-tr-en]/[data-tr-ru] visibility

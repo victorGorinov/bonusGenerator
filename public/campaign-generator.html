@@ -394,7 +394,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 
       <div class="section-hd"><div class="section-title" data-i18n="dash_quickstart">Быстрый старт</div></div>
       <div class="quick-grid">
-        <div class="qcard" onclick="startWizardWith('first_launch')" style="border-color:rgba(245,158,11,.35);background:linear-gradient(135deg,rgba(245,158,11,.07) 0%,transparent 60%);grid-column:1/-1"><div class="qcard-icon">🚀</div><div class="qcard-name" data-i18n="qc_launch_n" style="color:var(--warn)">Первый запуск казино</div><div class="qcard-desc" data-i18n="qc_launch_d">Полный бонусный пакет: 1-й депозит + Welcome + 2-й/3-й депозит + Cashback — все механики для старта</div><div class="qcard-arr" style="color:var(--warn)">→</div></div>
+        <div class="qcard" onclick="startWizardWith('first_launch')" style="border-color:rgba(245,158,11,.35);background:linear-gradient(135deg,rgba(245,158,11,.07) 0%,transparent 60%)"><div class="qcard-icon">🚀</div><div class="qcard-name" data-i18n="qc_launch_n" style="color:var(--warn)">Первый запуск казино</div><div class="qcard-desc" data-i18n="qc_launch_d">Полный бонусный пакет: 1-й депозит + Welcome + 2-й/3-й депозит + Cashback — все механики для старта</div><div class="qcard-arr" style="color:var(--warn)">→</div></div>
         <div class="qcard" onclick="startWizardWith('inactive_7')"><div class="qcard-icon">🔄</div><div class="qcard-name" data-i18n="qc_react_n">Реактивация</div><div class="qcard-desc" data-i18n="qc_react_d">Вернуть неактивных 7+ дней</div><div class="qcard-arr">→</div></div>
         <div class="qcard" onclick="startWizardWith('second_dep')"><div class="qcard-icon">💰</div><div class="qcard-name" data-i18n="qc_reload_n">Reload кампания</div><div class="qcard-desc" data-i18n="qc_reload_d">Бонус на повторный депозит</div><div class="qcard-arr">→</div></div>
         <div class="qcard" onclick="startWizardWith('cashback')"><div class="qcard-icon">💳</div><div class="qcard-name" data-i18n="qc_cashback_n">Cashback</div><div class="qcard-desc" data-i18n="qc_cashback_d">Возврат % от проигрышей</div><div class="qcard-arr">→</div></div>
@@ -810,6 +810,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
         <div class="det-acts">
           <button class="btn btn-outline btn-sm" onclick="duplicateCampaign()" data-i18n="det_dup">⎘ Дублировать</button>
           <button class="btn btn-outline btn-sm" onclick="editCampaign()" data-i18n="det_edit">✏ Редактировать</button>
+          <button class="btn btn-outline btn-sm" onclick="addDetailToCalendar()" data-i18n="det_cal">📅 В календарь</button>
           <select id="det-status" class="form-select" style="font-size:.78rem;padding:5px 10px;height:30px" onchange="detailSetStatus(this.value)">
             <option value="draft"  data-i18n="badge_draft">Черновик</option>
             <option value="active" data-i18n="badge_active">Активна</option>

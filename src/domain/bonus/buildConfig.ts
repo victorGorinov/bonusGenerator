@@ -1,6 +1,7 @@
 import { truncNormalPayout }          from './payout.js';
 import { GEO }                        from '../../config/geo/index.js';
 import { GLOBAL_LICENSE_OVERRIDES }   from '../../config/geo/global-licenses.js';
+import { CHAIN_PROGRESSION }          from './chainModel.js';
 
 type GeoValue = (typeof GEO)[keyof typeof GEO];
 
@@ -241,6 +242,50 @@ export function buildConfig(params: BuildConfigParams): Record<string, unknown> 
   const wR    = (wager['wR'] as number) || 30;
   const _effR = wR > 0 ? Math.min(1, _be / Math.max(_be, wR)) : 1;
 
+  // ── Deposit chain progression ──────────────────────────────────────────────
+  const d2IsChain = (dep2['type'] as string) !== 'sc_purchase';
+  const d3IsChain = (dep3['type'] as string) !== 'sc_purchase';
+  const d2Pct_c   = d2IsChain ? ((dep2['pct']   as number) || 75)     : 0;
+  const d2MaxB_c  = d2IsChain ? ((dep2['maxB']  as number) || 0)      : 0;
+  const d2Fs_c    = d2IsChain ? ((dep2['fs']    as number) || 0)      : 0;
+  const d2WagerX  = d2IsChain ? ((dep2['wager'] as number) || wagerX) : 0;
+  const d3Pct_c   = d3IsChain ? ((dep3['pct']   as number) || 50)     : 0;
+  const d3MaxB_c  = d3IsChain ? ((dep3['maxB']  as number) || 0)      : 0;
+  const d3Fs_c    = d3IsChain ? ((dep3['fs']    as number) || 0)      : 0;
+  const d3WagerX  = d3IsChain ? ((dep3['wager'] as number) || wagerX) : 0;
+  const bSizeD2 = d2IsChain && d2MaxB_c > 0
+    ? Math.min(dep * d2Pct_c / 100, d2MaxB_c) + d2Fs_c * _sv : 0;
+  const bSizeD3 = d3IsChain && d3MaxB_c > 0
+    ? Math.min(dep * d3Pct_c / 100, d3MaxB_c) + d3Fs_c * _sv : 0;
+
+  const calcChainCost = (bSize: number, wx: number, cohort: number): number => {
+    if (bSize <= 0 || wx <= 0 || pl <= 0) return 0;
+    const adjBe  = mixedWCR / (1 - mixedRTP);
+    const adjEff = wx > 0 ? Math.min(1, adjBe / Math.max(adjBe, wx)) : 1;
+    const payoutStat = truncNormalPayout(bSize, wx, mixedWCR, mixedRTP);
+    const payout = payoutStat > bSize * 1e-6 ? payoutStat : bSize * adjEff;
+    return Math.round(payout * 0.20 * cohort * pl);
+  };
+
+  const chainWCost  = calcChainCost(bonusSize, wagerX,  1.0);
+  const chainD2Cost = calcChainCost(bSizeD2,   d2WagerX, CHAIN_PROGRESSION.dep2);
+  const chainD3Cost = calcChainCost(bSizeD3,   d3WagerX, CHAIN_PROGRESSION.dep3);
+  const chainCost      = chainWCost + chainD2Cost + chainD3Cost;
+  const chainCostRatio = (pl * dep) > 0 ? chainCost / (pl * dep) : 0;
+  const chainMaxRisk   = Math.round(pl * (
+    bonusSize + bSizeD2 * CHAIN_PROGRESSION.dep2 + bSizeD3 * CHAIN_PROGRESSION.dep3
+  ));
+  const chain = {
+    steps: [
+      { key: 'welcome', bonusSize: +bonusSize.toFixed(2), cohort: 1.0,                    cost: chainWCost  },
+      { key: 'dep2',    bonusSize: +bSizeD2.toFixed(2),   cohort: CHAIN_PROGRESSION.dep2, cost: chainD2Cost },
+      { key: 'dep3',    bonusSize: +bSizeD3.toFixed(2),   cohort: CHAIN_PROGRESSION.dep3, cost: chainD3Cost },
+    ],
+    chainCost,
+    chainCostRatio: +chainCostRatio.toFixed(3),
+    chainMaxRisk,
+  };
+
   const ndbType = ndb['type'] as string;
   const ndbAmt  = (ndb['amt'] as number) || 0;
   const ndbFs   = (ndb['fs']  as number) || 0;
@@ -272,6 +317,7 @@ export function buildConfig(params: BuildConfigParams): Record<string, unknown> 
       bonusSize, mixedWCR: +mixedWCR.toFixed(3), mixedRTP: +mixedRTP.toFixed(4),
       breakeven_wager, over_breakeven, wagerX, sP10, sP50, sP90,
       maxRisk, stressTest, costRatio: +costRatio.toFixed(3), acqCostRatio: +acqCostRatio.toFixed(3), verdictKey,
+      chain,
     },
     reg,
   };

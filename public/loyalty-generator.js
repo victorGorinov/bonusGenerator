@@ -622,20 +622,6 @@ function missionListHTML(missions) {
   }).join('');
 }
 
-function previewMissionLinks(params) {
-  if (!window._loyaltyMissionsLink || params.mode !== 'hybrid' || params.missionCount === 0) return;
-  // Build a minimal tiers array for preview (mirrors buildConfig tier logic)
-  const monthlyBase = params.avgdep * params.earnRateDeposit;
-  const tierDefs = [
-    { name: 'bronze', thresholdMonths: 0 },
-    { name: 'silver', thresholdMonths: 1 },
-    { name: 'gold',   thresholdMonths: 3 },
-    { name: 'platinum', thresholdMonths: 8 },
-    { name: 'diamond', thresholdMonths: 20 },
-  ].slice(0, params.numTiers);
-  const tiers = tierDefs.map(d => ({ name: d.name, minPoints: Math.round(d.thresholdMonths * monthlyBase) }));
-  return window._loyaltyMissionsLink.linkMissionsToTiers([], tiers, params);
-}
 
 function econGridHTML(econ, prevEcon) {
   const p = prevEcon || null;
@@ -1165,7 +1151,10 @@ async function fetchAI(tabKey, detailId) {
   if (body) body.innerHTML = `<div class="loader"><div class="spinner"></div><span>Generating with AI…</span></div>`;
 
   const source = detailId ? loadPrograms().find(p => p.id === detailId)?.result : lastResult;
-  if (!source) return;
+  if (!source) {
+    if (body) body.innerHTML = '';
+    return;
+  }
 
   try {
     let url, payload;
@@ -1205,7 +1194,7 @@ async function fetchAI(tabKey, detailId) {
       switchAiTab(tabKey);
     }
   } catch(e) {
-    const retryArg = detailId ? `'${tabKey}','${detailId}'` : `'${tabKey}'`;
+    const retryArg = detailId ? `${JSON.stringify(tabKey)},${JSON.stringify(detailId)}` : JSON.stringify(tabKey);
     if (body) body.innerHTML = `<div class="alert alert-warn">Error: ${esc(e.message)}
       <button class="btn btn-sm btn-outline" style="margin-left:10px" onclick="fetchAI(${retryArg})">${t('opt_retry')}</button></div>`;
   }

@@ -36,7 +36,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .sb-back:hover{color:#fff}
 
 /* ── Main area ──────────────────────────────────────────────────────────── */
-.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;position:relative}
 
 /* ── Topbar ─────────────────────────────────────────────────────────────── */
 .topbar{height:64px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:10px;flex-shrink:0;z-index:40}
@@ -77,6 +77,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 
 /* ── Stats bar ───────────────────────────────────────────────────────────── */
 #stats-bar{padding:5px 24px;font-size:.73rem;color:var(--muted);border-top:1px solid var(--border);flex-shrink:0;background:var(--bg2)}
+#fc-toggle-btn.active{background:rgba(79,110,247,.2);border-color:var(--accent);color:#a0b0ff}
 
 /* ── Modal ───────────────────────────────────────────────────────────────── */
 #modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center}
@@ -187,6 +188,7 @@ select.form-input{cursor:pointer}
       <button class="vt-btn" data-fc-view="listMonth"><span data-tr-en>Agenda</span><span data-tr-ru>Список</span></button>
     </div>
     <div style="margin-left:auto;display:flex;gap:6px">
+      <button id="fc-toggle-btn" class="btn btn-outline btn-sm" onclick="window._rcToggleForecast()" data-i18n="fc_toggle">Forecast</button>
       <button class="btn btn-outline btn-sm" onclick="window._rcOpenAI()"><span data-tr-en>🤖 AI-Assisted</span><span data-tr-ru>🤖 AI-генерация</span></button>
       <button class="btn btn-outline btn-sm" onclick="window._rcOpenTemplates()"><span data-tr-en>📄 Templates</span><span data-tr-ru>📄 Шаблоны</span></button>
       <button class="btn btn-outline btn-sm" onclick="window._rcExportCSV()">⬇ CSV</button>

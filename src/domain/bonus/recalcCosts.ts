@@ -1,4 +1,5 @@
 import { truncNormalPayout } from './payout.js';
+import { CHAIN_PROGRESSION } from './chainModel.js';
 
 type BonusCfg = Record<string, unknown>;
 
@@ -63,14 +64,14 @@ export function recalcCosts(cfg: BonusCfg, overrides: Record<string, unknown>): 
   const d2_maxB  = gv('d2_maxB',  (dep2['maxB']  as number) || 0);
   const d2_fs    = gv('d2_fs',    (dep2['fs']    as number) || 0);
   const d2_bonus = Math.min(dep * d2_pct / 100, d2_maxB) + d2_fs * spinV;
-  const c_d2     = svCost(d2_bonus, d2_wager, 0.20, 0, 0);
+  const c_d2     = svCost(d2_bonus, d2_wager, 0.20 * CHAIN_PROGRESSION.dep2, 0, 0);
 
   const d3_pct   = gv('d3_pct',   (dep3['pct']   as number) || 50);
   const d3_wager = gv('d3_wager', (dep3['wager'] as number) || econ['wagerX']);
   const d3_maxB  = gv('d3_maxB',  (dep3['maxB']  as number) || 0);
   const d3_fs    = gv('d3_fs',    (dep3['fs']    as number) || 0);
   const d3_bonus = Math.min(dep * d3_pct / 100, d3_maxB) + d3_fs * spinV;
-  const c_d3     = svCost(d3_bonus, d3_wager, 0.20, 0, 0);
+  const c_d3     = svCost(d3_bonus, d3_wager, 0.20 * CHAIN_PROGRESSION.dep3, 0, 0);
 
   const fs_wager = gv('fs_wager', fsSpec ? fsSpec['wager'] : 30);
   const fs_count = gv('fs_count', fsSpec ? fsSpec['count'] : 0);

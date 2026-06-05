@@ -37,6 +37,8 @@ describe('bonus-cost.js parity with server recalcCosts', () => {
 
       expect(clientResult.costs.total, 'costs.total').toBeCloseTo(serverResult.costs.total, -1);
       expect(clientResult.costs.w_p50, 'costs.w_p50').toBeCloseTo(serverResult.costs.w_p50, -1);
+      expect(clientResult.costs.d2,    'costs.d2').toBeCloseTo(serverResult.costs.d2, -1);
+      expect(clientResult.costs.d3,    'costs.d3').toBeCloseTo(serverResult.costs.d3, -1);
       expect(clientResult.ratio,       'ratio').toBeCloseTo(serverResult.ratio, 4);
       expect(clientResult.maxRisk,     'maxRisk').toBeCloseTo(serverResult.maxRisk, -1);
     });

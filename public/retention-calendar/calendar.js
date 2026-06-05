@@ -131,3 +131,13 @@ export function setCalendarView(view) {
 export function refetchCalendar() {
   syncEvents();
 }
+
+/** Returns the ISO date strings for the current calendar view's active window. */
+export function getCalendarPeriod() {
+  if (!cal) return null;
+  const view = cal.view;
+  return {
+    start: view.activeStart.toISOString().slice(0, 10),
+    end:   new Date(view.activeEnd.getTime() - 86_400_000).toISOString().slice(0, 10),
+  };
+}

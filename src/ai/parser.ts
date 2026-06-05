@@ -54,8 +54,8 @@ const paramNormalizer = z.preprocess((val) => {
   if (normalized === 'prize_pool' || normalized === 'prize pool' || normalized === 'prizepool') return 'prizePool';
   if (normalized === 'pool_model' || normalized === 'poolmodel') return 'poolModel';
   if (normalized === 'total_players' || normalized === 'totalplayers') return 'totalPlayers';
-  return normalized;
-}, z.enum(PARAM_ENUM));
+  return original; // pass unknown params through — balance solver ignores unrecognised levers
+}, z.string());
 const verdictNormalizer = z.preprocess((val) => typeof val === 'string' ? val.trim().toLowerCase() : val, z.enum(['realistic', 'optimistic', 'pessimistic']));
 const impactNormalizer = z.preprocess((val) => {
   if (typeof val !== 'string') return val;
