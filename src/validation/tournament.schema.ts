@@ -15,6 +15,7 @@ export const TournamentGenerateSchema = z.object({
     rake:         z.number().min(0).max(40).optional(),
     distribution: z.enum(['top_n','linear_decay','flat_tier','prize_drop']),
     reentry:      z.enum(['single','rebuy','unlimited']),
+    currency:     z.string().min(2).max(5).optional(),
     lang:         z.string().min(2).max(5).default('en'),
     tone:         z.enum(['professional','casual','hype']).default('professional'),
   }),

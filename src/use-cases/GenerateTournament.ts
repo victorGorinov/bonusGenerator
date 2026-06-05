@@ -61,6 +61,7 @@ export async function optimizeTournament(input: TournamentOptimizeInput, ai: AIP
   const geoCode = String(input.params['geo'] ?? 'de');
   const geoEntry = GEO_CFG[geoCode] ?? GEO_CFG['de'];
   const region  = geoEntry.region;
+  const sitecur = input.params['currency'] ? String(input.params['currency']) : geoEntry.sitecur;
   const benchmarks = tournamentBenchmarks({
     region,
     segment:  String(input.params['segment']  ?? 'all'),
@@ -70,7 +71,7 @@ export async function optimizeTournament(input: TournamentOptimizeInput, ai: AIP
     ...input,
     benchmarks,
     region,
-    cur: geoEntry.sitecur,
+    cur: sitecur,
     uiLang: input.uiLang,
   });
   const raw = await ai.generate(prompt, { maxTokens: 1200 });

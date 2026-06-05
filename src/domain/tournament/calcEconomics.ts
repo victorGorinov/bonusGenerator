@@ -5,8 +5,9 @@ import { GEO_CFG } from '../campaign/scenarios.js';
 export function deriveLocalFxRate(sitecur: string, geo?: string): number {
   if (geo) {
     const cfg = GEO_CFG[geo];
-    if (cfg?.avgdep && cfg.avgdepUSD) {
-      // Implied rate: local avgdep.mid / USD avgdep.mid
+    // Only use geo-derived rate when the requested currency matches this geo's native currency.
+    // If user selected a different currency, fall through to the stable table.
+    if (cfg?.sitecur === sitecur && cfg?.avgdep && cfg.avgdepUSD) {
       return cfg.avgdep.mid / cfg.avgdepUSD.mid;
     }
   }
@@ -26,6 +27,10 @@ const STABLE_USD_TO_LOCAL: Record<string, number> = {
   SC:   1.00,
   EUR:  0.92,
   GBP:  0.79,
+  DKK:  7.37,
+  RUB:  90.9,
+  KZT:  500,
+  MNT:  3448,
   BTC:  0.000015,
   ETH:  0.00042,
 };

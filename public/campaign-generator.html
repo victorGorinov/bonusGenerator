@@ -24,7 +24,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 
 /* SIDEBAR */
 .sidebar{width:var(--sidebar-w);min-height:100vh;background:#1E1B4B;border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50}
-.sb-logo{padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px}
+.sb-logo{padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px;cursor:pointer}
 .sb-logo-img{height:28px;width:auto;display:block;flex-shrink:0}
 .sb-logo-text{font-weight:800;font-size:.9rem;color:#fff;letter-spacing:-.3px}.sb-logo-text span{color:#F59E0B}
 .sb-logo-tag{font-size:9px;font-weight:700;color:#1E1B4B;background:#F59E0B;padding:1px 6px;border-radius:8px;letter-spacing:.4px;margin-left:2px;align-self:center}
@@ -337,7 +337,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
-  <div class="sb-logo">
+  <div class="sb-logo" onclick="window.location.href='/'">
     <svg class="sb-logo-img" viewBox="0 0 620 140" xmlns="http://www.w3.org/2000/svg" aria-label="Retomat"><defs><linearGradient id="rg1" x1="0" y1="0" x2="140" y2="140" gradientUnits="userSpaceOnUse"><stop stop-color="#8B5CF6"/><stop offset="1" stop-color="#3B82F6"/></linearGradient><filter id="glow1" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g transform="translate(20,20)"><path d="M20 0 H70 C100 0 122 20 122 48 C122 70 108 86 84 93 L118 120 H82 L56 100 L26 120 H0 L34 88 V20 C34 8 42 0 54 0 Z" fill="url(#rg1)" filter="url(#glow1)"/><path d="M54 24 H70 C84 24 94 33 94 45 C94 58 84 66 70 66 H54 V24 Z" fill="#0B1020"/><path d="M34 88 L58 70 H84 L50 100 L26 120 H0 L34 88 Z" fill="#0B1020" opacity="0.9"/></g><text x="176" y="108" font-family="Inter,Arial,sans-serif" font-size="94" font-weight="700" letter-spacing="-3" fill="#F8FAFC">Retomat</text><rect x="182" y="122" width="330" height="8" rx="4" fill="url(#rg1)" opacity="0.95"/></svg>
     <div class="sb-logo-tag">AI</div>
   </div>

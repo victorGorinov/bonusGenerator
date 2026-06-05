@@ -89,7 +89,7 @@ const TG = {
     topbar_list:'Tournaments', topbar_setup:'Setup Guide', topbar_gen:'Tournament Generator',
     s1_badge:'Step 1 / 4', s1_title:'Select Tournament Type', s1_sub:'Choose the game type for your tournament', s1_next:'Configure Parameters →',
     s2_badge:'Step 2 / 4', s2_title:'Tournament Parameters', s2_sub:'Configure geo, mechanics, and prize pool',
-    geo_title:'Geography & Audience', geo_market:'Market / GEO', geo_segment:'Segment',
+    geo_title:'Geography & Audience', geo_market:'Market / GEO', geo_currency:'Currency', geo_segment:'Segment',
     geo_total:'Total Active Players in Casino', geo_allplayers:'All players', geo_eligible:'Eligible', geo_pct_base:'% of base',
     entry_title:'Entry & Scoring', entry_model:'Entry Model', scoring_lbl:'Scoring Method', reentry_lbl:'Re-entry',
     prize_title:'Prize Pool & Duration', duration_lbl:'Duration', prize_lbl:'Prize Pool Amount',
@@ -144,6 +144,8 @@ const TG = {
     dist_labels: { top_n:'Top N', linear_decay:'Linear Decay', flat_tier:'Flat Tier', prize_drop:'Prize Drop' },
     reentry_labels: { single:'Single Entry', rebuy:'Rebuy Allowed', unlimited:'Unlimited' },
     seg_labels: { all:'All Players', depositors:'Depositors', new:'New Players', vip:'VIP', dormant:'Dormant' },
+    param_labels: { duration:'Duration', poolModel:'Prize Pool Model', segment:'Target Segment', prizePool:'Prize Pool', distribution:'Prize Distribution', entryModel:'Entry Model', scoring:'Scoring Method', reentry:'Re-entry', totalPlayers:'Total Players', rake:'Rake %', geo:'Market', currency:'Currency', lang:'Language', tone:'Tone' },
+    spec_copy_title:'Technical Specification', spec_copy_sub:'Ready to paste into admin setup task or ticket', spec_copy_btn:'Copy', spec_copy_done:'Copied!',
   },
   ru: {
     wiz_type:'Тип', wiz_params:'Параметры', wiz_economics:'Экономика', wiz_texts:'Тексты и аудит',
@@ -151,7 +153,7 @@ const TG = {
     topbar_list:'Турниры', topbar_setup:'Гайд по настройке', topbar_gen:'Генератор турниров',
     s1_badge:'Шаг 1 / 4', s1_title:'Выбор типа турнира', s1_sub:'Выберите тип игр для вашего турнира', s1_next:'Настроить параметры →',
     s2_badge:'Шаг 2 / 4', s2_title:'Параметры турнира', s2_sub:'Гео, механика и призовой фонд',
-    geo_title:'География и аудитория', geo_market:'Рынок / GEO', geo_segment:'Сегмент',
+    geo_title:'География и аудитория', geo_market:'Рынок / GEO', geo_currency:'Валюта', geo_segment:'Сегмент',
     geo_total:'Всего активных игроков в казино', geo_allplayers:'Все игроки', geo_eligible:'Подходящие', geo_pct_base:'% от базы',
     entry_title:'Вход и скоринг', entry_model:'Модель входа', scoring_lbl:'Метод скоринга', reentry_lbl:'Повторный вход',
     prize_title:'Призовой фонд и длительность', duration_lbl:'Длительность', prize_lbl:'Размер призового фонда',
@@ -206,6 +208,8 @@ const TG = {
     dist_labels: { top_n:'Топ-N', linear_decay:'Линейный спад', flat_tier:'Плоские тиры', prize_drop:'Рандомный приз' },
     reentry_labels: { single:'Одиночный', rebuy:'Ребай разрешён', unlimited:'Неограниченно' },
     seg_labels: { all:'Все игроки', depositors:'Депозиторы', new:'Новые', vip:'VIP', dormant:'Дормантные' },
+    param_labels: { duration:'Длительность', poolModel:'Модель призового фонда', segment:'Целевой сегмент', prizePool:'Призовой фонд', distribution:'Распределение призов', entryModel:'Модель входа', scoring:'Метод скоринга', reentry:'Повторный вход', totalPlayers:'Кол-во игроков', rake:'Рейк %', geo:'Рынок', currency:'Валюта', lang:'Язык', tone:'Тон' },
+    spec_copy_title:'Техническое задание', spec_copy_sub:'Готово для вставки в ТХ или тикет на настройку', spec_copy_btn:'Копировать', spec_copy_done:'Скопировано!',
   },
 };
 
@@ -219,10 +223,12 @@ function tg(key, ...args) {
 let step            = 1;
 let detailId        = null;
 let hasActiveGenerator = false;
+
 const draft = {
   type: 'slot',
   params: {
     geo:          'de',
+    currency:     'EUR',
     lic:          'auto',
     segment:      'all',
     totalPlayers: 5000,
@@ -485,7 +491,8 @@ function showView(view, id) {
       c.innerHTML = renderSetupGuide();
     } else {
       if (!draft.type) draft.type = 'slot';
-      if (!draft.params) draft.params = { segment: 'all', totalPlayers: 5000 };
+      if (!draft.params) draft.params = { segment: 'all', totalPlayers: 5000, currency: 'EUR' };
+      if (!draft.params.currency) draft.params.currency = GEO_TO_CUR_UI[draft.params.geo || 'de'] || 'EUR';
       if (step === 0) step = 1;
       tb.textContent = tg('topbar_gen');
       setSidebarActive('nav-tourn-gen');
@@ -510,11 +517,22 @@ const GEO_TO_CUR_UI = {
   de:'EUR', fr:'EUR', es:'EUR', it:'EUR', nl:'EUR', dk:'DKK', uk:'GBP',
   ru:'RUB', kz:'KZT', mn:'MNT', us:'USD', mx:'USD', br:'USD',
 };
+const CURRENCIES = [...new Set(GEO_OPTIONS.map(g => {
+  const m = g.lbl.match(/\(([A-Z]+)\)/);
+  return m ? m[1] : (GEO_TO_CUR_UI[g.val] || 'USD');
+}))];
 // local units per 1 USD — mirrors deriveLocalFxRate() backend logic
 const GEO_FX_RATE_UI = {
   de:0.92, fr:0.92, es:0.92, it:0.92, nl:0.92, dk:7.37, uk:0.79,
   ru:90.9,  kz:500,  mn:3448, us:1.00, mx:1.00, br:1.00,
 };
+// Derived from GEO_TO_CUR_UI + GEO_FX_RATE_UI — first geo that uses each currency wins
+const CUR_FX_RATE_UI = Object.fromEntries(
+  Object.entries(GEO_TO_CUR_UI).reduce((acc, [geo, cur]) => {
+    if (!acc.some(([c]) => c === cur)) acc.push([cur, GEO_FX_RATE_UI[geo] || 1]);
+    return acc;
+  }, [])
+);
 const ARPU_USD_BY_REGION_UI  = { eu:65, cis:22, mn:12, sweep:30, latam:18 };
 const ENGAGEMENT_LIFT_UI     = { flash:1.40, daily:1.50, weekly:1.80, monthly:2.20, multi_round:2.00 };
 const PARTICIPATION_MID_UI   = { flash:0.06, daily:0.08, weekly:0.11, monthly:0.14, multi_round:0.10 };
@@ -529,7 +547,7 @@ function roundToNice(n) {
 function calcSuggestedPrize(params) {
   const geo        = params.geo || 'de';
   const region     = GEO_TO_REGION_UI[geo] || 'eu';
-  const fx         = GEO_FX_RATE_UI[geo] || 1;
+  const fx         = params.currency ? (CUR_FX_RATE_UI[params.currency] || 1) : (GEO_FX_RATE_UI[geo] || 1);
   const arpuLocal  = (ARPU_USD_BY_REGION_UI[region] || 65) * fx;
   const eligible   = Math.round((params.totalPlayers || 5000) * (SEGMENT_RATIO_UI[params.segment] ?? 1));
   const duration   = params.duration || 'weekly';
@@ -569,7 +587,7 @@ function updateEligibleHint() {
 function updatePrizeHint() {
   const p = draft.params;
   const { prize: suggested, ggrLift } = calcSuggestedPrize(p);
-  const cur   = GEO_TO_CUR_UI[p.geo] || 'EUR';
+  const cur   = p.currency || GEO_TO_CUR_UI[p.geo] || 'EUR';
   const isRu  = (localStorage.getItem('bonusLang') || 'en') === 'ru';
   const hint  = document.getElementById('prize-hint');
   if (hint) {
@@ -619,7 +637,7 @@ function renderStep2() {
     p.prizePool = suggestedPrize;
     p._prizeAutoSet = true;
   }
-  const cur = GEO_TO_CUR_UI[p.geo] || 'EUR';
+  const cur = p.currency || GEO_TO_CUR_UI[p.geo] || 'EUR';
   const suggestedFmt   = suggestedPrize.toLocaleString();
   const ggrLiftFmt     = suggestedGgrLift.toLocaleString();
   const prizeHintLabel = isRu
@@ -655,8 +673,14 @@ ${wizProgressHTML(2)}
   <div class="card-title">${tg('geo_title')}</div>
   <div class="form-row">
     <label class="form-label">${tg('geo_market')}</label>
-    <select class="form-input" id="f-geo" onchange="draft.params.geo=this.value;draft.params._prizeAutoSet=true;renderStep()">
+    <select class="form-input" id="f-geo" onchange="draft.params.geo=this.value;draft.params.currency=GEO_TO_CUR_UI[this.value]||'EUR';draft.params._prizeAutoSet=true;renderStep()">
       ${GEO_OPTIONS.map(g => `<option value="${g.val}"${p.geo===g.val?' selected':''}>${g.lbl}</option>`).join('')}
+    </select>
+  </div>
+  <div class="form-row">
+    <label class="form-label">${tg('geo_currency')}</label>
+    <select class="form-input" id="f-currency" onchange="draft.params.currency=this.value;draft.params._prizeAutoSet=true;renderStep()" style="max-width:160px">
+      ${CURRENCIES.map(c => `<option value="${c}"${(p.currency||'EUR')===c?' selected':''}>${c}</option>`).join('')}
     </select>
   </div>
   <div class="form-row">
@@ -784,6 +808,124 @@ ${wizProgressHTML(2)}
 </div>`;
 }
 
+// ── TECH SPEC BUILDER ────────────────────────────────────────────────────────
+function buildTechSpec() {
+  if (!lastResult) return '';
+  const r    = lastResult;
+  const spec = r.spec;
+  const cur  = r.cur || 'EUR';
+  const p    = draft.params;
+  const isRu = (localStorage.getItem('bonusLang') || 'en') === 'ru';
+
+  const geoLabel    = GEO_OPTIONS.find(g => g.val === p.geo)?.lbl?.replace(/^.+?\s/, '') || p.geo;
+  const fmt         = n => cur + ' ' + Math.round(n).toLocaleString();
+  const typeNames   = tg('type_names');
+  const entryLbls   = tg('entry_labels');
+  const scoringLbls = tg('scoring_labels');
+  const durLbls     = tg('duration_labels');
+  const poolLbls    = tg('pool_labels');
+  const distLbls    = tg('dist_labels');
+  const reentryLbls = tg('reentry_labels');
+  const segLbls     = tg('seg_labels');
+
+  const prizeLines = (spec.prizes || []).map(pr =>
+    isRu
+      ? `  ${pr.place} место: ${fmt(pr.amount)} (${pr.pct}%)`
+      : `  Place ${pr.place}: ${fmt(pr.amount)} (${pr.pct}%)`
+  );
+
+  const hasGames = _gamesData && _gamesData._key === _gamesParamsKey() && _gamesData.result?.primary?.length > 0;
+  const gamesLines = hasGames
+    ? ['', isRu ? 'РЕКОМЕНДУЕМЫЕ ИГРЫ' : 'RECOMMENDED GAMES', isRu ? '------------------' : '-----------------', ..._gamesData.result.primary.map(g => `  ${g.name} · ${g.provider} · RTP ${g.rtp}% · ${g.volatility}`)]
+    : [];
+
+  const lines = isRu ? [
+    'ТЕХНИЧЕСКОЕ ЗАДАНИЕ: НАСТРОЙКА ТУРНИРА',
+    '=======================================',
+    '',
+    'ТИП И РЫНОК',
+    '-----------',
+    `Тип игр:       ${typeNames[spec.type] || spec.type}`,
+    `Рынок:         ${geoLabel}`,
+    `Лицензия:      ${r.lic || '—'}`,
+    `Валюта:        ${cur}`,
+    '',
+    'АУДИТОРИЯ',
+    '---------',
+    `Сегмент:       ${segLbls[p.segment] || p.segment}`,
+    `Всего игроков: ${(p.totalPlayers || 5000).toLocaleString()}`,
+    `Подходящих:    ${(r.econ?.eligible || 0).toLocaleString()}`,
+    '',
+    'МЕХАНИКА',
+    '--------',
+    `Длительность:  ${durLbls[spec.duration] || spec.duration}`,
+    `Вход:          ${entryLbls[spec.entryModel] || spec.entryModel}`,
+    `Скоринг:       ${scoringLbls[spec.scoring] || spec.scoring}`,
+    `Ре-энтри:      ${reentryLbls[spec.reentry] || spec.reentry}`,
+    '',
+    'ПРИЗОВОЙ ФОНД',
+    '-------------',
+    `Общий фонд:    ${fmt(spec.prizePool)}`,
+    `Модель:        ${poolLbls[spec.poolModel] || spec.poolModel}`,
+    ...(spec.rake ? [`Рейк:          ${spec.rake}%`] : []),
+    `Распределение: ${distLbls[spec.distribution] || spec.distribution}`,
+    '',
+    'МЕСТО → ПРИЗ',
+    '------------',
+    ...prizeLines,
+    ...gamesLines,
+  ] : [
+    'TECHNICAL REQUIREMENTS: TOURNAMENT SETUP',
+    '=========================================',
+    '',
+    'TYPE & MARKET',
+    '-------------',
+    `Game type:     ${typeNames[spec.type] || spec.type}`,
+    `Market:        ${geoLabel}`,
+    `License:       ${r.lic || '—'}`,
+    `Currency:      ${cur}`,
+    '',
+    'AUDIENCE',
+    '--------',
+    `Segment:       ${segLbls[p.segment] || p.segment}`,
+    `Total players: ${(p.totalPlayers || 5000).toLocaleString()}`,
+    `Eligible:      ${(r.econ?.eligible || 0).toLocaleString()}`,
+    '',
+    'MECHANICS',
+    '---------',
+    `Duration:      ${durLbls[spec.duration] || spec.duration}`,
+    `Entry model:   ${entryLbls[spec.entryModel] || spec.entryModel}`,
+    `Scoring:       ${scoringLbls[spec.scoring] || spec.scoring}`,
+    `Re-entry:      ${reentryLbls[spec.reentry] || spec.reentry}`,
+    '',
+    'PRIZE POOL',
+    '----------',
+    `Total pool:    ${fmt(spec.prizePool)}`,
+    `Pool model:    ${poolLbls[spec.poolModel] || spec.poolModel}`,
+    ...(spec.rake ? [`Rake:          ${spec.rake}%`] : []),
+    `Distribution:  ${distLbls[spec.distribution] || spec.distribution}`,
+    '',
+    'PRIZE BREAKDOWN',
+    '---------------',
+    ...prizeLines,
+    ...gamesLines,
+  ];
+
+  return lines.join('\n');
+}
+
+function copyTechSpec() {
+  const text = buildTechSpec();
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('btn-copy-spec');
+    if (!btn) return;
+    const orig = btn.textContent;
+    btn.textContent = tg('spec_copy_done');
+    btn.style.color = 'var(--success)';
+    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2000);
+  });
+}
+
 // ── STEP 3: Economics & Spec ─────────────────────────────────────────────────
 function renderStep3() {
   if (!lastResult) { goStep(2); return ''; }
@@ -870,6 +1012,19 @@ ${wizProgressHTML(3)}
   <div class="card-title">${tg('prize_dist', cur, spec.prizePool.toLocaleString())}</div>
   ${prizeRows}
 </div>
+
+<details class="card" style="padding:0">
+  <summary style="padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:10px;list-style:none;user-select:none">
+    <span style="font-size:.85rem;font-weight:600;color:var(--text);flex:1">${tg('spec_copy_title')}</span>
+    <span style="font-size:.75rem;color:var(--muted)">${tg('spec_copy_sub')}</span>
+    <button id="btn-copy-spec" class="btn btn-outline btn-sm" style="flex-shrink:0"
+            onclick="event.preventDefault();copyTechSpec()">${tg('spec_copy_btn')}</button>
+  </summary>
+  <div style="padding:0 16px 16px">
+    <textarea readonly onclick="this.select()"
+      style="width:100%;box-sizing:border-box;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;font-size:.72rem;line-height:1.6;padding:12px 14px;resize:vertical;min-height:260px;outline:none">${buildTechSpec()}</textarea>
+  </div>
+</details>
 
 <div class="card">
   <div class="card-title">${tg('econ_title')}</div>
@@ -1540,12 +1695,14 @@ function renderOptimizeHTML(data, mode) {
     </div>`;
   }).join('');
 
+  const paramLabels = tg('param_labels');
   const recsHTML = (data.recommendations || []).map(rec => {
     const ic = IMPACT_COLOR[rec.impact] || '#a0b0ff';
     const il = IMPACT_LABEL[rec.impact] || rec.impact;
+    const paramName = (paramLabels && paramLabels[rec.param]) || rec.param;
     return `<div style="padding:10px 12px;border:1px solid rgba(255,255,255,.07);border-radius:8px;margin-bottom:8px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
-        <span style="font-size:.78rem;font-weight:600;color:#c4b5fd;font-family:monospace">${rec.param}</span>
+        <span style="font-size:.78rem;font-weight:600;color:#c4b5fd">${paramName}</span>
         <span style="font-size:.78rem;color:var(--muted)">${rec.current} → <strong style="color:var(--text)">${rec.target}</strong></span>
         <span style="margin-left:auto;font-size:.7rem;padding:1px 8px;border-radius:10px;background:${ic}22;color:${ic};font-weight:600">${il}</span>
       </div>
@@ -1748,6 +1905,21 @@ function renderSetupGuide() {
   <span style="font-size:.75rem;color:var(--muted);margin-left:4px">${top3}</span>
   <span style="font-size:.72rem;color:var(--muted);margin-left:auto">${(spec.prizes||[]).length} places · ${spec.distribution}</span>
 </div>
+
+<details class="card" style="padding:0">
+  <summary style="padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:10px;list-style:none;user-select:none">
+    <span style="font-size:.85rem;font-weight:600;color:var(--text);flex:1">${tg('spec_copy_title')}</span>
+    <span style="font-size:.75rem;color:var(--muted)">${tg('spec_copy_sub')}</span>
+    <button id="btn-copy-spec-guide" class="btn btn-outline btn-sm" style="flex-shrink:0"
+            onclick="event.preventDefault();(()=>{const text=buildTechSpec();navigator.clipboard.writeText(text).then(()=>{const b=document.getElementById('btn-copy-spec-guide');const o=b.textContent;b.textContent=tg('spec_copy_done');b.style.color='var(--success)';setTimeout(()=>{b.textContent=o;b.style.color='';},2000);});})()">
+      ${tg('spec_copy_btn')}
+    </button>
+  </summary>
+  <div style="padding:0 16px 16px">
+    <textarea readonly onclick="this.select()"
+      style="width:100%;box-sizing:border-box;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;font-size:.72rem;line-height:1.6;padding:12px 14px;resize:vertical;min-height:260px;outline:none">${buildTechSpec()}</textarea>
+  </div>
+</details>
 
 <div class="card">
   <div class="card-title">Setup Checklist <span style="font-size:.72rem;color:var(--muted);font-weight:400">(${checklist.length} items)</span></div>

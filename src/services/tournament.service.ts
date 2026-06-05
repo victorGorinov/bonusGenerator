@@ -6,9 +6,14 @@ export function generateTournament({ type, params }: { type: string; params: Rec
   const resolvedLic = (params['lic'] && params['lic'] !== 'auto')
     ? String(params['lic']) : geo.lic;
 
-  // Default prize pool: $300 USD equivalent in local currency (avoids absurd ROI for KZT/MNT)
   const geoCode = String(params['geo'] || 'de');
-  const fxRate  = deriveLocalFxRate(geo.sitecur, geoCode);
+  const sitecur = params['currency'] ? String(params['currency']) : geo.sitecur;
+  // Use geo-derived FX rate when currency matches geo's native currency; otherwise use stable table.
+  const fxRate  = sitecur === geo.sitecur
+    ? deriveLocalFxRate(sitecur, geoCode)
+    : deriveLocalFxRate(sitecur);
+
+  // Default prize pool: $300 USD equivalent in selected currency
   const prizePool = params['prizePool'] != null && params['prizePool'] !== ''
     ? Number(params['prizePool'])
     : Math.round(300 * fxRate);
@@ -23,7 +28,7 @@ export function generateTournament({ type, params }: { type: string; params: Rec
     prizePool,
     poolModel,
     rake,
-    sitecur:     geo.sitecur,
+    sitecur,
     geo:         geoCode,
     totalPlayers: Number(params['totalPlayers'] || 5000),
   });
@@ -41,13 +46,13 @@ export function generateTournament({ type, params }: { type: string; params: Rec
     place,
     pct:    schema.pct[i],
     amount: Math.round(econ.prizePoolCost * schema.pct[i] / 100),
-    cur:    geo.sitecur,
+    cur:    sitecur,
   }));
 
   const spec = {
     type,
     prizePool: econ.prizePoolCost,
-    cur:       geo.sitecur,
+    cur:       sitecur,
     prizes,
     entryModel:   String(params['entryModel']   || 'freeroll'),
     scoring:      String(params['scoring']       || 'total_wins'),
@@ -62,7 +67,7 @@ export function generateTournament({ type, params }: { type: string; params: Rec
     spec,
     econ,
     params: { ...params, lic: resolvedLic },
-    cur:    geo.sitecur,
+    cur:    sitecur,
     region: geo.region,
     lic:    resolvedLic,
   };
