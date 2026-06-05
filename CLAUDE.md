@@ -107,7 +107,7 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │   ├── generate.routes.ts
 │   │   ├── campaign.routes.ts
 │   │   ├── tournament.routes.ts
-│   │   ├── loyalty.routes.ts        # POST /api/loyalty/generate (20/min) + /recalc (30/min)
+│   │   ├── loyalty.routes.ts        # POST /api/loyalty/generate (20/min) + /recalc (30/min) + /missions (15/min)
 │   │   ├── signup.routes.ts
 │   │   └── health.routes.ts
 │   ├── middleware/
@@ -124,7 +124,7 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │   ├── audit.schema.ts          # AuditSchema + AuditInput
 │   │   ├── optimize.schema.ts       # OptimizeSchema + OptimizeInput
 │   │   ├── tournament.schema.ts     # TournamentGenerateSchema + Input types (Generate/Texts/Audit/Optimize)
-│   │   ├── loyalty.schema.ts        # LoyaltyGenerateSchema + LoyaltyRecalcSchema + Input types
+│   │   ├── loyalty.schema.ts        # LoyaltyGenerateSchema + LoyaltyRecalcSchema + LoyaltyMissionsSchema + Input types
 │   │   ├── analysis.schema.ts       # AnalysisSchema + ActualsSchema + ExplainSchema + Input types
 │   │   └── signup.schema.ts         # SignupSchema + SignupInput
 │   └── errors/
@@ -184,6 +184,8 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
     ├── domain/loyalty.calcEconomics.test.js      # 24 tests
     ├── domain/loyalty.solver.test.js             # loyalty balance-solver parity tests
     ├── domain/loyalty.econ.parity.test.js        # loyalty-econ.js ↔ backend parity
+    ├── domain/loyalty.missionLink.parity.test.js # loyalty-missions-link.js ↔ backend linkMissions.ts
+    ├── domain/loyalty.persistence.test.js        # link round-trip, narrative merge by id, updateProgramMissions, legacy snapshots
     ├── domain/tournament.balance.test.js         # tournament balance-solver tests
     ├── domain/tournament.econ.parity.test.js     # tournament-econ.js ↔ backend parity
     ├── domain/balance.solver.test.js             # balance-solver.js unit tests
@@ -200,6 +202,7 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
     └── integration/
         ├── api.generate.test.js
         ├── api.loyalty.test.js                   # 11 tests
+        ├── api.loyalty.missions.test.js          # MockAIProvider fixture, id match, graceful missing ids
         ├── api.tournament.optimize.test.js
         └── security.headers.test.js              # CSP assertions
 ```
@@ -261,6 +264,7 @@ Exponential backoff with full jitter. Only retryable errors (429, 5xx, network) 
 | POST | `/api/tournament/optimize` | 15/min | TournamentOptimizeSchema | `createTournamentController().optimize` |
 | POST | `/api/loyalty/generate` | 20/min | LoyaltyGenerateSchema | `createLoyaltyController().generate` |
 | POST | `/api/loyalty/recalc` | 30/min | LoyaltyRecalcSchema | `createLoyaltyController().recalc` |
+| POST | `/api/loyalty/missions` | 15/min | LoyaltyMissionsSchema | `createLoyaltyController().missions` |
 | POST | `/api/campaign/actuals` | 30/min | ActualsSchema | `createAnalyticsController().saveActuals` |
 | POST | `/api/campaign/analysis` | 30/min | AnalysisSchema | `createAnalyticsController().analyze` |
 | POST | `/api/campaign/analysis/explain` | 15/min | ExplainSchema | `createAnalyticsController().explain` |
@@ -453,7 +457,7 @@ Loyalty Generator SPA.
 **Steps (setup flow):**
 - Step 1 — Basics: mode chip (tiers/missions/hybrid), region select, segment chips, players/avgdep/arpu inputs
 - Step 2 — Program Design: tier count (3/4/5), top cashback rate slider, earn rates, redeem config, mission count; live tier preview (client-side, no API)
-- Step 3 — Results: API call to `/api/loyalty/generate` → economics grid (6 cards) + tier table + mission list; Save + Add to Calendar buttons; AI stubs (disabled, I4)
+- Step 3 — Results: API call to `/api/loyalty/generate` → economics grid (6 cards) + tier table + mission list; Save + Add to Calendar buttons; AI tabs (Economics/Audit/Optimize/Missions)
 
 **Client-side tier preview**: `calcTiersPreview(draft)` — minPoints = thresholdMonths × avgdep × earnRateDeposit; cashback linear from 0 to topCashbackRate.
 
@@ -674,6 +678,7 @@ Four browser-side JS modules mirror backend domain logic for real-time recalcula
 | `public/tournament-econ.js` | `src/domain/tournament/calcEconomics.ts` | tournament-generator.js |
 | `public/balance-solver.js` | — (generic solver) | tournament/loyalty/configurator |
 | `public/forecast.js` | `src/domain/forecast/` (3 files) | retention-calendar/forecast-panel.js |
+| `public/loyalty-missions-link.js` | `src/domain/loyalty/linkMissions.ts` | loyalty-generator.js (Step 2 preview) |
 
 **balance-solver.js** — `solveToTarget({ draft, levers, recalc, metricOf, target, constraints?, maxIter? })`: iterates over `levers` (enum swaps + multiplicative steps) until `metricOf(recalc(draft)) >= target` or all levers exhausted. `constraints` — optional array of `{ check(draft, cfg) → bool }` guards; a lever step is skipped if it would violate any constraint (used by bonus solver to enforce license wager/bonus caps). Returns `{ draft, reached }`.
 
@@ -696,7 +701,7 @@ Four browser-side JS modules mirror backend domain logic for real-time recalcula
 **P2 (features):**
 - Task A: Projected result per AI recommendation (apply param-change to 5-factor formula, show lift delta)
 - Retention Calendar: read `?rcDate=` query param in tournament-generator.js to pre-fill date from calendar redirect
-- **I4 (Loyalty AI):** texts/audit/optimize endpoints + prompts + parser schemas + mock tests; unlock AI buttons in loyalty-generator.js
+- ~~I4 (Loyalty AI)~~ — done: missions endpoint, narratives, tier-link layer, persistence tests
 
 **P3 (frontend):**
 - Convert `onclick=` handlers to `addEventListener` → remove `scriptSrcAttr: 'unsafe-inline'` from CSP
