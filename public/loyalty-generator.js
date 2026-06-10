@@ -133,6 +133,7 @@ const L = {
     apply_recs_hint:     'Run Optimize first to enable this button',
     changed_params:      'Changed:',
     list_heading:        'Loyalty Programs',
+    list_lib_title:      'Your Loyalty Library',
     list_count:          (n) => `${n} saved`,
     list_name_hdr:       'Name',
     topbar_list:         'Programs',
@@ -226,6 +227,7 @@ const L = {
     apply_recs_hint:     'Сначала запустите Optimize',
     changed_params:      'Изменено:',
     list_heading:        'Программы лояльности',
+    list_lib_title:      'Ваша библиотека программ',
     list_count:          (n) => `${n} сохранено`,
     list_name_hdr:       'Название',
     topbar_list:         'Программы',
@@ -696,11 +698,16 @@ function renderListView() {
 
   let body;
   if (programs.length === 0) {
-    body = `<div class="ctable"><div class="tbl-empty">
-      <div style="font-size:2rem;margin-bottom:12px">⭐</div>
-      <div>${t('list_empty')}</div>
-      <button class="btn btn-primary" style="margin-top:16px" onclick="showView('setup')">${t('new_program')}</button>
-    </div></div>`;
+    body = `
+<div class="step-header">
+  <div class="step-badge">⭐ ${t('list_heading')}</div>
+  <div class="step-title">${t('list_lib_title')}</div>
+  <div class="step-sub">${t('list_empty')}</div>
+</div>
+<div class="card" style="text-align:center;padding:40px 20px">
+  <div style="font-size:2.5rem;margin-bottom:14px">⭐</div>
+  <button class="btn btn-primary" onclick="showView('setup')">${t('new_program')}</button>
+</div>`;
   } else {
     const rows = programs.map(p => {
       const econ     = p.result?.econ;
@@ -728,10 +735,11 @@ function renderListView() {
     }).join('');
 
     body = `
-    <div style="margin-bottom:16px">
-      <div style="font-size:1.1rem;font-weight:700;color:var(--text)">${t('list_heading')}</div>
-      <div style="font-size:.8rem;color:var(--muted);margin-top:2px">${t('list_count', programs.length)}</div>
-    </div>
+<div class="step-header">
+  <div class="step-badge">⭐ ${t('list_heading')}</div>
+  <div class="step-title">${t('list_lib_title')}</div>
+  <div class="step-sub">${t('list_count', programs.length)}</div>
+</div>
     <div class="ctable">
       <div class="ct-hd">
         <div>${t('list_name_hdr')}</div>
