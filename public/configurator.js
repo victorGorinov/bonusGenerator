@@ -290,6 +290,108 @@ function fmtPct(v) {
 
 function cfgGeo(val) { return CFG_GEO.find(g => g.val === val) || CFG_GEO[0]; }
 
+// ── GLOSSARY ──────────────────────────────────────────────────────────────
+
+const GLOSSARY = [
+  // General
+  { name:'RTP',               tag:'general', en:'Return to Player — percentage of wagered money returned to players over time. A 96% RTP means for every $100 wagered, $96 is returned on average.',                                                            ru:'Return to Player — процент ставок, возвращаемых игрокам. RTP 96% означает, что на каждые $100 ставок в среднем возвращается $96.' },
+  { name:'GGR',               tag:'general', en:'Gross Gaming Revenue — total player losses (deposits minus withdrawals). The operator\'s revenue before costs.',                                                                                              ru:'Gross Gaming Revenue — валовой доход оператора: депозиты минус выплаты игрокам.' },
+  { name:'ARPU',              tag:'general', en:'Average Revenue Per User — average monthly GGR per active player for a given region.',                                                                                                                       ru:'Average Revenue Per User — средний ежемесячный доход на одного активного игрока в регионе.' },
+  { name:'CAC',               tag:'general', en:'Customer Acquisition Cost — average spend to acquire one depositing player (including marketing, bonuses, and ops).',                                                                                        ru:'Customer Acquisition Cost — средние затраты на привлечение одного платящего игрока.' },
+  { name:'LTV',               tag:'general', en:'Lifetime Value — projected total revenue from one player over a given period (here: 3 months). LTV3 = ARPU × 3.',                                                                                          ru:'Lifetime Value — прогнозируемый доход от одного игрока за период. LTV3 = ARPU × 3 месяца.' },
+  { name:'Segment',           tag:'general', en:'Player segment: New (first-time depositors), Mid (regular players), VIP (high-value, high-frequency players). Affects benchmark ARPU, CAC, conversion, and lift calculations.',                             ru:'Сегмент игрока: New (первый депозит), Mid (регулярные), VIP (высокодоходные). Влияет на ARPU, CAC и расчёт lift.' },
+  // Bonus
+  { name:'Match %',           tag:'bonus',   en:'Percentage of the player\'s deposit matched as bonus. 100% match = player deposits $100 and receives $100 bonus.',                                                                                          ru:'Процент совпадения депозита с бонусом. Match 100% — игрок вносит $100 и получает $100 бонуса.' },
+  { name:'Wagering / Wager',  tag:'bonus',   en:'Playthrough requirement. 30× wager means the player must bet 30 times the bonus amount before withdrawing winnings. Lower = more generous.',                                                                 ru:'Отыгрыш. Wager 30x — игрок должен поставить сумму, в 30 раз превышающую бонус, прежде чем вывести выигрыш.' },
+  { name:'Max Bonus',         tag:'bonus',   en:'Maximum bonus amount regardless of deposit size. Caps the bonus at a set value even if match % × deposit would be higher.',                                                                                 ru:'Максимальная сумма бонуса вне зависимости от депозита. Ограничивает бонус, даже если match% × депозит больше.' },
+  { name:'Min Deposit',       tag:'bonus',   en:'Minimum deposit required to trigger the bonus. Deposits below this threshold receive no bonus.',                                                                                                            ru:'Минимальный депозит для активации бонуса. Депозиты ниже этого порога бонуса не получают.' },
+  { name:'Max Win',           tag:'bonus',   en:'Maximum amount a player can win from a bonus. Any winnings above this are forfeited. Common in free spins and high-match bonuses.',                                                                          ru:'Максимальная сумма выигрыша с бонуса. Всё, что сверх этого, не выплачивается. Часто применяется к фриспинам.' },
+  { name:'NDB',               tag:'bonus',   en:'No Deposit Bonus — a small bonus given without requiring a deposit. High conversion tool but costly; typically 40% of eligible players claim it.',                                                           ru:'No Deposit Bonus — небольшой бонус без депозита. Высокая конверсия, но затратно; типично 40% игроков берут.' },
+  { name:'Cashback',          tag:'bonus',   en:'Percentage of net losses returned to the player. Calculated on GGR: if a player loses $100 and cashback is 10%, they receive $10 back.',                                                                    ru:'Процент чистых проигрышей, возвращаемый игроку. Cashback 10% от GGR: потерял $100 — вернули $10.' },
+  { name:'Free Spins (FS)',   tag:'bonus',   en:'Bonus spins on selected slots. Each spin has a fixed value (typically $0.10). Wagering usually applies to winnings.',                                                                                       ru:'Бонусные спины на слотах. Стандартная стоимость одного спина — $0.10. На выигрыш обычно применяется отыгрыш.' },
+  { name:'Cost P50',          tag:'bonus',   en:'Median expected bonus cost (50th percentile). Half of campaigns will cost less, half more. The most likely outcome.',                                                                                       ru:'Медиана ожидаемых затрат на бонус (50-й перцентиль). Наиболее вероятный исход.' },
+  { name:'Cost P10 / P90',    tag:'bonus',   en:'Optimistic (P10) and pessimistic (P90) cost scenarios. P10 = only 10% of campaigns are cheaper; P90 = only 10% cost more.',                                                                               ru:'Оптимистичный (P10) и пессимистичный (P90) сценарии затрат. P90 — хуже только в 10% случаев.' },
+  { name:'Max Risk',          tag:'bonus',   en:'Maximum possible liability if all bonuses are claimed and converted at worst-case wager completion. Upper bound for budgeting.',                                                                             ru:'Максимальная возможная нагрузка на бюджет при наихудшем сценарии отыгрыша. Верхняя граница для планирования.' },
+  { name:'Cost Ratio',        tag:'bonus',   en:'Bonus cost as % of GGR. E.g. 15% means for every $1 of gross revenue, $0.15 is spent on bonuses. Industry benchmark: 10–25%.',                                                                           ru:'Затраты на бонус в % от GGR. 15% = на каждый $1 дохода тратится $0.15 на бонусы. Бенчмарк: 10–25%.' },
+  { name:'Retention Lift',    tag:'bonus',   en:'Incremental revenue increase from running the bonus campaign, expressed as % of baseline revenue. Modeled via V2 five-factor formula.',                                                                     ru:'Прирост выручки от кампании сверх базового уровня в %. Рассчитывается по пятифакторной модели V2.' },
+  { name:'Net Result',        tag:'bonus',   en:'Incremental revenue from retention lift minus campaign bonus cost. Positive = campaign generates more than it costs.',                                                                                       ru:'Прирост выручки от lift минус стоимость бонусной кампании. Положительный = кампания прибыльна.' },
+  { name:'Campaign ROI',      tag:'bonus',   en:'(Incremental LTV − Campaign Budget) / Campaign Budget. Compares the 3-month player value uplift to what was spent acquiring those players via the bonus.',                                                  ru:'(Прирост LTV − Бюджет кампании) / Бюджет кампании. Сравнивает 3-месячный прирост ценности игроков с затратами.' },
+  { name:'Deposit Chain',     tag:'bonus',   en:'Sequence of deposit bonuses: Welcome → 2nd Deposit → 3rd Deposit. Each step retains a fraction of the previous cohort (dep2: 45%, dep3: 25% of welcome cohort).',                                         ru:'Цепочка бонусов на депозиты: Welcome → 2-й депозит → 3-й депозит. Каждый шаг удерживает долю предыдущей когорты.' },
+  // Tournament
+  { name:'Prize Pool',        tag:'tourn',   en:'Total prize money distributed among tournament winners. In Fixed model = operator\'s direct cost. In Dynamic model, rake reduces the net payout.',                                                          ru:'Общий призовой фонд турнира. В модели Fixed — прямые затраты оператора. В Dynamic — рейк снижает выплату.' },
+  { name:'Eligible Players',  tag:'tourn',   en:'Players qualified to enter the tournament based on segment filter. Calculated as: Total Players × Segment Ratio (e.g., VIP = 10%, Dormant = 40%).',                                                       ru:'Игроки, допущенные к турниру по сегменту. Рассчитывается: Всего игроков × Сегментный коэффициент.' },
+  { name:'GGR Lift (Tourn.)', tag:'tourn',   en:'Incremental Gross Gaming Revenue generated during the tournament period above baseline. Participants play more actively due to competitive engagement.',                                                      ru:'Прирост GGR в период турнира сверх базового уровня. Участники играют активнее из-за соревновательной механики.' },
+  { name:'Engagement Mult.',  tag:'tourn',   en:'How much more active participants are vs. their baseline daily play. Weekly tournaments show 1.8× (80% more daily GGR). Used to calculate GGR Lift.',                                                      ru:'Насколько активнее участники по сравнению с обычными днями. Еженедельный турнир — 1.8× (на 80% больше GGR).' },
+  { name:'Retention Value',   tag:'tourn',   en:'Post-tournament incremental monthly GGR from players who increased their activity after participating. Dormant segment shows highest lift (20%).',                                                           ru:'Прирост ежемесячного GGR после турнира от игроков, повысивших активность. Самый высокий у дормантов (20%).' },
+  { name:'Break-even Players',tag:'tourn',   en:'Minimum number of participants needed so that incremental GGR alone covers the prize pool cost (without counting retention value).',                                                                         ru:'Минимальное число участников, при котором прирост GGR покрывает призовой фонд (без учёта ретеншн-ценности).' },
+  { name:'Rake',              tag:'tourn',   en:'In Dynamic/Hybrid pool models: percentage of buy-ins or wagers kept by the operator. Reduces the effective prize pool cost.',                                                                               ru:'В динамических моделях пула: процент buy-in/ставок, остающихся у оператора. Снижает эффективную стоимость пула.' },
+  // Loyalty
+  { name:'Earn Rate',         tag:'loyal',   en:'Points awarded per $1 of activity. Earn Rate (Deposit) = points per $1 deposited; Earn Rate (Wager) = points per $1 wagered. Higher = more generous program.',                                             ru:'Начисление очков за активность. Earn Rate Deposit = очки за $1 депозита; Earn Rate Wager = за $1 ставки.' },
+  { name:'Redeem Rate',       tag:'loyal',   en:'Points required to receive $1 in reward value. 100 = 100 points → $1. Higher redeem rate = less valuable points.',                                                                                         ru:'Количество очков за $1 вознаграждения. 100 = 100 очков → $1. Чем выше — тем менее ценны очки.' },
+  { name:'Min Redeem',        tag:'loyal',   en:'Minimum point balance required before a player can redeem. Prevents micro-redemptions and reduces program cost.',                                                                                           ru:'Минимальный баланс очков для погашения. Предотвращает микро-погашения и снижает стоимость программы.' },
+  { name:'Breakage',          tag:'loyal',   en:'Points that are earned but never redeemed (expire or player churns). Industry average: ~60%. Breakage reduces the real cost of loyalty programs significantly.',                                            ru:'Очки, которые начислены, но не погашены (истекают или игрок уходит). В среднем ~60%. Снижает реальную стоимость программы.' },
+  { name:'Point Liability',   tag:'loyal',   en:'Estimated USD value of unredeemed points outstanding. Represents potential future cost if all players redeemed. Typically 60% of earned points (breakage buffer).',                                        ru:'Расчётная стоимость непогашенных очков. Потенциальные будущие затраты, если все игроки погасят очки.' },
+  { name:'Tier',              tag:'loyal',   en:'Loyalty level (Bronze → Diamond). Higher tiers offer better cashback rates, more free spins, and bonus multipliers. Players advance by earning enough points.',                                             ru:'Уровень лояльности (Bronze → Diamond). Более высокие тиры дают лучший кэшбэк, больше фриспинов и множителей.' },
+  { name:'Mission',           tag:'loyal',   en:'Time-limited task rewarding players for completing specific actions (deposit X times, wager $Y, log in N days in a row). Drives targeted behaviour.',                                                       ru:'Задание на ограниченный срок, вознаграждающее за конкретные действия (депозиты, ставки, серии входов).' },
+  { name:'Cost / GGR (Loyal)',tag:'loyal',   en:'Total monthly loyalty program cost as % of gross revenue. Healthy range: 10–20%. Above 25% means the program is eating into margins.',                                                                     ru:'Ежемесячные затраты программы лояльности в % от GGR. Норма: 10–20%. Выше 25% — программа съедает маржу.' },
+];
+
+const GLOSSARY_GROUPS = [
+  { key:'general', en:'General', ru:'Общее' },
+  { key:'bonus',   en:'Bonus',   ru:'Бонусы' },
+  { key:'tourn',   en:'Tournament', ru:'Турниры' },
+  { key:'loyal',   en:'Loyalty', ru:'Лояльность' },
+];
+
+function glossaryOpen() {
+  const lang = cfgLang();
+  document.getElementById('gloss-title').textContent = lang === 'ru' ? 'Глоссарий' : 'Glossary';
+  const inp = document.getElementById('gloss-search');
+  inp.placeholder = lang === 'ru' ? 'Поиск…' : 'Search terms…';
+  inp.value = '';
+  glossaryRender('');
+  document.getElementById('gloss-overlay').classList.add('open');
+  document.getElementById('gloss-panel').classList.add('open');
+  setTimeout(() => inp.focus(), 250);
+  document.addEventListener('keydown', glossaryEsc);
+}
+
+function glossaryClose() {
+  document.getElementById('gloss-overlay').classList.remove('open');
+  document.getElementById('gloss-panel').classList.remove('open');
+  document.removeEventListener('keydown', glossaryEsc);
+}
+
+function glossaryEsc(e) { if (e.key === 'Escape') glossaryClose(); }
+
+function glossaryRender(query) {
+  const lang = cfgLang();
+  const q = query.trim().toLowerCase();
+  const body = document.getElementById('gloss-body');
+  let html = '';
+  for (const grp of GLOSSARY_GROUPS) {
+    const terms = GLOSSARY.filter(t => t.tag === grp.key && (
+      !q || t.name.toLowerCase().includes(q) || t[lang].toLowerCase().includes(q)
+    ));
+    if (!terms.length) continue;
+    html += `<div class="gloss-group">
+      <div class="gloss-group-lbl">${grp[lang]}</div>
+      ${terms.map(t => `
+        <div class="gloss-term">
+          <div class="gloss-term-name">${t.name}</div>
+          <div class="gloss-term-def">${t[lang]}</div>
+        </div>
+      `).join('')}
+    </div>`;
+  }
+  if (!html) html = `<div style="padding:40px 20px;text-align:center;color:var(--muted);font-size:.85rem">${lang==='ru'?'Ничего не найдено':'No terms found'}</div>`;
+  body.innerHTML = html;
+}
+
+function glossaryFilter(val) { glossaryRender(val); }
+
+// ── TOAST ──────────────────────────────────────────────────────────────────
+
 function showToast(msg, color='#10b981') {
   const t = document.createElement('div');
   t.className = 'toast';

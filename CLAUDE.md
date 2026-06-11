@@ -1,6 +1,6 @@
 # CLAUDE.md — Retomat: Retention OS for iGaming
 
-Complete architecture reference for Claude Code sessions. Updated: 2026-06-02.
+Complete architecture reference for Claude Code sessions. Updated: 2026-06-11.
 
 ---
 
@@ -19,7 +19,7 @@ Complete architecture reference for Claude Code sessions. Updated: 2026-06-02.
 
 ```bash
 npm start            # Express on http://localhost:3000
-npm test             # vitest run (393 tests, 28 files)
+npm test             # vitest run (559 tests, 41 files)
 npm run typecheck    # tsc --noEmit
 npm run lint         # eslint src --ext .ts
 npm run build        # vite build → public/dist/
@@ -51,7 +51,7 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │   │   └── Currency.ts          # CurrencyCode type + isCurrencyCode()
 │   │   ├── bonus/
 │   │   │   ├── buildConfig.ts       # Pure: params → full bonus config
-│   │   │   ├── recalcCosts.ts       # Pure: cfg + overrides → { costs, ratio, maxRisk }
+│   │   │   ├── recalcCosts.ts       # Pure: cfg + overrides → { costs, ratio, maxRisk }; accepts minD/maxWin per mechanic
 │   │   │   ├── payout.ts            # truncNormalPayout: statistical cost model
 │   │   │   └── chainModel.ts        # CHAIN_PROGRESSION = { dep2: 0.45, dep3: 0.25 }
 │   │   ├── campaign/
@@ -89,12 +89,12 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │   ├── GenerateBonusConfig.ts   # generateBonusConfig(), recalcBonusConfig()
 │   │   ├── GenerateCampaign.ts      # generateCampaign(), texts, audit, optimize (inject AIProvider)
 │   │   ├── GenerateTournament.ts    # generateTournament(), texts, audit, optimize (inject AIProvider)
-│   │   └── GenerateLoyalty.ts       # generateLoyaltyConfig(), recalcLoyaltyConfig()
+│   │   └── GenerateLoyalty.ts       # generateLoyaltyConfig(), recalcLoyaltyConfig(), auditLoyalty(), optimizeLoyalty(), generateLoyaltyMissions()
 │   ├── controllers/                 # All use createXxxController(deps) factory pattern
 │   │   ├── generate.controller.ts   # createGenerateController()
 │   │   ├── campaign.controller.ts   # createCampaignController({ ai })
 │   │   ├── tournament.controller.ts # createTournamentController({ ai })
-│   │   ├── loyalty.controller.ts    # createLoyaltyController() — no AI dep (pure domain)
+│   │   ├── loyalty.controller.ts    # createLoyaltyController({ ai }) — generate, recalc, texts, audit, optimize, missions
 │   │   ├── analytics.controller.ts  # createAnalyticsController() — analyze, saveActuals, explain
 │   │   └── signup.controller.ts     # createSignupController()
 │   ├── services/
@@ -107,7 +107,7 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │   ├── generate.routes.ts
 │   │   ├── campaign.routes.ts
 │   │   ├── tournament.routes.ts
-│   │   ├── loyalty.routes.ts        # POST /api/loyalty/generate (20/min) + /recalc (30/min) + /missions (15/min)
+│   │   ├── loyalty.routes.ts        # POST /api/loyalty/generate + /recalc + /texts + /audit + /optimize + /missions
 │   │   ├── signup.routes.ts
 │   │   └── health.routes.ts
 │   ├── middleware/
@@ -135,15 +135,16 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   ├── index.html                   # Landing — Retention OS positioning (EN/RU), calendar-first
 │   ├── index.js                     # Landing i18n (EN/RU) + particles + sticky CTA
 │   ├── styles.css                   # Configurator shared CSS
-│   ├── app.js                       # Configurator logic + i18n (RU/EN/MN/ES) — external file
+│   ├── app.js                       # Legacy Bonus Configurator logic (superseded by configurator.js for the unified tool)
 │   ├── nav-utils.js                 # Shared across all pages: updateAllBadges(), applyNavLang(), initNavSubgroups()
 │   ├── balance-solver.js            # solveToTarget() — generic parameter solver for Balance-to-Profit
-│   ├── bonus-cost.js                # Client-side bonus cost model (parity with backend recalcCosts)
+│   ├── bonus-cost.js                # Client-side bonus cost model (parity with backend recalcCosts); supports minD/maxWin overrides
 │   ├── loyalty-econ.js              # Client-side loyalty economics (parity with backend calcLoyaltyEconomics)
 │   ├── tournament-econ.js           # Client-side tournament economics (parity with backend calcTournamentEconomics)
 │   ├── forecast.js                  # Client-side port of src/domain/forecast/ — normalizeCampaign, aggregateForecast, MECHANIC_AFFINITY
-│   ├── configurator.html            # Bonus Configurator SPA (loads app.js + configurator-extra.js)
-│   ├── configurator-extra.js        # Configurator page-specific JS (RTP sync, edit mode, audit panel, balance)
+│   ├── configurator.html            # Unified Promo Configurator SPA — Bonus / Tournament / Loyalty in one page
+│   ├── configurator.js              # Unified configurator logic — CS state, cfgRender(), all 3 promo types, AI tabs
+│   ├── configurator-extra.js        # Legacy — no longer loaded by configurator.html (dead code)
 │   ├── campaign-generator.html      # AI Campaign Generator SPA
 │   ├── campaign-generator.js        # Campaign Generator logic — i18n via setUILang() + data-i18n attrs
 │   ├── tournament-generator.html    # Tournament Generator SPA
@@ -264,6 +265,9 @@ Exponential backoff with full jitter. Only retryable errors (429, 5xx, network) 
 | POST | `/api/tournament/optimize` | 15/min | TournamentOptimizeSchema | `createTournamentController().optimize` |
 | POST | `/api/loyalty/generate` | 20/min | LoyaltyGenerateSchema | `createLoyaltyController().generate` |
 | POST | `/api/loyalty/recalc` | 30/min | LoyaltyRecalcSchema | `createLoyaltyController().recalc` |
+| POST | `/api/loyalty/texts` | 15/min | LoyaltyTextsSchema | `createLoyaltyController().texts` |
+| POST | `/api/loyalty/audit` | 15/min | LoyaltyAuditSchema | `createLoyaltyController().audit` |
+| POST | `/api/loyalty/optimize` | 15/min | LoyaltyOptimizeSchema | `createLoyaltyController().optimize` |
 | POST | `/api/loyalty/missions` | 15/min | LoyaltyMissionsSchema | `createLoyaltyController().missions` |
 | POST | `/api/campaign/actuals` | 30/min | ActualsSchema | `createAnalyticsController().saveActuals` |
 | POST | `/api/campaign/analysis` | 30/min | AnalysisSchema | `createAnalyticsController().analyze` |
@@ -302,6 +306,8 @@ Per-mechanic cost: `payout(bSize, wx, adjWCR_s, adjRTP_s) × cohort_s × pl`, sc
 
 Returns `{ costs: { w_p10, w_p50, w_p90, ndb, rl, d2, d3, fs, total }, ratio, maxRisk }`.
 All cost values are TOTAL (already multiplied by `pl`). `ratio = w_p50 / (pl × dep)`.
+
+**`minD` / `maxWin` overrides** — each mechanic accepts per-call overrides for minimum deposit and max win cap. Passed as `overrides.w_minD`, `overrides.w_maxWin`, `overrides.d2_minD`, etc. Used by the unified configurator to reflect user-edited field values without a full `buildConfig` round-trip.
 
 ### `calcTournamentEconomics()` — `src/domain/tournament/calcEconomics.ts`
 
@@ -373,6 +379,7 @@ us → sweep, none, USD    mx/br → latam, none, USD
 - `AuditResponseSchema`: `{ checks[5]{label,status,note,rule?}, recommendations[2-4]{text,impact} }`
 - `OptimizeResponseSchema`: `{ recommendations[1-5]{factor,param,current,target,reason,impact} }`
 - `TournamentOptimizeResponseSchema`: `{ realism:{verdict,summary,checks[3-6]{metric,forecast,benchmark,verdict,note}}, recommendations[1-3]{param,current,target,reason,impact} }`
+- `LoyaltyMissionsResponseSchema`: `{ missions[]{id, narrative, tierEffect?} }` — **id only, no name**; join with `config.missions` by id to get name/objective/reward
 
 ---
 
@@ -398,13 +405,58 @@ us → sweep, none, USD    mx/br → latam, none, USD
 
 **Nav:** Calendar · Bonuses (→ /configurator.html) · Tournaments · Try Retomat Free (gold).
 
-### `public/configurator.html` + `public/app.js` + `public/configurator-extra.js`
+### `public/configurator.html` + `public/configurator.js` — Unified Promo Configurator
 
-Bonus Configurator SPA. `app.js` = main logic (i18n RU/EN/MN/ES). `configurator-extra.js` = RTP sync, edit mode, audit panel, incremental revenue.
+Single-page configurator for all three promo types: **Bonus**, **Tournament**, **Loyalty**. Switched via top type tabs. No build step — pure vanilla JS.
 
-**Edit mode**: `window._editMode`, `_setEditMode()`, `_captureOverrides()`, `renderAuditPanel()`.
+**State model:**
+```javascript
+CS = {
+  type: 'bonus'|'tournament'|'loyalty',  // localStorage: cfg_type
+  bonus:      { geo, players, segment, plat, rtp, active, ov, config, costs },
+  tournament: { type, geo, segment, totalPlayers, duration, prizePool, poolModel,
+                distribution, entryModel, scoring, reentry, rake, result },
+  loyalty:    { mode, region, segment, players, avgdep, arpu, numTiers,
+                topCashbackRate, earnRateDeposit, earnRateWager, redeemRate,
+                redeemMinPoints, pointsExpiry, missionCount, result },
+}
+CAI = { bonus, tournament, loyalty }  // per-type AI tab state: { tab, audit, optimize, … }
+```
 
-**Incremental Revenue v2**: `_calcRetentionV2(cfg, overrideWager)` + `_buildIncrRevBody(cfg, v)`.
+**Render loop:** `cfgRender()` → `renderMainContent()` → `renderBonusSection()` / `renderTournamentSection()` / `renderLoyaltySection()` → innerHTML of `#content`.
+
+**Override values (`B.ov`):** NEVER overwritten from API. User-edited fields always take precedence. `B.ov` is populated with sensible defaults at page load and only mutated by direct user input.
+
+**Bonus recalc flow:**
+1. `onGenerateBonus()` → `POST /api/generate` → sets `B.config`, then calls `runBonusRecalc()`
+2. `runBonusRecalc()` → `POST /api/recalc` (with `B.ov` overrides) → `updateBonusCostDisplay(data, cfg)`
+3. `updateBonusCostDisplay()` patches cost/risk/ROI/LTV DOM elements in place (no full re-render); also refreshes Economics tab if open
+
+**Bonus Economics tab (`CAI.bonus.tab === 'econ'`):** Renders V2 retention lift model — 4 summary cards (Cost P50, Max Risk, Net Result, Campaign ROI) + F1–F5 factor breakdown table.
+
+**`computeBonusLift(B)`** helper — computes full V2 lift object `{ wagFactor, genFactor, mechFactor, rtpFactor, platFactor, base, lift, … }` and `economics { net, campCost3, incrRev, incrPl, pl }`. Used by Audit and Optimize API calls.
+
+**Tournament Economics tab:** `renderTournEconContent(T)` — scenario table (Conservative/Expected/Optimistic) with participants, GGR lift, net margin + 4 metric cards (Prize Pool Cost, Retention Value, Total Value, Break-even Players).
+
+**Loyalty Economics tab:** `renderLoyaltyEconContent(LY)` — 6 summary cards + cost breakdown table (Redemption/Tier Rewards/Mission Rewards) + Points Economy cards.
+
+**AI endpoint payloads (critical — schema-validated):**
+
+| Action | Endpoint | Body |
+|--------|----------|------|
+| Bonus audit | `POST /api/campaign/audit` | `{ mechanic: B.config, mechanicType, params: { geo, segment, lic, lang, risk }, uiLang }` |
+| Bonus optimize | `POST /api/campaign/optimize` | `{ geo, segment, lift: liftObj, economics: econObj, uiLang }` |
+| Tournament audit | `POST /api/tournament/audit` | `{ type, spec: T.result.spec, params: T.result.params }` |
+| Tournament optimize | `POST /api/tournament/optimize` | `{ type, params: T.result.params, econ: T.result.econ, mode: 'optimize' }` |
+| Loyalty audit | `POST /api/loyalty/audit` | `{ config: LY.result.config, uiLang }` |
+| Loyalty optimize | `POST /api/loyalty/optimize` | `{ config: LY.result.config, econ: LY.result.econ, uiLang }` |
+| Loyalty missions | `POST /api/loyalty/missions` | `{ config: LY.result.config, econ: LY.result.econ, uiLang }` |
+
+**Legacy files (no longer active):** `app.js`, `configurator-extra.js` — not loaded by `configurator.html`. Dead code, do not edit.
+
+### `public/configurator.html` + `public/app.js` + `public/configurator-extra.js` (LEGACY)
+
+Legacy Bonus Configurator — superseded by the unified `configurator.js`. `app.js` = main logic (i18n RU/EN/MN/ES). `configurator-extra.js` = RTP sync, edit mode, audit panel, incremental revenue. **Not loaded by `configurator.html` anymore.**
 
 ### `public/campaign-generator.html` + `public/campaign-generator.js`
 
@@ -504,9 +556,46 @@ Loyalty Generator SPA.
 
 ## Data flows
 
-### Bonus Configurator
+### Unified Configurator — Bonus
 ```
-configurator.html + app.js + configurator-extra.js
+configurator.html + configurator.js
+  → POST /api/generate → buildConfig() ← { welcome, ndb, reload, dep2, dep3, wager,
+                                            cashback, contrib, fsSpec, econ, reg, cur }
+  → POST /api/recalc (with B.ov overrides) → recalcCosts()
+  ← { costs: { w_p10, w_p50, w_p90, ndb, rl, d2, d3, fs, total }, ratio, maxRisk }
+  → updateBonusCostDisplay() patches DOM in place (no full re-render)
+```
+
+### Unified Configurator — Tournament
+```
+configurator.html + configurator.js
+  → POST /api/tournament/generate { type, params: { geo, segment, totalPlayers, … } }
+  ← { spec, econ: TournamentEconomics (flat), params, cur, region, lic }
+
+  TournamentEconomics flat fields (no scenarios array):
+  eligible, participantsLow/Mid/High, ggrLiftLow/Mid/High,
+  netMarginLow/Mid/High, totalValueMid, roi, engagementMultiplier,
+  costPerActiveMid, retentionValue, prizePoolCost, breakEvenParticipants
+```
+
+### Unified Configurator — Loyalty
+```
+configurator.html + configurator.js
+  → POST /api/loyalty/generate { mode, region, segment, players, avgdep, arpu,
+                                  numTiers, topCashbackRate (fraction 0–0.30), … }
+  ← { config: LoyaltyConfig, econ: LoyaltyEcon }
+
+  config: { mode, tiers[], earnRedeem, missions[], hasMissions, region, segment, … }
+    tiers[]: { name, label, minPoints, bonusMultiplier, cashbackRate, freeSpinsMonthly, … }
+    missions[]: { id, name, objective, target, rewardType, rewardValue, frequency, link? }
+  econ: { monthlyCostUSD, costRatioPct (%), retentionLiftPct (%), roi3m (ratio),
+          breakEvenMonths (number|null), totalLiabilityUSD, tierRewardCostUSD,
+          missionCostUSD, additionalRevenue3m, avgEarnedPointsPerPlayer, … }
+```
+
+### Legacy Bonus Configurator
+```
+configurator.html + app.js + configurator-extra.js  ← LEGACY, no longer active
   → POST /api/generate → buildConfig() → config
   ← { welcome, ndb, reload, dep2, dep3, wager, cashback, contrib, fsSpec, econ, reg, cur }
 
@@ -672,7 +761,7 @@ Four browser-side JS modules mirror backend domain logic for real-time recalcula
 
 | File | Mirrors | Used by |
 |------|---------|---------|
-| `public/bonus-cost.js` | `src/domain/bonus/recalcCosts.ts` | configurator-extra.js |
+| `public/bonus-cost.js` | `src/domain/bonus/recalcCosts.ts` | configurator.js (recalc tab), configurator-extra.js (legacy) |
 | `public/bonus-selected-econ.js` | `src/domain/bonus/selectedEcon.ts` | campaign-generator.js (selection-aware econ) |
 | `public/loyalty-econ.js` | `src/domain/loyalty/calcEconomics.ts` | loyalty-generator.js |
 | `public/tournament-econ.js` | `src/domain/tournament/calcEconomics.ts` | tournament-generator.js |
@@ -683,6 +772,24 @@ Four browser-side JS modules mirror backend domain logic for real-time recalcula
 **balance-solver.js** — `solveToTarget({ draft, levers, recalc, metricOf, target, constraints?, maxIter? })`: iterates over `levers` (enum swaps + multiplicative steps) until `metricOf(recalc(draft)) >= target` or all levers exhausted. `constraints` — optional array of `{ check(draft, cfg) → bool }` guards; a lever step is skipped if it would violate any constraint (used by bonus solver to enforce license wager/bonus caps). Returns `{ draft, reached }`.
 
 **Parity tests** in `tests/domain/*.parity.test.js` assert identical output between JS modules and backend TypeScript for the same inputs. Run before shipping changes to either side.
+
+---
+
+## Critical data model pitfalls
+
+These are non-obvious facts that have caused bugs; always verify before touching related code.
+
+**`sP50.cost`, `sP10.cost`, `sP90.cost` from `buildConfig`** — values are already TOTAL (multiplied by `pl`). Never multiply by `pl` again. Same for `maxRisk` and all `recalcCosts` output fields.
+
+**`E.roi3` from `buildConfig`** — already a percentage (e.g., `160` means 160%). Do NOT pass to `fmtPct()` (which multiplies by 100). Use `.toFixed(0) + '%'` directly.
+
+**Tournament `econ` is a flat object** — `calcTournamentEconomics()` returns flat fields (`participantsMid`, `ggrLiftMid`, `roi`, `engagementMultiplier`, etc.). There is **no `scenarios` array**. The `roi` field is already a percentage integer (e.g., `120` for 120%).
+
+**Loyalty API returns `{ config, econ }`** — tiers live at `result.config.tiers`, missions at `result.config.missions`. Tier fields: `freeSpinsMonthly` (not `freespins`), `bonusMultiplier` (not `bonusMult`). Econ fields: `monthlyCostUSD`, `costRatioPct` (already %), `retentionLiftPct` (already %), `roi3m` (fraction), `breakEvenMonths` (number|null), `totalLiabilityUSD`. Divide `costRatioPct` / `retentionLiftPct` by 100 before passing to `fmtPct()`.
+
+**`LoyaltyMissionsResponse` has no `name` field** — only `{ id, narrative, tierEffect? }`. To display the mission name, join by `id` with `CS.loyalty.result.config.missions`.
+
+**`topCashbackRate`** — stored in UI state as percentage integer (e.g., `10`), sent to API divided by 100 (i.e., `0.10`). Schema: `max(0.30)`.
 
 ---
 
@@ -702,6 +809,7 @@ Four browser-side JS modules mirror backend domain logic for real-time recalcula
 - Task A: Projected result per AI recommendation (apply param-change to 5-factor formula, show lift delta)
 - Retention Calendar: read `?rcDate=` query param in tournament-generator.js to pre-fill date from calendar redirect
 - ~~I4 (Loyalty AI)~~ — done: missions endpoint, narratives, tier-link layer, persistence tests
+- ~~Unified Configurator~~ — done: configurator.html + configurator.js (Bonus/Tournament/Loyalty), AI tabs, Economics panels, minD/maxWin overrides
 
 **P3 (frontend):**
 - Convert `onclick=` handlers to `addEventListener` → remove `scriptSrcAttr: 'unsafe-inline'` from CSP
