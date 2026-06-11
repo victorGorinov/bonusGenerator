@@ -61,56 +61,71 @@ export function recalcCostsLocal(cfg, overrides) {
 
   const spinV = fsSpec ? fsSpec.val : 0.10;
 
-  function svCost(bonusSize, wagerX, conv, dWCR, dRTP) {
+  const elig = (minD) =>
+    minD <= 0 || minD <= dep ? 1.0 : Math.min(1.0, Math.max(0.1, dep / minD));
+
+  function svCost(bonusSize, wagerX, conv, dWCR, dRTP, maxWin = 0, minD = 0) {
     if (bonusSize <= 0 || wagerX <= 0) return 0;
     const adjWCR = Math.max(0.01, (econ.mixedWCR || 0) + (dWCR || 0));
     const adjRTP = Math.min(0.999, Math.max(0.5, (econ.mixedRTP || 0.96) + (dRTP || 0)));
-    return Math.round(_truncNormalPayout(bonusSize, wagerX, adjWCR, adjRTP) * conv * pl);
+    const rawPayout = _truncNormalPayout(bonusSize, wagerX, adjWCR, adjRTP);
+    const payout = (maxWin > 0) ? Math.min(rawPayout, maxWin) : rawPayout;
+    return Math.round(payout * conv * elig(minD) * pl);
   }
 
-  const w_pct   = gv('ov_w_pct',   welcome.pct  || 100);
-  const w_wager = gv('ov_w_wager', econ.wagerX  || 30);
-  const w_maxB  = gv('ov_w_maxB',  welcome.maxB || 0);
-  const w_fs    = gv('ov_w_fs',    welcome.fs   || 0);
-  const w_bonus = Math.min(dep * w_pct / 100, w_maxB) + w_fs * spinV;
-  const c_w_p10 = svCost(w_bonus, w_wager, 0.10, -0.02, -0.005);
-  const c_w_p50 = svCost(w_bonus, w_wager, 0.20,  0,     0);
-  const c_w_p90 = svCost(w_bonus, w_wager, 0.40, +0.02, +0.003);
+  const w_pct    = gv('ov_w_pct',    welcome.pct  || 100);
+  const w_wager  = gv('ov_w_wager',  econ.wagerX  || 30);
+  const w_maxB   = gv('ov_w_maxB',   welcome.maxB || 0);
+  const w_fs     = gv('ov_w_fs',     welcome.fs   || 0);
+  const w_minD   = gv('ov_w_minD',   welcome.minD || 0);
+  const w_maxWin = gv('ov_w_maxWin', 0);
+  const w_bonus  = Math.min(dep * w_pct / 100, w_maxB) + w_fs * spinV;
+  const c_w_p10  = svCost(w_bonus, w_wager, 0.10, -0.02, -0.005, w_maxWin, w_minD);
+  const c_w_p50  = svCost(w_bonus, w_wager, 0.20,  0,     0,     w_maxWin, w_minD);
+  const c_w_p90  = svCost(w_bonus, w_wager, 0.40, +0.02, +0.003, w_maxWin, w_minD);
 
-  const ndb_wager = gv('ov_ndb_wager', ndb.wager || 50);
+  const ndb_wager  = gv('ov_ndb_wager',  ndb.wager || 50);
+  const ndb_maxWin = gv('ov_ndb_maxWin', 0);
   let ndb_size = 0;
   const ndbType = ndb.type;
   if      (ndbType === 'fs_restricted') ndb_size = gv('ov_ndb_fs',  ndb.fs  || 10) * spinV;
   else if (ndbType === 'crypto')        ndb_size = gv('ov_ndb_amt', ndb.amt || 0);
   else if (ndbType === 'combined')      ndb_size = gv('ov_ndb_amt', ndb.amt || 0) + gv('ov_ndb_fs', ndb.fs || 0) * spinV;
   else if (ndb.amt)                     ndb_size = ndbType === 'fs' ? gv('ov_ndb_fs', ndb.amt || 0) * spinV : gv('ov_ndb_amt', ndb.amt || 0);
-  const c_ndb = svCost(ndb_size, ndb_wager, 0.20, 0, 0);
+  const c_ndb = svCost(ndb_size, ndb_wager, 0.20, 0, 0, ndb_maxWin);
 
-  const rl_pct   = gv('ov_rl_pct',   reload.pct  || 50);
-  const rl_wager = gv('ov_rl_wager', wager.wR    || 35);
-  const rl_maxB  = gv('ov_rl_maxB',  reload.maxB || 0);
-  const rl_fs    = gv('ov_rl_fs',    reload.fs   || 0);
-  const rl_bonus = Math.min(dep * rl_pct / 100, rl_maxB) + rl_fs * spinV;
-  const c_rl     = svCost(rl_bonus, rl_wager, 0.20, 0, 0);
+  const rl_pct    = gv('ov_rl_pct',    reload.pct  || 50);
+  const rl_wager  = gv('ov_rl_wager',  wager.wR    || 35);
+  const rl_maxB   = gv('ov_rl_maxB',   reload.maxB || 0);
+  const rl_fs     = gv('ov_rl_fs',     reload.fs   || 0);
+  const rl_minD   = gv('ov_rl_minD',   reload.minD || 0);
+  const rl_maxWin = gv('ov_rl_maxWin', 0);
+  const rl_bonus  = Math.min(dep * rl_pct / 100, rl_maxB) + rl_fs * spinV;
+  const c_rl      = svCost(rl_bonus, rl_wager, 0.20, 0, 0, rl_maxWin, rl_minD);
 
-  const d2_pct   = gv('ov_d2_pct',   dep2.pct   || 75);
-  const d2_wager = gv('ov_d2_wager', dep2.wager || econ.wagerX || 30);
-  const d2_maxB  = gv('ov_d2_maxB',  dep2.maxB  || 0);
-  const d2_fs    = gv('ov_d2_fs',    dep2.fs    || 0);
-  const d2_bonus = Math.min(dep * d2_pct / 100, d2_maxB) + d2_fs * spinV;
-  const c_d2     = svCost(d2_bonus, d2_wager, 0.20 * CHAIN_PROGRESSION.dep2, 0, 0);
+  const d2_pct    = gv('ov_d2_pct',    dep2.pct   || 75);
+  const d2_wager  = gv('ov_d2_wager',  dep2.wager || econ.wagerX || 30);
+  const d2_maxB   = gv('ov_d2_maxB',   dep2.maxB  || 0);
+  const d2_fs     = gv('ov_d2_fs',     dep2.fs    || 0);
+  const d2_minD   = gv('ov_d2_minD',   dep2.minD  || 0);
+  const d2_maxWin = gv('ov_d2_maxWin', 0);
+  const d2_bonus  = Math.min(dep * d2_pct / 100, d2_maxB) + d2_fs * spinV;
+  const c_d2      = svCost(d2_bonus, d2_wager, 0.20 * CHAIN_PROGRESSION.dep2, 0, 0, d2_maxWin, d2_minD);
 
-  const d3_pct   = gv('ov_d3_pct',   dep3.pct   || 50);
-  const d3_wager = gv('ov_d3_wager', dep3.wager || econ.wagerX || 30);
-  const d3_maxB  = gv('ov_d3_maxB',  dep3.maxB  || 0);
-  const d3_fs    = gv('ov_d3_fs',    dep3.fs    || 0);
-  const d3_bonus = Math.min(dep * d3_pct / 100, d3_maxB) + d3_fs * spinV;
-  const c_d3     = svCost(d3_bonus, d3_wager, 0.20 * CHAIN_PROGRESSION.dep3, 0, 0);
+  const d3_pct    = gv('ov_d3_pct',    dep3.pct   || 50);
+  const d3_wager  = gv('ov_d3_wager',  dep3.wager || econ.wagerX || 30);
+  const d3_maxB   = gv('ov_d3_maxB',   dep3.maxB  || 0);
+  const d3_fs     = gv('ov_d3_fs',     dep3.fs    || 0);
+  const d3_minD   = gv('ov_d3_minD',   dep3.minD  || 0);
+  const d3_maxWin = gv('ov_d3_maxWin', 0);
+  const d3_bonus  = Math.min(dep * d3_pct / 100, d3_maxB) + d3_fs * spinV;
+  const c_d3      = svCost(d3_bonus, d3_wager, 0.20 * CHAIN_PROGRESSION.dep3, 0, 0, d3_maxWin, d3_minD);
 
-  const fs_wager = gv('ov_fs_wager', fsSpec ? fsSpec.wager : 30);
-  const fs_count = gv('ov_fs_count', fsSpec ? fsSpec.count : 0);
-  const fs_bonus = fsSpec ? fs_count * fsSpec.val : 0;
-  const c_fs     = svCost(fs_bonus, fs_wager, 0.20, 0, 0);
+  const fs_wager  = gv('ov_fs_wager',  fsSpec ? fsSpec.wager : 30);
+  const fs_count  = gv('ov_fs_count',  fsSpec ? fsSpec.count : 0);
+  const fs_maxWin = gv('ov_fs_maxWin', 0);
+  const fs_bonus  = fsSpec ? fs_count * fsSpec.val : 0;
+  const c_fs      = svCost(fs_bonus, fs_wager, 0.20, 0, 0, fs_maxWin);
 
   const total = c_w_p50 + c_ndb + c_rl + c_d2 + c_d3 + c_fs;
   return {
