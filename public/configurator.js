@@ -175,6 +175,7 @@ const CFG_I18N = {
     loyal_missions:'Number of Missions',
     econ_retention:'Retention Lift', econ_liability:'Points Liability',
     econ_breakeven:'Break-even', econ_cost_ggr:'Cost / GGR',
+    loyal_monthly_cost:'Monthly Cost', tier_table_title:'Tiers',
     tier_name:'Tier', tier_pts:'Min Points', tier_cb:'Cashback', tier_fs:'FS/mo', tier_mult:'Bonus Mult.',
     // AI tabs
     tab_econ:'📊 Economics', tab_audit:'🔍 Audit',
@@ -249,6 +250,7 @@ const CFG_I18N = {
     loyal_missions:'Количество миссий',
     econ_retention:'Удержание', econ_liability:'Обязательства',
     econ_breakeven:'Окупаемость', econ_cost_ggr:'Стоимость / GGR',
+    loyal_monthly_cost:'Затраты / мес', tier_table_title:'Тиры',
     tier_name:'Тир', tier_pts:'Мин. очков', tier_cb:'Кешбэк', tier_fs:'FS/мес', tier_mult:'Множитель',
     tab_econ:'📊 Экономика', tab_audit:'🔍 Аудит',
     tab_optimize:'⚡ Оптимизация', tab_missions:'🎯 Миссии',
@@ -494,18 +496,18 @@ function renderBonusBaseCard(B, geo) {
       <div class="form-row">
         <label class="form-label">${cfgT('players_lbl')}</label>
         <input class="form-input" type="number" value="${B.players}" min="100" max="200000" step="100"
-               onchange="CS.bonus.players=+this.value||5000; if(CS.bonus.config) CS.bonus.config.pl=CS.bonus.players; scheduleBonusRecalc();">
+               onchange="CS.bonus.players=+this.value||5000; scheduleBonusRecalc();">
       </div>
       <div class="form-row">
         <label class="form-label">${cfgT('segment_lbl')}</label>
         <div class="chips">
-          ${['new','mid','vip'].map(s => `<div class="chip${B.segment===s?' on':''}" onclick="bonusSetSeg('${s}')">${cfgT('seg_'+s)}</div>`).join('')}
+          ${['new','mid','vip'].map(s => `<div class="chip${B.segment===s?' on':''}" data-grp="bonus-seg" data-val="${s}" onclick="bonusSetSeg('${s}')">${cfgT('seg_'+s)}</div>`).join('')}
         </div>
       </div>
       <div class="form-row">
         <label class="form-label">${cfgT('platform_lbl')}</label>
         <div class="chips">
-          ${['both','mobile','desk'].map(p => `<div class="chip${B.plat===p?' on':''}" onclick="bonusSetPlat('${p}')">${cfgT('plat_'+p)}</div>`).join('')}
+          ${['both','mobile','desk'].map(p => `<div class="chip${B.plat===p?' on':''}" data-grp="bonus-plat" data-val="${p}" onclick="bonusSetPlat('${p}')">${cfgT('plat_'+p)}</div>`).join('')}
         </div>
       </div>
       <div class="form-row">
@@ -690,15 +692,15 @@ function bonusSetGeo(val) {
 
 function bonusSetSeg(v) {
   CS.bonus.segment = v;
-  document.querySelectorAll('#content .chips .chip[onclick*="bonusSetSeg"]').forEach(c => {
-    c.classList.toggle('on', c.getAttribute('onclick').includes(`'${v}'`));
-  });
+  document.querySelectorAll('#content [data-grp="bonus-seg"]').forEach(c =>
+    c.classList.toggle('on', c.dataset.val === v)
+  );
 }
 function bonusSetPlat(v) {
   CS.bonus.plat = v;
-  document.querySelectorAll('#content .chips .chip[onclick*="bonusSetPlat"]').forEach(c => {
-    c.classList.toggle('on', c.getAttribute('onclick').includes(`'${v}'`));
-  });
+  document.querySelectorAll('#content [data-grp="bonus-plat"]').forEach(c =>
+    c.classList.toggle('on', c.dataset.val === v)
+  );
 }
 
 function bonusOvChange(key, val) {
@@ -710,6 +712,17 @@ function scheduleBonusRecalc() {
   if (!CS.bonus.config) return;
   clearTimeout(_recalcTimer);
   _recalcTimer = setTimeout(() => runBonusRecalc(), 600);
+}
+
+function deriveMechanicType(active) {
+  const { welcome, ndb, dep2, dep3, reload, cashback, fs } = active;
+  if (welcome && (dep2 || dep3)) return 'deposit_chain';
+  if (welcome) return 'welcome_match';
+  if (ndb)     return 'no_deposit';
+  if (reload)  return 'reload';
+  if (cashback)return 'cashback';
+  if (fs)      return 'free_spins';
+  return 'welcome_match';
 }
 
 async function onGenerateBonus() {
@@ -739,7 +752,10 @@ async function onGenerateBonus() {
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify(body),
     });
-    if (!res.ok) throw new Error('API error');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
     const data = await res.json();
     B.config = data.cfg;
     // B.ov никогда не перезаписывается из API — поля ввода всегда отражают
@@ -752,6 +768,8 @@ async function onGenerateBonus() {
     showToast('Error: ' + e.message, '#ef4444');
   } finally {
     _generating = false;
+    const b = document.getElementById('btn-calculate');
+    if (b) { b.disabled = false; b.textContent = cfgT(CS.bonus.config ? 'recalculate' : 'calculate'); }
   }
 }
 
@@ -774,15 +792,16 @@ async function runBonusRecalc() {
     fs_wager: ov.fs_wager, fs_count: ov.fs_count, fs_maxWin:ov.fs_maxWin,
   };
   try {
+    const cfgForRecalc = { ...cfg, pl: B.players };
     const res = await fetch('/api/recalc', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ cfg, overrides }),
+      body: JSON.stringify({ cfg: cfgForRecalc, overrides }),
     });
-    if (!res.ok) return;
+    if (!res.ok) { console.error('recalc HTTP', res.status); return; }
     const data = await res.json();
     B.costs = data;
     updateBonusCostDisplay(data, cfg);
-  } catch(e){}
+  } catch(e) { console.error('recalc error:', e); }
 }
 
 function updateBonusCostDisplay(data, cfg) {
@@ -1132,7 +1151,7 @@ async function runBonusAudit() {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         mechanic: B.config,
-        mechanicType: 'welcome_match',
+        mechanicType: deriveMechanicType(B.active),
         params: {
           geo:     B.geo,
           segment: B.segment,
@@ -1215,7 +1234,7 @@ function renderTournTypeCard(T) {
       <div class="card-title">${cfgT('tourn_type')}</div>
       <div class="chips">
         ${TOURN_TYPES.map(tp => `
-          <div class="chip type-card${T.type===tp.val?' on':''}" onclick="tournSetType('${tp.val}')">
+          <div class="chip type-card${T.type===tp.val?' on':''}" data-grp="tourn-type" data-val="${tp.val}" onclick="tournSetType('${tp.val}')">
             <span class="tc-icon">${tp.icon}</span>
             <span class="tc-name">${tp['name_'+lang]||tp.name_en}</span>
             <span class="tc-desc">${tp['desc_'+lang]||tp.desc_en}</span>
@@ -1247,14 +1266,14 @@ function renderTournAudienceCard(T) {
       <div class="form-row">
         <label class="form-label">${cfgT('tourn_segment')}</label>
         <div class="chips">
-          ${segments.map(s=>`<div class="chip${T.segment===s.val?' on':''}" onclick="tournSetSeg('${s.val}')">${cfgT(s.lbl)}</div>`).join('')}
+          ${segments.map(s=>`<div class="chip${T.segment===s.val?' on':''}" data-grp="tourn-seg" data-val="${s.val}" onclick="tournSetSeg('${s.val}')">${cfgT(s.lbl)}</div>`).join('')}
         </div>
       </div>
       <div class="form-row">
         <label class="form-label">${cfgT('tourn_duration')}</label>
         <div class="chips" style="flex-wrap:wrap">
           ${['flash','daily','weekly','monthly','multi_round'].map(d=>`
-            <div class="chip${T.duration===d?' on':''}" onclick="tournSet('duration','${d}')">${cfgT('dur_'+d.replace('_round',''))}</div>
+            <div class="chip${T.duration===d?' on':''}" data-grp="tourn-duration" data-val="${d}" onclick="tournSet('duration','${d}')">${cfgT('dur_'+d.replace('_round',''))}</div>
           `).join('')}
         </div>
       </div>
@@ -1277,20 +1296,20 @@ function renderTournSetupCard(T) {
       <div class="form-row">
         <label class="form-label">${cfgT('tourn_pool_model')}</label>
         <div class="chips">
-          ${['fixed','dynamic','hybrid'].map(p=>`<div class="chip${T.poolModel===p?' on':''}" onclick="tournSet('poolModel','${p}')">${cfgT('pool_'+p)}</div>`).join('')}
+          ${['fixed','dynamic','hybrid'].map(p=>`<div class="chip${T.poolModel===p?' on':''}" data-grp="tourn-pool" data-val="${p}" onclick="tournSet('poolModel','${p}')">${cfgT('pool_'+p)}</div>`).join('')}
         </div>
       </div>
       <div class="form-row">
         <label class="form-label">${cfgT('tourn_entry')}</label>
         <div class="chips">
-          ${['freeroll','buyin','ticket'].map(e=>`<div class="chip${T.entryModel===e?' on':''}" onclick="tournSet('entryModel','${e}')">${cfgT('entry_'+e)}</div>`).join('')}
+          ${['freeroll','buyin','ticket'].map(e=>`<div class="chip${T.entryModel===e?' on':''}" data-grp="tourn-entry" data-val="${e}" onclick="tournSet('entryModel','${e}')">${cfgT('entry_'+e)}</div>`).join('')}
         </div>
       </div>
       <div class="form-row">
         <label class="form-label">${cfgT('tourn_scoring')}</label>
         <div class="chips" style="flex-wrap:wrap">
           ${[['total_wins','wins'],['highest_multiplier','mult'],['most_spins','spins'],['mission_based','mission']].map(([val,k])=>`
-            <div class="chip${T.scoring===val?' on':''}" onclick="tournSet('scoring','${val}')">${cfgT('scoring_'+k)}</div>
+            <div class="chip${T.scoring===val?' on':''}" data-grp="tourn-scoring" data-val="${val}" onclick="tournSet('scoring','${val}')">${cfgT('scoring_'+k)}</div>
           `).join('')}
         </div>
       </div>
@@ -1298,14 +1317,14 @@ function renderTournSetupCard(T) {
         <label class="form-label">${cfgT('tourn_distribution')}</label>
         <div class="chips" style="flex-wrap:wrap">
           ${[['top_n','top_n'],['linear_decay','linear'],['flat_tier','flat'],['prize_drop','drop']].map(([val,k])=>`
-            <div class="chip${T.distribution===val?' on':''}" onclick="tournSet('distribution','${val}')">${cfgT('dist_'+k)}</div>
+            <div class="chip${T.distribution===val?' on':''}" data-grp="tourn-dist" data-val="${val}" onclick="tournSet('distribution','${val}')">${cfgT('dist_'+k)}</div>
           `).join('')}
         </div>
       </div>
       <div class="form-row">
         <label class="form-label">${cfgT('tourn_reentry')}</label>
         <div class="chips">
-          ${['single','rebuy','unlimited'].map(r=>`<div class="chip${T.reentry===r?' on':''}" onclick="tournSet('reentry','${r}')">${cfgT('reentry_'+r)}</div>`).join('')}
+          ${['single','rebuy','unlimited'].map(r=>`<div class="chip${T.reentry===r?' on':''}" data-grp="tourn-reentry" data-val="${r}" onclick="tournSet('reentry','${r}')">${cfgT('reentry_'+r)}</div>`).join('')}
         </div>
       </div>
       ${T.poolModel !== 'fixed' ? `<div class="form-row">
@@ -1319,20 +1338,26 @@ function renderTournSetupCard(T) {
 
 function tournSetType(val) {
   CS.tournament.type = val;
-  const cards = document.querySelectorAll('#content .chip.type-card[onclick*="tournSetType"]');
-  cards.forEach(c => c.classList.toggle('on', c.getAttribute('onclick').includes(`'${val}'`)));
+  document.querySelectorAll('#content [data-grp="tourn-type"]').forEach(c =>
+    c.classList.toggle('on', c.dataset.val === val)
+  );
 }
 function tournSetSeg(val) {
   CS.tournament.segment = val;
-  document.querySelectorAll('#content .chips .chip[onclick*="tournSetSeg"]').forEach(c =>
-    c.classList.toggle('on', c.getAttribute('onclick').includes(`'${val}'`))
+  document.querySelectorAll('#content [data-grp="tourn-seg"]').forEach(c =>
+    c.classList.toggle('on', c.dataset.val === val)
   );
 }
 function tournSet(key, val) {
   CS.tournament[key] = val;
-  document.querySelectorAll(`#content .chips .chip[onclick*="tournSet('${key}"]`).forEach(c =>
-    c.classList.toggle('on', c.getAttribute('onclick').includes(`'${val}'`))
-  );
+  const grpMap = { duration:'tourn-duration', poolModel:'tourn-pool', entryModel:'tourn-entry',
+                   scoring:'tourn-scoring', distribution:'tourn-dist', reentry:'tourn-reentry' };
+  const grp = grpMap[key];
+  if (grp) {
+    document.querySelectorAll(`#content [data-grp="${grp}"]`).forEach(c =>
+      c.classList.toggle('on', c.dataset.val === val)
+    );
+  }
 }
 
 async function onGenerateTournament() {
@@ -1367,7 +1392,10 @@ async function onGenerateTournament() {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify(body),
     });
-    if (!res.ok) throw new Error('API error');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
     const data = await res.json();
     T.result = data;
     CAI.tournament = { tab:'econ', audit:null, optimize:null, auditLoading:false, optimizeLoading:false };
@@ -1376,6 +1404,8 @@ async function onGenerateTournament() {
     showToast('Error: ' + e.message, '#ef4444');
   } finally {
     _generating = false;
+    const b = document.getElementById('btn-calculate');
+    if (b) { b.disabled = false; b.textContent = cfgT(CS.tournament.result ? 'recalculate' : 'calculate'); }
   }
 }
 
@@ -1562,7 +1592,10 @@ async function runTournAudit() {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ type: T.type, spec: T.result.spec, params: T.result.params }),
     });
-    if (!res.ok) throw new Error('API error');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
     CAI.tournament.audit = await res.json();
   } catch(e) { CAI.tournament.audit = { error: e.message }; }
   finally {
@@ -1581,7 +1614,10 @@ async function runTournOptimize() {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ type: T.type, params: T.result.params, econ: T.result.econ, mode:'optimize' }),
     });
-    if (!res.ok) throw new Error('API error');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
     CAI.tournament.optimize = await res.json();
   } catch(e) { CAI.tournament.optimize = { error: e.message }; }
   finally {
@@ -1618,7 +1654,7 @@ function renderLoyaltyModeCard(LY, lang) {
       <div class="card-title">${cfgT('loyal_mode')}</div>
       <div class="chips">
         ${LOYALTY_MODES.map(m=>`
-          <div class="chip type-card${LY.mode===m.val?' on':''}" onclick="loyalSetMode('${m.val}')">
+          <div class="chip type-card${LY.mode===m.val?' on':''}" data-grp="loyal-mode" data-val="${m.val}" onclick="loyalSetMode('${m.val}')">
             <span class="tc-icon">${m.icon}</span>
             <span class="tc-name">${m['name_'+lang]||m.name_en}</span>
             <span class="tc-desc">${m['desc_'+lang]||m.desc_en}</span>
@@ -1643,7 +1679,7 @@ function renderLoyaltyAudienceCard(LY) {
       <div class="form-row">
         <label class="form-label">${cfgT('loyal_segment')}</label>
         <div class="chips">
-          ${['new','mid','vip'].map(s=>`<div class="chip${LY.segment===s?' on':''}" onclick="loyalSetSeg('${s}')">${cfgT('seg_'+s)}</div>`).join('')}
+          ${['new','mid','vip'].map(s=>`<div class="chip${LY.segment===s?' on':''}" data-grp="loyal-seg" data-val="${s}" onclick="loyalSetSeg('${s}')">${cfgT('seg_'+s)}</div>`).join('')}
         </div>
       </div>
       <div class="form-row">
@@ -1705,14 +1741,14 @@ function renderLoyaltyDesignCard(LY) {
 
 function loyalSetMode(val) {
   CS.loyalty.mode = val;
-  document.querySelectorAll('#content .chip.type-card[onclick*="loyalSetMode"]').forEach(c =>
-    c.classList.toggle('on', c.getAttribute('onclick').includes(`'${val}'`))
+  document.querySelectorAll('#content [data-grp="loyal-mode"]').forEach(c =>
+    c.classList.toggle('on', c.dataset.val === val)
   );
 }
 function loyalSetSeg(val) {
   CS.loyalty.segment = val;
-  document.querySelectorAll('#content .chips .chip[onclick*="loyalSetSeg"]').forEach(c =>
-    c.classList.toggle('on', c.getAttribute('onclick').includes(`'${val}'`))
+  document.querySelectorAll('#content [data-grp="loyal-seg"]').forEach(c =>
+    c.classList.toggle('on', c.dataset.val === val)
   );
 }
 
@@ -1740,7 +1776,10 @@ async function onGenerateLoyalty() {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify(body),
     });
-    if (!res.ok) throw new Error('API error');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
     const data = await res.json();
     LY.result = data;
     CAI.loyalty = { tab:'econ', audit:null, optimize:null, missions:null, auditLoading:false, optimizeLoading:false, missionsLoading:false };
@@ -1749,6 +1788,8 @@ async function onGenerateLoyalty() {
     showToast('Error: ' + e.message, '#ef4444');
   } finally {
     _generating = false;
+    const b = document.getElementById('btn-calculate');
+    if (b) { b.disabled = false; b.textContent = cfgT(CS.loyalty.result ? 'recalculate' : 'calculate'); }
   }
 }
 
@@ -1766,7 +1807,7 @@ function renderLoyaltyResults(LY) {
 
   const econCards = `
     <div class="econ-grid">
-      ${econCard('', cfgT('econ_cost_p50'),  '$'+fmtN(costMo), cfgT('per_mo'),    '')}
+      ${econCard('', cfgT('loyal_monthly_cost'), '$'+fmtN(costMo), cfgT('per_mo'), '')}
       ${econCard('', cfgT('econ_cost_ggr'),  fmtPct(costGgr),  'of GGR',          costGgr<0.15?'pos':costGgr<0.25?'neu':'neg')}
       ${econCard('', cfgT('econ_retention'), fmtPct(retention),'lift',             'pos')}
       ${econCard('', cfgT('econ_ltv3'),      fmtPct(roi3),     '3-month',         roi3>0?'pos':'neg')}
@@ -1781,7 +1822,7 @@ function renderLoyaltyResults(LY) {
   if (tiers.length) {
     tierHtml = `
       <div class="card" style="margin-bottom:16px">
-        <div class="card-title" style="margin-bottom:10px">${cfgT('tier_name')}s</div>
+        <div class="card-title" style="margin-bottom:10px">${cfgT('tier_table_title')}</div>
         <table class="tier-table">
           <thead><tr>
             <th>${cfgT('tier_name')}</th>
@@ -2019,7 +2060,10 @@ async function runLoyaltyAudit() {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ config: LY.result.config, uiLang: cfgLang() }),
     });
-    if (!res.ok) throw new Error('API error');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
     CAI.loyalty.audit = await res.json();
   } catch(e) { CAI.loyalty.audit = { error: e.message }; }
   finally {
@@ -2038,7 +2082,10 @@ async function runLoyaltyOptimize() {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ config: LY.result.config, econ: LY.result.econ, uiLang: cfgLang() }),
     });
-    if (!res.ok) throw new Error('API error');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
     CAI.loyalty.optimize = await res.json();
   } catch(e) { CAI.loyalty.optimize = { error: e.message }; }
   finally {
@@ -2058,7 +2105,10 @@ async function runLoyaltyMissions() {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ config: d.config, econ: d.econ, uiLang: cfgLang() }),
     });
-    if (!res.ok) throw new Error('API error');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
     CAI.loyalty.missions = await res.json();
   } catch(e) { CAI.loyalty.missions = { error: e.message }; }
   finally {
