@@ -37,7 +37,13 @@ export function recalcCosts(cfg: BonusCfg, overrides: Record<string, unknown>): 
     const adjWCR = Math.max(0.01, econ['mixedWCR'] + (dWCR || 0));
     const adjRTP = Math.min(0.999, Math.max(0.5, econ['mixedRTP'] + (dRTP || 0)));
     const rawPayout = truncNormalPayout(bonusSize, wagerX, adjWCR, adjRTP);
-    const payout = (maxWin > 0) ? Math.min(rawPayout, maxWin) : rawPayout;
+    // Payout fallback for large-denomination currencies (MNT/RUB/KZT): truncNormalPayout
+    // underflows to ~1e-200 when wagerX >> breakeven, making Math.round() return 0.
+    // Mirror the same fallback used in buildConfig.ts calcScenario.
+    const adjBe  = adjWCR / (1 - adjRTP);
+    const adjEff = wagerX > 0 ? Math.min(1, adjBe / Math.max(adjBe, wagerX)) : 1;
+    const payoutFinal = rawPayout > bonusSize * 1e-6 ? rawPayout : bonusSize * adjEff;
+    const payout = (maxWin > 0) ? Math.min(payoutFinal, maxWin) : payoutFinal;
     return Math.round(payout * conv * elig(minD) * pl);
   }
 

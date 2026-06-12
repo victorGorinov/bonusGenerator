@@ -69,7 +69,12 @@ export function recalcCostsLocal(cfg, overrides) {
     const adjWCR = Math.max(0.01, (econ.mixedWCR || 0) + (dWCR || 0));
     const adjRTP = Math.min(0.999, Math.max(0.5, (econ.mixedRTP || 0.96) + (dRTP || 0)));
     const rawPayout = _truncNormalPayout(bonusSize, wagerX, adjWCR, adjRTP);
-    const payout = (maxWin > 0) ? Math.min(rawPayout, maxWin) : rawPayout;
+    // Payout fallback for large-denomination currencies (MNT/RUB/KZT): truncNormalPayout
+    // underflows to ~1e-200 when wagerX >> breakeven, making Math.round() return 0.
+    const adjBe  = adjWCR / (1 - adjRTP);
+    const adjEff = wagerX > 0 ? Math.min(1, adjBe / Math.max(adjBe, wagerX)) : 1;
+    const payoutFinal = rawPayout > bonusSize * 1e-6 ? rawPayout : bonusSize * adjEff;
+    const payout = (maxWin > 0) ? Math.min(payoutFinal, maxWin) : payoutFinal;
     return Math.round(payout * conv * elig(minD) * pl);
   }
 

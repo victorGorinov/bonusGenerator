@@ -135,7 +135,7 @@ const CFG_I18N = {
     econ_arpu:'ARPU', econ_ltv3:'3-mo LTV', econ_roi:'Campaign ROI',
     of_deposits:'of deposits', per_player:'per player', per_mo:'/mo',
     scenarios_title:'Cost Scenarios',
-    s_p10:'P10 (best case)', s_p50:'P50 (expected)', s_p90:'P90 (worst case)',
+    s_p10:'🟢 Best case', s_p50:'⚪ Expected', s_p90:'🔴 Worst case',
     s_cost:'Total Cost', s_per:'Per Player', s_conv:'Conversion',
     chain_title:'Deposit Chain Economics',
     chain_welcome:'1st Deposit', chain_dep2:'2nd Deposit', chain_dep3:'3rd Deposit',
@@ -211,7 +211,7 @@ const CFG_I18N = {
     econ_arpu:'ARPU', econ_ltv3:'LTV 3 мес', econ_roi:'ROI кампании',
     of_deposits:'от депозитов', per_player:'на игрока', per_mo:'/мес',
     scenarios_title:'Сценарии стоимости',
-    s_p10:'P10 (оптимистичный)', s_p50:'P50 (базовый)', s_p90:'P90 (негативный)',
+    s_p10:'🟢 Лучший', s_p50:'⚪ Базовый', s_p90:'🔴 Худший',
     s_cost:'Итоговая стоимость', s_per:'На игрока', s_conv:'Конверсия',
     chain_title:'Экономика цепочки депозитов',
     chain_welcome:'1-й депозит', chain_dep2:'2-й депозит', chain_dep3:'3-й депозит',
@@ -1030,19 +1030,63 @@ function renderBonusAiContent(B) {
       : Math.abs(n) >= 1e3 ? (n/1e3).toFixed(0)+'k' : String(Math.round(n));
     const cur = cfg.cur || 'USD';
     const netClr = eco.net >= 0 ? '#10b981' : '#ef4444';
+
+    // ── P10/P50/P90 cost scenarios ──────────────────────────────────────────
+    const E      = cfg.econ || {};
+    const costs  = B.costs;
+    const pl     = cfg.pl || B.players || 1;
+    const p10c   = costs ? costs.costs.w_p10 : (E.sP10?.cost || 0);
+    const p50c   = costs ? costs.costs.w_p50 : (E.sP50?.cost || 0);
+    const p90c   = costs ? costs.costs.w_p90 : (E.sP90?.cost || 0);
+    const conv10 = E.sP10?.conv ?? 0.10;
+    const conv50 = E.sP50?.conv ?? 0.20;
+    const conv90 = E.sP90?.conv ?? 0.40;
+    const base   = (costs ? costs.ratio : (E.costRatio||0)) > 0
+                   ? p50c / (costs ? costs.ratio : (E.costRatio||0)) : p50c;
+    const r10    = base > 0 ? p10c / base : 0;
+    const r50    = base > 0 ? p50c / base : 0;
+    const r90    = base > 0 ? p90c / base : 0;
+    // net = incr_revenue - cost for each scenario (scale revenue by conv ratio)
+    const net10  = eco.net * (conv10 / (conv50 || 1)) - (p10c - p50c) * 3;
+    const net90  = eco.net * (conv90 / (conv50 || 1)) - (p90c - p50c) * 3;
+
+    const scenRow = (lbl, val, valColor) =>
+      `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;font-size:11px">
+        <span style="color:var(--text2)">${lbl}</span>
+        <span style="font-weight:600;${valColor?'color:'+valColor+';':''}">${val}</span>
+      </div>`;
+    const scenCol = (lbl, badge, cost, ratio, conv, net, isMid) => `
+      <div style="flex:1;background:${isMid?'rgba(160,176,255,.07)':'rgba(255,255,255,.02)'};border-radius:8px;border:1px solid ${isMid?'rgba(160,176,255,.25)':'var(--border)'};padding:10px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:${isMid?'#a0b0ff':'var(--text2)'}">${badge}</div>
+        <div style="font-size:11px;color:var(--text);font-weight:600;margin:2px 0 8px">${lbl}</div>
+        <div style="border-top:1px solid rgba(255,255,255,.07);padding-top:7px">
+          ${scenRow(isRu?'Затраты (3мес)':'Cost (3mo)', fmtCur(cost*3, cur), null)}
+          ${scenRow(isRu?'Нагрузка / деп.':'Deposit load', (ratio*100).toFixed(1)+'%', null)}
+          ${scenRow(isRu?'Отыграют вейджер':'Wager convert', Math.round(conv*100)+'%', null)}
+          <div style="border-top:1px solid rgba(255,255,255,.07);margin-top:5px;padding-top:5px">
+            ${scenRow(isRu?'Чистый результат':'Net result (3mo)', (net>=0?'+':'')+fmtCur(Math.abs(net),'USD'), net>=0?'#10b981':'#ef4444')}
+          </div>
+        </div>
+      </div>`;
+
     const factorRow = (lbl, score, detail) =>
       `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px">
         <span style="color:#8892a4">${lbl}</span>
         <span style="color:#a0b0ff;font-family:monospace;font-size:11px;margin:0 8px">${detail}</span>
         <span style="font-weight:700;color:var(--text)">×${score.toFixed(3)}</span>
       </div>`;
+
     return `
       <div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${isRu?'Сценарии затрат':'Cost Scenarios'}</div>
+        <div style="display:flex;gap:7px;margin-bottom:14px">
+          ${scenCol(isRu?'Лучший сценарий':'Best case',  isRu?'🟢 Оптимист.':'🟢 Optimistic', p10c, r10, conv10, net10, false)}
+          ${scenCol(isRu?'Базовый':'Expected',          isRu?'⚪ Базовый':'⚪ Base',        p50c, r50, conv50, eco.net, true)}
+          ${scenCol(isRu?'Худший сценарий':'Worst case', isRu?'🔴 Пессимист.':'🔴 Pessimistic', p90c, r90, conv90, net90, false)}
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
           <div class="econ-card-sm"><div class="econ-label">${isRu?'Доп. игроков':'Incr. Players'}</div><div class="econ-val">${fmtN(eco.incrPl)}</div></div>
           <div class="econ-card-sm"><div class="econ-label">${isRu?'Доп. выручка (3мес)':'Incr. Revenue (3mo)'}</div><div class="econ-val">$${fmtN(eco.incrRev)}</div></div>
-          <div class="econ-card-sm"><div class="econ-label">${isRu?'Стоимость бонусов (3мес)':'Bonus Cost (3mo)'}</div><div class="econ-val">$${fmtN(eco.campCost3)}</div></div>
-          <div class="econ-card-sm" style="border-color:${netClr}"><div class="econ-label">${isRu?'Чистый результат':'Net Result'}</div><div class="econ-val" style="color:${netClr}">$${fmtN(eco.net)}</div></div>
         </div>
         <div style="margin-bottom:8px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">${isRu?'Факторы удержания (V2)':'Retention Factors (V2)'}</div>
         ${factorRow('F1 '+  (isRu?'Вейджер':'Wager'),       v.wagFactor, `${v.wagerX}× / be=${v.beW}×`)}
@@ -1420,6 +1464,7 @@ function renderTournEconContent(T) {
   const d    = T.result;
   const econ = d.econ || {};
   const cur  = d.cur || cfgGeo(T.geo).cur;
+  const isRu = cfgLang() === 'ru';
 
   const pLow  = econ.participantsLow  || 0;
   const pMid  = econ.participantsMid  || 0;
@@ -1430,46 +1475,58 @@ function renderTournEconContent(T) {
   const nLow  = econ.netMarginLow     || 0;
   const nMid  = econ.netMarginMid     || 0;
   const nHigh = econ.netMarginHigh    || 0;
+  const cpLow  = econ.costPerActiveLow  || (pLow  > 0 ? (econ.prizePoolCost||0) / pLow  : 0);
+  const cpMid  = econ.costPerActiveMid  || (pMid  > 0 ? (econ.prizePoolCost||0) / pMid  : 0);
+  const cpHigh = econ.costPerActiveHigh || (pHigh > 0 ? (econ.prizePoolCost||0) / pHigh : 0);
 
-  const scColor = n => n > 0 ? 'var(--success)' : n < 0 ? '#ef4444' : 'var(--text2)';
+  const scColor = n => n > 0 ? '#10b981' : n < 0 ? '#ef4444' : 'var(--text2)';
+
+  const L = isRu
+    ? { p10:'🔴 Мало участников', p50:'⚪ Ожидаемый', p90:'🟢 Высокий охват',
+        part:'Участников', ggr:'Прирост GGR', net:'Чистая маржа', cpp:'Стоим./участника',
+        poolCost:'Стоимость пула', retVal:'Ретеншн-ценность', totVal:'Итого ценность (база)', bePlay:'Break-even участников', roi:'ROI' }
+    : { p10:'🔴 Low turnout', p50:'⚪ Expected', p90:'🟢 High turnout',
+        part:'Participants', ggr:'GGR Lift', net:'Net Margin', cpp:'Cost / Participant',
+        poolCost:'Prize Pool Cost', retVal:'Retention Value', totVal:'Total Value (base)', bePlay:'Break-even Players', roi:'ROI' };
+
+  const th = s => `<th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);font-weight:600;font-size:11px">${s}</th>`;
+  const td = (v, bold, color) => `<td style="text-align:right;padding:8px;border-bottom:1px solid rgba(255,255,255,.04);${bold?'font-weight:700;':''};${color?'color:'+color+';':''}">${v}</td>`;
 
   return `
     <div style="padding:12px 0">
-      <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${isRu?'Сценарии':'Scenarios'}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px">
         <thead>
-          <tr style="color:var(--text2);font-size:12px">
-            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border)">Scenario</th>
-            <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border)">Participants</th>
-            <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border)">GGR Lift</th>
-            <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border)">Net Margin</th>
+          <tr style="color:var(--text2);background:rgba(255,255,255,.02)">
+            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px"></th>
+            ${th(L.p10)} ${th(L.p50)} ${th(L.p90)}
           </tr>
         </thead>
         <tbody>
-          <tr style="color:var(--text2)">
-            <td style="padding:8px 8px;border-bottom:1px solid var(--border)">Conservative</td>
-            <td style="text-align:right;padding:8px;border-bottom:1px solid var(--border)">${fmtN(pLow)}</td>
-            <td style="text-align:right;padding:8px;border-bottom:1px solid var(--border)">${fmtCur(gLow,cur)}</td>
-            <td style="text-align:right;padding:8px;border-bottom:1px solid var(--border);color:${scColor(nLow)}">${fmtCur(nLow,cur)}</td>
+          <tr>
+            <td style="padding:8px;color:var(--text2);font-size:11px;border-bottom:1px solid rgba(255,255,255,.04)">${L.part}</td>
+            ${td(fmtN(pLow), false, null)} ${td(fmtN(pMid), true, '#a0b0ff')} ${td(fmtN(pHigh), false, null)}
           </tr>
-          <tr style="font-weight:600">
-            <td style="padding:8px 8px;border-bottom:1px solid var(--border)">Expected</td>
-            <td style="text-align:right;padding:8px;border-bottom:1px solid var(--border)">${fmtN(pMid)}</td>
-            <td style="text-align:right;padding:8px;border-bottom:1px solid var(--border)">${fmtCur(gMid,cur)}</td>
-            <td style="text-align:right;padding:8px;border-bottom:1px solid var(--border);color:${scColor(nMid)}">${fmtCur(nMid,cur)}</td>
+          <tr>
+            <td style="padding:8px;color:var(--text2);font-size:11px;border-bottom:1px solid rgba(255,255,255,.04)">${L.ggr}</td>
+            ${td(fmtCur(gLow,cur), false, null)} ${td(fmtCur(gMid,cur), true, '#a0b0ff')} ${td(fmtCur(gHigh,cur), false, null)}
           </tr>
-          <tr style="color:var(--success)">
-            <td style="padding:8px 8px">Optimistic</td>
-            <td style="text-align:right;padding:8px">${fmtN(pHigh)}</td>
-            <td style="text-align:right;padding:8px">${fmtCur(gHigh,cur)}</td>
-            <td style="text-align:right;padding:8px;color:${scColor(nHigh)}">${fmtCur(nHigh,cur)}</td>
+          <tr>
+            <td style="padding:8px;color:var(--text2);font-size:11px;border-bottom:1px solid rgba(255,255,255,.04)">${L.cpp}</td>
+            ${td(fmtCur(cpLow,cur), false, 'var(--text2)')} ${td(fmtCur(cpMid,cur), false, 'var(--text2)')} ${td(fmtCur(cpHigh,cur), false, 'var(--text2)')}
+          </tr>
+          <tr>
+            <td style="padding:8px;color:var(--text2);font-size:11px">${L.net}</td>
+            ${td(fmtCur(nLow,cur), true, scColor(nLow))} ${td(fmtCur(nMid,cur), true, scColor(nMid))} ${td(fmtCur(nHigh,cur), true, scColor(nHigh))}
           </tr>
         </tbody>
       </table>
-      <div class="econ-grid" style="margin-top:16px">
-        ${econCard('', 'Prize Pool Cost',     fmtCur(econ.prizePoolCost||0, cur),     '',           '')}
-        ${econCard('', 'Retention Value',     fmtCur(econ.retentionValue||0, cur),    '+30-day GGR','pos')}
-        ${econCard('', 'Total Value (mid)',   fmtCur(econ.totalValueMid||0, cur),     '',           (econ.totalValueMid||0)>0?'pos':'neg')}
-        ${econCard('', 'Break-even Players', fmtN(econ.breakEvenParticipants||0),    'participants','')}
+      <div class="econ-grid" style="margin-top:4px">
+        ${econCard('', L.poolCost,  fmtCur(econ.prizePoolCost||0, cur),    '',              '')}
+        ${econCard('', L.retVal,    fmtCur(econ.retentionValue||0, cur),   '+30-day GGR',   'pos')}
+        ${econCard('', L.totVal,    fmtCur(econ.totalValueMid||0, cur),    '',              (econ.totalValueMid||0)>0?'pos':'neg')}
+        ${econCard('', L.bePlay,    fmtN(econ.breakEvenParticipants||0),   isRu?'участн.':'players', '')}
+        ${econCard('', L.roi,       (econ.roi||0).toFixed(0)+'%',          'P50',           (econ.roi||0)>=100?'pos':'neg')}
       </div>
     </div>
   `;
@@ -1811,6 +1868,7 @@ function loyalSetTab(tab) {
 function renderLoyaltyEconContent(LY) {
   const d    = LY.result;
   const econ = d.econ || {};
+  const isRu = cfgLang() === 'ru';
 
   const monthly     = econ.monthlyCostUSD     || 0;
   const tierCost    = econ.tierRewardCostUSD   || 0;
@@ -1825,43 +1883,100 @@ function renderLoyaltyEconContent(LY) {
   const ptsEarned   = econ.avgEarnedPointsPerPlayer || 0;
   const ptsRedeemed = econ.avgRedeemedPointsPerPlayer || 0;
 
+  // ── Synthetic P10/P50/P90 scenarios ──────────────────────────────────────
+  // P10 (conservative / high-breakage): player engagement is lower — fewer
+  //   points redeemed (×0.70 cost), lower retention effect (×0.80 revenue)
+  // P90 (optimistic / low-breakage): high engagement — more redemptions
+  //   (×1.30 cost), stronger retention (×1.20 revenue)
+  const SCENARIOS = [
+    { badge: isRu?'🟢 Низкий отток':'🟢 Low churn',    lbl: isRu?'Игроки мало погашают':'Players redeem less',  costMult:0.70, revMult:0.80, isMid:false },
+    { badge: isRu?'⚪ Базовый':'⚪ Base case',          lbl: isRu?'По модели (40% погашений)':'Model rate (40% redemption)', costMult:1.00, revMult:1.00, isMid:true  },
+    { badge: isRu?'🔴 Высокий отток':'🔴 High churn',  lbl: isRu?'Игроки активно погашают':'Players redeem heavily', costMult:1.30, revMult:1.20, isMid:false },
+  ];
+
+  const scColor = n => n > 0 ? '#10b981' : n < 0 ? '#ef4444' : 'var(--text2)';
+  const lyScRow = (lbl, val, valColor) =>
+    `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;font-size:11px">
+      <span style="color:var(--text2)">${lbl}</span>
+      <span style="font-weight:600;${valColor?'color:'+valColor+';':''}">${val}</span>
+    </div>`;
+  const scenCols = SCENARIOS.map(s => {
+    const sCost  = monthly * s.costMult;
+    const sRev3  = rev3m   * s.revMult;
+    const sRatio = costRatio * s.costMult;
+    const sRoi   = sCost > 0 ? (sRev3 / (sCost * 3)) : 0;
+    const sNet   = sRev3 - sCost * 3;
+    return `
+      <div style="flex:1;background:${s.isMid?'rgba(160,176,255,.07)':'rgba(255,255,255,.02)'};border-radius:8px;border:1px solid ${s.isMid?'rgba(160,176,255,.25)':'var(--border)'};padding:10px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:${s.isMid?'#a0b0ff':'var(--text2)'}">${s.badge}</div>
+        <div style="font-size:11px;color:var(--text);font-weight:600;margin:2px 0 8px">${s.lbl}</div>
+        <div style="border-top:1px solid rgba(255,255,255,.07);padding-top:7px">
+          ${lyScRow(isRu?'Затраты/мес':'Monthly cost', '$'+fmtN(sCost), null)}
+          ${lyScRow(isRu?'Нагрузка / GGR':'Cost / GGR', sRatio.toFixed(1)+'%', null)}
+          ${lyScRow('ROI 3' + (isRu?'мес':'mo'), fmtPct(sRoi), sRoi>0?'#10b981':'#ef4444')}
+          <div style="border-top:1px solid rgba(255,255,255,.07);margin-top:5px;padding-top:5px">
+            ${lyScRow(isRu?'Чистый результат':'Net result (3mo)', (sNet>=0?'+':'')+'$'+fmtN(Math.abs(sNet)), scColor(sNet))}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  const L = isRu
+    ? { scenarios:'Сценарии',            breakdown:'Разбивка затрат',
+        pts:'Экономика очков',           ptRedeem:'Погашение очков',
+        tierRew:'Награды тиров',         misRew:'Награды миссий',
+        moCost:'Ежемес. затраты',        costGgr:'Затраты / GGR',
+        retLift:'Прирост ретеншн',       roi:'ROI 3 мес',
+        addRev:'Доп. выручка 3мес',      be:'Окупаемость',
+        earned:'Начислено / игрок',      redeemed:'Погашено / игрок', liab:'Обязательства' }
+    : { scenarios:'Scenarios',           breakdown:'Cost Breakdown',
+        pts:'Points Economy',            ptRedeem:'Points Redemption',
+        tierRew:'Tier Rewards',          misRew:'Mission Rewards',
+        moCost:'Monthly Cost',           costGgr:'Cost / GGR',
+        retLift:'Retention Lift',        roi:'3-Month ROI',
+        addRev:'Added Revenue 3m',       be:'Break-even',
+        earned:'Earned / Player',        redeemed:'Redeemed / Player', liab:'Point Liability' };
+
   const costColor = costRatio < 15 ? 'var(--success)' : costRatio < 25 ? 'var(--text)' : '#ef4444';
 
   return `
     <div style="padding:12px 0">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${L.scenarios}</div>
+      <div style="display:flex;gap:7px;margin-bottom:16px">${scenCols}</div>
+
       <div class="econ-grid" style="margin-bottom:16px">
-        ${econCard('', 'Monthly Cost',     '$'+fmtN(monthly),          'total program',      '')}
-        ${econCard('', 'Cost / GGR',       costRatio.toFixed(1)+'%',   'of gross revenue',   costRatio<15?'pos':costRatio<25?'neu':'neg')}
-        ${econCard('', 'Retention Lift',   retention.toFixed(1)+'%',   '+activity',          'pos')}
-        ${econCard('', '3-Month ROI',      fmtPct(roi3),               '3-month',            roi3>0?'pos':'neg')}
-        ${econCard('', 'Added Revenue 3m', '$'+fmtN(rev3m),            '3-month',            'pos')}
-        ${econCard('', 'Break-even',       breakeven != null ? fmtN(breakeven,1)+' mo' : '—', 'months', '')}
+        ${econCard('', L.moCost,   '$'+fmtN(monthly),          isRu?'всего программа':'total program',   '')}
+        ${econCard('', L.costGgr,  costRatio.toFixed(1)+'%',   isRu?'от выручки':'of gross revenue',     costRatio<15?'pos':costRatio<25?'neu':'neg')}
+        ${econCard('', L.retLift,  retention.toFixed(1)+'%',   '+activity',   'pos')}
+        ${econCard('', L.roi,      fmtPct(roi3),               '3-month',     roi3>0?'pos':'neg')}
+        ${econCard('', L.addRev,   '$'+fmtN(rev3m),            '3-month',     'pos')}
+        ${econCard('', L.be,       breakeven != null ? fmtN(breakeven,1)+' mo' : '—', isRu?'мес':'months', '')}
       </div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Cost Breakdown</div>
-      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">${L.breakdown}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px">
         <tbody>
-          <tr style="border-bottom:1px solid var(--border)">
-            <td style="padding:7px 8px">Points Redemption</td>
+          <tr style="border-bottom:1px solid rgba(255,255,255,.05)">
+            <td style="padding:7px 8px">${L.ptRedeem}</td>
             <td style="text-align:right;padding:7px 8px">$${fmtN(redeemCost)}</td>
             <td style="text-align:right;padding:7px 8px;color:var(--text2)">${monthly>0?(redeemCost/monthly*100).toFixed(0)+'%':''}</td>
           </tr>
-          <tr style="border-bottom:1px solid var(--border)">
-            <td style="padding:7px 8px">Tier Rewards</td>
+          <tr style="border-bottom:1px solid rgba(255,255,255,.05)">
+            <td style="padding:7px 8px">${L.tierRew}</td>
             <td style="text-align:right;padding:7px 8px">$${fmtN(tierCost)}</td>
             <td style="text-align:right;padding:7px 8px;color:var(--text2)">${monthly>0?(tierCost/monthly*100).toFixed(0)+'%':''}</td>
           </tr>
           <tr>
-            <td style="padding:7px 8px">Mission Rewards</td>
+            <td style="padding:7px 8px">${L.misRew}</td>
             <td style="text-align:right;padding:7px 8px">$${fmtN(missionCost)}</td>
             <td style="text-align:right;padding:7px 8px;color:var(--text2)">${monthly>0?(missionCost/monthly*100).toFixed(0)+'%':''}</td>
           </tr>
         </tbody>
       </table>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Points Economy</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">${L.pts}</div>
       <div class="econ-grid">
-        ${econCard('', 'Earned / Player',   fmtN(ptsEarned,0)+' pts',  'per month',   '')}
-        ${econCard('', 'Redeemed / Player', fmtN(ptsRedeemed,0)+' pts','per month',   '')}
-        ${econCard('', 'Point Liability',   '$'+fmtN(liability),       'unredeemed',  '')}
+        ${econCard('', L.earned,   fmtN(ptsEarned,0)+' pts',   isRu?'в месяц':'per month',  '')}
+        ${econCard('', L.redeemed, fmtN(ptsRedeemed,0)+' pts', isRu?'в месяц':'per month',  '')}
+        ${econCard('', L.liab,     '$'+fmtN(liability),         isRu?'непогашено':'unredeemed', '')}
       </div>
     </div>
   `;
