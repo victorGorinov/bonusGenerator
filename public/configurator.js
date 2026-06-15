@@ -1048,7 +1048,12 @@ function renderBonusAiContent(B) {
       ? (n/1e6).toFixed(1)+'M'
       : Math.abs(n) >= 1e3 ? (n/1e3).toFixed(0)+'k' : String(Math.round(n));
     const cur = cfg.cur || 'USD';
-    const netClr = eco.net >= 0 ? '#10b981' : '#ef4444';
+
+    // ── Currency conversion table (sitecur → USD) for net result fix ───────
+    // P1 bug: P10/P90 cost adjustments were in sitecur, net was in USD
+    const SITECUR_TO_USD = { USD:1, USDT:1, SC:1, EUR:1/0.92, GBP:1/0.79,
+      DKK:1/7.37, RUB:1/90.9, KZT:1/500, MNT:1/3448, BTC:1/0.000015, ETH:1/0.00042 };
+    const fxToUsd = SITECUR_TO_USD[cur] ?? 1;
 
     // ── P10/P50/P90 cost scenarios ──────────────────────────────────────────
     const E      = cfg.econ || {};
@@ -1065,28 +1070,63 @@ function renderBonusAiContent(B) {
     const r10    = base > 0 ? p10c / base : 0;
     const r50    = base > 0 ? p50c / base : 0;
     const r90    = base > 0 ? p90c / base : 0;
-    // net = incr_revenue - cost for each scenario (scale revenue by conv ratio)
-    const net10  = eco.net * (conv10 / (conv50 || 1)) - (p10c - p50c) * 3;
-    const net90  = eco.net * (conv90 / (conv50 || 1)) - (p90c - p50c) * 3;
+    // Cost per converting player (in sitecur)
+    const cpp10  = conv10 * pl > 0 ? p10c / (conv10 * pl) : 0;
+    const cpp50  = conv50 * pl > 0 ? p50c / (conv50 * pl) : 0;
+    const cpp90  = conv90 * pl > 0 ? p90c / (conv90 * pl) : 0;
+    // Net (USD) — cost adjustments converted from sitecur via fxToUsd
+    const net10  = eco.net * (conv10 / (conv50 || 1)) - (p10c - p50c) * 3 * fxToUsd;
+    const net90  = eco.net * (conv90 / (conv50 || 1)) - (p90c - p50c) * 3 * fxToUsd;
 
-    const scenRow = (lbl, val, valColor) =>
-      `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;font-size:11px">
-        <span style="color:var(--text2)">${lbl}</span>
-        <span style="font-weight:600;${valColor?'color:'+valColor+';':''}">${val}</span>
-      </div>`;
-    const scenCol = (lbl, badge, cost, ratio, conv, net, isMid) => `
-      <div style="flex:1;background:${isMid?'rgba(160,176,255,.07)':'rgba(255,255,255,.02)'};border-radius:8px;border:1px solid ${isMid?'rgba(160,176,255,.25)':'var(--border)'};padding:10px">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:${isMid?'#a0b0ff':'var(--text2)'}">${badge}</div>
-        <div style="font-size:11px;color:var(--text);font-weight:600;margin:2px 0 8px">${lbl}</div>
-        <div style="border-top:1px solid rgba(255,255,255,.07);padding-top:7px">
-          ${scenRow(isRu?'Затраты (3мес)':'Cost (3mo)', fmtCur(cost*3, cur), null)}
-          ${scenRow(isRu?'Нагрузка / деп.':'Deposit load', (ratio*100).toFixed(1)+'%', null)}
-          ${scenRow(isRu?'Отыграют вейджер':'Wager convert', Math.round(conv*100)+'%', null)}
-          <div style="border-top:1px solid rgba(255,255,255,.07);margin-top:5px;padding-top:5px">
-            ${scenRow(isRu?'Чистый результат':'Net result (3mo)', (net>=0?'+':'')+fmtCur(Math.abs(net),'USD'), net>=0?'#10b981':'#ef4444')}
-          </div>
-        </div>
-      </div>`;
+    // Campaign ROI for summary card
+    const campRoi = eco.campCost3 > 0
+      ? Math.round((eco.incrRev - eco.campCost3) / eco.campCost3 * 100) : null;
+    const netClr  = eco.net >= 0 ? '#10b981' : '#ef4444';
+
+    // Factor formula for lift row tooltip
+    const ff = f => f.toFixed(3);
+    const formulaTip = `${ff(v.base)} × ${ff(v.wagFactor)} × ${ff(v.genFactor)} × ${ff(v.mechFactor)} × ${ff(v.rtpFactor)} × ${ff(v.platFactor)} = ${(v.lift*100).toFixed(1)}%`;
+
+    const L = isRu ? {
+      p50card:'Стоимость P50', p50sub:'медианный · на всех · 3 мес',
+      ltvlbl:'LTV 3 мес', ltvsub:'на 1 игрока · ARPU × 3 мес',
+      roilbl:'ROI кампании', roisub:'инкрем. выручка / бюджет',
+      netlbl:'Чистый результат', netsub:'за 3 мес · базовый сценарий',
+      scenHdr:'Сценарий', costHdr:'Стоимость (3мес)', cppHdr:'Стоим./игрок',
+      convHdr:'Конверсия вейджера',
+      convTip:'% игроков, которые полностью отыграют вейджер. Чем выше — тем больше бонусных выплат.',
+      loadLbl:'Бонусная нагрузка',
+      loadTip:'Затраты на бонус в % от объёма депозитов игроков',
+      best:'Лучший', baseSc:'Базовый', worst:'Худший',
+      factHdr:'Факторы удержания (V2)',
+      factTip:'Модель оценивает, насколько бонус увеличивает удержание игроков. База — исторический прирост для сегмента, каждый фактор корректирует его в зависимости от параметров кампании.',
+      baseRow:'База сегмента', liftRow:'Прирост удержания',
+      ltvTip:'Lifetime Value — доход с одного игрока за период',
+      roiTip:'Return on Investment — возврат на бонусный бюджет',
+      rtpTip:'Return to Player — теоретический процент возврата игроку',
+      wagerTip:'Wagering Requirement — сумма, которую нужно прокрутить для вывода бонуса',
+    } : {
+      p50card:'P50 Cost', p50sub:'median · all players · 3 mo',
+      ltvlbl:'LTV 3 mo', ltvsub:'per player · ARPU × 3 mo',
+      roilbl:'Campaign ROI', roisub:'incr. revenue / budget',
+      netlbl:'Net Result', netsub:'3 mo · base scenario',
+      scenHdr:'Scenario', costHdr:'Total Cost (3mo)', cppHdr:'Cost/Player',
+      convHdr:'Wager Conv.',
+      convTip:'% of players who complete wagering. Higher = more bonus payouts.',
+      loadLbl:'Bonus Load',
+      loadTip:'Bonus cost as % of total player deposits',
+      best:'Best case', baseSc:'Expected', worst:'Worst case',
+      factHdr:'Retention Factors (V2)',
+      factTip:'Model estimates how much the bonus increases player retention. Base is historical lift for the segment; each factor adjusts it based on campaign parameters.',
+      baseRow:'Segment Base', liftRow:'Retention Lift',
+      ltvTip:'Lifetime Value — projected revenue from one player over the period',
+      roiTip:'Return on Investment — return on the bonus budget',
+      rtpTip:'Return to Player — theoretical percentage returned to the player',
+      wagerTip:'Wagering Requirement — amount to wager before withdrawing the bonus',
+    };
+
+    const tdR = (v, bold, color) =>
+      `<td style="text-align:right;padding:8px;border-bottom:1px solid rgba(255,255,255,.04);${bold?'font-weight:700;':''}${color?'color:'+color+';':''}">${v}</td>`;
 
     const factorRow = (lbl, score, detail) =>
       `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px">
@@ -1097,26 +1137,88 @@ function renderBonusAiContent(B) {
 
     return `
       <div>
+        <!-- 4 summary cards -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+          <div class="econ-card-sm">
+            <div class="econ-label">${L.p50card}</div>
+            <div class="econ-val">${fmtCur(p50c*3, cur)}</div>
+            <div class="card-subtitle">${L.p50sub}</div>
+          </div>
+          <div class="econ-card-sm">
+            <div class="econ-label"><span data-tooltip="${L.ltvTip}">LTV</span> ${isRu?'3 мес':'3 mo'}</div>
+            <div class="econ-val pos">${fmtCur(E.ltv3||0, 'USD')}</div>
+            <div class="card-subtitle">${L.ltvsub}</div>
+          </div>
+          <div class="econ-card-sm">
+            <div class="econ-label"><span data-tooltip="${L.roiTip}">ROI</span> ${isRu?'кампании':'Campaign'}</div>
+            <div class="econ-val ${campRoi != null && campRoi >= 0 ? 'pos' : 'neg'}">${campRoi != null ? (campRoi >= 0 ? '+' : '') + campRoi + '%' : '—'}</div>
+            <div class="card-subtitle">${L.roisub}</div>
+          </div>
+          <div class="econ-card-sm" style="border-color:${netClr}">
+            <div class="econ-label">${L.netlbl}</div>
+            <div class="econ-val" style="color:${netClr}">${(eco.net>=0?'+':'')}$${fmtN(Math.abs(eco.net))}</div>
+            <div class="card-subtitle">${L.netsub}</div>
+          </div>
+        </div>
+
+        <!-- Scenarios table -->
         <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${isRu?'Сценарии затрат':'Cost Scenarios'}</div>
-        <div style="display:flex;gap:7px;margin-bottom:14px">
-          ${scenCol(isRu?'Лучший сценарий':'Best case',  isRu?'🟢 Оптимист.':'🟢 Optimistic', p10c, r10, conv10, net10, false)}
-          ${scenCol(isRu?'Базовый':'Expected',          isRu?'⚪ Базовый':'⚪ Base',        p50c, r50, conv50, eco.net, true)}
-          ${scenCol(isRu?'Худший сценарий':'Worst case', isRu?'🔴 Пессимист.':'🔴 Pessimistic', p90c, r90, conv90, net90, false)}
+        <table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;margin-bottom:14px">
+          <colgroup><col style="width:28%"><col style="width:24%"><col style="width:24%"><col style="width:24%"></colgroup>
+          <thead>
+            <tr style="color:var(--text2)">
+              <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em">${L.scenHdr}</th>
+              <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em">${L.costHdr}</th>
+              <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em">${L.cppHdr}</th>
+              <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em"><span data-tooltip="${L.convTip}">${L.convHdr}</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.04)"><span class="scenario-dot dot-best"></span>${L.best}</td>
+              ${tdR(fmtCur(p10c*3, cur), false, null)}
+              ${tdR(fmtCur(cpp10, cur), false, 'var(--text2)')}
+              ${tdR(Math.round(conv10*100)+'%', false, null)}
+            </tr>
+            <tr style="background:rgba(160,176,255,.04)">
+              <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.04);font-weight:600"><span class="scenario-dot dot-base"></span>${L.baseSc}</td>
+              ${tdR(fmtCur(p50c*3, cur), true, '#a0b0ff')}
+              ${tdR(fmtCur(cpp50, cur), false, 'var(--text2)')}
+              ${tdR(Math.round(conv50*100)+'%', true, null)}
+            </tr>
+            <tr>
+              <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)"><span class="scenario-dot dot-worst"></span>${L.worst}</td>
+              ${tdR(fmtCur(p90c*3, cur), false, null)}
+              ${tdR(fmtCur(cpp90, cur), false, 'var(--text2)')}
+              ${tdR(Math.round(conv90*100)+'%', false, null)}
+            </tr>
+            <tr>
+              <td colspan="4" style="padding:6px 8px;font-size:11px;color:var(--text2)">
+                <span data-tooltip="${L.loadTip}">${L.loadLbl}</span>:
+                ${(r10*100).toFixed(1)}% → ${(r50*100).toFixed(1)}% → ${(r90*100).toFixed(1)}%
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Retention factors -->
+        <div style="margin-bottom:8px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">
+          <span data-tooltip="${L.factTip}">${L.factHdr} ℹ</span>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-          <div class="econ-card-sm"><div class="econ-label">${isRu?'Доп. игроков':'Incr. Players'}</div><div class="econ-val">${fmtN(eco.incrPl)}</div></div>
-          <div class="econ-card-sm"><div class="econ-label">${isRu?'Доп. выручка (3мес)':'Incr. Revenue (3mo)'}</div><div class="econ-val">$${fmtN(eco.incrRev)}</div></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px">
+          <span style="color:#8892a4">${L.baseRow} (${B.segment||'mid'})</span>
+          <span style="color:#a0b0ff;font-family:monospace;font-size:11px;margin:0 8px">${B.segment||'mid'}</span>
+          <span style="font-weight:700;color:var(--text)">×${v.base.toFixed(3)}</span>
         </div>
-        <div style="margin-bottom:8px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">${isRu?'Факторы удержания (V2)':'Retention Factors (V2)'}</div>
-        ${factorRow('F1 '+  (isRu?'Вейджер':'Wager'),       v.wagFactor, `${v.wagerX}× / be=${v.beW}×`)}
-        ${factorRow('F2 '+  (isRu?'Матч-бонус':'Generosity'),v.genFactor, `${v.matchPct}%`)}
-        ${factorRow('F3 '+  (isRu?'Механики':'Mechanics'),   v.mechFactor,
+        ${factorRow(`F1 <span data-tooltip="${L.wagerTip}">${isRu?'Вейджер':'Wager'}</span>`, v.wagFactor, `${v.wagerX}× / be=${v.beW}×`)}
+        ${factorRow('F2 '+(isRu?'Матч-бонус':'Generosity'), v.genFactor, `${v.matchPct}%`)}
+        ${factorRow('F3 '+(isRu?'Механики':'Mechanics'), v.mechFactor,
           [v.hasNDB&&'NDB',v.hasReload&&'RL',v.hasDep2&&'D2',v.hasFS&&'FS',v.hasCB&&'CB'].filter(Boolean).join('+') || '—')}
-        ${factorRow('F4 RTP', v.rtpFactor, `${(v.rtp*100).toFixed(0)}%`)}
-        ${factorRow('F5 '+  (isRu?'Платформа':'Platform'),   v.platFactor, v.plat)}
+        ${factorRow(`F4 <span data-tooltip="${L.rtpTip}">RTP</span>`, v.rtpFactor, `${(v.rtp*100).toFixed(0)}%`)}
+        ${factorRow('F5 '+(isRu?'Платформа':'Platform'), v.platFactor, v.plat)}
         <div style="display:flex;justify-content:space-between;padding:6px 0;margin-top:4px;font-size:13px;font-weight:700">
-          <span style="color:var(--text)">${isRu?'Прирост удержания':'Retention Lift'}</span>
-          <span style="color:#a0b0ff">${(v.lift*100).toFixed(1)}%</span>
+          <span style="color:var(--text)">${L.liftRow}</span>
+          <span style="color:#a0b0ff" data-tooltip="${formulaTip}">= ${(v.lift*100).toFixed(1)}%</span>
         </div>
       </div>`;
   }
