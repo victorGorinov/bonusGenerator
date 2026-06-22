@@ -810,7 +810,7 @@ function updateBonusCostDisplay(data, cfg) {
   const upd = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = fmtCur(v, cur); };
   upd('bc-p50',  costs.w_p50);
   upd('bc-total',costs.total);
-  upd('bc-risk', costs.maxRisk);
+  upd('bc-risk', data.maxRisk);  // maxRisk is top-level in recalcCosts response, not inside data.costs
   const ratioEl = document.getElementById('bc-ratio');
   if (ratioEl) {
     ratioEl.textContent = fmtPct(data.ratio);
@@ -1227,10 +1227,10 @@ function renderBonusAiContent(B) {
       `<td style="text-align:right;padding:8px;border-bottom:1px solid rgba(255,255,255,.04);${bold?'font-weight:700;':''}${color?'color:'+color+';':''}">${v}</td>`;
 
     const factorRow = (lbl, score, detail) =>
-      `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px">
+      `<div style="display:grid;grid-template-columns:1fr 110px 58px;align-items:baseline;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px">
         <span style="color:#8892a4">${lbl}</span>
-        <span style="color:#a0b0ff;font-family:monospace;font-size:11px;margin:0 8px">${detail}</span>
-        <span style="font-weight:700;color:var(--text)">×${score.toFixed(3)}</span>
+        <span style="color:#a0b0ff;font-family:monospace;font-size:11px;text-align:center">${detail}</span>
+        <span style="font-weight:700;color:var(--text);text-align:right">×${score.toFixed(3)}</span>
       </div>`;
 
     return `
@@ -1305,10 +1305,10 @@ function renderBonusAiContent(B) {
         <div style="margin-bottom:8px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">
           <span data-tooltip="${L.factTip}">${L.factHdr} ℹ</span>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px">
+        <div style="display:grid;grid-template-columns:1fr 110px 58px;align-items:baseline;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px">
           <span style="color:#8892a4">${L.baseRow} (${B.segment||'mid'})</span>
-          <span style="color:#a0b0ff;font-family:monospace;font-size:11px;margin:0 8px">${B.segment||'mid'}</span>
-          <span style="font-weight:700;color:var(--text)">×${v.base.toFixed(3)}</span>
+          <span style="color:#a0b0ff;font-family:monospace;font-size:11px;text-align:center">${B.segment||'mid'}</span>
+          <span style="font-weight:700;color:var(--text);text-align:right">×${v.base.toFixed(3)}</span>
         </div>
         ${factorRow(`F1 <span data-tooltip="${L.wagerTip}">${isRu?'Вейджер':'Wager'}</span>`, v.wagFactor, `${v.wagerX}× / be=${v.beW}×`)}
         ${factorRow('F2 '+(isRu?'Матч-бонус':'Generosity'), v.genFactor, `${v.matchPct}%`)}
@@ -1316,9 +1316,10 @@ function renderBonusAiContent(B) {
           [v.hasNDB&&'NDB',v.hasReload&&'RL',v.hasDep2&&'D2',v.hasFS&&'FS',v.hasCB&&'CB'].filter(Boolean).join('+') || '—')}
         ${factorRow(`F4 <span data-tooltip="${L.rtpTip}">RTP</span>`, v.rtpFactor, `${(v.rtp*100).toFixed(0)}%`)}
         ${factorRow('F5 '+(isRu?'Платформа':'Platform'), v.platFactor, v.plat)}
-        <div style="display:flex;justify-content:space-between;padding:6px 0;margin-top:4px;font-size:13px;font-weight:700">
+        <div style="display:grid;grid-template-columns:1fr 110px 58px;padding:6px 0;margin-top:4px;font-size:13px;font-weight:700">
           <span style="color:var(--text)">${L.liftRow}</span>
-          <span style="color:#a0b0ff" data-tooltip="${formulaTip}">= ${(v.lift*100).toFixed(1)}%</span>
+          <span></span>
+          <span style="color:#a0b0ff;text-align:right" data-tooltip="${formulaTip}">= ${(v.lift*100).toFixed(1)}%</span>
         </div>
       </div>`;
   }
