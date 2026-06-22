@@ -822,16 +822,13 @@ function updateBonusCostDisplay(data, cfg) {
   const pl = cfg.pl || 0;
   const ltv3El = document.getElementById('bc-ltv3');
   if (ltv3El) ltv3El.textContent = fmtCur((E.ltv3||0) * pl, 'USD');
-  // Campaign ROI: масштабируем CAC через отношение текущего costRatio к базовому
-  // campCac = geo_cac × (liveRatio / baseRatio); campRoi = (totLTV − 3×pl×campCac) / (3×pl×campCac)
+  // Platform ROI: geo-level benchmark (LTV3 vs 3×CAC), pre-calculated in buildConfig as roi3.
+  // Do NOT scale by bonus costRatio — that mixes welcome-only recalcCosts ratio with
+  // all-mechanics buildConfig ratio, producing nonsense values when wager is punishing.
   const roiEl = document.getElementById('bc-roi');
-  if (roiEl && E.cac && E.costRatio && data.ratio != null) {
-    const campCac    = E.cac * (data.ratio / E.costRatio);
-    const campBudget = 3 * pl * campCac;
-    const totLTV     = (E.totLTV != null) ? E.totLTV : pl * (E.ltv3||0);
-    const campRoi    = campBudget > 0 ? Math.round((totLTV - campBudget) / campBudget * 100) : 0;
-    roiEl.textContent = campRoi.toFixed(0) + '%';
-    roiEl.style.color = campRoi >= 0 ? 'var(--success)' : '#ef4444';
+  if (roiEl && E.roi3 != null) {
+    roiEl.textContent = E.roi3.toFixed(0) + '%';
+    roiEl.style.color = E.roi3 >= 0 ? 'var(--success)' : '#ef4444';
   }
   // Обновить вкладку Economics (Net Result зависит от costs.ratio)
   const aiEl = document.getElementById('bonus-ai-content');
