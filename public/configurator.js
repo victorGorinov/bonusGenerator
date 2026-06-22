@@ -132,7 +132,7 @@ const CFG_I18N = {
     calculate:'⚡ Calculate', recalculate:'↻ Recalculate',
     // econ
     econ_cost_p50:'P50 Cost', econ_cost_ratio:'Cost / Deposits', econ_max_risk:'Max Risk (P90)',
-    econ_arpu:'ARPU', econ_ltv3:'3-mo LTV', econ_roi:'Campaign ROI',
+    econ_arpu:'ARPU', econ_ltv3:'3-mo LTV', econ_roi:'Platform ROI', roi_platform_sub:'LTV3 / CAC · 3-mo benchmark',
     of_deposits:'of deposits', per_player:'per player', per_mo:'/mo',
     scenarios_title:'Cost Scenarios',
     s_p10:'🟢 Best case', s_p50:'⚪ Expected', s_p90:'🔴 Worst case',
@@ -209,7 +209,7 @@ const CFG_I18N = {
     pct_lbl:'Процент %', count_lbl:'Спинов', value_lbl:'Цена спина', cb_wager_lbl:'Вейджер ×',
     calculate:'⚡ Рассчитать', recalculate:'↻ Пересчитать',
     econ_cost_p50:'P50 Стоимость', econ_cost_ratio:'Стоимость / Депозиты', econ_max_risk:'Макс. риск (P90)',
-    econ_arpu:'ARPU', econ_ltv3:'LTV 3 мес', econ_roi:'ROI кампании',
+    econ_arpu:'ARPU', econ_ltv3:'LTV 3 мес', econ_roi:'ROI платформы', roi_platform_sub:'LTV3 / CAC · 3-мес. бенчмарк',
     of_deposits:'от депозитов', per_player:'на игрока', per_mo:'/мес',
     scenarios_title:'Сценарии стоимости',
     s_p10:'🟢 Лучший', s_p50:'⚪ Базовый', s_p90:'🔴 Худший',
@@ -869,7 +869,7 @@ function renderBonusResults(B) {
       ${econCard('bc-risk',  cfgT('econ_max_risk'),    fmtCur(maxRisk,cur),  cfgT('per_mo'),  '', true)}
       ${econCard('bc-arpu',  cfgT('econ_arpu'),        fmtCur(E.arpu||0,'USD'), cfgT('per_player'), 'pos')}
       ${econCard('bc-ltv3',  cfgT('econ_ltv3'),        fmtCur((E.ltv3||0)*pl,'USD'), '3 months', 'pos')}
-      ${econCard('bc-roi',   cfgT('econ_roi'),         ((E.roi3||E.roi||0)).toFixed(0) + '%', '', 'pos')}
+      ${econCard('bc-roi',   cfgT('econ_roi'),         ((E.roi3||E.roi||0)).toFixed(0) + '%', cfgT('roi_platform_sub'), 'pos')}
     </div>
   `;
 
@@ -1004,8 +1004,15 @@ function computeBonusLift(B) {
   const rtp     = (B.rtp || 96) / 100;
   const plat    = B.plat || 'both';
 
-  const F1 = clamp(0.7 + 0.3 * clamp(beW / wagerX, 0.3, 2.0), 0.65, 1.35);
-  const F2 = clamp(0.85 + 0.30 * Math.min(matchPct / 100, 1.0), 0.85, 1.15);
+  // F1: nonlinear penalty when wager exceeds breakeven (overpriced wager looks player-friendly
+  // on paper but isn't — Math.pow(ratio,1.5) makes the penalty steeper than a linear clamp)
+  const wagerRatio = beW / wagerX;
+  const wagerPenalty = wagerRatio < 1 ? Math.pow(wagerRatio, 1.5) : clamp(wagerRatio, 1.0, 2.0);
+  const F1 = clamp(0.7 + 0.3 * clamp(wagerPenalty, 0.3, 2.0), 0.65, 1.35);
+  // F2: weights match% against wager size — a high match% behind a high wager delivers
+  // little effective value to the player, so it shouldn't score as generous
+  const effectiveValue = (matchPct / 100) / Math.max(wagerX / 10, 1);
+  const F2 = clamp(0.85 + 0.30 * Math.min(effectiveValue, 1.0), 0.85, 1.15);
   const F3 = 1
     + (B.active.ndb      ? 0.06 : 0)
     + (B.active.reload   ? 0.08 : 0)
@@ -1032,6 +1039,100 @@ function computeBonusLift(B) {
       rtpFactor:F4, rtp, platFactor:F5, plat, base, lift },
     economics: { net, campCost3, incrRev, incrPl, pl },
   };
+}
+
+// First-principles per-player and per-campaign breakdown of bonus economics,
+// independent of the Incremental Revenue v2 lift model (sitecur values, not USD)
+function computeBonusBreakdown({ bonusSize, wagerX, rtp, pl, conv }) {
+  const he             = 1 - rtp;
+  const ggrPerWager     = bonusSize * wagerX * he;
+  const payoutPerPlayer = Math.max(0, bonusSize - ggrPerWager);
+  const netPerPlayer    = ggrPerWager - bonusSize;
+  const activePlayers   = Math.round(pl * conv);
+  const totalGgr        = ggrPerWager * activePlayers;
+  const totalPaid       = bonusSize * activePlayers;
+  const netCampaign     = netPerPlayer * activePlayers;
+  return { ggrPerWager, payoutPerPlayer, netPerPlayer, activePlayers, totalGgr, totalPaid, netCampaign };
+}
+
+// "РАЗБИВКА ЭКОНОМИКИ" — first-principles per-player / per-campaign breakdown,
+// shown alongside (not instead of) the Incremental Revenue v2 model. Sitecur, not USD.
+function renderBonusBreakdownTable(B, v, cur, isRu) {
+  const cfg = B.config;
+  const E   = cfg.econ || {};
+  const bonusSize = E.bonusSize || 0;
+  const wagerX    = v.wagerX;
+  const rtp       = v.rtp;
+  const pl        = E.pl || B.players || 1;
+
+  const scenarios = [
+    { key:'best',  dot:'dot-best',  lbl:isRu?'Оптимист.':'Optimistic', conv:0.10 },
+    { key:'base',  dot:'dot-base',  lbl:isRu?'Базовый':'Expected',     conv:0.20 },
+    { key:'worst', dot:'dot-worst', lbl:isRu?'Пессимист.':'Pessimistic', conv:0.40 },
+  ].map(s => ({ ...s, bd: computeBonusBreakdown({ bonusSize, wagerX, rtp, pl, conv: s.conv }) }));
+  const base = scenarios[1].bd; // per-player metrics are conv-independent — any scenario works
+
+  const rowPP = (lbl, val, bold, color) =>
+    `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px">
+      <span style="color:#8892a4">${lbl}</span>
+      <span style="${bold?'font-weight:700;':''}${color?'color:'+color+';':''}font-family:monospace">${val}</span>
+    </div>`;
+  const netPPClr = base.netPerPlayer >= 0 ? '#10b981' : '#ef4444';
+
+  const tdR = (val, bold, color) =>
+    `<td style="text-align:right;padding:7px 6px;border-bottom:1px solid rgba(255,255,255,.04);${bold?'font-weight:700;':''}${color?'color:'+color+';':''}">${val}</td>`;
+
+  const L = isRu ? {
+    title:'Разбивка экономики', sub:'первичные принципы — независимо от модели V2',
+    perPlayer:'На одного игрока', perCamp:'На всю кампанию · 3 месяца',
+    bonusSizeR:'Размер бонуса', wageredR:'Всего прокрутить', ggrR:'МО дохода казино',
+    payoutR:'МО выплаты игроку', netPPR:'Чистый результат / игрок',
+    scenHdr:'Сценарий', activeHdr:'Отыгр. вейджер', ggrHdr:'МО дохода', paidHdr:'Выдано бонусов', netHdr:'Чистая выручка',
+  } : {
+    title:'Economics Breakdown', sub:'first-principles — independent of the V2 model',
+    perPlayer:'Per Player', perCamp:'Per Campaign · 3 months',
+    bonusSizeR:'Bonus Size', wageredR:'Total Wagered', ggrR:'Casino GGR (EV)',
+    payoutR:'Player Payout (EV)', netPPR:'Net Result / Player',
+    scenHdr:'Scenario', activeHdr:'Wager Complete', ggrHdr:'GGR (EV)', paidHdr:'Bonuses Paid', netHdr:'Net Revenue',
+  };
+
+  return `
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">${L.title}</div>
+      <div style="font-size:10px;color:#666;margin-bottom:8px">${L.sub}</div>
+
+      <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px">${L.perPlayer}</div>
+      ${rowPP(L.bonusSizeR, fmtCur(bonusSize, cur), false, null)}
+      ${rowPP(L.wageredR,   fmtCur(bonusSize*wagerX, cur), false, null)}
+      ${rowPP(L.ggrR,       fmtCur(base.ggrPerWager, cur), false, null)}
+      ${rowPP(L.payoutR,    fmtCur(base.payoutPerPlayer, cur), false, null)}
+      ${rowPP(L.netPPR,     (base.netPerPlayer>=0?'+':'')+fmtCur(Math.abs(base.netPerPlayer), cur), true, netPPClr)}
+
+      <div style="font-size:11px;font-weight:600;color:var(--text2);margin:12px 0 4px">${L.perCamp}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed">
+        <colgroup><col style="width:28%"><col style="width:24%"><col style="width:24%"><col style="width:24%"></colgroup>
+        <thead>
+          <tr style="color:var(--text2)">
+            <th style="text-align:left;padding:6px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em">${L.scenHdr}</th>
+            <th style="text-align:right;padding:6px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em">${L.ggrHdr}</th>
+            <th style="text-align:right;padding:6px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em">${L.paidHdr}</th>
+            <th style="text-align:right;padding:6px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em">${L.netHdr}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${scenarios.map(s => {
+            const netClr = s.bd.netCampaign >= 0 ? '#10b981' : '#ef4444';
+            const rowBg  = s.key === 'base' ? 'background:rgba(160,176,255,.04);' : '';
+            return `<tr style="${rowBg}">
+              <td style="padding:7px 6px;border-bottom:1px solid rgba(255,255,255,.04);${s.key==='base'?'font-weight:600':''}"><span class="scenario-dot ${s.dot}"></span>${s.lbl} (${(s.conv*100).toFixed(0)}%)</td>
+              ${tdR(fmtCur(s.bd.totalGgr, cur), s.key==='base', s.key==='base'?'#a0b0ff':null)}
+              ${tdR(fmtCur(s.bd.totalPaid, cur), false, null)}
+              ${tdR((s.bd.netCampaign>=0?'+':'')+fmtCur(Math.abs(s.bd.netCampaign), cur), true, netClr)}
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
 }
 
 function renderBonusAiContent(B) {
@@ -1090,7 +1191,7 @@ function renderBonusAiContent(B) {
     const L = isRu ? {
       p50card:'Стоимость P50', p50sub:'медианный · на всех · 3 мес',
       ltvlbl:'LTV 3 мес', ltvsub:'на 1 игрока · ARPU × 3 мес',
-      roilbl:'ROI кампании', roisub:'инкрем. выручка / бюджет',
+      roilbl:'ROI бонуса', roisub:'инкрем. выручка / бонусный бюджет',
       netlbl:'Чистый результат', netsub:'за 3 мес · базовый сценарий',
       scenHdr:'Сценарий', costHdr:'Стоимость (3мес)', cppHdr:'Стоим./игрок',
       convHdr:'Конверсия вейджера',
@@ -1108,7 +1209,7 @@ function renderBonusAiContent(B) {
     } : {
       p50card:'P50 Cost', p50sub:'median · all players · 3 mo',
       ltvlbl:'LTV 3 mo', ltvsub:'per player · ARPU × 3 mo',
-      roilbl:'Campaign ROI', roisub:'incr. revenue / budget',
+      roilbl:'Bonus ROI', roisub:'incr. revenue / bonus budget',
       netlbl:'Net Result', netsub:'3 mo · base scenario',
       scenHdr:'Scenario', costHdr:'Total Cost (3mo)', cppHdr:'Cost/Player',
       convHdr:'Wager Conv.',
@@ -1150,7 +1251,7 @@ function renderBonusAiContent(B) {
             <div class="card-subtitle">${L.ltvsub}</div>
           </div>
           <div class="econ-card-sm">
-            <div class="econ-label"><span data-tooltip="${L.roiTip}">ROI</span> ${isRu?'кампании':'Campaign'}</div>
+            <div class="econ-label"><span data-tooltip="${L.roiTip}">ROI</span> ${isRu?'бонуса':'Bonus'}</div>
             <div class="econ-val ${campRoi != null && campRoi >= 0 ? 'pos' : 'neg'}">${campRoi != null ? (campRoi >= 0 ? '+' : '') + campRoi + '%' : '—'}</div>
             <div class="card-subtitle">${L.roisub}</div>
           </div>
@@ -1160,6 +1261,8 @@ function renderBonusAiContent(B) {
             <div class="card-subtitle">${L.netsub}</div>
           </div>
         </div>
+
+        ${renderBonusBreakdownTable(B, v, cur, isRu)}
 
         <!-- Scenarios table -->
         <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${isRu?'Сценарии затрат':'Cost Scenarios'}</div>

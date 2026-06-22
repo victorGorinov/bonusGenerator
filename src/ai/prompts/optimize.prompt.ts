@@ -57,8 +57,8 @@ Net result: $${fmtN(eco.net)} USD — NEGATIVE
 
   const factorFormulas = `
 Factor formulas (for reference):
-- F1 Wager: clamp(0.7 + 0.3 × clamp(beW/wagerX, 0.3, 2.0), 0.65, 1.35). Score>1 when breakeven_wager < wager (player-friendly). Reducing wager brings breakeven closer.
-- F2 Generosity: clamp(0.85 + 0.30 × min(matchPct/100, 1.0), 0.85, 1.15). matchPct = bonus/deposit%. Score peaks at 1.15 when matchPct ≥ 100%.
+- F1 Wager: ratio = beW/wagerX; penalty = ratio<1 ? ratio^1.5 : clamp(ratio,1,2); F1 = clamp(0.7 + 0.3 × clamp(penalty, 0.3, 2.0), 0.65, 1.35). Nonlinear penalty when wager exceeds breakeven — steeper than a linear ratio. Reducing wager brings breakeven closer and raises the score.
+- F2 Generosity: effectiveValue = (matchPct/100) / max(wagerX/10, 1); F2 = clamp(0.85 + 0.30 × min(effectiveValue, 1.0), 0.85, 1.15). A high match% behind a high wager delivers little real value — score reflects effective value, not nominal generosity.
 - F3 Mechanics: 1 + NDB×0.06 + Reload×0.08 + Dep2×0.04 + FS>20×0.04 + Cashback≥5%×0.07. Each mechanic adds retention.
 - F4 RTP: Range 85%–99%. Higher RTP = slightly better retention, max ×1.06 at 99%.
 - F5 Platform: mobile=×1.05, both=×1.0, desktop=×0.97.
