@@ -1,6 +1,6 @@
 # CLAUDE.md — Retomat: Retention OS for iGaming
 
-Complete architecture reference for Claude Code sessions. Updated: 2026-06-11.
+Complete architecture reference for Claude Code sessions. Updated: 2026-06-22.
 
 ---
 
@@ -432,9 +432,21 @@ CAI = { bonus, tournament, loyalty }  // per-type AI tab state: { tab, audit, op
 2. `runBonusRecalc()` → `POST /api/recalc` (with `B.ov` overrides) → `updateBonusCostDisplay(data, cfg)`
 3. `updateBonusCostDisplay()` patches cost/risk/ROI/LTV DOM elements in place (no full re-render); also refreshes Economics tab if open
 
-**Bonus Economics tab (`CAI.bonus.tab === 'econ'`):** Renders V2 retention lift model — 4 summary cards (Cost P50, Max Risk, Net Result, Campaign ROI) + F1–F5 factor breakdown table.
+**Bonus Economics tab (`CAI.bonus.tab === 'econ'`):** Renders V2 retention lift model. Structure:
 
-**`computeBonusLift(B)`** helper — computes full V2 lift object `{ wagFactor, genFactor, mechFactor, rtpFactor, platFactor, base, lift, … }` and `economics { net, campCost3, incrRev, incrPl, pl }`. Used by Audit and Optimize API calls.
+- **6 econ-grid cards** (top row, always visible after Generate): P50 Cost · Cost/Deposits · Max Risk (P90) · ARPU · LTV 3 mo · **ROI Платформы** (`E.roi3` from buildConfig — LTV3/CAC benchmark, NOT recalculated from bonus cost)
+- **4 econ-card-sm** inside `bonus-ai-content` (econ tab): P50 Cost (3mo) · LTV 3 mo · **ROI Бонуса** (campRoi = incrRev/campCost3) · Net Result
+- **First-principles breakdown table** (`renderBonusBreakdownTable`): "На игрока" block (bonusSize, B×WR, GGR/player, payout/player, net/player) + "На кампанию" block (pl, active, totalGgr, totalPaid, netCampaign) — 3 columns by conv scenario (10/20/40%). Values in sitecur.
+- **Scenario table**: Лучший/Базовый/Худший with colored dot indicators and `grid-template-columns` for column alignment
+- **Factor table**: Base Segment row + F1–F5 rows, each in 3-column CSS grid (`1fr 110px 58px`), formula tooltip on Retention Lift row, ℹ tooltip on section header
+
+**ROI naming distinction (critical):** "ROI Платформы" = `E.roi3` (buildConfig geo benchmark, `(LTV3/CAC - 1) × 100`). "ROI Бонуса" = `campRoi` (incremental revenue model: `(incrRev - campCost3) / campCost3 × 100`). These are different metrics — never conflate them.
+
+**`computeBonusLift(B)`** helper — computes V2 lift object `{ wagFactor, genFactor, mechFactor, rtpFactor, platFactor, base, lift, wagerX, beW, matchPct, rtp, plat, … }` and `economics { net, campCost3, incrRev, incrPl, pl }`. Used by Audit and Optimize API calls, also by the Econ tab render.
+
+**`computeBonusBreakdown({ bonusSize, wagerX, rtp, pl, conv })`** — first-principles per-player and per-campaign breakdown. Returns `{ ggrPerWager, payoutPerPlayer, netPerPlayer, activePlayers, totalGgr, totalPayout, netCampaign }`. When `WR × (1 − RTP) > 1` (wager exceeds breakeven), `payoutPerPlayer = 0` and `netPerPlayer > 0` (casino earns on wagering alone). Values in sitecur.
+
+**Net result currency fix:** `renderBonusAiContent` holds `SITECUR_TO_USD` conversion table (USD/EUR/GBP/DKK/RUB/KZT/MNT/BTC/ETH). P10/P90 net scenario adjustments apply `fxToUsd` factor: `net10 = eco.net × (conv10/conv50) − (p10c − p50c) × 3 × fxToUsd`. This prevents mixing sitecur cost deltas with USD-denominated incrRev.
 
 **Tournament Economics tab:** `renderTournEconContent(T)` — scenario table (Conservative/Expected/Optimistic) with participants, GGR lift, net margin + 4 metric cards (Prize Pool Cost, Retention Value, Total Value, Break-even Players).
 
@@ -662,11 +674,13 @@ lift = min(0.40, base × F1 × F2 × F3 × F4 × F5)
 | Factor | Formula | Notes |
 |--------|---------|-------|
 | Base | `SEG_LIFT[seg]` | new=0.25, mid=0.18, vip=0.12 |
-| F1 Wager | `clamp(0.7 + 0.3 × clamp(beW/wagerX, 0.3, 2.0), 0.65, 1.35)` | >1 when beW>wagerX |
-| F2 Generosity | `clamp(0.85 + 0.30 × min(matchPct/100, 1.0), 0.85, 1.15)` | neutral at 50% match |
+| F1 Wager | `penalty = ratio<1 ? pow(ratio,1.5) : clamp(ratio,1,2)` where `ratio=beW/wagerX`; `F1 = clamp(0.7 + 0.3×clamp(penalty,0.3,2), 0.65, 1.35)` | **Nonlinear** penalty when wager>breakeven — at ratio=0.8 gives 0.716 not 0.8 |
+| F2 Generosity | `effectiveValue = (matchPct/100) / max(wagerX/10, 1)`; `F2 = clamp(0.85 + 0.30×min(effectiveValue,1), 0.85, 1.15)` | **Effective value** accounts for wager burden — 200% match at 30x ≈ 0.917, not 1.15 |
 | F3 Mechanics | `1 + NDB×0.06 + RL×0.08 + D2×0.04 + FS×0.04 + CB×0.07` | max ≈ 1.29 |
 | F4 RTP | `clamp(0.94 + 0.12 × ((rtp−0.85)/0.14), 0.94, 1.06)` | range 85–99% |
 | F5 Platform | `{ mobile:1.05, desk:0.97, both:1.0 }` | — |
+
+**F1/F2 calibration rationale (2026-06-22):** Old linear F1 gave only −6% penalty at wager=30x vs breakeven=24x. New `pow(ratio,1.5)` gives −28% — more realistic since players see high-wager bonuses as low-value. F2 now divides by `wagerX/10` so a 200%/30x bonus no longer scores as generous as a 200%/5x bonus.
 
 ---
 
@@ -781,7 +795,9 @@ These are non-obvious facts that have caused bugs; always verify before touching
 
 **`sP50.cost`, `sP10.cost`, `sP90.cost` from `buildConfig`** — values are already TOTAL (multiplied by `pl`). Never multiply by `pl` again. Same for `maxRisk` and all `recalcCosts` output fields.
 
-**`E.roi3` from `buildConfig`** — already a percentage (e.g., `160` means 160%). Do NOT pass to `fmtPct()` (which multiplies by 100). Use `.toFixed(0) + '%'` directly.
+**`E.roi3` from `buildConfig`** — already a percentage (e.g., `160` means 160%). Do NOT pass to `fmtPct()` (which multiplies by 100). Use `.toFixed(0) + '%'` directly. This is the **Platform ROI** card (`bc-roi`) in the Configurator — do NOT recalculate it from bonus cost ratios (old bug produced 1135% due to near-zero campBudget at high wager).
+
+**`data.maxRisk` from `/api/recalc`** — lives at the TOP LEVEL of the response object, not inside `data.costs`. `data.costs` is `{ w_p10, w_p50, w_p90, ndb, rl, d2, d3, fs, total }` with no `maxRisk` field. In `updateBonusCostDisplay`: use `upd('bc-risk', data.maxRisk)`, NOT `upd('bc-risk', costs.maxRisk)` (the latter is `undefined` → renders "—").
 
 **Tournament `econ` is a flat object** — `calcTournamentEconomics()` returns flat fields (`participantsMid`, `ggrLiftMid`, `roi`, `engagementMultiplier`, etc.). There is **no `scenarios` array**. The `roi` field is already a percentage integer (e.g., `120` for 120%).
 
@@ -799,17 +815,15 @@ These are non-obvious facts that have caused bugs; always verify before touching
 - Add DK snapshot to `buildConfig.test.js`
 - Add RU/KZ/MN snapshots for payout fallback path coverage
 
-**P2 (UX):**
-- R5: Model assumptions collapsible block + tooltip coverage audit
-- R6: Stale econ indicator in Configurator (params changed after Generate)
-- R7: Glossary panel in CG + Configurator topbar
-- R8: Copy-all channel button + PDF export (campaign + tournament + audit)
+**P2 (UX) — from `UX_DEV_PLAN.md`:**
+- R5: Model assumptions collapsible block (ARPU/CAC/lift-cap constants visible to user) + remaining tooltip coverage audit
+- R6: Stale econ indicator in Configurator (amber banner when generate-sensitive params change after Generate)
+- R7: Glossary panel ("?" button in topbar, 11 terms EN+RU, slide-in drawer)
+- R8: Copy-all channel button per channel + PDF export (full campaign, audit standalone, tournament)
 
 **P2 (features):**
 - Task A: Projected result per AI recommendation (apply param-change to 5-factor formula, show lift delta)
 - Retention Calendar: read `?rcDate=` query param in tournament-generator.js to pre-fill date from calendar redirect
-- ~~I4 (Loyalty AI)~~ — done: missions endpoint, narratives, tier-link layer, persistence tests
-- ~~Unified Configurator~~ — done: configurator.html + configurator.js (Bonus/Tournament/Loyalty), AI tabs, Economics panels, minD/maxWin overrides
 
 **P3 (frontend):**
 - Convert `onclick=` handlers to `addEventListener` → remove `scriptSrcAttr: 'unsafe-inline'` from CSP
@@ -819,3 +833,13 @@ These are non-obvious facts that have caused bugs; always verify before touching
 - Queue for heavy generation (Bull/BullMQ)
 - Rate limits per authenticated user
 - OpenAPI from Zod schemas
+
+---
+
+## Completed work log
+
+- ~~**Unified Configurator**~~ — done: configurator.html + configurator.js (Bonus/Tournament/Loyalty), AI tabs, Economics panels, minD/maxWin overrides
+- ~~**I4 (Loyalty AI)**~~ — done: missions endpoint, narratives, tier-link layer, persistence tests
+- ~~**R3 (CG Basic/Expert toggle)**~~ — done: `cg_expert_mode` localStorage, VIP defaults to expert
+- ~~**R4-B (Audit rule field)**~~ — done: `rule?: string` in AuditResponseSchema, buildAuditPrompt instruction, display in campaign-generator + tournament audit
+- ~~**Economics UX clarity (tasks/ui-clarity-tooltips.md)**~~ — done 2026-06-22: currency fix (SITECUR_TO_USD), card subtitles, "Бонусная нагрузка" rename, scenario table columns, base segment row, abbreviation tooltips (LTV/ROI/RTP/вейджер), scenario dot layout, first-principles breakdown table (computeBonusBreakdown + renderBonusBreakdownTable), F1 nonlinear penalty + F2 effective value recalibration, ROI Платформы vs ROI Бонуса rename, MAX RISK top-level fix, factor table CSS grid alignment
