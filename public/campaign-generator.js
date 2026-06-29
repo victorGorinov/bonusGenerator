@@ -192,7 +192,7 @@ function preselectBtypes(scenarioId) {
 function toggleBtype(el) {
   el.classList.toggle('active');
   const sel = [...document.querySelectorAll('#btypeGroup .chip-multi.active')].map(c => c.dataset.btype);
-  draft.params.bonusTypes = sel.length ? sel : null;
+  draft.params.bonusTypes = sel; // [] when nothing selected — schema rejects null, accepts empty array
 }
 
 function selScenario(id, el) {
@@ -905,7 +905,7 @@ async function _cgApplyRecs(recs) {
 
   // Map recommendations → draft.params updates
   const manualParams = [];
-  const newTypes = [...(draft.params.bonusTypes || ['reload'])];
+  const newTypes = [...(draft.params.bonusTypes && draft.params.bonusTypes.length ? draft.params.bonusTypes : ['reload'])];
 
   for (const rec of recs) {
     const p = rec.param;

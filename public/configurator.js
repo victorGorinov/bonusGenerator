@@ -913,20 +913,20 @@ function renderBonusResults(B) {
     const visibleSteps = (chainCfg.steps || [])
       .filter(s => s.cost > 0 && (s.key === 'welcome' || B.active[s.key]));
     const stepRows = visibleSteps.map(s => `
-      <div style="display:flex;align-items:baseline;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px">
-        <span style="color:#8892a4;flex:1">${stepLbls[s.key] || s.key}</span>
-        <span style="color:#8892a4;margin:0 10px;font-size:11px">×${Math.round(s.cohort*100)}% ${cfgT('chain_cohort')}</span>
-        <span style="font-family:monospace;font-weight:700;color:var(--text)">${fmtCur(s.cost, cur)}</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;align-items:baseline;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:14px">
+        <span style="color:#8892a4">${stepLbls[s.key] || s.key}</span>
+        <span style="color:#8892a4;font-size:13px;text-align:center">×${Math.round(s.cohort*100)}% ${cfgT('chain_cohort')}</span>
+        <span style="font-family:monospace;font-weight:700;color:var(--text);text-align:right">${fmtCur(s.cost, cur)}</span>
       </div>
     `).join('');
     chainStrip = `
       <div style="margin-bottom:14px;padding:12px 14px;background:rgba(160,176,255,.04);border-radius:9px;border:1px solid rgba(160,176,255,.14)">
-        <div style="font-size:11px;font-weight:700;color:#a0b0ff;margin-bottom:8px">⛓ ${cfgT('chain_title')}</div>
+        <div style="font-size:13px;font-weight:700;color:#a0b0ff;margin-bottom:8px">⛓ ${cfgT('chain_title')}</div>
         ${stepRows}
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.08)">
-          <span style="font-size:12px;font-weight:700;color:var(--text)">${cfgT('chain_total')}</span>
-          <span style="font-family:monospace;font-weight:800;color:var(--text)">${fmtCur(chainCfg.chainCost, cur)}</span>
-          <span style="font-size:11px;font-weight:700;color:${rClr};margin-left:10px">${(chainRatio*100).toFixed(1)}% ${cfgT('chain_ratio_lbl')}</span>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08)">
+          <span style="font-size:14px;font-weight:700;color:var(--text)">${cfgT('chain_total')}</span>
+          <span style="font-size:13px;font-weight:700;color:${rClr};text-align:center">${(chainRatio*100).toFixed(1)}% ${cfgT('chain_ratio_lbl')}</span>
+          <span style="font-family:monospace;font-weight:800;color:var(--text);text-align:right;font-size:15px">${fmtCur(chainCfg.chainCost, cur)}</span>
         </div>
       </div>
     `;
@@ -1125,17 +1125,17 @@ function renderBonusBreakdownTable(B, v, cur, isRu) {
     `<td style="text-align:right;padding:7px 6px;border-bottom:1px solid rgba(255,255,255,.04);${bold?'font-weight:700;':''}${color?'color:'+color+';':''}">${val}</td>`;
 
   const L = isRu ? {
-    title:'Разбивка экономики', sub:'первичные принципы — независимо от модели V2',
+    title:'Что происходит с деньгами бонуса', sub:'расчёт по базовым формулам',
     perPlayer:'На одного игрока', perCamp:'На всю кампанию · 3 месяца',
-    bonusSizeR:'Размер бонуса', wageredR:'Всего прокрутить', ggrR:'МО дохода казино',
-    payoutR:'МО выплаты игроку', netPPR:'Чистый результат / игрок', ltv3TotalR:'LTV 3 мес (все игроки)',
-    scenHdr:'Сценарий', activeHdr:'Отыгр. вейджер', ggrHdr:'МО дохода', paidHdr:'Выдано бонусов', netHdr:'Чистая выручка',
+    bonusSizeR:'Размер бонуса', wageredR:'Обязательный оборот (бонус × вейджер)', ggrR:'Доход казино с отыгрыша',
+    payoutR:'Выплата игроку при отыгрыше', netPPR:'Прибыль казино на 1 игрока', ltv3TotalR:'Доход со всех игроков за 3 месяца',
+    scenHdr:'Сценарий', activeHdr:'Сыграли бонус', ggrHdr:'Доход казино', paidHdr:'Выплачено игрокам', netHdr:'Прибыль казино',
   } : {
-    title:'Economics Breakdown', sub:'first-principles — independent of the V2 model',
+    title:'What Happens to Bonus Money', sub:'calculated from first principles',
     perPlayer:'Per Player', perCamp:'Per Campaign · 3 months',
-    bonusSizeR:'Bonus Size', wageredR:'Total Wagered', ggrR:'Casino GGR (EV)',
-    payoutR:'Player Payout (EV)', netPPR:'Net Result / Player', ltv3TotalR:'LTV 3 mo (all players)',
-    scenHdr:'Scenario', activeHdr:'Wager Complete', ggrHdr:'GGR (EV)', paidHdr:'Bonuses Paid', netHdr:'Net Revenue',
+    bonusSizeR:'Bonus Size', wageredR:'Total Wager Required (bonus × multiplier)', ggrR:'Casino Income from Wagering',
+    payoutR:'Player Payout on Completion', netPPR:'Casino Profit per Player', ltv3TotalR:'Total Player Revenue (3 months)',
+    scenHdr:'Scenario', activeHdr:'Completed Wagering', ggrHdr:'Casino Income', paidHdr:'Paid to Players', netHdr:'Casino Profit',
   };
 
   return `
@@ -1229,45 +1229,45 @@ function renderBonusAiContent(B) {
     const formulaTip = `${ff(v.base)} × ${ff(v.wagFactor)} × ${ff(v.genFactor)} × ${ff(v.mechFactor)} × ${ff(v.rtpFactor)} × ${ff(v.platFactor)} × ${ff(v.convFactor)} = ${(v.lift*100).toFixed(1)}%`;
 
     const L = isRu ? {
-      p50card:'Стоимость P50', p50sub:'медианный · на всех · 3 мес',
-      ltvlbl:'LTV 3 мес', ltvsub:'на 1 игрока · ARPU × 3 мес',
-      roilbl:'Гео-бенчмарк', roisub:'LTV3/CAC · база платформы',
+      p50card:'Ожидаемый бюджет', p50sub:'базовый сценарий · 3 месяца',
+      ltvlbl:'LTV 3 мес', ltvsub:'доход с одного игрока за 3 месяца',
+      roilbl:'ROI платформы', roisub:'средний ROI по гео — ориентир',
       netlbl:'Чистый результат', netsub:'за 3 мес · базовый сценарий',
-      scenHdr:'Сценарий', costHdr:'Стоимость (3мес)', cppHdr:'Стоим./игрок',
-      convHdr:'Конверсия вейджера',
-      convTip:'% игроков, которые полностью отыграют вейджер. Чем выше — тем больше бонусных выплат.',
-      loadLbl:'Бонусная нагрузка',
-      loadTip:'Затраты на бонус в % от объёма депозитов игроков',
+      scenHdr:'Сценарий', costHdr:'Бюджет кампании (3 мес)', cppHdr:'Стоимость на игрока',
+      convHdr:'% отыгравших бонус',
+      convTip:'Доля игроков, которые выполнят условие вейджера и получат выплату. Чем выше — тем дороже кампания.',
+      loadLbl:'Нагрузка на депозиты',
+      loadTip:'Затраты на бонус в % от суммы депозитов игроков',
       best:'Лучший', baseSc:'Базовый', worst:'Худший',
-      factHdr:'Факторы удержания (V2)',
-      factTip:'Модель оценивает, насколько бонус увеличивает удержание игроков. База — исторический прирост для сегмента, каждый фактор корректирует его в зависимости от параметров кампании.',
-      baseRow:'База сегмента', liftRow:'Прирост удержания',
-      f6lbl:'F6 Завершение', f6Tip:'Hit Rate × фактор дней × лимит ставки — часть игроков, реально отыгрывающих бонус',
-      assumHdr:'Допущения модели', assumToggle:'Показать / скрыть',
-      ltvTip:'Lifetime Value — доход с одного игрока за период',
-      roiTip:'Return on Investment — возврат на бонусный бюджет',
-      rtpTip:'Return to Player — теоретический процент возврата игроку',
-      wagerTip:'Wagering Requirement — сумма, которую нужно прокрутить для вывода бонуса',
+      factHdr:'Как считается прирост удержания',
+      factTip:'Модель показывает, насколько бонус помогает удерживать игроков. Стартовое значение — исторический показатель для сегмента, каждый фактор (F1–F6) корректирует его.',
+      baseRow:'Исторический прирост сегмента', liftRow:'Итоговый прирост',
+      f6lbl:'F6 Завершаемость', f6Tip:'Доля игроков, которые реально дойдут до конца отыгрыша — с учётом срока действия, частоты ставок и лимитов',
+      assumHdr:'Как работает модель', assumToggle:'Показать / скрыть',
+      ltvTip:'Lifetime Value — сколько денег приносит один игрок за период',
+      roiTip:'Return on Investment — сколько зарабатываем на каждый рубль бонусного бюджета',
+      rtpTip:'Return to Player — какой процент ставок возвращается игрокам в среднем',
+      wagerTip:'Wagering Requirement — сколько раз нужно «прокрутить» бонус, чтобы вывести выигрыш',
     } : {
-      p50card:'P50 Cost', p50sub:'median · all players · 3 mo',
-      ltvlbl:'LTV 3 mo', ltvsub:'per player · ARPU × 3 mo',
-      roilbl:'Geo Benchmark', roisub:'LTV3/CAC · platform baseline',
+      p50card:'Expected Budget', p50sub:'base scenario · 3 months',
+      ltvlbl:'LTV 3 mo', ltvsub:'revenue per player over 3 months',
+      roilbl:'Platform ROI', roisub:'avg ROI for this geo — benchmark',
       netlbl:'Net Result', netsub:'3 mo · base scenario',
-      scenHdr:'Scenario', costHdr:'Total Cost (3mo)', cppHdr:'Cost/Player',
-      convHdr:'Wager Conv.',
-      convTip:'% of players who complete wagering. Higher = more bonus payouts.',
-      loadLbl:'Bonus Load',
+      scenHdr:'Scenario', costHdr:'Campaign Budget (3 mo)', cppHdr:'Cost per Player',
+      convHdr:'% Who Complete Wagering',
+      convTip:'Share of players who finish wagering and receive a payout. Higher = more expensive campaign.',
+      loadLbl:'Deposit Load',
       loadTip:'Bonus cost as % of total player deposits',
       best:'Best case', baseSc:'Expected', worst:'Worst case',
-      factHdr:'Retention Factors (V2)',
-      factTip:'Model estimates how much the bonus increases player retention. Base is historical lift for the segment; each factor adjusts it based on campaign parameters.',
-      baseRow:'Segment Base', liftRow:'Retention Lift',
-      f6lbl:'F6 Completion', f6Tip:'Hit Rate × days factor × bet limit — fraction of players who realistically complete wagering',
-      assumHdr:'Model Assumptions', assumToggle:'Show / hide',
+      factHdr:'How Retention Lift Is Calculated',
+      factTip:'The model shows how much the bonus helps retain players. The starting value is the historical lift for the segment; each factor (F1–F6) adjusts it based on campaign parameters.',
+      baseRow:'Historical Lift for Segment', liftRow:'Total Retention Lift',
+      f6lbl:'F6 Completion Rate', f6Tip:'Share of players who realistically finish wagering — accounting for expiry, bet frequency, and bet size limits',
+      assumHdr:'How the Model Works', assumToggle:'Show / hide',
       ltvTip:'Lifetime Value — projected revenue from one player over the period',
-      roiTip:'Return on Investment — return on the bonus budget',
-      rtpTip:'Return to Player — theoretical percentage returned to the player',
-      wagerTip:'Wagering Requirement — amount to wager before withdrawing the bonus',
+      roiTip:'Return on Investment — how much we earn per unit of bonus budget',
+      rtpTip:'Return to Player — theoretical % of bets returned to players on average',
+      wagerTip:'Wagering Requirement — how many times the bonus must be wagered before withdrawal',
     };
 
     const tdR = (v, bold, color) =>

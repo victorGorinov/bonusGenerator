@@ -8,7 +8,7 @@ const ScenarioShape = z.object({
 
 const ParamsShape = z.object({
   geo:        z.string().length(2),
-  vertical:   z.enum(['casino', 'sports']).optional(),
+  vertical:   z.enum(['casino', 'sports', 'both']).optional(), // 'both' = "Mixed" chip in campaign-generator.html
   segment:    z.enum(['new', 'mid', 'vip']).optional(),
   games:      z.enum(['slots', 'table', 'live']).optional(),
   budget:     z.union([z.string().max(20), z.number()]).optional(),

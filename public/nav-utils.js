@@ -14,6 +14,7 @@ const _NAV_I18N = {
     nav_loyalty:     'Loyalty Program',
     nav_soon:        'Soon',
     nav_analytics:   'Analytics',
+    nav_reports:     'Reports',
     nav_settings:    'Settings',
     nav_back:        '← Back to home',
     nav_rc_new:      '+ New Campaign',
@@ -50,6 +51,7 @@ const _NAV_I18N = {
     nav_loyalty:     'Лояльность',
     nav_soon:        'Скоро',
     nav_analytics:   'Аналитика',
+    nav_reports:     'Отчёты',
     nav_settings:    'Настройки',
     nav_back:        '← На главную',
     nav_rc_new:      '+ Новая кампания',
@@ -106,6 +108,7 @@ function updateAllBadges() {
   updateBadge('nav-offer-gen-badge',  'be_campaigns');
   updateBadge('nav-tourn-gen-badge',  'savedTournaments');
   updateBadge('nav-loyalty-badge',    'savedLoyaltyPrograms');
+  updateBadge('nav-reports-badge',    'savedReports');
 }
 
 // ── NAV SUBGROUP TOGGLE ───────────────────────────────────────────────────────

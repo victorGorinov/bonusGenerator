@@ -10,6 +10,7 @@ import tournamentRoutes      from '../routes/tournament.routes.js';
 import loyaltyRoutes         from '../routes/loyalty.routes.js';
 import signupRoutes          from '../routes/signup.routes.js';
 import healthRoutes          from '../routes/health.routes.js';
+import reportRoutes          from '../routes/report.routes.js';
 import { errorMiddleware }   from '../middleware/errors.js';
 import { requestId }        from '../middleware/requestId.js';
 import { logger }            from '../utils/logger.js';
@@ -66,6 +67,7 @@ app.use('/api',            generateRoutes);
 app.use('/api/campaign',   campaignRoutes);
 app.use('/api/tournament', tournamentRoutes);
 app.use('/api/loyalty',   loyaltyRoutes);
+app.use('/api/reports',   reportRoutes);
 app.use('/api',            signupRoutes);
 app.use('/api',            healthRoutes);
 
