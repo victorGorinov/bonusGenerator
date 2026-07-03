@@ -7,3 +7,5 @@ npm-debug.log*
 public/dist/
 !public/dist/retention-calendar.js
 !public/dist/retention-calendar.js.map
+.env*.local
+.env*

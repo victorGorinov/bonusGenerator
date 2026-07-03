@@ -2,11 +2,16 @@ import 'dotenv/config';
 import { describe, it, expect } from 'vitest';
 import request from 'supertest';
 import app from '../../src/server/app.js';
+import { signAuthToken } from '../../src/domain/auth/jwt.js';
+import { AUTH_COOKIE } from '../../src/middleware/requireAuth.js';
 
 const VALID_BODY = {
   region: 'eu', lic: 'mga', sitecur: 'EUR', depcur: 'EUR',
   avgdep: 100, players: 5000, plat: 'both', rtp: 96,
 };
+
+const authToken = signAuthToken({ sub: 'test-user', name: 'Test', email: 'test@example.com' });
+const authCookie = `${AUTH_COOKIE}=${authToken}`;
 
 describe('GET /api/health', () => {
   it('returns status ok', async () => {
@@ -18,7 +23,7 @@ describe('GET /api/health', () => {
 
 describe('POST /api/generate', () => {
   it('returns cfg for valid EU/MGA params', async () => {
-    const res = await request(app).post('/api/generate').send(VALID_BODY);
+    const res = await request(app).post('/api/generate').set('Cookie', authCookie).send(VALID_BODY);
     expect(res.status).toBe(200);
     expect(res.body.cfg).toBeDefined();
     expect(res.body.cfg.welcome).toBeDefined();
@@ -26,7 +31,7 @@ describe('POST /api/generate', () => {
   });
 
   it('returns cfg for CIS region', async () => {
-    const res = await request(app).post('/api/generate').send({
+    const res = await request(app).post('/api/generate').set('Cookie', authCookie).send({
       region: 'cis', sitecur: 'RUB', depcur: 'RUB',
       avgdep: 100, players: 5000, plat: 'both', rtp: 96,
     });
@@ -35,7 +40,7 @@ describe('POST /api/generate', () => {
   });
 
   it('returns cfg for sweep region', async () => {
-    const res = await request(app).post('/api/generate').send({
+    const res = await request(app).post('/api/generate').set('Cookie', authCookie).send({
       region: 'sweep', sitecur: 'USD', depcur: 'USD',
       avgdep: 20, players: 5000, plat: 'both', rtp: 96,
     });
@@ -44,44 +49,58 @@ describe('POST /api/generate', () => {
   });
 
   it('returns 400 for invalid region', async () => {
-    const res = await request(app).post('/api/generate').send({ ...VALID_BODY, region: 'xx' });
+    const res = await request(app).post('/api/generate').set('Cookie', authCookie).send({ ...VALID_BODY, region: 'xx' });
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('VALIDATION_ERROR');
   });
 
   it('returns 400 for missing region', async () => {
     const { region, ...noRegion } = VALID_BODY;
-    const res = await request(app).post('/api/generate').send(noRegion);
+    const res = await request(app).post('/api/generate').set('Cookie', authCookie).send(noRegion);
     expect(res.status).toBe(400);
   });
 
   it('returns 400 for players out of range', async () => {
-    const res = await request(app).post('/api/generate').send({ ...VALID_BODY, players: 50 });
+    const res = await request(app).post('/api/generate').set('Cookie', authCookie).send({ ...VALID_BODY, players: 50 });
     expect(res.status).toBe(400);
     expect(res.body.details.fieldErrors.players).toBeDefined();
   });
 
   it('coerces string numbers', async () => {
-    const res = await request(app).post('/api/generate').send({
+    const res = await request(app).post('/api/generate').set('Cookie', authCookie).send({
       ...VALID_BODY, players: '5000', avgdep: '100', rtp: '96',
     });
     expect(res.status).toBe(200);
   });
 });
 
+describe('POST /api/generate — guest access (optionalAuth)', () => {
+  it('returns cfg with no auth cookie at all', async () => {
+    const res = await request(app).post('/api/generate').send(VALID_BODY);
+    expect(res.status).toBe(200);
+    expect(res.body.cfg).toBeDefined();
+  });
+
+  it('returns cfg even with a garbage/invalid cookie (treated as guest, not rejected)', async () => {
+    const res = await request(app).post('/api/generate').set('Cookie', `${AUTH_COOKIE}=not-a-real-jwt`).send(VALID_BODY);
+    expect(res.status).toBe(200);
+    expect(res.body.cfg).toBeDefined();
+  });
+});
+
 describe('POST /api/recalc', () => {
   it('returns recalc costs for valid cfg', async () => {
-    const genRes = await request(app).post('/api/generate').send(VALID_BODY);
+    const genRes = await request(app).post('/api/generate').set('Cookie', authCookie).send(VALID_BODY);
     const cfg    = genRes.body.cfg;
 
-    const res = await request(app).post('/api/recalc').send({ cfg, overrides: {} });
+    const res = await request(app).post('/api/recalc').set('Cookie', authCookie).send({ cfg, overrides: {} });
     expect(res.status).toBe(200);
     expect(res.body.costs).toBeDefined();
     expect(res.body.costs.total).toBeGreaterThan(0);
   });
 
   it('returns 400 when cfg missing', async () => {
-    const res = await request(app).post('/api/recalc').send({ overrides: {} });
+    const res = await request(app).post('/api/recalc').set('Cookie', authCookie).send({ overrides: {} });
     expect(res.status).toBe(400);
   });
 });

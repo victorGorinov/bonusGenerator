@@ -20,3 +20,9 @@ export const aiLimiter = rateLimit({
   windowMs: 60_000, max: 15,
   standardHeaders: true, legacyHeaders: false,
 });
+
+export const authLimiter = rateLimit({
+  windowMs: 60_000, max: 5,
+  standardHeaders: true, legacyHeaders: false,
+  message: { code: 'RATE_LIMITED', message: 'Too many login attempts, try again later' },
+});

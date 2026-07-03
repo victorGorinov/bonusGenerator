@@ -1,6 +1,6 @@
 # CLAUDE.md — Retomat: Retention OS for iGaming
 
-Complete architecture reference for Claude Code sessions. Updated: 2026-06-22.
+Complete architecture reference for Claude Code sessions. Updated: 2026-07-02.
 
 ---
 
@@ -41,10 +41,16 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 ├── src/
 │   ├── server/app.ts                # Express: helmet CSP, requestId, pino-http, routes, static
 │   ├── config/
-│   │   ├── index.ts                 # Zod EnvSchema (fail-fast), ENV, PORT, API keys, AI_MODEL, AI_TIMEOUT
+│   │   ├── index.ts                 # Zod EnvSchema (fail-fast), ENV, PORT, API keys, DATABASE_URL, JWT_SECRET/EXPIRY, AI_MODEL, AI_TIMEOUT
 │   │   ├── geo/                     # eu.ts, cis.ts, crypto.ts, sweep.ts, mn.ts, latam.ts
 │   │   └── games/                   # catalog.json (day-1 snapshot, ~15–20 games/geo) + catalog.ts (types + loader)
+│   ├── db/
+│   │   ├── client.ts                # Neon/pg Pool singleton
+│   │   └── migrations/001_initial.sql  # users + workspaces (Phase 1 only; saved_*/calendar_* tables are Phase 2)
 │   ├── domain/
+│   │   ├── auth/
+│   │   │   ├── hashPassword.ts      # bcrypt hash + verify
+│   │   │   └── jwt.ts               # signAuthToken/verifyAuthToken — payload { sub, name, email }
 │   │   ├── shared/
 │   │   │   ├── Segment.ts           # 'new'|'mid'|'vip' + isSegment()
 │   │   │   ├── Region.ts            # 'eu'|'cis'|... + isRegion()
@@ -86,11 +92,13 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │       ├── tournament-audit.prompt.ts
 │   │       └── tournament-optimize.prompt.ts  # buildTournamentOptimizePrompt() — realism + recs
 │   ├── use-cases/
+│   │   ├── Auth.ts                  # registerUser(db,input)/loginUser(db,input)/getUserById(db,id) — DB injected as first arg
 │   │   ├── GenerateBonusConfig.ts   # generateBonusConfig(), recalcBonusConfig()
 │   │   ├── GenerateCampaign.ts      # generateCampaign(), texts, audit, optimize (inject AIProvider)
 │   │   ├── GenerateTournament.ts    # generateTournament(), texts, audit, optimize (inject AIProvider)
 │   │   └── GenerateLoyalty.ts       # generateLoyaltyConfig(), recalcLoyaltyConfig(), auditLoyalty(), optimizeLoyalty(), generateLoyaltyMissions()
 │   ├── controllers/                 # All use createXxxController(deps) factory pattern
+│   │   ├── auth.controller.ts       # createAuthController({ db }) — register, login, logout, me; sets/clears httpOnly cookie
 │   │   ├── generate.controller.ts   # createGenerateController()
 │   │   ├── campaign.controller.ts   # createCampaignController({ ai })
 │   │   ├── tournament.controller.ts # createTournamentController({ ai })
@@ -104,6 +112,7 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │   ├── loyalty.service.ts       # generate() → buildLoyaltyConfig + calcLoyaltyEconomics
 │   │   └── analytics.service.ts     # compareCampaign() thin wrapper
 │   ├── routes/                      # Wire deps at startup: createXxxController({ ai: getAIProvider() })
+│   │   ├── auth.routes.ts           # /api/auth/register + /login (authLimiter) + /logout + /me (requireAuth)
 │   │   ├── generate.routes.ts
 │   │   ├── campaign.routes.ts
 │   │   ├── tournament.routes.ts
@@ -113,10 +122,14 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   ├── middleware/
 │   │   ├── asyncHandler.ts          # asyncHandler<P,R,B>(fn) — eliminates try/catch in controllers
 │   │   ├── requestId.ts             # x-request-id on every response; augments Express.Request
-│   │   ├── rateLimiter.ts           # apiLimiter 30/min, campaignLimiter 20/min, aiLimiter 15/min
+│   │   ├── rateLimiter.ts           # apiLimiter 30/min, campaignLimiter 20/min, aiLimiter 15/min, authLimiter 5/min
+│   │   ├── authCookie.ts            # resolveUser(req) — shared core: decode `_bt` cookie → user, or undefined. requireAuth/optionalAuth both call this instead of duplicating cookie/JWT logic.
+│   │   ├── requireAuth.ts           # resolveUser(req) → req.user; 401 UNAUTHENTICATED if undefined. Used only by /api/auth/me. Re-exports AUTH_COOKIE from authCookie.ts.
+│   │   ├── optionalAuth.ts          # resolveUser(req) → req.user (may be undefined) — never rejects, guest continues. Used by all tool routes (generate/campaign/tournament/loyalty/reports).
 │   │   ├── validate.ts              # validate(schema) — Zod parse, throws ValidationError
 │   │   └── errors.ts                # errorMiddleware — AppError/ValidationError/AIProviderError → HTTP
 │   ├── validation/                  # All schemas export z.infer<> types
+│   │   ├── auth.schema.ts           # RegisterSchema + LoginSchema — email is trim().toLowerCase()'d before .email() so register/login key off the same normalized address (users.email UNIQUE is case-sensitive)
 │   │   ├── generate.schema.ts       # GenerateSchema + GenerateInput
 │   │   ├── recalc.schema.ts         # RecalcSchema + RecalcInput
 │   │   ├── campaign.schema.ts       # CampaignGenerateSchema + CampaignGenerateInput
@@ -132,6 +145,12 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │       ├── ValidationError.ts       # 400
 │       └── AIProviderError.ts       # 502
 ├── public/                          # Static files served by Express
+│   ├── login.html / login.js        # POST /api/auth/login; redirects to /retention-calendar.html on success. Reachable via
+│   │                                 # nav/direct link only — nothing on the site force-redirects here (see Security below).
+│   ├── register.html / register.js  # POST /api/auth/register
+│   ├── auth-form.js                 # Shared login/register form logic (i18n bootstrap + submit/fetch/error handling) —
+│   │                                 # login.js/register.js are thin `initAuthForm({...})` configs, loaded as `type="module"`.
+│   │                                 # Shared `.auth-*` CSS lives in styles.css, not inline per-page.
 │   ├── index.html                   # Landing — Retention OS positioning (EN/RU), calendar-first
 │   ├── index.js                     # Landing i18n (EN/RU) + particles + sticky CTA
 │   ├── styles.css                   # Configurator shared CSS
@@ -250,8 +269,14 @@ Exponential backoff with full jitter. Only retryable errors (429, 5xx, network) 
 
 ## API routes
 
+Only `/api/auth/me` requires a logged-in session (`requireAuth`). Every other `/api/*` route — `/api/generate`, `/api/campaign/*`, `/api/tournament/*`, `/api/loyalty/*`, `/api/reports/*` — is guarded by `optionalAuth`: it attaches `req.user` when a valid `_bt` cookie is present but never rejects an anonymous request. Guests can generate/audit/optimize freely; the account/guest distinction only matters once Phase 2/3 adds server-side saved items (today, saves for both go to browser `localStorage`, so gating generation behind login has no functional effect). `/api/health` and `/api/signup` are unauthenticated too (uptime monitor, marketing lead form). See `src/server/app.ts` for the mount order.
+
 | Method | Path | Limiter | Schema | Handler |
 |--------|------|---------|--------|---------|
+| POST | `/api/auth/register` | authLimiter 5/min | RegisterSchema | `createAuthController().register` — creates user + workspace, sets cookie |
+| POST | `/api/auth/login` | authLimiter 5/min | LoginSchema | `createAuthController().login` — verifies password, sets cookie |
+| POST | `/api/auth/logout` | — | — | `createAuthController().logout` — clears cookie |
+| GET | `/api/auth/me` | — | — (requireAuth) | `createAuthController().me` |
 | POST | `/api/generate` | 30/min | GenerateSchema | `createGenerateController().generate` |
 | POST | `/api/recalc` | 30/min | RecalcSchema | `createGenerateController().recalc` |
 | POST | `/api/campaign/generate` | 20/min | CampaignGenerateSchema | `createCampaignController().generate` |
@@ -713,7 +738,13 @@ RESEND_API_KEY=      # Required — validated at startup
 NOTIFY_EMAIL=        # Default: victor.gorinov@gmail.com
 PORT=3000            # Optional
 NODE_ENV=            # development | production | staging | test
+DATABASE_URL=        # Required — Neon Postgres connection string (postgresql://...)
+JWT_SECRET=          # Required — min 32 chars, e.g. `openssl rand -hex 32`
+JWT_EXPIRY=          # Default: 7d
+COOKIE_DOMAIN=       # Optional — empty locally, set in prod for the `_bt` auth cookie
 ```
+
+**Local dev without a real DB:** the server boots and non-DB routes (health, static pages, `/api/generate` if it didn't need auth) work fine with a placeholder `DATABASE_URL` — the Pool is only touched on an actual query (register/login/me). `DATABASE_URL` and `JWT_SECRET` are still required by `EnvSchema` even so (fail-fast on missing config, per existing project convention).
 
 ---
 
@@ -723,7 +754,14 @@ NODE_ENV=            # development | production | staging | test
 - **Zod validation** on all API inputs before controller via `validate(schema)` middleware
 - **Rate limiting** per endpoint class
 - **requestId middleware**: `x-request-id` on every response
-- No cookies — localStorage only (GDPR)
+- **Auth (Phase 1, added 2026-07-02, guest-access revised 2026-07-02, code-review fixes 2026-07-03)**: email+password (bcrypt, 12 rounds), JWT in an httpOnly + Secure(prod/staging) + SameSite=Strict cookie (`_bt`, expiry synced to `JWT_EXPIRY` via `JWT_EXPIRY_MS` — see below). No roles/workspace-members/invites yet — 1 workspace per user, auto-created at registration (see `AUTH_IMPLEMENTATION_PLAN.md`).
+  - Tool routes (`/api/generate`, `/api/campaign/*`, `/api/tournament/*`, `/api/loyalty/*`, `/api/reports/*`) use `optionalAuth`, **not** `requireAuth` — guests can generate/audit/optimize without an account. Only `/api/auth/me` is hard-gated.
+  - Data persistence (moving `cfgSaved`/`be_campaigns`/`savedTournaments`/`savedLoyaltyPrograms`/`rc_campaigns`/`rc_templates` from localStorage to Postgres) is **not** done yet — that's Phase 2/3 of `AUTH_IMPLEMENTATION_PLAN.md`. Until then, guest and logged-in users save identically to browser `localStorage`; there is intentionally no login-gate on Save/Add-to-Calendar or on the Retention Calendar page. A landing→app login/register interstitial (with a "continue as guest" choice) was considered but deferred until Phase 2/3 actually makes the account/guest distinction functional.
+  - **Email normalization**: `auth.schema.ts`'s `EmailSchema` does `.trim().toLowerCase()` before `.email()` — `users.email` has a plain case-sensitive Postgres `UNIQUE` constraint (no citext), so without this, differently-cased emails would create duplicate accounts and logins with a different case than registration would fail.
+  - **`db/client.ts`**: `ssl: true` (not `{ rejectUnauthorized: false }`) for `sslmode=require` connection strings — Neon issues publicly-trusted certs, so full TLS chain validation works; disabling it would accept a MITM's self-signed cert. `pool.on('error', ...)` is registered (logs via `logger`) since an unhandled `'error'` on an idle pg client crashes the process.
+  - **`Auth.ts registerUser`**: the pre-check `SELECT` for an existing email is a fast path, not a lock — a concurrent duplicate-email registration is caught by translating the Postgres unique-violation (`err.code === '23505'`) into the same 409 `EMAIL_TAKEN`, instead of letting it fall through as a generic 500.
+  - **Cookie/token lifetime sync**: `src/domain/auth/jwt.ts` exports `JWT_EXPIRY_MS = ms(JWT_EXPIRY)` (the `ms` package — same parser `jsonwebtoken` uses internally for a string `expiresIn`); the auth cookie's `maxAge` uses this instead of a separately hardcoded constant, so changing `JWT_EXPIRY` can't desync the two.
+  - **`requireAuth`/`optionalAuth`** both delegate to `authCookie.ts`'s `resolveUser(req)` — the cookie-read + JWT-verify + `req.user` mapping lives in one place.
 
 **Error response shape**: `{ code: string, message: string }`.
 
@@ -811,6 +849,14 @@ These are non-obvious facts that have caused bugs; always verify before touching
 
 ## Pending work
 
+**P0 (auth — `AUTH_IMPLEMENTATION_PLAN.md`, Phase 1 done, 2/3/4 remain):**
+- Neon DB provisioned via Vercel Marketplace (project `bonus-engine`), `DATABASE_URL`/`JWT_SECRET`/`JWT_EXPIRY` set in Vercel (Production/Preview/Development) and pulled into local `.env`. `001_initial.sql` applied — `users`/`workspaces` exist.
+- Phase 2: `saved_configs`/`ai_campaigns`/`saved_tournaments`/`saved_loyalty_programs`/`calendar_events`/`calendar_templates` tables + CRUD routes — this is also the point where the account/guest distinction becomes functionally real (guests keep localStorage-only saves; accounts get durable Postgres saves)
+- Phase 3: frontend repo-layers (configurator.js, campaign-generator.js, tournament-generator.js, loyalty-generator.js, retention-calendar/repository.js) switched from localStorage to the Phase-2 API
+- Phase 4: one-time localStorage → API migration on first login + integration tests against a real/test DB
+- Landing→app login/register interstitial with a "continue as guest" choice — designed but deliberately deferred until Phase 2/3 (see Security section); revisit then
+- Header UI: show logged-in user's name + logout button (nav-utils.js) — not built yet
+
 **P1 (tests):**
 - Add DK snapshot to `buildConfig.test.js`
 - Add RU/KZ/MN snapshots for payout fallback path coverage
@@ -838,6 +884,9 @@ These are non-obvious facts that have caused bugs; always verify before touching
 
 ## Completed work log
 
+- ~~**Auth Phase 1 (core)**~~ — done 2026-07-02: `users`/`workspaces` tables + `001_initial.sql` (applied to a real Neon DB provisioned via Vercel Marketplace), bcrypt + JWT httpOnly-cookie auth, `authLimiter` 5/min, `login.html`/`register.html`. Verified end-to-end against the live DB (register → me → logout → login → wrong-password rejected).
+- ~~**Auth guest access**~~ — done 2026-07-02, same day as Phase 1: reverted the initial "guard everything" decision. Tool routes (generate/campaign/tournament/loyalty/reports) switched from `requireAuth` to `optionalAuth` — guests can generate/audit/optimize freely. Removed `auth-guard.js` (401→redirect) since it no longer had anything to guard against. Rationale: saved items are still localStorage-only (Phase 2/3 not built), so gating generation behind login had no functional benefit and only added friction — see Security section.
+- ~~**Auth code-review fixes**~~ — done 2026-07-03, from a full code-review of the unpushed auth+landing diff (8 finder agents + verify pass, see Security section for the list): fixed TLS cert validation (`ssl: true`, was `rejectUnauthorized: false`), email case-sensitivity (normalize via `auth.schema.ts`), a registration race condition (unique-violation → 409 instead of 500), cookie/JWT-expiry desync (`JWT_EXPIRY_MS` via the `ms` package). Added `pool.on('error', ...)`, closed a test-coverage gap (`tests/integration/api.guestAccess.test.js` — campaign/tournament/loyalty/reports guest access through the real `app.js`, not a bespoke express instance), and deduped `requireAuth`/`optionalAuth` (→ `authCookie.ts`'s `resolveUser`) and `login.js`/`register.js` (→ shared `auth-form.js` + `.auth-*` classes in `styles.css`).
 - ~~**Unified Configurator**~~ — done: configurator.html + configurator.js (Bonus/Tournament/Loyalty), AI tabs, Economics panels, minD/maxWin overrides
 - ~~**I4 (Loyalty AI)**~~ — done: missions endpoint, narratives, tier-link layer, persistence tests
 - ~~**R3 (CG Basic/Expert toggle)**~~ — done: `cg_expert_mode` localStorage, VIP defaults to expert

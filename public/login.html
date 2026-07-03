@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign in — Retomat</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body class="auth-body">
+  <div class="auth-card">
+    <div class="auth-logo">Reto<span>mat</span></div>
+    <div class="auth-sub" data-i18n="sub">Sign in to your workspace</div>
+    <form id="login-form">
+      <div class="auth-field">
+        <label data-i18n="email">Email</label>
+        <input type="email" id="f-email" autocomplete="email" required>
+      </div>
+      <div class="auth-field">
+        <label data-i18n="password">Password</label>
+        <input type="password" id="f-password" autocomplete="current-password" required>
+      </div>
+      <div class="auth-err" id="auth-err"></div>
+      <button type="submit" class="btn-gen" id="submit-btn" data-i18n="signin">Sign in</button>
+    </form>
+    <div class="auth-foot">
+      <span data-i18n="noaccount">No account?</span> <a href="/register.html" data-i18n="register">Register</a>
+    </div>
+  </div>
+  <script type="module" src="/login.js"></script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 import express                from 'express';
 import helmet                from 'helmet';
+import cookieParser          from 'cookie-parser';
 import _pinoHttp             from 'pino-http';
 import { type RequestHandler } from 'express';
 import path                  from 'path';
@@ -11,6 +12,8 @@ import loyaltyRoutes         from '../routes/loyalty.routes.js';
 import signupRoutes          from '../routes/signup.routes.js';
 import healthRoutes          from '../routes/health.routes.js';
 import reportRoutes          from '../routes/report.routes.js';
+import authRoutes            from '../routes/auth.routes.js';
+import { optionalAuth }      from '../middleware/optionalAuth.js';
 import { errorMiddleware }   from '../middleware/errors.js';
 import { requestId }        from '../middleware/requestId.js';
 import { logger }            from '../utils/logger.js';
@@ -58,18 +61,27 @@ if (ENV.NODE_ENV === 'staging') {
 }
 
 app.use(express.json({ limit: '64kb' }));
+app.use(cookieParser());
 app.get('/generator.html', (_req, res) => res.redirect(301, '/campaign-generator.html'));
 app.get('/privacy',        (_req, res) => res.sendFile(path.join(__dirname, '../../public/privacy.html')));
 app.get('/terms',          (_req, res) => res.sendFile(path.join(__dirname, '../../public/terms.html')));
 app.use(express.static(path.join(__dirname, '../../public')));
 
-app.use('/api',            generateRoutes);
-app.use('/api/campaign',   campaignRoutes);
-app.use('/api/tournament', tournamentRoutes);
-app.use('/api/loyalty',   loyaltyRoutes);
-app.use('/api/reports',   reportRoutes);
-app.use('/api',            signupRoutes);
+// Public: auth (login/register need to work unauthenticated), health check (uptime
+// monitors), and the marketing early-access signup form (landing-page CTA, not app data).
+app.use('/api/auth',       authRoutes);
 app.use('/api',            healthRoutes);
+app.use('/api',            signupRoutes);
+
+// Generation/AI tools are open to guests — saving still only writes to the browser's
+// localStorage today (no server-side persistence until Phase 2/3), so gating these
+// behind login has no functional effect yet. optionalAuth attaches req.user when a
+// valid session cookie is present, but never rejects an anonymous request.
+app.use('/api',            optionalAuth, generateRoutes);
+app.use('/api/campaign',   optionalAuth, campaignRoutes);
+app.use('/api/tournament', optionalAuth, tournamentRoutes);
+app.use('/api/loyalty',    optionalAuth, loyaltyRoutes);
+app.use('/api/reports',    optionalAuth, reportRoutes);
 
 app.use(errorMiddleware);
 
