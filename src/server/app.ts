@@ -24,6 +24,13 @@ const __dirname  = path.dirname(__filename);
 
 const app = express();
 
+// Vercel's edge is a single reverse-proxy hop that sets X-Forwarded-For/-Host.
+// Without this, express-rate-limit throws ERR_ERL_UNEXPECTED_X_FORWARDED_FOR
+// on every rate-limited request in production (Express's default req.ip
+// ignores X-Forwarded-For unless trust proxy is set, which rate-limit's
+// validation treats as a misconfiguration once it sees the header at all).
+app.set('trust proxy', 1);
+
 app.use(requestId);
 
 app.use(helmet({
