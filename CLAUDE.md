@@ -719,10 +719,14 @@ Active `reg_` key sets: `reg_mga_1..5`, `reg_ukgc_1..6`, `reg_dga_1..4`.
 
 ## Environments
 
-| Branch | Vercel project | Purpose |
-|--------|---------------|---------|
-| `main` | `bonus-engine` | Production — auto-deploys on push |
-| `stage` | `bonusengine-stage` | Staging — auto-deploys on push to `stage` |
+Single Vercel project — **`bonus-generator`** (prod alias `bonus-generator.vercel.app`), connected to `victorGorinov/bonusGenerator` on GitHub. One project, two branches:
+
+| Branch | Environment | Purpose |
+|--------|------------|---------|
+| `main` | Production | Auto-deploys on push — live at `bonus-generator.vercel.app` |
+| `stage` | Preview | Auto-deploys on push to `stage` — alias `bonus-generator-git-stage-*.vercel.app` (behind Vercel's preview-deployment SSO wall; open it in a browser logged into the Vercel account to check it, `curl` will just get redirected) |
+
+**Do not confuse with `bonus-engine` / `bonus-generator-sp7k`** — two other Vercel projects that were *also* connected to this same repo/branch (discovered 2026-07-03: a prod outage on `bonus-generator.vercel.app` traced back to `DATABASE_URL`/`JWT_SECRET` only having been configured on `bonus-engine`, which is not the project actually serving traffic). Both had their git integration disconnected (`vercel git disconnect`) so they no longer auto-deploy — the projects themselves still exist but are dead weight, not part of the deploy pipeline. `.vercel/repo.json` in this repo is linked to `bonus-generator`.
 
 When `NODE_ENV=staging`: adds `X-Environment: staging` + `X-Robots-Tag: noindex`.
 
@@ -850,7 +854,7 @@ These are non-obvious facts that have caused bugs; always verify before touching
 ## Pending work
 
 **P0 (auth — `AUTH_IMPLEMENTATION_PLAN.md`, Phase 1 done, 2/3/4 remain):**
-- Neon DB provisioned via Vercel Marketplace (project `bonus-engine`), `DATABASE_URL`/`JWT_SECRET`/`JWT_EXPIRY` set in Vercel (Production/Preview/Development) and pulled into local `.env`. `001_initial.sql` applied — `users`/`workspaces` exist.
+- Neon DB provisioned via Vercel Marketplace, `DATABASE_URL`/`JWT_SECRET`/`JWT_EXPIRY` set on the `bonus-generator` project (Production/Preview/Development) and pulled into local `.env`. `001_initial.sql` applied — `users`/`workspaces` exist. (Initially set up on the wrong project, `bonus-engine` — see Environments section — and fixed 2026-07-03.)
 - Phase 2: `saved_configs`/`ai_campaigns`/`saved_tournaments`/`saved_loyalty_programs`/`calendar_events`/`calendar_templates` tables + CRUD routes — this is also the point where the account/guest distinction becomes functionally real (guests keep localStorage-only saves; accounts get durable Postgres saves)
 - Phase 3: frontend repo-layers (configurator.js, campaign-generator.js, tournament-generator.js, loyalty-generator.js, retention-calendar/repository.js) switched from localStorage to the Phase-2 API
 - Phase 4: one-time localStorage → API migration on first login + integration tests against a real/test DB
