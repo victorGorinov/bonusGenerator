@@ -61,28 +61,45 @@ function syncEvents() {
 
   cal.removeAllEvents();
   for (const c of visible) {
+    // A record with a missing/invalid startDate can't be placed — skip it rather
+    // than let it throw and abort the whole render (which bricks the calendar:
+    // stats stay "Loading…", view toggle never wires up). Guards against legacy
+    // or partially-saved campaigns in localStorage.
+    if (!isValidDate(c.startDate)) continue;
     const color = TYPE_COLORS[c.type] || TYPE_COLORS.custom;
-    cal.addEvent({
-      id:        c.id,
-      title:     c.title,
-      start:     c.startDate,
-      // FullCalendar end date is exclusive, add 1 day for all-day events
-      end:       addDay(c.endDate),
-      color,
-      textColor: '#fff',
-      extendedProps: {
-        type:     c.type,
-        segment:  c.segment,
-        geo:      c.geo,
-        status:   c.status,
-        conflict: conflicted.has(c.id),
-      },
-    });
+    try {
+      cal.addEvent({
+        id:        c.id,
+        title:     c.title,
+        start:     c.startDate,
+        // FullCalendar end date is exclusive, add 1 day for all-day events.
+        // addDay returns undefined for a bad endDate → FullCalendar treats it as
+        // a single-day event instead of crashing.
+        end:       addDay(c.endDate),
+        color,
+        textColor: '#fff',
+        extendedProps: {
+          type:     c.type,
+          segment:  c.segment,
+          geo:      c.geo,
+          status:   c.status,
+          conflict: conflicted.has(c.id),
+        },
+      });
+    } catch (e) {
+      // One malformed record must never take down the calendar.
+      console.warn('Skipped calendar event with bad data:', c && c.id, e);
+    }
   }
+}
+
+function isValidDate(dateStr) {
+  return !!dateStr && !Number.isNaN(new Date(dateStr).getTime());
 }
 
 function addDay(dateStr) {
   const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return undefined; // invalid/missing → omit end (single-day)
   d.setDate(d.getDate() + 1);
   return d.toISOString().slice(0, 10);
 }
@@ -109,17 +126,20 @@ async function handleResize(info) {
 }
 
 function daysBetween(a, b) {
-  return Math.round((new Date(b) - new Date(a)) / 86400000);
+  const ms = new Date(b) - new Date(a);
+  return Number.isNaN(ms) ? 0 : Math.round(ms / 86400000); // bad/missing date → 0-day span
 }
 
 function addDays(dateStr, n) {
   const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime()) || Number.isNaN(n)) return dateStr; // don't produce an Invalid Date
   d.setDate(d.getDate() + n);
   return d.toISOString().slice(0, 10);
 }
 
 function subtractDay(dateStr) {
   const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return dateStr;
   d.setDate(d.getDate() - 1);
   return d.toISOString().slice(0, 10);
 }

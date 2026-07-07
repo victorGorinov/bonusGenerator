@@ -1,8 +1,11 @@
 import { loadCatalog, type Game } from '../../config/games/catalog.js';
 import { GEO_CFG } from '../campaign/scenarios.js';
 
-// Low-denomination geos where high minBet is a barrier
-const LOW_DENOM_GEOS = new Set(['mn', 'ru', 'kz']);
+// Low-denomination regions where high minBet is a barrier. Keyed on the
+// resolved region (not the raw geo) so it fires for both country-code call
+// sites (ru/kz → 'cis', mn → 'mn') and region-level ones (loyalty/CRM, which
+// pass a region such as 'cis' directly as geo).
+const LOW_DENOM_REGIONS = new Set(['cis', 'mn']);
 
 const W_REGION  = 10;
 const W_SEGMENT = 8;
@@ -18,13 +21,15 @@ function popularityScore(slotRank: number | null): number {
   return Math.max(0, W_POPULAR * (1 - (slotRank - 1) / 29));
 }
 
-function passesMechanicGate(game: Game, type: string): boolean {
+function passesMechanicGate(game: Game, type: string | undefined): boolean {
+  if (!type) return true; // no mechanic filter requested — allow everything
   if (type === 'live') return game.mechanic === 'live' || game.mechanic === 'table';
   if (type === 'slot') return game.mechanic !== 'live' && game.mechanic !== 'table';
   return true; // mixed | prize_drop — all mechanics allowed
 }
 
-function scoringModelBoost(game: Game, scoring: string): number {
+function scoringModelBoost(game: Game, scoring: string | undefined): number {
+  if (!scoring) return 0; // no scoring-model preference requested
   switch (scoring) {
     case 'highest_multiplier':
       if (game.mechanic === 'crash') return BOOST_SCORING_FIT;
@@ -48,30 +53,36 @@ function scoringModelBoost(game: Game, scoring: string): number {
 }
 
 export interface RecommendParams {
-  geo:      string;
-  region?:  string;   // pre-resolved region; derived from geo via GEO_CFG if omitted
-  segment:  string;   // all | new | mid | vip | dormant | depositors
-  type:     string;   // slot | live | mixed | prize_drop
-  scoring:  string;   // total_wins | highest_multiplier | most_spins | mission_based
-  plat?:    string;   // mobile | desk | both
+  geo:        string;
+  region?:    string;   // pre-resolved region; derived from geo via GEO_CFG if omitted
+  segment:    string;   // all | new | mid | vip | dormant | depositors
+  type?:      string;   // slot | live | mixed | prize_drop — omit for no mechanic gating (e.g. CRM game picks)
+  scoring?:   string;   // total_wins | highest_multiplier | most_spins | mission_based — omit for no scoring-model boost
+  plat?:      string;   // mobile | desk | both
+  providers?: string[]; // restrict to these providers (operator's connected/integrated providers); omit for no filter
 }
 
 export interface RecommendResult {
   primary:      Game[];
   alternatives: Game[];
   scores:       Record<string, number>;
+  /** Full filtered + scored pool (score desc), not truncated — useful for
+   *  section/genre grouping where a top-10 slice would hide entire mechanics. */
+  all:          Game[];
 }
 
 export function recommendGames(params: RecommendParams): RecommendResult {
-  const { geo, segment, type, scoring, plat } = params;
+  const { geo, segment, type, scoring, plat, providers } = params;
   const region = params.region ?? GEO_CFG[geo]?.region ?? geo;
   const catalog = loadCatalog();
-  const isLowDenom = LOW_DENOM_GEOS.has(geo);
+  const isLowDenom = LOW_DENOM_REGIONS.has(region);
+  const providerSet = providers && providers.length > 0 ? new Set(providers) : null;
 
   const scored: { game: Game; score: number }[] = [];
 
   for (const game of catalog) {
     if (!passesMechanicGate(game, type)) continue;
+    if (providerSet && !providerSet.has(game.provider)) continue;
 
     let score = 0;
 
@@ -112,5 +123,6 @@ export function recommendGames(params: RecommendParams): RecommendResult {
     primary:      scored.slice(0, 5).map(s => s.game),
     alternatives: scored.slice(5, 10).map(s => s.game),
     scores,
+    all:          scored.map(s => s.game),
   };
 }

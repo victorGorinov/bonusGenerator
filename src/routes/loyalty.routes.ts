@@ -4,9 +4,11 @@ import { validate }                    from '../middleware/validate.js';
 import { LoyaltyGenerateSchema, LoyaltyRecalcSchema, LoyaltyTextsSchema, LoyaltyAuditSchema, LoyaltyOptimizeSchema, LoyaltyMissionsSchema } from '../validation/loyalty.schema.js';
 import { createLoyaltyController }     from '../controllers/loyalty.controller.js';
 import { getAIProvider }               from '../ai/registry.js';
+import { requireFeature }              from '../middleware/requireFeature.js';
 
 const ctrl   = createLoyaltyController({ ai: getAIProvider() });
 const router = Router();
+router.use(requireFeature('loyalty'));
 router.post('/generate', campaignLimiter, validate(LoyaltyGenerateSchema),  ctrl.generate);
 router.post('/recalc',   apiLimiter,      validate(LoyaltyRecalcSchema),    ctrl.recalc);
 router.post('/texts',    aiLimiter,       validate(LoyaltyTextsSchema),     ctrl.texts);

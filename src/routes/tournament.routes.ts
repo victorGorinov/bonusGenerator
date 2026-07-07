@@ -4,9 +4,11 @@ import { validate }                    from '../middleware/validate.js';
 import { TournamentGenerateSchema, TournamentTextsSchema, TournamentAuditSchema, TournamentGamesSchema, TournamentOptimizeSchema } from '../validation/tournament.schema.js';
 import { createTournamentController }  from '../controllers/tournament.controller.js';
 import { getAIProvider }               from '../ai/registry.js';
+import { requireFeature }              from '../middleware/requireFeature.js';
 
 const ctrl   = createTournamentController({ ai: getAIProvider() });
 const router = Router();
+router.use(requireFeature('tournament'));
 router.post('/generate', campaignLimiter, validate(TournamentGenerateSchema),  ctrl.generate);
 router.post('/texts',    aiLimiter,       validate(TournamentTextsSchema),     ctrl.texts);
 router.post('/audit',    aiLimiter,       validate(TournamentAuditSchema),     ctrl.audit);

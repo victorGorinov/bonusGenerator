@@ -12,7 +12,11 @@ import loyaltyRoutes         from '../routes/loyalty.routes.js';
 import signupRoutes          from '../routes/signup.routes.js';
 import healthRoutes          from '../routes/health.routes.js';
 import reportRoutes          from '../routes/report.routes.js';
+import gamesRoutes           from '../routes/games.routes.js';
 import authRoutes            from '../routes/auth.routes.js';
+import adminRoutes           from '../routes/admin.routes.js';
+import featuresRoutes        from '../routes/features.routes.js';
+import savedItemsRoutes      from '../routes/savedItems.routes.js';
 import { optionalAuth }      from '../middleware/optionalAuth.js';
 import { errorMiddleware }   from '../middleware/errors.js';
 import { requestId }        from '../middleware/requestId.js';
@@ -67,9 +71,12 @@ if (ENV.NODE_ENV === 'staging') {
   });
 }
 
-app.use(express.json({ limit: '64kb' }));
+// 256kb (was 64kb): a single saved record (/api/saved) can carry a full campaign
+// with all generated AI channel texts + audit + RU/EN explanations + econ, which
+// can exceed 64kb. All inputs are still Zod-validated and the heavy routes are
+// rate-limited, so the larger cap doesn't widen the abuse surface meaningfully.
+app.use(express.json({ limit: '256kb' }));
 app.use(cookieParser());
-app.get('/generator.html', (_req, res) => res.redirect(301, '/campaign-generator.html'));
 app.get('/privacy',        (_req, res) => res.sendFile(path.join(__dirname, '../../public/privacy.html')));
 app.get('/terms',          (_req, res) => res.sendFile(path.join(__dirname, '../../public/terms.html')));
 app.use(express.static(path.join(__dirname, '../../public')));
@@ -79,6 +86,8 @@ app.use(express.static(path.join(__dirname, '../../public')));
 app.use('/api/auth',       authRoutes);
 app.use('/api',            healthRoutes);
 app.use('/api',            signupRoutes);
+// Effective feature map for the caller (guest or logged-in) — drives frontend gating.
+app.use('/api',            featuresRoutes);
 
 // Generation/AI tools are open to guests — saving still only writes to the browser's
 // localStorage today (no server-side persistence until Phase 2/3), so gating these
@@ -89,6 +98,14 @@ app.use('/api/campaign',   optionalAuth, campaignRoutes);
 app.use('/api/tournament', optionalAuth, tournamentRoutes);
 app.use('/api/loyalty',    optionalAuth, loyaltyRoutes);
 app.use('/api/reports',    optionalAuth, reportRoutes);
+app.use('/api/games',      optionalAuth, gamesRoutes);
+
+// Server-side persistence (Phase 2) — hard-gated: requireAuth + requireWorkspace
+// live inside the router. Guests never reach here; they keep localStorage-only saves.
+app.use('/api/saved',      savedItemsRoutes);
+
+// Admin — hard-gated: requireAdmin (role from DB) lives inside the router.
+app.use('/api/admin',      adminRoutes);
 
 app.use(errorMiddleware);
 

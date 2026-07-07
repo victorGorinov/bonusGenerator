@@ -25,6 +25,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   subscribe(() => { renderStats(); renderFilters(); refreshForecast(); });
   setupSidebarNav();
 
+  // nav-utils migrates guest data + hydrates the localStorage caches from the
+  // server for logged-in users, then fires this; reload the store so the
+  // calendar reflects the server copy.
+  window.addEventListener('retomat:synced', () => { loadAll(); });
+
   // Accept campaigns added from other generators via localStorage event
   window.addEventListener('storage', (e) => {
     if (e.key === 'rc_pending_campaign') {
@@ -288,6 +293,64 @@ window._rcStartEdit = (id) => {
   showModal(renderCampaignForm(c));
 };
 
+// ── Mirror calendar-created campaigns into the dashboard "saved" lists ────────
+// A bonus/tournament created, edited or duplicated IN the calendar should also
+// appear in the saved-bonuses / saved-tournaments lists — separate localStorage
+// stores (be_campaigns / savedTournaments) that the dashboard reads. Keyed by the
+// calendar event id so edits upsert and deletes remove cleanly. Type mapping:
+// 'tournament' → savedTournaments, everything else → be_campaigns (VIP counts as
+// a bonus per product decision). Generator-originated events reach the calendar
+// through a different path (repo mirror, not _rcSaveForm), so they aren't double-
+// listed here. Records are "thin" (no econ/config) and tagged sourceType:'calendar'
+// so the dashboard row opens them back in the calendar instead of an empty detail.
+const _RC_TYPE_LBL = Object.fromEntries(CAMPAIGN_TYPES.map(ct => [ct.val, ct.lbl]));
+
+function _rcLsGet(key) { try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; } }
+function _rcLsPut(key, arr) { try { localStorage.setItem(key, JSON.stringify(arr)); } catch (e) {} }
+
+function _rcSyncSaved(c) {
+  if (!c || !c.id) return;
+  // Events created from a generator/configurator Save carry savedId — they are
+  // already listed in be_campaigns/savedTournaments under that id, so mirroring
+  // them again under the calendar id would double-list them in Reports.
+  if (c.savedId) return;
+  const isTourn = c.type === 'tournament';
+  const key    = isTourn ? 'savedTournaments' : 'be_campaigns';
+  const other  = isTourn ? 'be_campaigns'     : 'savedTournaments';
+  const entity = isTourn ? 'tournaments'      : 'campaigns';
+  const rec = isTourn ? {
+    id: c.id, name: c.title || 'Tournament', type: c.type,
+    createdAt: c.createdAt || new Date().toISOString(),
+    params: { segment: c.segment || 'all', geo: c.geo || '' },
+    spec: {}, cur: '', sourceType: 'calendar',
+  } : {
+    id: c.id, name: c.title || 'Campaign',
+    type: _RC_TYPE_LBL[c.type] || c.type || 'Bonus',
+    status: c.status || 'draft',
+    date: c.createdAt || new Date().toISOString(),
+    params: { geo: c.geo || '', segment: c.segment || 'all' },
+    mechanicType: c.mechanic || c.type || null,
+    sourceType: 'calendar',
+  };
+  _rcLsPut(key, [rec, ..._rcLsGet(key).filter(x => x.id !== c.id)]);
+  // If the type flipped (bonus↔tournament) on edit, drop the stale mirror.
+  _rcLsPut(other, _rcLsGet(other).filter(x => x.id !== c.id));
+  try {
+    window.RetomatRepo?.mirror?.(entity, c.id, rec);
+    window.RetomatRepo?.unmirror?.(isTourn ? 'campaigns' : 'tournaments', c.id);
+  } catch (e) {}
+}
+
+function _rcRemoveSaved(id) {
+  if (!id) return;
+  _rcLsPut('be_campaigns', _rcLsGet('be_campaigns').filter(x => x.id !== id));
+  _rcLsPut('savedTournaments', _rcLsGet('savedTournaments').filter(x => x.id !== id));
+  try {
+    window.RetomatRepo?.unmirror?.('campaigns', id);
+    window.RetomatRepo?.unmirror?.('tournaments', id);
+  } catch (e) {}
+}
+
 window._rcSaveForm = async () => {
   const title = document.getElementById('mf-title')?.value.trim();
   if (!title) { alert('Title is required'); return; }
@@ -309,8 +372,12 @@ window._rcSaveForm = async () => {
     tags:      document.getElementById('mf-tags')?.value.split(',').map(s => s.trim()).filter(Boolean),
     brands:    ['default'],
     sourceType: editingId ? getState().campaigns.find(c => c.id === editingId)?.sourceType : 'manual',
+    // Preserve the link to the saved-store record on edit, so _rcSyncSaved keeps
+    // skipping generator/configurator-originated events (no duplicate mirror).
+    savedId:    editingId ? getState().campaigns.find(c => c.id === editingId)?.savedId : undefined,
   };
-  await upsertCampaign(data);
+  const saved = await upsertCampaign(data);
+  _rcSyncSaved(saved || data);
   closeModal();
 };
 
@@ -318,13 +385,15 @@ window._rcDelete = async (id) => {
   const t = getT();
   if (!confirm(t.deleteConfirm)) return;
   await removeCampaign(id);
+  _rcRemoveSaved(id);
   closeModal();
 };
 
 window._rcDuplicate = async (id) => {
   const c = getState().campaigns.find(x => x.id === id);
   if (!c) return;
-  await duplicateCampaign(c);
+  const dup = await duplicateCampaign(c);
+  _rcSyncSaved(dup);
   closeModal();
 };
 
@@ -427,11 +496,14 @@ window._rcRunAI = async () => {
       if (!res.ok) throw new Error(await res.text());
       campaign = tournamentFromAI(await res.json());
     } else {
-      const scenarios = { de:'eu_mga', kz:'cis_none', ru:'cis_none', mn:'mn_none', us:'sweep_none', mx:'latam_none', fr:'eu_mga', es:'eu_mga', uk:'eu_ukgc' };
-      const scenario  = scenarios[geo] || 'eu_mga';
+      // CampaignGenerateSchema wants { params: { geo, segment, … } } (params is
+      // required; scenario is an optional object). The campaign endpoint's segment
+      // enum is new|mid|vip, so map the calendar's wider segment set down to it —
+      // the original segment is kept for the calendar card via campaignFromAI.
+      const apiSeg = segment === 'new' ? 'new' : segment === 'vip' ? 'vip' : 'mid';
       const res = await fetch('/api/campaign/generate', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scenario, segment, plat: 'both', rtp: 0.96 }),
+        body: JSON.stringify({ params: { geo, segment: apiSeg } }),
       });
       if (!res.ok) throw new Error(await res.text());
       campaign = campaignFromAI(await res.json(), { geo, segment });

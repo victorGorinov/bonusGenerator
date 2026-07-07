@@ -404,7 +404,7 @@ function normalizeRC(c) {
   if (c.sourceType === 'tournament_generator' || c.type === 'tournament') pt = 'tournament';
   else if (c.sourceType === 'loyalty_generator' || c.type === 'vip') pt = 'loyalty';
   return {
-    sourceId:    c.id || 'rc_' + Date.now() + Math.random(),
+    sourceId:    c.savedId || c.id || 'rc_' + Date.now() + Math.random(),
     sourceType:  c.sourceType || 'manual',
     sourceStore: 'rc_campaigns',
     title:       c.title || c.name || 'Campaign',
@@ -1281,6 +1281,8 @@ function deleteReport(id) {
 // ── Report generation ────────────────────────────────────────────────────────
 
 async function doGenerate() {
+  // Guests can't use Reports (backend requireFeature('reports')) — clear prompt, not a 403.
+  if (window.FeatureGate && !(await window.FeatureGate.ensure('reports'))) return;
   // Grab title from input
   var titleInput = document.getElementById('rpt-title-input');
   if (titleInput) RS.wizard.title = titleInput.value;
@@ -1496,6 +1498,10 @@ function showToast(msg) {
 
   updateReportsBadge();
   render();
+
+  // nav-utils hydrates the localStorage caches from the server for logged-in
+  // users then fires this; re-render so reports include server-saved activity.
+  window.addEventListener('retomat:synced', function () { render(); });
 
   // Flash prevention
   var m = document.querySelector('.main');

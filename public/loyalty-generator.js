@@ -92,7 +92,8 @@ function setLang(lang) {
 
 const L = {
   en: {
-    list_empty:   'No programs yet. Create your first loyalty program.',
+    list_empty:   'No programs saved yet',
+    list_empty_sub: 'Generate a loyalty program and click "Save" to build your library.',
     new_program:  '+ New Program',
     program_name: name => name,
     mode:         'Mode', region: 'Region', segment: 'Segment', players: 'Players',
@@ -110,7 +111,7 @@ const L = {
     tier_fs:      'Free Spins/mo', tier_mult: 'Bonus Mult.',
     gen_btn:      'Generate Program →',
     generating:   'Generating economics model…',
-    save_btn:     'Save Program', calendar_btn: '📅 Add to Calendar',
+    save_btn:     'Save Program', calendar_btn: '📅 Open in Calendar',
     ai_soon:      'AI Features — Coming Soon (I4)',
     cost_lbl:     'Monthly Cost', cost_ratio: 'Cost / GGR',
     lift_lbl:     'Retention Lift', roi_lbl:  '3-Month ROI',
@@ -186,7 +187,8 @@ const L = {
     opt_fetch_missions:       '✨ Generate mission descriptions',
   },
   ru: {
-    list_empty:   'Программ пока нет. Создайте первую программу лояльности.',
+    list_empty:   'Программ пока нет',
+    list_empty_sub: 'Создайте программу лояльности и нажмите «Сохранить», чтобы наполнить библиотеку.',
     new_program:  '+ Новая программа',
     program_name: name => name,
     mode:         'Режим', region: 'Регион', segment: 'Сегмент', players: 'Игроки',
@@ -204,7 +206,7 @@ const L = {
     tier_fs:      'FS/мес', tier_mult: 'Множитель',
     gen_btn:      'Создать программу →',
     generating:   'Строим экономическую модель…',
-    save_btn:     'Сохранить', calendar_btn: '📅 Добавить в календарь',
+    save_btn:     'Сохранить', calendar_btn: '📅 Открыть в календаре',
     ai_soon:      'AI-функции — скоро (I4)',
     cost_lbl:     'Расходы/мес', cost_ratio: 'Расходы / GGR',
     lift_lbl:     'Удержание', roi_lbl:  'ROI за 3 мес',
@@ -706,6 +708,7 @@ function renderListView() {
 </div>
 <div class="card" style="text-align:center;padding:40px 20px">
   <div style="font-size:2.5rem;margin-bottom:14px">⭐</div>
+  <div style="color:var(--muted);font-size:.88rem;margin-bottom:20px">${t('list_empty_sub')}</div>
   <button class="btn btn-primary" onclick="showView('setup')">${t('new_program')}</button>
 </div>`;
   } else {
@@ -719,9 +722,11 @@ function renderListView() {
       const mode     = modeLabel[cfg?.mode] || '—';
       const tiers    = cfg?.tiers?.length ?? '—';
       const date     = p.createdAt ? new Date(p.createdAt).toLocaleDateString() : '';
+      // Entity-category badge — this list holds loyalty programs (purple, matches dashboard).
+      const catB = `<span style="background:rgba(168,85,247,.15);color:#c084fc;padding:1px 7px;border-radius:5px;font-size:.62rem;font-weight:700;vertical-align:middle;margin-left:6px;white-space:nowrap">${localStorage.getItem('bonusLang') === 'ru' ? 'Лояльность' : 'Loyalty'}</span>`;
       return `<div class="ct-row" onclick="showView('detail','${esc(p.id)}')" oncontextmenu="openMenu(event,'${esc(p.id)}');return false">
         <div>
-          <div class="ct-name">${esc(p.name)}</div>
+          <div class="ct-name">${esc(p.name)}${catB}</div>
           <div class="ct-meta">${date}</div>
         </div>
         <div class="ct-cell">${esc(mode)}</div>
@@ -973,6 +978,9 @@ function updateTierPreview() {
 }
 
 async function generateProgram() {
+  // Guests can't use Loyalty (backend requireFeature('loyalty')) — show a clear
+  // sign-in prompt instead of letting the request 403 into an opaque error.
+  if (window.FeatureGate && !(await window.FeatureGate.ensure('loyalty'))) return;
   _aiTab = 'econ'; _aiTexts = null; _aiAudit = null; _aiOpt = null; _aiMissions = null;
   const isRu = getLang() === 'ru';
 
@@ -1076,7 +1084,6 @@ function renderStep3(data) {
     <button class="btn btn-ghost" onclick="goStep(2)">${t('back')}</button>
     <div style="display:flex;gap:8px">
       <button class="btn btn-outline" onclick="saveCurrentProgram()">${t('save_btn')}</button>
-      <button class="btn btn-gold" onclick="addLoyaltyToCalendar()">${t('calendar_btn')}</button>
     </div>
   </div>`;
 }
@@ -1239,6 +1246,7 @@ function updateProgramMissions(id, narrativeById) {
   });
   p.updatedAt = new Date().toISOString();
   savePrograms(list);
+  window.RetomatRepo?.mirror('loyalty-programs', p.id, p);
 }
 
 function renderDetailMissionsTab(id) {
@@ -1371,7 +1379,7 @@ function renderDetailView(id) {
     <button class="btn btn-ghost" onclick="showView('list')">${t('back')}</button>
     <div style="display:flex;gap:8px">
       <button class="btn btn-outline" onclick="deleteProgramById('${esc(id)}')">🗑 Delete</button>
-      <button class="btn btn-gold" onclick="addDetailToCalendar('${esc(id)}')">${t('calendar_btn')}</button>
+      <a class="btn btn-gold" href="/retention-calendar.html">${t('calendar_btn')}</a>
     </div>
   </div>`;
 }
@@ -1413,9 +1421,14 @@ function saveCurrentProgram() {
   const programs = loadPrograms();
   const name = autoName(draft.mode, draft.region, draft.segment);
   const now  = new Date().toISOString();
-  programs.push({ id: genId(), name, result: lastResult, params: { ...draft }, createdAt: now, updatedAt: now });
+  const entry = { id: genId(), name, result: lastResult, params: { ...draft }, createdAt: now, updatedAt: now };
+  programs.push(entry);
   savePrograms(programs);
+  window.RetomatRepo?.mirror('loyalty-programs', entry.id, entry);
   updateAllBadges();
+  // Saving also silently schedules the program in the Retention Calendar
+  // (silent — no confirm/toast; dupes by geo/segment/mechanic are skipped).
+  try { addLoyaltyToCalendar({ silent: true, savedId: entry.id }); } catch {}
   showToast(t('saved_toast'));
 }
 
@@ -1423,6 +1436,7 @@ function deleteProgramById(id) {
   if (!confirm(t('delete_confirm'))) return;
   const programs = loadPrograms().filter(p => p.id !== id);
   savePrograms(programs);
+  window.RetomatRepo?.unmirror('loyalty-programs', id);
   updateAllBadges();
   showView('list');
 }
@@ -1451,8 +1465,8 @@ function _buildCalendarEntry(result, params) {
   };
 }
 
-function _doAddToCalendar(campaign) {
-  const isRu = getLang() === 'ru';
+function _doAddToCalendar(campaign, opts = {}) {
+  const silent = !!(opts && opts.silent); // silent = called from Save: no confirm, no toast, skip dupes
   try {
     const camps = JSON.parse(localStorage.getItem('rc_campaigns') || '[]');
     const dupe  = camps.find(c =>
@@ -1462,25 +1476,30 @@ function _doAddToCalendar(campaign) {
       c.mechanic   === campaign.mechanic
     );
     if (dupe) {
+      if (silent) return false; // already scheduled — don't create a duplicate event
       const date = new Date(dupe.createdAt).toLocaleDateString();
-      if (!confirm(t('calendar_dupe', dupe.title, date))) return;
+      if (!confirm(t('calendar_dupe', dupe.title, date))) return false;
     }
     const now = new Date().toISOString();
-    camps.push({ ...campaign, id: 'ly_' + Date.now(), createdAt: now, updatedAt: now });
+    const rec = { ...campaign, id: 'ly_' + Date.now(), savedId: opts.savedId || null, createdAt: now, updatedAt: now };
+    camps.push(rec);
     localStorage.setItem('rc_campaigns', JSON.stringify(camps));
-    showToast(t('calendar_toast'));
-  } catch {}
+    window.RetomatRepo?.mirror('calendar-events', rec.id, rec);
+  } catch { return false; }
+  if (silent) return true;
+  showToast(t('calendar_toast'));
+  return true;
 }
 
-function addLoyaltyToCalendar() {
+function addLoyaltyToCalendar(opts = {}) {
   if (!lastResult) return;
-  _doAddToCalendar(_buildCalendarEntry(lastResult, draft));
+  return _doAddToCalendar(_buildCalendarEntry(lastResult, draft), opts);
 }
 
 function addDetailToCalendar(id) {
   const p = loadPrograms().find(x => x.id === id);
   if (!p) return;
-  _doAddToCalendar(_buildCalendarEntry(p.result, p.params));
+  return _doAddToCalendar(_buildCalendarEntry(p.result, p.params));
 }
 
 // ── INIT ───────────────────────────────────────────────────────────────────────
@@ -1501,6 +1520,13 @@ function addDetailToCalendar(id) {
   }
 
   document.querySelector('.main').classList.add('ready');
+
+  // nav-utils runs the migrate+hydrate sync and fires this once the localStorage
+  // cache reflects the server; refresh badges + list then.
+  window.addEventListener('retomat:synced', () => {
+    updateAllBadges();
+    if (_view === 'list') render();
+  });
 })();
 
 function toggleLoyaltyGlossary() {

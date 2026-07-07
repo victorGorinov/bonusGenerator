@@ -936,7 +936,9 @@ function renderStep3() {
   const roi  = typeof e.roi === 'number' ? e.roi : Number(e.roi) || 0;
 
   function fmtCur(n) {
-    return cur + ' ' + Math.abs(Math.round(n)).toLocaleString();
+    // Thin records (e.g. calendar-synced tournaments with no econ) leave scenario
+    // fields undefined — coerce to 0 so we render "0", not "NaN".
+    return cur + ' ' + Math.abs(Math.round(Number(n) || 0)).toLocaleString();
   }
 
   const dur = draft.params.duration || 'weekly';
@@ -1090,9 +1092,6 @@ ${gamesSection()}
             style="border-color:rgba(79,110,247,.4);color:#a0b0ff"
             onclick="saveTournament()">
       ${tg('btn_save')}
-    </button>
-    <button class="btn btn-outline" style="border-color:var(--gold);color:var(--gold)" onclick="addTournamentToCalendar()">
-      ${tg('btn_calendar')}
     </button>
   </div>
   <div style="display:flex;gap:9px">
@@ -1952,8 +1951,9 @@ ${_gamesData && _gamesData._key === _gamesParamsKey() ? gamesSectionFromData(_ga
 }
 
 // ── ADD TO RETENTION CALENDAR ─────────────────────────────────────────────────
-function addTournamentToCalendar() {
-  if (!lastResult) return;
+function addTournamentToCalendar(opts = {}) {
+  const silent = !!opts.silent; // silent = called from Save: no confirm, no toast, skip dupes
+  if (!lastResult) return false;
   const { spec, econ, params, cur } = lastResult;
   const DURATION_DAYS = { flash:1, daily:1, weekly:7, monthly:30, multi_round:10 };
   const days    = DURATION_DAYS[params?.duration] || 7;
@@ -1974,6 +1974,7 @@ function addTournamentToCalendar() {
     rewards:    { prizePool: spec?.prizePool, currency: cur },
     econ:       econ || null,
     sourceType: 'tournament_generator',
+    savedId:    opts.savedId || null,
   };
   const isRu = (localStorage.getItem('bonusLang') || 'en') === 'ru';
   try {
@@ -1985,16 +1986,20 @@ function addTournamentToCalendar() {
       c.mechanic === campaign.mechanic
     );
     if (dupe) {
+      if (silent) return false; // already scheduled — don't create a duplicate event
       const added = new Date(dupe.createdAt).toLocaleDateString();
       const msg   = isRu
         ? `Этот турнир уже добавлен в календарь (${dupe.title}, добавлен ${added}).\nДобавить ещё раз?`
         : `This tournament is already in the calendar (${dupe.title}, added ${added}).\nAdd again?`;
-      if (!confirm(msg)) return;
+      if (!confirm(msg)) return false;
     }
     const now = new Date().toISOString();
-    camps.push({ ...campaign, id: 'tg_' + Date.now(), createdAt: now, updatedAt: now });
+    const rec = { ...campaign, id: 'tg_' + Date.now(), createdAt: now, updatedAt: now };
+    camps.push(rec);
     localStorage.setItem('rc_campaigns', JSON.stringify(camps));
-  } catch {}
+    window.RetomatRepo?.mirror('calendar-events', rec.id, rec);
+  } catch { return false; }
+  if (silent) return true;
   const msg   = isRu ? '📅 Турнир добавлен в Retention Calendar' : '📅 Tournament added to Retention Calendar';
   let toast   = document.getElementById('tg-rc-toast');
   if (!toast) {
@@ -2006,6 +2011,7 @@ function addTournamentToCalendar() {
   toast.innerHTML = `${msg} · <a href="/retention-calendar.html" style="color:var(--gold);font-weight:600">Open →</a>`;
   toast.style.display = 'block';
   setTimeout(() => { toast.style.display = 'none'; }, 5000);
+  return true;
 }
 
 // ── SAVE / DELETE ────────────────────────────────────────────────────────────
@@ -2032,6 +2038,8 @@ function saveTournament() {
   };
   list.unshift(entry);
   saveTournaments(list);
+  window.RetomatRepo?.mirror('tournaments', entry.id, entry);
+  try { addTournamentToCalendar({ silent: true, savedId: entry.id }); } catch {}
   const btn = document.getElementById('btn-save-tournament');
   if (btn) { btn.textContent = '✓ Saved'; btn.disabled = true; btn.style.opacity = '.5'; }
   showToast(tg('toast_saved'));
@@ -2041,6 +2049,7 @@ function saveTournament() {
 function deleteTournament(id) {
   if (!confirm(tg('confirm_delete'))) return;
   saveTournaments(loadTournaments().filter(t => t.id !== id));
+  window.RetomatRepo?.unmirror('tournaments', id);
   updateNavBadge();
   showToast(tg('toast_deleted'));
   showView('list');
@@ -2085,9 +2094,11 @@ function tournRowHTML(t) {
   const date = new Date(t.createdAt).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
   const icon = TYPE_ICON[t.type] || '🏆';
   const lbl  = TYPE_LABEL[t.type] || t.type;
+  // Entity-category badge — this list holds tournaments (amber, matches dashboard).
+  const catB = `<span style="background:rgba(245,158,11,.15);color:#f59e0b;padding:1px 7px;border-radius:5px;font-size:.62rem;font-weight:700;vertical-align:middle;margin-left:6px;white-space:nowrap">${localStorage.getItem('bonusLang') === 'ru' ? 'Турнир' : 'Tournament'}</span>`;
   return `<div class="ct-row" onclick="showView('detail','${t.id}')">
     <div>
-      <div class="ct-name">${icon} ${t.name}</div>
+      <div class="ct-name">${icon} ${t.name}${catB}</div>
       <div class="ct-meta">${lbl} · ${seg} · ${dur}</div>
     </div>
     <div class="ct-cell" style="font-size:.75rem">${pool}</div>
@@ -2167,7 +2178,9 @@ function renderDetail(id) {
   const roi  = typeof e.roi === 'number' ? e.roi : Number(e.roi) || 0;
 
   function fmtCur(n) {
-    return cur + ' ' + Math.abs(Math.round(n)).toLocaleString();
+    // Thin records (e.g. calendar-synced tournaments with no econ) leave scenario
+    // fields undefined — coerce to 0 so we render "0", not "NaN".
+    return cur + ' ' + Math.abs(Math.round(Number(n) || 0)).toLocaleString();
   }
 
   const dur = t.params?.duration || 'weekly';
@@ -2329,6 +2342,13 @@ updateAllBadges();
 setTournLang(localStorage.getItem('bonusLang') || 'en');
 resolveInitialTournamentView();
 document.querySelector('.main').classList.add('ready');
+
+// nav-utils runs the migrate+hydrate sync for logged-in users and fires this
+// event once the localStorage cache reflects the server; refresh the list then.
+window.addEventListener('retomat:synced', () => {
+  updateAllBadges();
+  if (_tgCurrentView === 'list') showView('list');
+});
 
 window.addEventListener('pageshow', function() {
   updateAllBadges();

@@ -54,7 +54,9 @@ export function normalizeCampaign(campaign: Campaign): NormalizedActivity | null
   if (!startDate) return null;
 
   const econ       = campaign.econ ?? null;
-  const sourceType = campaign.sourceType ?? 'manual';
+  // Configurator saves use *_configurator sourceTypes but carry the identical
+  // econ schema as the generators — treat them the same for forecasting.
+  const sourceType = (campaign.sourceType ?? 'manual').replace('_configurator', '_generator');
   const days       = daysBetween(startDate, endDate);
 
   if (!econ) {

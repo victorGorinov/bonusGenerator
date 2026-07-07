@@ -9,10 +9,14 @@ import { AnalysisSchema, ActualsSchema, ExplainSchema } from '../validation/anal
 import { createCampaignController }  from '../controllers/campaign.controller.js';
 import { createAnalyticsController } from '../controllers/analytics.controller.js';
 import { getAIProvider }             from '../ai/registry.js';
+import { requireFeature }            from '../middleware/requireFeature.js';
 
 const ctrl         = createCampaignController({ ai: getAIProvider() });
 const analyticsCtrl = createAnalyticsController();
 const router       = Router();
+
+// Mounted at the distinct /api/campaign prefix → safe to gate the whole router.
+router.use(requireFeature('campaign'));
 
 router.post('/generate',         campaignLimiter, validate(CampaignGenerateSchema), ctrl.generate);
 router.post('/texts',            aiLimiter,       validate(TextsSchema),             ctrl.texts);

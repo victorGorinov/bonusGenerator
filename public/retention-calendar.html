@@ -146,14 +146,11 @@ select.form-input{cursor:pointer}
   </div>
   <nav class="sb-nav">
     <div class="nav-lbl"><span data-tr-en>Main</span><span data-tr-ru>Главное</span></div>
-    <a href="/retention-calendar.html" class="nav-item active"><span class="nav-icon">📅</span><span data-tr-en>Retention Calendar</span><span data-tr-ru>Календарь</span></a>
     <a href="/campaign-generator.html" class="nav-item"><span class="nav-icon">📊</span><span data-tr-en>Dashboard</span><span data-tr-ru>Дашборд</span></a>
+    <a href="/retention-calendar.html" class="nav-item active"><span class="nav-icon">📅</span><span data-tr-en>Retention Calendar</span><span data-tr-ru>Календарь</span></a>
     <div class="nav-lbl" style="margin-top:6px"><span data-tr-en>Tools</span><span data-tr-ru>Инструменты</span></div>
     <a href="/configurator.html" class="nav-item"><span class="nav-icon">⚙️</span> Configurator</a>
-    <a href="/campaign-generator.html?view=offer-gen" class="nav-item"><span class="nav-icon">🚀</span><span data-tr-en>Bonuses</span><span data-tr-ru>Бонусы</span><span class="nav-badge" id="nav-offer-gen-badge" style="display:none"></span></a>
-    <a href="/tournament-generator.html?view=list" class="nav-item"><span class="nav-icon">🏆</span><span data-tr-en>Tournaments</span><span data-tr-ru>Турниры</span><span class="nav-chevron">▸</span><span class="nav-badge" id="nav-tourn-gen-badge" style="display:none"></span></a>
-    <a href="/tournament-generator.html#setup" class="nav-item nav-sub"><span class="nav-icon" style="font-size:11px;opacity:.55">└</span><span data-tr-en>Setup Guide</span><span data-tr-ru>Гайд настройки</span></a>
-    <a href="/loyalty-generator.html" class="nav-item"><span class="nav-icon">⭐</span><span data-tr-en>Loyalty Program</span><span data-tr-ru>Лояльность</span><span class="nav-badge" id="nav-loyalty-badge" style="display:none"></span></a>
+    <a href="/generator.html" class="nav-item"><span class="nav-icon">🧩</span><span data-tr-en>Generator</span><span data-tr-ru>Генератор</span></a>
     <div class="nav-lbl" style="margin-top:6px"><span data-tr-en>Analytics</span><span data-tr-ru>Аналитика</span></div>
     <a href="/reports.html" class="nav-item"><span class="nav-icon">📋</span><span data-tr-en>Reports</span><span data-tr-ru>Отчёты</span><span class="nav-badge" id="nav-reports-badge" style="display:none"></span></a>
     <button class="nav-item off"><span class="nav-icon">⚙️</span><span data-tr-en>Settings</span><span data-tr-ru>Настройки</span></button>
@@ -167,7 +164,7 @@ select.form-input{cursor:pointer}
   <!-- Topbar -->
   <div class="topbar">
     <span class="topbar-title">📅 <span data-tr-en>Retention Calendar</span><span data-tr-ru>Календарь</span></span>
-    <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+    <div class="topbar-right" style="margin-left:auto;display:flex;align-items:center;gap:8px">
       <button class="btn btn-primary btn-sm" onclick="window._rcOpenNew()"><span data-tr-en>+ New Campaign</span><span data-tr-ru>+ Новая кампания</span></button>
       <button onclick="toggleRCGlossary()" title="Glossary"
         style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);width:28px;height:28px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s"
@@ -214,6 +211,7 @@ select.form-input{cursor:pointer}
 </div>
 
 <script src="/nav-utils.js"></script>
+<script src="/repo-http.js"></script>
 <!-- Load the Vite-built bundle (FullCalendar needs bundling — can't load npm imports raw) -->
 <script type="module" src="/dist/retention-calendar.js"></script>
 <!-- External init: sets lang toggle active state + applies nav translations.

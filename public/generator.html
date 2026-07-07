@@ -1,164 +1,1146 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+<script src="/lang-init.js"></script>
+<style>html[data-lang="en"] [data-tr-ru]{display:none}html[data-lang="ru"] [data-tr-en]{display:none}
+</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Retomat — Configurator</title>
+<title>Generator — Retomat</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="styles.css">
+<style>
+:root {
+  --bg:#0a0d14; --bg2:#0f1420; --bg3:#141926; --card:#161c2d;
+  --border:#1e2740; --accent:#4f6ef7; --accent2:#7c3aed;
+  --text:#e8eaf0; --muted:#8892a4; --success:#10b981; --warn:#f59e0b;
+  --sidebar-w:220px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%;background:#0a0d14}
+body{height:100%}
+
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);font-size:14px;display:flex;min-height:100vh}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar-w);min-height:100vh;background:#1E1B4B;border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50}
+.sb-logo{padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px;cursor:pointer}
+.sb-logo-img{height:28px;width:auto;display:block;flex-shrink:0}
+.sb-logo-text{font-weight:800;font-size:.9rem;color:#fff;letter-spacing:-.3px}.sb-logo-text span{color:#F59E0B}
+.sb-logo-tag{font-size:9px;font-weight:700;color:#1E1B4B;background:#F59E0B;padding:1px 6px;border-radius:8px;letter-spacing:.4px;margin-left:2px;align-self:center}
+.sb-nav{flex:1;padding:10px 0;overflow-y:auto}
+.nav-lbl{padding:8px 16px 3px;font-size:.65rem;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.08em}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;color:rgba(255,255,255,.5);font-size:.83rem;font-weight:500;position:relative;transition:background .15s,color .15s;text-decoration:none;border:none;background:none;width:100%;font-family:inherit}
+.nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
+.nav-item.active{background:rgba(79,110,247,.25);color:#a0b0ff}
+.nav-item.active::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
+.nav-item.off{opacity:.38;cursor:default;pointer-events:none}
+.nav-sub{padding-left:30px;font-size:.77rem;display:none}.nav-chevron{margin-left:auto;font-size:16px;color:rgba(255,255,255,.7);flex-shrink:0;padding:0 4px;cursor:pointer;user-select:none;transition:color .15s;line-height:1}.nav-chevron:hover{color:#fff}
+.nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.nav-badge{margin-left:auto;background:rgba(79,110,247,.3);color:#a0b0ff;font-size:.6rem;padding:1px 5px;border-radius:100px;font-weight:700}
+.sb-foot{padding:12px 16px;border-top:1px solid rgba(255,255,255,.06)}
+.sb-back{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.4);font-size:.78rem;text-decoration:none;transition:color .15s;cursor:pointer;background:none;border:none;font-family:inherit;padding:0;width:100%;text-align:left}
+.sb-back:hover{color:#fff}
+.exit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:300;display:flex;align-items:center;justify-content:center}
+.exit-box{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px 28px 24px;max-width:380px;width:90%;box-shadow:0 24px 60px rgba(0,0,0,.4)}
+.exit-box h3{font-size:1.05rem;font-weight:700;margin:0 0 10px}
+.exit-box p{color:var(--muted);font-size:.875rem;line-height:1.55;margin:0 0 24px}
+.exit-actions{display:flex;gap:10px;justify-content:flex-end}
+
+/* MAIN */
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{height:64px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:10px;position:sticky;top:0;z-index:40}
+.topbar-title{font-weight:600;font-size:.92rem}
+.topbar-sep,.topbar-sub{color:var(--muted);font-size:.8rem}
+.topbar-right{margin-left:auto}
+.content{flex:1;padding:26px 30px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:8px;font-size:.83rem;font-weight:600;cursor:pointer;border:none;transition:all .2s;font-family:inherit;text-decoration:none}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 2px 12px rgba(79,110,247,.3)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(79,110,247,.45)}
+.btn-outline{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+.btn-ghost{background:transparent;color:var(--muted);border:none}
+.btn-ghost:hover{color:var(--text)}
+.btn-sm{padding:5px 11px;font-size:.76rem}
+.btn-lg{padding:11px 26px;font-size:.92rem;border-radius:10px}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+
+/* TYPE SWITCH */
+.type-switch{display:flex;gap:8px;margin-bottom:24px}
+.type-btn{display:flex;align-items:center;gap:7px;padding:9px 20px;border-radius:10px;border:1.5px solid var(--border);font-size:.85rem;font-weight:600;cursor:pointer;transition:all .2s;color:var(--muted);background:var(--card);font-family:inherit}
+.type-btn:hover{border-color:rgba(79,110,247,.4);color:var(--text)}
+.type-btn.active{border-color:var(--accent);background:rgba(79,110,247,.12);color:#a0b0ff;box-shadow:0 0 0 1px rgba(79,110,247,.2)}
+
+/* DASHBOARD */
+.dash-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:26px}
+.dash-title{font-size:1.35rem;font-weight:700;margin-bottom:3px}
+.dash-sub{color:var(--muted);font-size:.83rem}
+.section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.section-title{font-weight:600;font-size:.9rem}
+
+.quick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px;margin-bottom:28px}
+.qcard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.qcard:hover{border-color:rgba(79,110,247,.4);transform:translateY(-2px)}
+.qcard-icon{font-size:1.7rem;margin-bottom:8px}
+.qcard-name{font-weight:600;font-size:.85rem;margin-bottom:3px}
+.qcard-desc{font-size:.73rem;color:var(--muted);line-height:1.5}
+.qcard-arr{position:absolute;top:13px;right:13px;color:var(--muted);font-size:11px;opacity:0;transition:opacity .2s}
+.qcard:hover .qcard-arr{opacity:1}
+
+.ctable{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.ct-hd,.ct-row{display:grid;grid-template-columns:1fr 130px 100px 90px 60px;padding:10px 16px;align-items:center}
+.ct-hd{border-bottom:1px solid var(--border);font-size:.68rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.ct-row{border-bottom:1px solid var(--border);transition:background .15s;cursor:pointer}
+.ct-row:last-child{border-bottom:none}
+.ct-row:hover{background:rgba(255,255,255,.02)}
+.ct-name{font-weight:500;font-size:.83rem}
+.ct-meta{font-size:.72rem;color:var(--muted);margin-top:1px}
+.ct-cell{font-size:.8rem;color:var(--muted)}
+.badge{display:inline-block;padding:2px 8px;border-radius:100px;font-size:.65rem;font-weight:700}
+.badge-draft{background:rgba(139,152,168,.15);color:#8b98a8}
+.badge-active{background:rgba(16,185,129,.15);color:#10b981}
+.badge-done{background:rgba(79,110,247,.15);color:#a0b0ff}
+
+/* WIZARD */
+.wiz-progress{display:flex;align-items:center;justify-content:center;margin-bottom:28px;flex-wrap:wrap;gap:0}
+.wp-step{display:flex;align-items:center;gap:7px}
+.wp-circle{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.76rem;font-weight:700;border:2px solid var(--border);color:var(--muted);background:var(--bg2);transition:all .3s;flex-shrink:0}
+.wp-circle.active{border-color:var(--accent);background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 0 14px rgba(79,110,247,.4)}
+.wp-circle.done{border-color:var(--success);background:var(--success);color:#fff}
+.wp-lbl{font-size:.72rem;color:var(--muted);font-weight:500;white-space:nowrap}
+.wp-lbl.active{color:var(--text);font-weight:600}
+.wp-conn{flex:1;height:1px;background:var(--border);min-width:16px;max-width:50px;margin:0 6px}
+.wp-conn.done{background:var(--success)}
+
+.step-panel{display:none}
+.step-panel.active{display:block}
+.step-title{font-size:1.15rem;font-weight:700;margin-bottom:5px}
+.step-sub{color:var(--muted);font-size:.83rem;margin-bottom:22px;line-height:1.6}
+
+/* Step 1 */
+.sc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.sc-cat{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.sc-cat-hd{padding:12px 14px 9px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;font-weight:600;font-size:.85rem}
+.sc-items{padding:6px}
+.sc-item{padding:8px 11px;border-radius:7px;cursor:pointer;font-size:.81rem;transition:all .15s;color:var(--muted);display:block;border:none;background:none;width:100%;text-align:left;font-family:inherit}
+.sc-item:hover{background:rgba(79,110,247,.08);color:var(--text)}
+.sc-item.sel{background:rgba(79,110,247,.15);color:var(--accent);font-weight:600}
+
+/* Step 2 */
+.params-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fg{display:flex;flex-direction:column;gap:6px}
+.fg.full{grid-column:1/-1}
+.fl{font-size:.74rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.form-input,.form-select{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:9px 13px;color:var(--text);font-size:.85rem;font-family:inherit;outline:none;transition:border-color .2s;width:100%}
+.form-input:focus,.form-select:focus{border-color:var(--accent)}
+.chip-group{display:flex;gap:5px;flex-wrap:wrap}
+.chip{padding:5px 13px;border-radius:100px;font-size:.76rem;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--bg2);color:var(--muted);transition:all .15s;user-select:none}
+.chip:hover{border-color:var(--accent);color:var(--text)}
+.chip.active{background:rgba(79,110,247,.15);border-color:var(--accent);color:var(--accent)}
+.chip-multi{padding:5px 13px;border-radius:100px;font-size:.76rem;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--bg2);color:var(--muted);transition:all .15s;user-select:none}
+.chip-multi:hover{border-color:var(--success);color:var(--text)}
+.chip-multi.active{background:rgba(16,185,129,.15);border-color:var(--success);color:var(--success)}
+.mech-tabs{display:flex;gap:4px;margin:0 0 12px;flex-wrap:wrap}
+.mech-tab{padding:4px 12px;border-radius:100px;font-size:.73rem;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--bg2);color:var(--muted);transition:all .15s;font-family:inherit}
+.mech-tab:hover{border-color:var(--accent);color:var(--text)}
+.mech-tab.active{background:rgba(79,110,247,.15);border-color:var(--accent);color:var(--accent)}
+.toggle3{display:flex;background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.t3-btn{flex:1;padding:8px 4px;text-align:center;font-size:.76rem;font-weight:600;cursor:pointer;color:var(--muted);transition:all .15s;border:none;background:none;font-family:inherit}
+.t3-btn.active{background:rgba(79,110,247,.2);color:var(--accent)}
+
+/* Step 3 progress */
+.prog-wrap{max-width:440px;margin:0 auto;padding:20px 0}
+.prog-title{font-size:1.05rem;font-weight:700;text-align:center;margin-bottom:5px}
+.prog-sub{text-align:center;color:var(--muted);font-size:.82rem;margin-bottom:26px}
+.prog-list{list-style:none;display:flex;flex-direction:column;gap:10px}
+.pl-item{display:flex;align-items:center;gap:12px;padding:11px 15px;background:var(--card);border:1px solid var(--border);border-radius:9px;font-size:.85rem;color:var(--muted);transition:all .3s}
+.pl-item.done{border-color:rgba(16,185,129,.3);color:var(--text)}
+.pl-item.running{border-color:rgba(79,110,247,.3);color:var(--text)}
+.pl-icon{font-size:15px;flex-shrink:0;width:18px;text-align:center}
+.spinner{width:15px;height:15px;border:2px solid rgba(79,110,247,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Step 3 results */
+.res-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+.res-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px}
+.rc-title{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.mech-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:.83rem}
+.mech-row:last-child{border-bottom:none}
+.mr-l{color:var(--muted)}.mr-v{font-weight:600}
+.ai-bullets{list-style:none;display:flex;flex-direction:column;gap:8px}
+.ai-bullet{display:flex;gap:8px;font-size:.81rem;line-height:1.55;color:var(--muted)}
+.ai-bullet::before{content:'✓';color:var(--success);flex-shrink:0;font-weight:700}
+.alt-chips{display:flex;flex-direction:column;gap:7px;margin-top:6px}
+.alt-chip{padding:10px 13px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;font-size:.78rem;cursor:pointer;transition:all .15s}
+.alt-chip:hover{border-color:var(--accent)}
+.alt-chip-name{font-weight:600;color:var(--text);margin-bottom:2px}
+.alt-chip-desc{color:var(--muted);font-size:.71rem}
+
+/* Step 4 */
+.ch-tabs{display:flex;gap:2px;margin-bottom:14px;border-bottom:1px solid var(--border)}
+.ch-tab{padding:7px 13px;font-size:.8rem;font-weight:600;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;margin-bottom:-1px;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit}
+.ch-tab:hover{color:var(--text)}
+.ch-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.ch-content{display:none}
+.ch-content.active{display:block}
+.var-cards{display:flex;flex-direction:column;gap:10px}
+.var-card{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:13px 15px}
+.var-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.var-lbl{font-size:.68rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em}
+.var-meta{font-size:.7rem;color:var(--muted)}
+.var-text{font-size:.83rem;line-height:1.6;white-space:pre-line}
+.var-acts{display:flex;gap:6px;margin-top:9px}
+
+/* Audit */
+.audit-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.audit-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px}
+.audit-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.audit-item:last-child{border-bottom:none}
+.audit-ico{font-size:15px;flex-shrink:0;margin-top:1px}
+.audit-lbl{font-size:.83rem;font-weight:600;margin-bottom:2px}
+.audit-note{font-size:.73rem;color:var(--muted)}
+.rec-item{padding:9px 0;border-bottom:1px solid var(--border)}
+.rec-item:last-child{border-bottom:none}
+.rec-text{font-size:.81rem;line-height:1.5;margin-bottom:7px}
+
+/* Step 5 */
+.exp-layout{display:grid;grid-template-columns:1fr 300px;gap:18px}
+.exp-formats{display:flex;flex-direction:column;gap:9px}
+.exp-btn{display:flex;align-items:center;gap:13px;padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:11px;cursor:pointer;transition:all .15s;width:100%;text-align:left;font-family:inherit;color:var(--text)}
+.exp-btn:hover{border-color:var(--accent)}
+.exp-btn-ico{font-size:19px;flex-shrink:0}
+.exp-btn-name{font-weight:600;font-size:.85rem}
+.exp-btn-desc{font-size:.72rem;color:var(--muted);margin-top:2px}
+.sum-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;position:sticky;top:74px}
+.sum-title{font-weight:700;font-size:.9rem;margin-bottom:12px}
+.sum-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:.8rem}
+.sum-row:last-of-type{border-bottom:none}
+.sr-l{color:var(--muted)}.sr-v{font-weight:600}
+.done-screen{text-align:center;padding:48px 20px;max-width:460px;margin:0 auto}
+.done-emoji{font-size:3.2rem;margin-bottom:14px}
+.done-title{font-size:1.4rem;font-weight:700;margin-bottom:7px}
+.done-sub{color:var(--muted);margin-bottom:26px;font-size:.88rem;line-height:1.65}
+.done-acts{display:flex;gap:11px;justify-content:center}
+
+/* Wizard footer */
+.wiz-foot{display:flex;align-items:center;justify-content:space-between;padding-top:20px;margin-top:22px;border-top:1px solid var(--border)}
+.wiz-foot-l,.wiz-foot-r{display:flex;align-items:center;gap:9px}
+.step-ctr{font-size:.75rem;color:var(--muted)}
+
+/* Configurator iframe — flush to content edges */
+#view-configurator{overflow:hidden}
+
+/* Campaign context menu */
+.camp-menu{position:fixed;background:var(--card);border:1px solid var(--border);border-radius:9px;padding:4px;z-index:300;min-width:168px;box-shadow:0 4px 24px rgba(0,0,0,.5)}
+.camp-menu-item{display:block;width:100%;padding:8px 13px;font-size:.8rem;font-weight:500;text-align:left;background:none;border:none;color:var(--text);cursor:pointer;border-radius:6px;font-family:inherit;white-space:nowrap;transition:background .12s}
+.camp-menu-item:hover{background:rgba(255,255,255,.07)}
+.camp-menu-sep{height:1px;background:var(--border);margin:3px 0}
+
+/* Empty campaign list */
+.tbl-empty{padding:28px 16px;text-align:center;color:var(--muted);font-size:.82rem}
+
+/* Lang toggle */
+.lang-toggle{display:flex;background:var(--bg2);border:1px solid var(--border);border-radius:100px;padding:2px;gap:1px;flex-shrink:0}
+.lt-btn{padding:3px 10px;border-radius:100px;font-size:.68rem;font-weight:700;cursor:pointer;border:none;background:none;color:var(--muted);font-family:inherit;transition:all .15s;letter-spacing:.05em}
+.lt-btn.active{background:var(--accent);color:#fff}
+
+/* Mobile hamburger */
+.topbar-ham{display:none;background:none;border:none;color:var(--text);font-size:1.05rem;cursor:pointer;padding:4px 6px;margin-right:4px;line-height:1;flex-shrink:0}
+
+/* Mobile overlay */
+#sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:48;transition:opacity .28s}
+#sb-overlay.sb-open{display:block}
+
+@media(max-width:680px){
+  .sidebar{transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);display:flex!important}
+  .sidebar.sb-open{transform:translateX(0)}
+  .main{margin-left:0}
+  .topbar-ham{display:inline-flex;align-items:center}
+}
+
+/* ── CAMPAIGN DETAIL ────────────────────────────────────────────────────────── */
+#view-campaign-detail{margin:-26px -30px;height:calc(100vh - 64px);flex-direction:column}
+.det-hd{padding:14px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex-shrink:0;background:var(--bg2)}
+.det-back{background:none;border:1px solid var(--border);color:var(--muted);font-size:.8rem;cursor:pointer;font-family:inherit;padding:5px 12px;border-radius:7px;transition:all .15s;flex-shrink:0}
+.det-back:hover{background:rgba(255,255,255,.07);color:var(--text)}
+.det-name{font-size:.98rem;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.det-acts{display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap}
+.det-tabs{display:flex;padding:0 24px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;overflow-x:auto}
+.dtab{padding:10px 16px;font-size:.82rem;font-weight:500;color:var(--muted);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:color .15s;font-family:inherit;margin-bottom:-1px;white-space:nowrap}
+.dtab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.dtab:hover:not(.active){color:var(--text)}
+.det-body{flex:1;overflow-y:auto;padding:24px 28px}
+.ov-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:12px;margin-bottom:24px}
+.ov-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:13px 15px}
+.ov-lbl{font-size:.69rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+.ov-val{font-size:.9rem;font-weight:600}
+.ch-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.ch-tab{padding:5px 14px;font-size:.78rem;font-weight:500;border-radius:20px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s}
+.ch-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.det-exp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.ct-row.clickable{cursor:pointer}
+.ct-row.clickable:hover .ct-name{color:var(--accent)}
+
+.econ-scenarios-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:16px 0}
+.econ-scenario-card{border-radius:12px;border:1px solid;padding:16px;position:relative}
+.econ-p10{background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.25)}
+.econ-p50{background:rgba(79,110,247,.08);border-color:rgba(79,110,247,.5);border-width:2px}
+.econ-p90{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.25)}
+.econ-scenario-badge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:rgba(79,110,247,.15);border:1px solid rgba(79,110,247,.3);border-radius:100px;padding:2px 10px;font-size:10px;font-weight:600;color:#4f6ef7;white-space:nowrap}
+.econ-scenario-header{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.econ-scenario-icon{font-size:14px}
+.econ-p10 .econ-scenario-icon,.econ-p10 .econ-scenario-label{color:#10b981}
+.econ-p50 .econ-scenario-icon,.econ-p50 .econ-scenario-label{color:#4f6ef7}
+.econ-p90 .econ-scenario-icon,.econ-p90 .econ-scenario-label{color:#f59e0b}
+.econ-scenario-label{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.econ-scenario-cost{font-size:24px;font-weight:800;margin-bottom:2px}
+.econ-p10 .econ-scenario-cost{color:#10b981}
+.econ-p50 .econ-scenario-cost{color:#4f6ef7}
+.econ-p90 .econ-scenario-cost{color:#f59e0b}
+.econ-scenario-sub{font-size:11px;color:#8892a4;margin-bottom:12px}
+#econ-wrap[data-expert="0"] .econ-expert-only{display:none}
+#econ-wrap[data-expert="1"] .econ-basic-only{display:none}
+.econ-scenario-rows{border-top:1px solid rgba(255,255,255,.08);padding-top:10px;display:flex;flex-direction:column;gap:6px}
+.econ-row{display:flex;justify-content:space-between;font-size:12px}
+.econ-row span:first-child{color:#8892a4}
+.econ-p10 .econ-row span:last-child{color:#10b981;font-weight:600}
+.econ-p50 .econ-row span:last-child{color:#4f6ef7;font-weight:600}
+.econ-p90 .econ-row span:last-child{color:#f59e0b;font-weight:600}
+/* ── Tooltips ── */
+.tip{position:relative;cursor:help;border-bottom:1px dashed rgba(136,146,164,.4)}
+.tip::after{
+  content:attr(data-tip);
+  position:absolute;bottom:calc(100% + 6px);left:0;
+  background:#1a2035;border:1px solid rgba(79,110,247,.25);
+  border-radius:8px;padding:8px 11px;
+  font-size:11px;line-height:1.55;color:#c8d0e0;font-style:normal;
+  white-space:normal;width:220px;pointer-events:none;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:50;
+  opacity:0;transform:translateY(4px);
+  transition:opacity .18s,transform .18s;
+}
+.tip:hover::after{opacity:1;transform:translateY(0)}
+.econ-scenario-note{margin-top:10px;font-size:11px;font-style:italic;line-height:1.4;color:#8892a4}
+.econ-range-wrap{background:rgba(255,255,255,.04);border:1px solid #1e2740;border-radius:10px;padding:14px 16px;margin-top:4px}
+.econ-range-label{font-size:11px;color:#8892a4;font-weight:600;margin-bottom:8px}
+.econ-range-track{height:8px;background:#1e2740;border-radius:100px;position:relative;overflow:hidden;margin-bottom:6px}
+.econ-range-track div{position:absolute;height:100%}
+.econ-range-track .rp10{background:rgba(16,185,129,.5);left:0}
+.econ-range-track .rp50{background:rgba(79,110,247,.5)}
+.econ-range-track .rp90{background:rgba(245,158,11,.5)}
+.econ-range-markers{display:flex;justify-content:space-between;font-size:11px;color:#8892a4}
+.econ-range-markers .mp10{color:#10b981}
+.econ-range-markers .mp50{color:#4f6ef7}
+.econ-range-markers .mp90{color:#f59e0b}
+@media(max-width:900px){.params-grid,.res-grid,.audit-grid,.exp-layout{grid-template-columns:1fr}}
+@media(max-width:680px){.sidebar{display:none}.main{margin-left:0}.ct-hd,.ct-row{grid-template-columns:1fr 80px 70px}}
+@media(max-width:600px){.econ-scenarios-grid{grid-template-columns:1fr}}
+
+/* ══════════ TOURNAMENT (scoped under #tg-root) ══════════ */
+/* STEPS */
+#tg-root .step-header{margin-bottom:28px}
+#tg-root .step-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(79,110,247,.15);border:1px solid rgba(79,110,247,.3);color:#a0b0ff;font-size:.7rem;font-weight:700;padding:4px 12px;border-radius:100px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em}
+#tg-root .step-title{font-size:1.35rem;font-weight:700;margin-bottom:4px}
+#tg-root .step-sub{color:var(--muted);font-size:.85rem}
+/* CARDS */
+#tg-root .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+#tg-root .card-title{font-weight:600;font-size:.88rem;margin-bottom:12px;color:#a0b0ff}
+/* FORM */
+#tg-root .form-row{margin-bottom:16px}
+#tg-root .form-label{display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+#tg-root .form-input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;transition:border-color .2s}
+#tg-root .form-input:focus{border-color:var(--accent)}
+#tg-root select.form-input{cursor:pointer}
+#tg-root .chips{display:flex;flex-wrap:wrap;gap:7px}
+#tg-root .chip{padding:5px 13px;border-radius:100px;border:1px solid var(--border);font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s;color:var(--muted);background:transparent}
+#tg-root .chip:hover{border-color:var(--accent);color:var(--accent)}
+#tg-root .chip.on{background:rgba(79,110,247,.2);border-color:rgba(79,110,247,.6);color:#a0b0ff}
+#tg-root .chip.type-card{border-radius:10px;padding:8px 16px;display:flex;flex-direction:column;gap:3px;align-items:flex-start;min-width:130px}
+#tg-root .chip.type-card .tc-icon{font-size:1.3rem}
+#tg-root .chip.type-card .tc-name{font-weight:700;font-size:.83rem}
+#tg-root .chip.type-card .tc-desc{font-size:.7rem;color:var(--muted);font-weight:400}
+/* NAV FOOTER */
+#tg-root .nav-footer{display:flex;justify-content:space-between;align-items:center;margin-top:28px;padding-top:18px;border-top:1px solid var(--border)}
+/* ECON */
+#tg-root .econ-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+#tg-root .econ-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;text-align:center}
+#tg-root .econ-label{font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+#tg-root .econ-val{font-size:1.25rem;font-weight:700}
+#tg-root .econ-val.pos{color:var(--success)}
+#tg-root .econ-val.neg{color:#ef4444}
+#tg-root .econ-val.neu{color:var(--warn)}
+#tg-root .econ-sub{font-size:.68rem;color:var(--muted);margin-top:2px}
+#tg-root .prize-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)}
+#tg-root .prize-row:last-child{border-bottom:none}
+#tg-root .prize-place{font-size:.75rem;font-weight:700;color:var(--muted);width:28px}
+#tg-root .prize-bar-wrap{flex:1;background:var(--bg);border-radius:4px;height:6px}
+#tg-root .prize-bar{background:linear-gradient(90deg,var(--accent),var(--accent2));height:6px;border-radius:4px}
+#tg-root .prize-amt{font-size:.8rem;font-weight:700;width:90px;text-align:right}
+#tg-root .prize-pct{font-size:.7rem;color:var(--muted);width:40px;text-align:right}
+/* TEXTS */
+#tg-root .tab-row{display:flex;gap:2px;background:var(--bg3);border-radius:8px;padding:3px;margin-bottom:16px}
+#tg-root .tab{padding:6px 14px;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;color:var(--muted);transition:all .15s;border:none;background:transparent;font-family:inherit}
+#tg-root .tab.active{background:var(--card);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.3)}
+#tg-root .text-variant{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;position:relative}
+#tg-root .text-variant-label{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+#tg-root .text-variant-body{font-size:.83rem;line-height:1.55;color:var(--text)}
+#tg-root .copy-btn{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.06);border:none;color:var(--muted);padding:3px 8px;border-radius:5px;font-size:.7rem;cursor:pointer;transition:all .15s}
+#tg-root .copy-btn:hover{background:rgba(255,255,255,.12);color:var(--text)}
+#tg-root .audit-check{display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border)}
+#tg-root .audit-check:last-child{border-bottom:none}
+#tg-root .audit-status{flex-shrink:0;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;margin-top:1px}
+#tg-root .audit-status.ok{background:rgba(16,185,129,.2);color:var(--success)}
+#tg-root .audit-status.warn{background:rgba(245,158,11,.2);color:var(--warn)}
+#tg-root .audit-label{font-weight:600;font-size:.82rem;margin-bottom:2px}
+#tg-root .audit-note{font-size:.77rem;color:var(--muted);line-height:1.4}
+#tg-root .rec-card{background:rgba(79,110,247,.07);border:1px solid rgba(79,110,247,.2);border-radius:8px;padding:10px 12px;margin-top:8px}
+#tg-root .rec-text{font-size:.82rem;margin-bottom:4px}
+#tg-root .rec-impact{font-size:.72rem;color:var(--muted)}
+#tg-root .loader{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.85rem;padding:20px 0}
+#tg-root .spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0}
+/* ── WIZARD PROGRESS ── */
+#tg-root .wiz-progress{display:flex;align-items:center;justify-content:center;margin-bottom:28px;flex-wrap:wrap;gap:0}
+#tg-root .wp-step{display:flex;align-items:center;gap:7px}
+#tg-root .wp-circle{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.74rem;font-weight:700;border:2px solid var(--border);color:var(--muted);background:var(--bg2);transition:all .3s;flex-shrink:0}
+#tg-root .wp-circle.active{border-color:var(--accent);background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 0 14px rgba(79,110,247,.4)}
+#tg-root .wp-circle.done{border-color:var(--success);background:var(--success);color:#fff}
+#tg-root .wp-lbl{font-size:.72rem;color:var(--muted);font-weight:500;white-space:nowrap}
+#tg-root .wp-lbl.active{color:var(--text);font-weight:600}
+#tg-root .wp-conn{flex:1;height:1px;background:var(--border);min-width:20px;max-width:48px;margin:0 6px}
+#tg-root .wp-conn.done{background:var(--success)}
+/* ── GENERATION PRELOADER ── */
+#tg-root .prog-wrap{max-width:480px;margin:40px auto;padding:20px 0}
+#tg-root .prog-title{font-size:1.05rem;font-weight:700;text-align:center;margin-bottom:5px}
+#tg-root .prog-sub{text-align:center;color:var(--muted);font-size:.82rem;margin-bottom:26px}
+#tg-root .prog-list{list-style:none;display:flex;flex-direction:column;gap:10px}
+#tg-root .pl-item{display:flex;align-items:center;gap:12px;padding:11px 15px;background:var(--card);border:1px solid var(--border);border-radius:9px;font-size:.85rem;color:var(--muted);transition:all .3s}
+#tg-root .pl-item.done{border-color:rgba(16,185,129,.3);color:var(--text)}
+#tg-root .pl-item.running{border-color:rgba(79,110,247,.3);color:var(--text);background:rgba(79,110,247,.04)}
+#tg-root .pl-icon{font-size:15px;flex-shrink:0;width:18px;text-align:center}
+/* ── AUDIENCE FUNNEL (step 2) ── */
+#tg-root .funnel-bar{background:var(--bg);border-radius:4px;height:8px;overflow:hidden;margin-top:4px}
+#tg-root .funnel-fill{height:100%;border-radius:4px;transition:width .4s ease}
+#tg-root .alert{border-radius:8px;padding:10px 14px;font-size:.82rem;margin-bottom:12px}
+#tg-root .alert-warn{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);color:var(--warn)}
+#tg-root .alert-info{background:rgba(79,110,247,.08);border:1px solid rgba(79,110,247,.2);color:#a0b0ff}
+@media(max-width:600px){#tg-root .econ-grid{grid-template-columns:1fr 1fr}#tg-content{padding:16px 14px}}
+/* ── TOURNAMENT TABLE (matches campaign-generator style) ── */
+#tg-root .ctable{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:0}
+#tg-root .ct-hd,#tg-root .ct-row{display:grid;grid-template-columns:1fr 120px 90px 80px 48px;padding:10px 16px;align-items:center;gap:8px}
+#tg-root .ct-hd{border-bottom:1px solid var(--border);font-size:.68rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+#tg-root .ct-row{border-bottom:1px solid var(--border);transition:background .15s;cursor:pointer}
+#tg-root .ct-row:last-child{border-bottom:none}
+#tg-root .ct-row:hover{background:rgba(255,255,255,.03)}
+#tg-root .ct-row:hover .ct-name{color:var(--accent)}
+#tg-root .ct-name{font-weight:500;font-size:.83rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tg-root .ct-meta{font-size:.72rem;color:var(--muted);margin-top:2px}
+#tg-root .ct-cell{font-size:.8rem;color:var(--muted)}
+#tg-root .tbl-empty{padding:32px 16px;text-align:center;color:var(--muted);font-size:.82rem}
+#tg-root .badge{display:inline-block;padding:2px 8px;border-radius:100px;font-size:.65rem;font-weight:700}
+#tg-root .badge-pos{background:rgba(16,185,129,.15);color:#10b981}
+#tg-root .badge-neg{background:rgba(239,68,68,.12);color:#f87171}
+#tg-root .badge-neu{background:rgba(245,158,11,.12);color:#f59e0b}
+#tg-root .tourn-menu{position:fixed;z-index:200;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:4px;min-width:160px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+#tg-root .tourn-menu-item{display:block;width:100%;text-align:left;padding:8px 12px;font-size:.82rem;background:none;border:none;color:var(--text);cursor:pointer;border-radius:6px;font-family:inherit;transition:background .12s}
+#tg-root .tourn-menu-item:hover{background:rgba(255,255,255,.06)}
+#tg-root .tourn-menu-sep{height:1px;background:var(--border);margin:3px 0}
+@media(max-width:600px){#tg-root .ct-hd,#tg-root .ct-row{grid-template-columns:1fr 70px 60px}}
+@keyframes tgCardFlash{0%{background:rgba(16,185,129,.12)}100%{background:transparent}}
+
+/* ══════════ LOYALTY (scoped under #ly-root) ══════════ */
+#ly-root .btn-gold{background:linear-gradient(135deg,#b45309,var(--gold));color:#fff;border:none}
+#ly-root .btn-gold:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(245,158,11,.4)}
+#ly-root .step-header{margin-bottom:28px}
+#ly-root .step-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(79,110,247,.15);border:1px solid rgba(79,110,247,.3);color:#a0b0ff;font-size:.7rem;font-weight:700;padding:4px 12px;border-radius:100px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em}
+#ly-root .step-title{font-size:1.35rem;font-weight:700;margin-bottom:4px}
+#ly-root .step-sub{color:var(--muted);font-size:.85rem}
+#ly-root .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+#ly-root .card-title{font-weight:600;font-size:.88rem;margin-bottom:12px;color:#a0b0ff}
+#ly-root .form-row{margin-bottom:16px}
+#ly-root .form-label{display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+#ly-root .form-input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;transition:border-color .2s}
+#ly-root .form-input:focus{border-color:var(--accent)}
+#ly-root select.form-input{cursor:pointer}
+#ly-root .chips{display:flex;flex-wrap:wrap;gap:7px}
+#ly-root .chip{padding:5px 13px;border-radius:100px;border:1px solid var(--border);font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s;color:var(--muted);background:transparent}
+#ly-root .chip:hover{border-color:var(--accent);color:var(--accent)}
+#ly-root .chip.on{background:rgba(79,110,247,.2);border-color:rgba(79,110,247,.6);color:#a0b0ff}
+#ly-root .chip.type-card{border-radius:10px;padding:10px 16px;display:flex;flex-direction:column;gap:3px;align-items:flex-start;min-width:140px}
+#ly-root .chip.type-card .tc-icon{font-size:1.4rem}
+#ly-root .chip.type-card .tc-name{font-weight:700;font-size:.84rem}
+#ly-root .chip.type-card .tc-desc{font-size:.7rem;color:var(--muted);font-weight:400}
+#ly-root .nav-footer{display:flex;justify-content:space-between;align-items:center;margin-top:28px;padding-top:18px;border-top:1px solid var(--border)}
+#ly-root .econ-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+#ly-root .econ-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;text-align:center}
+#ly-root .econ-label{font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+#ly-root .econ-val{font-size:1.25rem;font-weight:700}
+#ly-root .econ-val.pos{color:var(--success)}
+#ly-root .econ-val.neg{color:#ef4444}
+#ly-root .econ-val.neu{color:var(--warn)}
+#ly-root .econ-sub{font-size:.68rem;color:var(--muted);margin-top:2px}
+#ly-root .loader{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.85rem;padding:20px 0}
+#ly-root .spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0}
+#ly-root .alert{border-radius:8px;padding:10px 14px;font-size:.82rem;margin-bottom:12px}
+#ly-root .alert-warn{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);color:var(--warn)}
+#ly-root .alert-info{background:rgba(79,110,247,.08);border:1px solid rgba(79,110,247,.2);color:#a0b0ff}
+#ly-root .badge{display:inline-block;padding:2px 8px;border-radius:100px;font-size:.65rem;font-weight:700}
+#ly-root .badge-pos{background:rgba(16,185,129,.15);color:#10b981}
+#ly-root .badge-neg{background:rgba(239,68,68,.12);color:#f87171}
+#ly-root .badge-neu{background:rgba(245,158,11,.12);color:#f59e0b}
+/* TIER TABLE */
+#ly-root .tier-table{width:100%;border-collapse:collapse}
+#ly-root .tier-table th,#ly-root .tier-table td{text-align:left;padding:8px 10px;font-size:.78rem;border-bottom:1px solid var(--border)}
+#ly-root .tier-table th{font-size:.68rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;background:var(--bg3)}
+#ly-root .tier-table tr:last-child td{border-bottom:none}
+#ly-root .tier-badge{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:100px;font-size:.72rem;font-weight:700}
+/* LIST TABLE */
+#ly-root .ctable{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:0}
+#ly-root .ct-hd,#ly-root .ct-row{display:grid;grid-template-columns:1fr 90px 80px 80px 70px 48px;padding:10px 16px;align-items:center;gap:8px}
+#ly-root .ct-hd{border-bottom:1px solid var(--border);font-size:.68rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+#ly-root .ct-row{border-bottom:1px solid var(--border);transition:background .15s;cursor:pointer}
+#ly-root .ct-row:last-child{border-bottom:none}
+#ly-root .ct-row:hover{background:rgba(255,255,255,.03)}
+#ly-root .ct-row:hover .ct-name{color:var(--accent)}
+#ly-root .ct-name{font-weight:500;font-size:.83rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ly-root .ct-meta{font-size:.72rem;color:var(--muted);margin-top:2px}
+#ly-root .ct-cell{font-size:.8rem;color:var(--muted)}
+#ly-root .tbl-empty{padding:40px 16px;text-align:center;color:var(--muted);font-size:.82rem}
+/* RANGE SLIDER */
+#ly-root .range-wrap{display:flex;align-items:center;gap:10px}
+#ly-root .range-val{font-size:.85rem;font-weight:700;color:var(--text);min-width:42px;text-align:right}
+#ly-root input[type=range]{flex:1;accent-color:var(--accent);cursor:pointer;height:4px}
+/* WIZARD PROGRESS */
+#ly-root .wiz-progress{display:flex;align-items:center;justify-content:center;margin-bottom:28px;flex-wrap:wrap;gap:0}
+#ly-root .wp-step{display:flex;align-items:center;gap:7px}
+#ly-root .wp-circle{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.74rem;font-weight:700;border:2px solid var(--border);color:var(--muted);background:var(--bg2);transition:all .3s;flex-shrink:0}
+#ly-root .wp-circle.active{border-color:var(--accent);background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 0 14px rgba(79,110,247,.4)}
+#ly-root .wp-circle.done{border-color:var(--success);background:var(--success);color:#fff}
+#ly-root .wp-lbl{font-size:.72rem;color:var(--muted);font-weight:500;white-space:nowrap}
+#ly-root .wp-lbl.active{color:var(--text);font-weight:600}
+#ly-root .wp-conn{flex:1;height:1px;background:var(--border);min-width:20px;max-width:48px;margin:0 6px}
+#ly-root .wp-conn.done{background:var(--success)}
+/* GENERATION PROGRESS */
+#ly-root .prog-wrap{max-width:480px;margin:40px auto;padding:20px 0}
+#ly-root .prog-title{font-size:1.05rem;font-weight:700;text-align:center;margin-bottom:5px}
+#ly-root .prog-sub{text-align:center;color:var(--muted);font-size:.82rem;margin-bottom:26px}
+#ly-root .prog-list{list-style:none;display:flex;flex-direction:column;gap:10px}
+#ly-root .pl-item{display:flex;align-items:center;gap:12px;padding:11px 15px;background:var(--card);border:1px solid var(--border);border-radius:9px;font-size:.85rem;color:var(--muted);transition:all .3s}
+#ly-root .pl-item.done{border-color:rgba(16,185,129,.3);color:var(--text)}
+#ly-root .pl-item.running{border-color:rgba(79,110,247,.3);color:var(--text);background:rgba(79,110,247,.04)}
+#ly-root .pl-icon{font-size:15px;flex-shrink:0;width:18px;text-align:center}
+/* AUDIT */
+#ly-root .audit-check{display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border)}
+#ly-root .audit-check:last-child{border-bottom:none}
+#ly-root .audit-status{flex-shrink:0;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;margin-top:1px}
+#ly-root .audit-status.ok{background:rgba(16,185,129,.2);color:var(--success)}
+#ly-root .audit-status.warn{background:rgba(245,158,11,.2);color:var(--warn)}
+#ly-root .audit-label{font-weight:600;font-size:.82rem;margin-bottom:2px}
+#ly-root .audit-note{font-size:.73rem;color:var(--muted)}
+#ly-root .rec-card{background:rgba(79,110,247,.07);border:1px solid rgba(79,110,247,.2);border-radius:8px;padding:10px 12px;margin-top:8px}
+#ly-root .rec-text{font-size:.81rem;line-height:1.5;margin-bottom:7px}
+#ly-root .rec-impact{font-size:.72rem;color:var(--muted)}
+/* MISSION LIST */
+#ly-root .mission-row{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:7px}
+#ly-root .mission-name{font-weight:600;font-size:.82rem;margin-bottom:3px}
+#ly-root .mission-meta{font-size:.73rem;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
+#ly-root .mission-tag{padding:1px 6px;border-radius:4px;background:rgba(79,110,247,.15);color:#a0b0ff;font-size:.65rem;font-weight:700}
+#ly-root .mission-link-block{margin-top:7px;padding-top:7px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:4px}
+#ly-root .mission-link-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+#ly-root .mission-narrative{margin-top:6px;font-size:.72rem;color:var(--muted);font-style:italic;line-height:1.4}
+/* TOAST */
+#ly-root .toast{position:fixed;bottom:24px;right:24px;background:#10b981;color:#fff;padding:10px 18px;border-radius:8px;font-size:.83rem;font-weight:600;z-index:9999;animation:toastIn .2s ease;pointer-events:none}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+/* CONTEXT MENU */
+#ly-root .ly-menu{position:fixed;z-index:200;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:4px;min-width:160px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+#ly-root .ly-menu-item{display:block;width:100%;text-align:left;padding:8px 12px;font-size:.82rem;background:none;border:none;color:var(--text);cursor:pointer;border-radius:6px;font-family:inherit;transition:background .12s}
+#ly-root .ly-menu-item:hover{background:rgba(255,255,255,.06)}
+#ly-root .ly-menu-sep{height:1px;background:var(--border);margin:3px 0}
+#ly-root .econ-delta{font-size:.68rem;font-weight:700;margin-top:3px;padding:1px 5px;border-radius:4px;display:inline-block}
+#ly-root .econ-delta.pos{color:#10b981;background:rgba(16,185,129,.12)}
+#ly-root .econ-delta.neg{color:#ef4444;background:rgba(239,68,68,.10)}
+#ly-root .action-panel{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:14px}
+#ly-root .action-panel .roi-slider-wrap{display:flex;align-items:center;gap:8px;flex-shrink:0}
+#ly-root .action-panel .roi-slider-label{font-size:.72rem;font-weight:600;color:var(--muted);white-space:nowrap}
+#ly-root .action-panel .roi-slider-val{font-size:.82rem;font-weight:700;color:var(--text);min-width:36px}
+#ly-root .action-panel input[type=range]{width:100px;accent-color:var(--accent)}
+#ly-root .changed-params{font-size:.75rem;color:var(--muted);margin-bottom:10px;padding:8px 12px;background:rgba(79,110,247,.07);border:1px solid rgba(79,110,247,.2);border-radius:8px;line-height:1.6}
+#ly-root .changed-params strong{color:#a0b0ff}
+@keyframes cardFlash{0%{box-shadow:0 0 0 0 rgba(16,185,129,.5)}70%{box-shadow:0 0 0 6px rgba(16,185,129,0)}100%{box-shadow:none}}
+#ly-root .econ-card.flash-good{animation:cardFlash .6s ease}
+@media(max-width:600px){#ly-root .econ-grid{grid-template-columns:1fr 1fr}#ly-content{padding:16px 14px}#ly-root .ct-hd,#ly-root .ct-row{grid-template-columns:1fr 70px 60px}}
+
+</style>
 </head>
 <body>
 
-<div class="hdr">
-  <a href="/" class="hdr-back">← Back</a>
-  <div class="hdr-logo">Retomat</div>
-  <div class="hdr-tag">CONFIGURATOR</div>
-  <div class="hdr-sub" data-i18n="hdr_sub">v2.0 · Casino Bonus Admin Spec Generator</div>
-  <a href="/campaign-generator.html" class="hdr-campaigns">🤖 AI Campaigns</a>
-  <div class="lang-sel">
-    <div class="lchip on" data-l="ru" onclick="setLang('ru')">RU</div>
-    <div class="lchip"    data-l="en" onclick="setLang('en')">EN</div>
-    <div class="lchip"    data-l="mn" onclick="setLang('mn')">MN</div>
-    <div class="lchip"    data-l="es" onclick="setLang('es')">ES</div>
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-logo" onclick="window.location.href='/'">
+    <svg class="sb-logo-img" viewBox="0 0 620 140" xmlns="http://www.w3.org/2000/svg" aria-label="Retomat"><defs><linearGradient id="rg1" x1="0" y1="0" x2="140" y2="140" gradientUnits="userSpaceOnUse"><stop stop-color="#8B5CF6"/><stop offset="1" stop-color="#3B82F6"/></linearGradient><filter id="glow1" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g transform="translate(20,20)"><path d="M20 0 H70 C100 0 122 20 122 48 C122 70 108 86 84 93 L118 120 H82 L56 100 L26 120 H0 L34 88 V20 C34 8 42 0 54 0 Z" fill="url(#rg1)" filter="url(#glow1)"/><path d="M54 24 H70 C84 24 94 33 94 45 C94 58 84 66 70 66 H54 V24 Z" fill="#0B1020"/><path d="M34 88 L58 70 H84 L50 100 L26 120 H0 L34 88 Z" fill="#0B1020" opacity="0.9"/></g><text x="176" y="108" font-family="Inter,Arial,sans-serif" font-size="94" font-weight="700" letter-spacing="-3" fill="#F8FAFC">Retomat</text><rect x="182" y="122" width="330" height="8" rx="4" fill="url(#rg1)" opacity="0.95"/></svg>
+    <div class="sb-logo-tag">AI</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="nav-lbl"><span data-tr-en>Main</span><span data-tr-ru>Главное</span></div>
+    <button class="nav-item" onclick="showView('dashboard')"><span class="nav-icon">📊</span><span data-tr-en>Dashboard</span><span data-tr-ru>Дашборд</span></button>
+    <a href="/retention-calendar.html" class="nav-item"><span class="nav-icon">📅</span><span data-tr-en>Retention Calendar</span><span data-tr-ru>Календарь</span></a>
+    <div class="nav-lbl" style="margin-top:6px"><span data-tr-en>Tools</span><span data-tr-ru>Инструменты</span></div>
+    <a class="nav-item" href="/configurator.html"><span class="nav-icon">⚙️</span><span>Configurator</span></a>
+    <a class="nav-item active" href="/generator.html"><span class="nav-icon">🧩</span><span data-tr-en>Generator</span><span data-tr-ru>Генератор</span></a>
+    <div class="nav-lbl" style="margin-top:6px"><span data-tr-en>Analytics</span><span data-tr-ru>Аналитика</span></div>
+    <a href="/reports.html" class="nav-item"><span class="nav-icon">📋</span><span data-tr-en>Reports</span><span data-tr-ru>Отчёты</span><span class="nav-badge" id="nav-reports-badge" style="display:none"></span></a>
+    <button class="nav-item off"><span class="nav-icon">⚙️</span><span data-tr-en>Settings</span><span data-tr-ru>Настройки</span></button>
+  </nav>
+  <div class="sb-foot">
+    <button class="sb-back" onclick="confirmExit()" data-i18n="wb_back">← Back to home</button>
+  </div>
+</aside>
+
+<!-- Mobile sidebar overlay -->
+<div id="sb-overlay" onclick="toggleSidebar()"></div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <button class="topbar-ham" onclick="toggleSidebar()">☰</button>
+    <span class="topbar-title" id="tb-title"></span>
+    <span class="topbar-sep" id="tb-sep" style="display:none">·</span>
+    <span class="topbar-sub" id="tb-sub"></span>
+    <div class="topbar-right" id="tb-right"></div>
+    <button onclick="genToggleGlossary()" title="Glossary"
+      style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);width:28px;height:28px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s"
+      onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+      onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">?</button>
+    <div class="lang-toggle">
+      <button class="lt-btn active" id="lt-ru" onclick="genSetLang('ru')">RU</button>
+      <button class="lt-btn" id="lt-en" onclick="genSetLang('en')">EN</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- TYPE SWITCH -->
+    <div class="type-switch" id="gen-type-switch">
+      <button class="type-btn active" data-type="bonus" onclick="genSwitchType('bonus')">🎁 <span data-tr-en>Bonus</span><span data-tr-ru>Бонус</span></button>
+      <button class="type-btn" data-type="tournament" onclick="genSwitchType('tournament')">🏆 <span data-tr-en>Tournament</span><span data-tr-ru>Турнир</span></button>
+      <button class="type-btn" data-type="loyalty" onclick="genSwitchType('loyalty')">⭐ <span data-tr-en>Loyalty</span><span data-tr-ru>Лояльность</span></button>
+    </div>
+
+    <div id="bonus-root">
+
+    <!-- DASHBOARD -->
+    <div id="view-dashboard" style="display:none">
+      <div class="dash-header">
+        <div>
+          <div class="dash-title" data-i18n="dash_title">Добро пожаловать! 👋</div>
+          <div class="dash-sub" data-i18n="dash_sub">Создайте CRM-кампанию за 5 шагов с помощью AI</div>
+        </div>
+      </div>
+
+      <div class="section-hd"><div class="section-title" data-i18n="dash_quickstart">Быстрый старт</div></div>
+      <div class="quick-grid">
+        <div class="qcard" onclick="startWizardWith('first_launch')" style="border-color:rgba(245,158,11,.35);background:linear-gradient(135deg,rgba(245,158,11,.07) 0%,transparent 60%)"><div class="qcard-icon">🚀</div><div class="qcard-name" data-i18n="qc_launch_n" style="color:var(--warn)">Первый запуск казино</div><div class="qcard-desc" data-i18n="qc_launch_d">Полный бонусный пакет: 1-й депозит + Welcome + 2-й/3-й депозит + Cashback — все механики для старта</div><div class="qcard-arr" style="color:var(--warn)">→</div></div>
+        <div class="qcard" onclick="startWizardWith('inactive_7')"><div class="qcard-icon">🔄</div><div class="qcard-name" data-i18n="qc_react_n">Реактивация</div><div class="qcard-desc" data-i18n="qc_react_d">Вернуть неактивных 7+ дней</div><div class="qcard-arr">→</div></div>
+        <div class="qcard" onclick="startWizardWith('second_dep')"><div class="qcard-icon">💰</div><div class="qcard-name" data-i18n="qc_reload_n">Reload кампания</div><div class="qcard-desc" data-i18n="qc_reload_d">Бонус на повторный депозит</div><div class="qcard-arr">→</div></div>
+        <div class="qcard" onclick="startWizardWith('cashback')"><div class="qcard-icon">💳</div><div class="qcard-name" data-i18n="qc_cashback_n">Cashback</div><div class="qcard-desc" data-i18n="qc_cashback_d">Возврат % от проигрышей</div><div class="qcard-arr">→</div></div>
+        <div class="qcard" onclick="startWizardWith('vip_retention')"><div class="qcard-icon">👑</div><div class="qcard-name" data-i18n="qc_vip_n">VIP удержание</div><div class="qcard-desc" data-i18n="qc_vip_d">Персональные офферы для VIP</div><div class="qcard-arr">→</div></div>
+        <div class="qcard" onclick="startWizardWith('sport_event')"><div class="qcard-icon">⚽</div><div class="qcard-name" data-i18n="qc_sport_n">Спортивное событие</div><div class="qcard-desc" data-i18n="qc_sport_d">Фрибет или бонус к матчу</div><div class="qcard-arr">→</div></div>
+        <div class="qcard" onclick="genSwitchType('tournament')" style="border-color:rgba(16,185,129,.3);background:linear-gradient(135deg,rgba(16,185,129,.06) 0%,transparent 60%)"><div class="qcard-icon">🏆</div><div class="qcard-name" data-i18n="qc_tourn_n" style="color:#6ee7b7">Турнир / Ивент</div><div class="qcard-desc" data-i18n="qc_tourn_d">Механика слот-турнира</div><div class="qcard-arr" style="color:#6ee7b7">→</div></div>
+        <div class="qcard" onclick="genSwitchType('loyalty')" style="border-color:rgba(124,58,237,.3);background:linear-gradient(135deg,rgba(124,58,237,.06) 0%,transparent 60%)"><div class="qcard-icon">💎</div><div class="qcard-name" data-i18n="qc_loyalty_n" style="color:#c4b5fd">Программа лояльности</div><div class="qcard-desc" data-i18n="qc_loyalty_d">Тиры, миссии и кешбэк для удержания игроков</div><div class="qcard-arr" style="color:#c4b5fd">→</div></div>
+      </div>
+
+      <div class="section-hd">
+        <div class="section-title" data-i18n="dash_recent">Последние активности</div>
+      </div>
+      <div class="ctable">
+        <div class="ct-hd">
+          <span data-i18n="tbl_name">Название</span><span data-i18n="tbl_type">Тип</span>
+          <span data-i18n="tbl_status">Статус</span><span data-i18n="tbl_date">Дата</span><span></span>
+        </div>
+        <div id="dash-camp-body"></div>
+      </div>
+    </div>
+
+    <!-- OFFER GEN LIST (default view for ?view=offer-gen nav item) -->
+    <div id="view-offer-gen" style="display:none">
+      <div class="dash-header">
+        <div>
+          <div class="dash-title" data-i18n="camps_title">Бонусные акции</div>
+          <div class="dash-sub" data-i18n="camps_sub">Все созданные кампании</div>
+        </div>
+      </div>
+      <div class="ctable">
+        <div class="ct-hd" id="offer-gen-hd">
+          <span data-i18n="tbl_name">Name</span><span data-i18n="tbl_type">Type</span>
+          <span data-i18n="tbl_status">Status</span><span data-i18n="tbl_date">Date</span><span></span>
+        </div>
+        <div id="offer-gen-body"></div>
+      </div>
+    </div>
+
+    <!-- CAMPAIGNS -->
+    <div id="view-campaigns" style="display:none">
+      <div class="dash-header">
+        <div>
+          <div class="dash-title" data-i18n="camps_title">Бонусные акции</div>
+          <div class="dash-sub" data-i18n="camps_sub">Все созданные кампании</div>
+        </div>
+      </div>
+      <div class="ctable">
+        <div class="ct-hd" id="all-camp-hd">
+          <span data-i18n="tbl_name">Name</span><span data-i18n="tbl_type">Type</span>
+          <span data-i18n="tbl_status">Status</span><span data-i18n="tbl_date">Date</span><span></span>
+        </div>
+        <div id="all-camp-body"></div>
+      </div>
+      <div style="margin-top:16px;text-align:center">
+        <button class="btn btn-primary" onclick="startWizard()" data-i18n="dash_create">⚡ Создать кампанию</button>
+      </div>
+    </div>
+
+
+    <!-- WIZARD -->
+    <div id="view-wizard" style="display:none">
+
+      <!-- Progress -->
+      <div class="wiz-progress" id="wizProg">
+        <div class="wp-step"><div class="wp-circle active" id="wpc-1">1</div><div class="wp-lbl active" id="wpl-1">Сценарий</div></div>
+        <div class="wp-conn" id="wpcon-1"></div>
+        <div class="wp-step"><div class="wp-circle" id="wpc-2">2</div><div class="wp-lbl" id="wpl-2">Параметры</div></div>
+        <div class="wp-conn" id="wpcon-2"></div>
+        <div class="wp-step"><div class="wp-circle" id="wpc-3">3</div><div class="wp-lbl" id="wpl-3">Генерация</div></div>
+        <div class="wp-conn" id="wpcon-3"></div>
+        <div class="wp-step"><div class="wp-circle" id="wpc-4">4</div><div class="wp-lbl" id="wpl-4">Тексты</div></div>
+        <div class="wp-conn" id="wpcon-4"></div>
+        <div class="wp-step"><div class="wp-circle" id="wpc-5">5</div><div class="wp-lbl" id="wpl-5">Экспорт</div></div>
+      </div>
+
+      <!-- STEP 1 -->
+      <div class="step-panel active" id="step-1">
+        <div class="step-title" data-i18n="s1_title">Выберите сценарий кампании</div>
+        <div class="step-sub" data-i18n="s1_sub">Сценарий определяет тип аудитории и логику бонусного предложения</div>
+        <div class="sc-grid" id="scGrid"></div>
+        <div class="wiz-foot">
+          <div class="wiz-foot-l">
+            <button class="btn btn-outline" onclick="showView('dashboard')" data-i18n="btn_cancel">← Отмена</button>
+            <span class="step-ctr" data-step="1">Шаг 1 из 5</span>
+          </div>
+          <div class="wiz-foot-r">
+            <button class="btn btn-primary" id="s1next" onclick="goStep(2)" disabled data-i18n="btn_next">Далее →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="step-panel" id="step-2">
+        <div class="step-title" data-i18n="s2_title">Параметры кампании</div>
+        <div class="step-sub" data-i18n="s2_sub">Настройте аудиторию, бюджет и тон коммуникации</div>
+        <div class="params-grid">
+          <div class="fg">
+            <div class="fl" data-i18n="s2_geo">Гео / Страна</div>
+            <select class="form-select" id="p-geo" onchange="syncLangToGeo(this.value)">
+              <option value="eu">🇪🇺 EU / UK</option>
+              <option value="ru">🌐 Russia (RU)</option>
+              <option value="kz">🇰🇿 Kazakhstan (KZ)</option>
+              <option value="mx">🇲🇽 Mexico (MX)</option>
+              <option value="br">🇧🇷 Brazil (BR)</option>
+              <option value="mn">🇲🇳 Mongolia (MN)</option>
+              <option value="us">🇺🇸 USA (Sweepstakes)</option>
+            </select>
+            <div id="eu-ctry-wrap" style="display:none;margin-top:8px">
+              <div style="font-size:11px;color:var(--muted);margin-bottom:6px" data-i18n="s2_eu_pick">Выберите страну</div>
+              <div class="chip-group" style="flex-wrap:wrap;gap:6px">
+                <div class="chip" data-g="eu-ctry" data-v="de" onclick="pickEuCountry(this)">🇩🇪 DE</div>
+                <div class="chip" data-g="eu-ctry" data-v="fr" onclick="pickEuCountry(this)">🇫🇷 FR</div>
+                <div class="chip" data-g="eu-ctry" data-v="es" onclick="pickEuCountry(this)">🇪🇸 ES</div>
+                <div class="chip" data-g="eu-ctry" data-v="it" onclick="pickEuCountry(this)">🇮🇹 IT</div>
+                <div class="chip" data-g="eu-ctry" data-v="nl" onclick="pickEuCountry(this)">🇳🇱 NL</div>
+                <div class="chip" data-g="eu-ctry" data-v="dk" onclick="pickEuCountry(this)">🇩🇰 DK</div>
+                <div class="chip" data-g="eu-ctry" data-v="uk" onclick="pickEuCountry(this)">🇬🇧 UK</div>
+              </div>
+            </div>
+          </div>
+          <div class="fg">
+            <div class="fl" data-i18n="s2_vertical">Вертикаль</div>
+            <div class="chip-group">
+              <div class="chip active" data-g="vertical" data-v="casino" onclick="pickChip(this)">🎰 Casino</div>
+              <div class="chip" data-g="vertical" data-v="sports" onclick="pickChip(this)">⚽ Sports</div>
+              <div class="chip" data-g="vertical" data-v="both" onclick="pickChip(this)">🎯 Mixed</div>
+            </div>
+          </div>
+          <div class="fg">
+            <div class="fl" data-i18n="s2_segment">Сегмент игроков</div>
+            <div class="chip-group">
+              <div class="chip" data-g="segment" data-v="new" onclick="pickChip(this)" data-i18n="chip_seg_new">🆕 Новые</div>
+              <div class="chip active" data-g="segment" data-v="mid" onclick="pickChip(this)" data-i18n="chip_seg_mid">👤 Средние</div>
+              <div class="chip" data-g="segment" data-v="vip" onclick="pickChip(this)">👑 VIP</div>
+            </div>
+          </div>
+          <div class="fg">
+            <div class="fl" data-i18n="s2_games">Предпочтительные игры</div>
+            <div class="chip-group">
+              <div class="chip active" data-g="games" data-v="slots" onclick="pickChip(this)" data-i18n="chip_games_slots">🎰 Слоты</div>
+              <div class="chip" data-g="games" data-v="table" onclick="pickChip(this)" data-i18n="chip_games_table">🃏 Настольные</div>
+              <div class="chip" data-g="games" data-v="live" onclick="pickChip(this)">📺 Live</div>
+            </div>
+          </div>
+          <div class="fg">
+            <div class="fl" data-i18n="s2_budget">Бюджет кампании (€)</div>
+            <input class="form-input" type="number" id="p-budget" value="5000" min="100">
+          </div>
+          <div class="fg">
+            <div class="fl" data-i18n="s2_lang">Язык коммуникации</div>
+            <select class="form-select" id="p-lang">
+              <option value="da">Dansk</option>
+              <option value="de">Deutsch</option>
+              <option value="en">English</option>
+              <option value="ru">Русский</option>
+              <option value="es">Español</option>
+              <option value="mn">Монгол</option>
+            </select>
+          </div>
+          <div class="fg">
+            <div class="fl" data-i18n="s2_tone">Тон коммуникации</div>
+            <div class="chip-group">
+              <div class="chip active" data-g="tone" data-v="friendly" onclick="pickChip(this)" data-i18n="chip_tone_friendly">😊 Дружелюбный</div>
+              <div class="chip" data-g="tone" data-v="pro" onclick="pickChip(this)" data-i18n="chip_tone_pro">🤝 Профессиональный</div>
+              <div class="chip" data-g="tone" data-v="aggressive" onclick="pickChip(this)" data-i18n="chip_tone_agg">⚡ Агрессивный</div>
+            </div>
+          </div>
+          <div class="fg">
+            <div class="fl" data-i18n="s2_agg">Агрессивность предложения</div>
+            <div class="toggle3">
+              <button class="t3-btn active" data-g="agg" data-v="low" onclick="pickT3(this)" data-i18n="t3_agg_low">Низкая</button>
+              <button class="t3-btn" data-g="agg" data-v="mid" onclick="pickT3(this)" data-i18n="t3_agg_mid">Средняя</button>
+              <button class="t3-btn" data-g="agg" data-v="high" onclick="pickT3(this)" data-i18n="t3_agg_high">Высокая</button>
+            </div>
+          </div>
+          <div class="fg full">
+            <div class="fl" data-i18n="s2_risk">Риск-уровень</div>
+            <div class="toggle3" style="max-width:340px">
+              <button class="t3-btn active" data-g="risk" data-v="low" onclick="pickT3(this)" data-i18n="t3_risk_low">🟢 Низкий</button>
+              <button class="t3-btn" data-g="risk" data-v="mid" onclick="pickT3(this)" data-i18n="t3_risk_mid">🟡 Средний</button>
+              <button class="t3-btn" data-g="risk" data-v="high" onclick="pickT3(this)" data-i18n="t3_risk_high">🔴 Высокий</button>
+            </div>
+            <div id="riskHint" style="margin-top:8px;font-size:11.5px;line-height:1.55;color:#8892a4;padding:8px 10px;background:rgba(255,255,255,.03);border-radius:7px;border-left:2px solid #4f6ef7"></div>
+          </div>
+          <!-- Players / month slider -->
+          <div class="fg full" style="margin-top:6px">
+            <div class="fl" style="display:flex;justify-content:space-between;align-items:center">
+              <span data-i18n="s2_players">Игроков / месяц</span>
+              <span id="cg-pdsp" style="font-size:1rem;font-weight:700;color:var(--accent)">5 000</span>
+            </div>
+            <input type="range" id="cg-prange" min="100" max="50000" step="100" value="5000"
+              oninput="syncCGPlayers('range')" onchange="syncCGPlayers('range')"
+              style="width:100%;margin:6px 0 4px;accent-color:var(--accent)"/>
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-bottom:6px">
+              <span>100</span><span>50 000+</span>
+            </div>
+            <input type="number" id="cg-pnum" value="5000" min="100" max="200000" step="100"
+              oninput="syncCGPlayers('num')"
+              style="width:120px;padding:5px 8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:7px;color:var(--fg);font-size:13px"/>
+          </div>
+
+          <div class="fg full" style="margin-top:6px">
+            <div class="fl" style="margin-bottom:2px">
+              <span data-i18n="s2_bmix">Бонусный микс</span> <span data-i18n="s2_bmix_hint" style="font-weight:400;text-transform:none;letter-spacing:0;font-size:.72rem">— выберите один или несколько типов</span>
+            </div>
+            <div class="chip-group" id="btypeGroup">
+              <div class="chip-multi" data-btype="ndb" onclick="toggleBtype(this)">🎁 Welcome</div>
+              <div class="chip-multi" data-btype="welcome" onclick="toggleBtype(this)" data-i18n="chip_btype_welcome">💰 1-й депозит</div>
+              <div class="chip-multi" data-btype="reload" onclick="toggleBtype(this)">🔄 Reload</div>
+              <div class="chip-multi" data-btype="dep2" onclick="toggleBtype(this)" data-i18n="chip_btype_dep2">💰 2-й депозит</div>
+              <div class="chip-multi" data-btype="dep3" onclick="toggleBtype(this)" data-i18n="chip_btype_dep3">🎁 3-й депозит</div>
+              <div class="chip-multi" data-btype="cashback" onclick="toggleBtype(this)">💳 Cashback</div>
+            </div>
+          </div>
+          <div class="fg full">
+            <div class="fl" data-i18n="s2_lic">Лицензия / Юрисдикция</div>
+            <div class="chip-group">
+              <div class="chip active" data-g="lic" data-v="auto"        onclick="pickChip(this)" data-i18n="chip_lic_auto">Auto (by geo)</div>
+              <div class="chip"        data-g="lic" data-v="mga"         onclick="pickChip(this)">MGA</div>
+              <div class="chip"        data-g="lic" data-v="ukgc"        onclick="pickChip(this)">UKGC</div>
+              <div class="chip"        data-g="lic" data-v="dga"         onclick="pickChip(this)">DGA</div>
+              <div class="chip"        data-g="lic" data-v="curacao"     onclick="pickChip(this)">Curaçao</div>
+              <div class="chip"        data-g="lic" data-v="anjouan"     onclick="pickChip(this)">Anjouan</div>
+              <div class="chip"        data-g="lic" data-v="kahnawake"   onclick="pickChip(this)">Kahnawake</div>
+              <div class="chip"        data-g="lic" data-v="gibraltar"   onclick="pickChip(this)">Gibraltar</div>
+              <div class="chip"        data-g="lic" data-v="isle_of_man" onclick="pickChip(this)">Isle of Man</div>
+              <div class="chip"        data-g="lic" data-v="none"        onclick="pickChip(this)" data-i18n="chip_lic_none">Offshore / None</div>
+            </div>
+          </div>
+        </div>
+        <div class="wiz-foot">
+          <div class="wiz-foot-l"><button class="btn btn-outline" onclick="goStep(1)" data-i18n="btn_back">← Назад</button><span class="step-ctr" data-step="2">Шаг 2 из 5</span></div>
+          <div class="wiz-foot-r"><button class="btn btn-primary" onclick="goStep(3)" data-i18n="btn_generate">Сгенерировать ⚡</button></div>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="step-panel" id="step-3">
+        <div id="s3-prog">
+          <div class="prog-wrap">
+            <div class="prog-title" data-i18n="s3_gen_title">AI генерирует кампанию...</div>
+            <div class="prog-sub" data-i18n="s3_gen_sub">Анализируем сценарий и подбираем оптимальную механику</div>
+            <ul class="prog-list" id="progList"></ul>
+          </div>
+        </div>
+        <div id="s3-res" style="display:none">
+          <div class="step-title" data-i18n="s3_title">Механика подобрана ✓</div>
+          <div class="step-sub" data-i18n="s3_sub">Параметры рассчитаны по региональной модели Retomat для вашего сценария</div>
+          <div class="res-grid">
+            <div>
+              <div class="res-card" id="mechCard" style="margin-bottom:14px">
+                <div class="rc-title">Рекомендованная механика</div>
+              </div>
+              <div class="res-card" id="whyCard">
+                <div class="rc-title">Почему эта механика</div>
+              </div>
+            </div>
+            <div>
+              <div class="res-card" id="altCard">
+                <div class="rc-title">Альтернативы</div>
+              </div>
+            </div>
+          </div>
+          <div class="res-card" id="econCard" style="margin-top:14px">
+            <div class="rc-title" data-i18n="rc_econ">Экономика</div>
+          </div>
+          <div class="wiz-foot">
+            <div class="wiz-foot-l"><button class="btn btn-outline" onclick="goStep(2)" data-i18n="btn_back">← Назад</button><span class="step-ctr" data-step="3">Шаг 3 из 5</span></div>
+            <div class="wiz-foot-r">
+              <button class="btn btn-outline btn-sm" onclick="exportCampaignPDF()" data-i18n="btn_export_pdf">⬇ PDF</button>
+              <button class="btn btn-primary" onclick="goStep(4)" data-i18n="btn_to_texts">Тексты и аудит →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4 -->
+      <div class="step-panel" id="step-4">
+        <div class="step-title" data-i18n="s4_title">Тексты и аудит кампании</div>
+        <div class="step-sub" data-i18n="s4_sub">AI генерирует тексты для каждого канала и проводит аудит рисков</div>
+        <div class="ch-tabs" id="s4tabs">
+          <button class="ch-tab active" onclick="switchS4('texts',this)" data-i18n="s4_tab_texts">📝 Тексты</button>
+          <button class="ch-tab" onclick="switchS4('audit',this)" data-i18n="s4_tab_audit">🔍 Аудит</button>
+        </div>
+
+        <!-- Texts -->
+        <div id="s4-texts" class="ch-content active">
+          <div id="s4t-loading" style="display:flex;align-items:center;gap:12px;padding:32px 0;color:var(--muted)">
+            <div class="spinner"></div><span data-i18n="s4_loading_texts">AI генерирует тексты для всех 5 каналов...</span>
+          </div>
+          <div id="s4t-content" style="display:none">
+            <div style="background:rgba(79,110,247,.08);border:1px solid rgba(79,110,247,.2);border-radius:8px;padding:9px 14px;margin-bottom:12px;font-size:.78rem;color:#a0b0ff;display:flex;align-items:center;gap:8px">
+              <span>✦</span><span data-i18n="ai_draft_note">AI draft — review before sending. Verify regulatory strings match your platform's T&Cs.</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:0">
+              <div class="ch-tabs" id="chTabs" style="border-bottom:none;margin-bottom:0">
+                <button class="ch-tab active" onclick="switchCh('push',this)">📲 Push</button>
+                <button class="ch-tab" onclick="switchCh('email',this)">✉️ Email</button>
+                <button class="ch-tab" onclick="switchCh('sms',this)">💬 SMS</button>
+                <button class="ch-tab" onclick="switchCh('telegram',this)">✈️ Telegram</button>
+                <button class="ch-tab" onclick="switchCh('popup',this)">💡 Popup</button>
+              </div>
+              <button id="copy-all-btn" onclick="copyAllChannel()" data-ch="push"
+                style="font-size:.72rem;padding:3px 9px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0;margin-bottom:2px;transition:all .15s"
+                onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+                onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+                ⎘ <span data-i18n="copy_all">Copy all</span>
+              </button>
+            </div>
+            <div id="ch-push"     class="ch-content active"></div>
+            <div id="ch-email"    class="ch-content"></div>
+            <div id="ch-sms"      class="ch-content"></div>
+            <div id="ch-telegram" class="ch-content"></div>
+            <div id="ch-popup"    class="ch-content"></div>
+          </div>
+          <div id="s4t-error" style="display:none;color:#EF4444;font-size:.83rem;padding:16px 0"></div>
+        </div>
+
+        <!-- Audit -->
+        <div id="s4-audit" class="ch-content">
+          <div id="s4a-loading" style="display:flex;align-items:center;gap:12px;padding:32px 0;color:var(--muted)">
+            <div class="spinner"></div><span data-i18n="s4_loading_audit">AI проводит аудит кампании...</span>
+          </div>
+          <div id="s4a-content"></div>
+          <div id="s4a-error" style="display:none;color:#EF4444;font-size:.83rem;padding:16px 0"></div>
+        </div>
+
+        <div class="wiz-foot">
+          <div class="wiz-foot-l"><button class="btn btn-outline" onclick="goStep(3)" data-i18n="btn_back">← Назад</button><span class="step-ctr" data-step="4">Шаг 4 из 5</span></div>
+          <div class="wiz-foot-r">
+            <button class="btn btn-outline btn-sm" onclick="exportCampaignPDF()" data-i18n="btn_export_pdf">⬇ PDF</button>
+            <button class="btn btn-primary" id="s4next" onclick="goStep(5)" disabled data-i18n="btn_to_export">Экспорт →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 5 -->
+      <div class="step-panel" id="step-5">
+        <div id="s5-export">
+          <div class="step-title" data-i18n="s5_title">Экспорт кампании</div>
+          <div class="step-sub" data-i18n="s5_sub">Скачайте или скопируйте конфигурацию в нужном формате</div>
+          <div class="exp-layout">
+            <div class="exp-formats">
+              <button class="exp-btn" onclick="doExport('json')"><span class="exp-btn-ico">📄</span><div><div class="exp-btn-name">JSON</div><div class="exp-btn-desc" data-i18n="s5_exp_json_desc">Полная конфигурация для разработчиков</div></div><span style="margin-left:auto;color:var(--muted);font-size:12px">↓</span></button>
+              <button class="exp-btn" onclick="doExport('csv')"><span class="exp-btn-ico">📊</span><div><div class="exp-btn-name">CSV / Excel</div><div class="exp-btn-desc" data-i18n="s5_exp_csv_desc">Для импорта в CRM-систему</div></div><span style="margin-left:auto;color:var(--muted);font-size:12px">↓</span></button>
+              <button class="exp-btn" onclick="doExport('copy')"><span class="exp-btn-ico">📋</span><div><div class="exp-btn-name" data-i18n="s5_exp_copy_name">Копировать в буфер</div><div class="exp-btn-desc" data-i18n="s5_exp_copy_desc">Все параметры и тексты одним блоком</div></div><span style="margin-left:auto;color:var(--muted);font-size:12px">⎘</span></button>
+              <button class="exp-btn" onclick="doExport('email')"><span class="exp-btn-ico">📧</span><div><div class="exp-btn-name" data-i18n="s5_exp_email_name">Email в CRM</div><div class="exp-btn-desc" data-i18n="s5_exp_email_desc">Отправить спецификацию команде</div></div><span style="margin-left:auto;color:var(--muted);font-size:12px">→</span></button>
+              <button class="exp-btn" onclick="doExport('api')"><span class="exp-btn-ico">🔗</span><div><div class="exp-btn-name">API / curl</div><div class="exp-btn-desc" data-i18n="s5_exp_api_desc">Интеграция через REST API</div></div><span style="margin-left:auto;color:var(--muted);font-size:12px">{ }</span></button>
+              <button class="exp-btn" id="admincfg-btn" onclick="doExport('adminconfig')"><span class="exp-btn-ico">⚙️</span><div><div class="exp-btn-name">Admin Config</div><div class="exp-btn-desc" data-i18n="s5_exp_admin_desc">Полный конфиг бонусной программы для разработчика</div></div><span style="margin-left:auto;color:var(--muted);font-size:12px">↓</span></button>
+            </div>
+            <div>
+              <div class="sum-card">
+                <div class="sum-title" data-i18n="s5_sum_title">📋 Сводка кампании</div>
+                <div class="sum-row"><span class="sr-l" data-i18n="s5_sum_scenario">Сценарий</span><span class="sr-v" id="sum-sc">—</span></div>
+                <div class="sum-row"><span class="sr-l" data-i18n="s5_sum_geo">Гео</span><span class="sr-v" id="sum-geo">—</span></div>
+                <div class="sum-row"><span class="sr-l" data-i18n="s5_sum_segment">Сегмент</span><span class="sr-v" id="sum-seg">—</span></div>
+                <div class="sum-row"><span class="sr-l" data-i18n="s5_sum_mech">Механика</span><span class="sr-v" id="sum-mech">—</span></div>
+                <div class="sum-row"><span class="sr-l" data-i18n="s5_sum_maxb">Макс. бонус</span><span class="sr-v" id="sum-maxb">—</span></div>
+                <div class="sum-row"><span class="sr-l" data-i18n="s5_sum_wager">Вейджер</span><span class="sr-v" id="sum-wager">—</span></div>
+                <div class="sum-row"><span class="sr-l" data-i18n="s5_sum_budget">Бюджет</span><span class="sr-v" id="sum-bud">—</span></div>
+                <div class="sum-row"><span class="sr-l" data-i18n="s5_sum_channels">Каналы</span><span class="sr-v">Push · Email · SMS</span></div>
+                <div style="margin-top:13px;display:flex;flex-direction:column;gap:8px">
+                  <button class="btn btn-primary" style="width:100%" onclick="finishCampaign()" data-i18n="btn_create_camp">✓ Создать кампанию</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Admin Config panel (hidden until generated) -->
+          <div id="admin-cfg-panel" style="display:none;margin-top:20px">
+            <div class="res-card">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <div class="rc-title" style="margin-bottom:0">Admin Panel Config</div>
+                <div style="display:flex;gap:8px">
+                  <button class="btn btn-outline btn-sm" onclick="copyAdminCfg()" data-i18n="s5_admin_copy">⎘ Копировать</button>
+                  <button class="btn btn-outline btn-sm" onclick="saveAdminCfg()" data-i18n="s5_admin_save">↓ Сохранить .txt</button>
+                  <button class="btn btn-ghost btn-sm" onclick="document.getElementById('admin-cfg-panel').style.display='none'">✕</button>
+                </div>
+              </div>
+              <pre id="admin-cfg-pre" style="font-size:.72rem;line-height:1.7;color:var(--text);background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow-x:auto;white-space:pre;font-family:'Courier New',monospace;max-height:480px;overflow-y:auto"></pre>
+            </div>
+          </div>
+
+          <div class="wiz-foot">
+            <div class="wiz-foot-l"><button class="btn btn-outline" onclick="goStep(4)" data-i18n="btn_back">← Назад</button><span class="step-ctr" data-step="5">Шаг 5 из 5</span></div>
+          </div>
+        </div>
+
+        <!-- Done -->
+        <div id="s5-done" style="display:none">
+          <div class="done-screen">
+            <div class="done-emoji">🎉</div>
+            <div class="done-title" data-i18n="s5_done_title">Кампания создана!</div>
+            <div class="done-sub" id="done-sub" data-i18n="s5_done_sub">Кампания успешно сохранена. Найдите её в разделе «Кампании».</div>
+            <div class="done-acts">
+              <button class="btn btn-primary btn-lg" onclick="showView('campaigns')" data-i18n="btn_go_camp">Перейти к кампании →</button>
+              <button class="btn btn-outline btn-lg" onclick="startWizard()" data-i18n="btn_create_more">+ Создать ещё</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /view-wizard -->
+
+    <!-- CAMPAIGN DETAIL -->
+    <div id="view-campaign-detail" style="display:none">
+      <div class="det-hd">
+        <button class="det-back" onclick="closeDetail()" data-i18n="det_back">← Акции</button>
+        <div class="det-name" id="det-name">—</div>
+        <div id="det-badge"></div>
+        <div class="det-acts">
+          <button class="btn btn-outline btn-sm" onclick="duplicateCampaign()" data-i18n="det_dup">⎘ Дублировать</button>
+          <button class="btn btn-outline btn-sm" onclick="editCampaign()" data-i18n="det_edit">✏ Редактировать</button>
+          <a class="btn btn-outline btn-sm" href="/retention-calendar.html" data-i18n="det_cal">📅 Открыть в календаре</a>
+          <select id="det-status" class="form-select" style="font-size:.78rem;padding:5px 10px;height:30px" onchange="detailSetStatus(this.value)">
+            <option value="draft"  data-i18n="badge_draft">Черновик</option>
+            <option value="active" data-i18n="badge_active">Активна</option>
+            <option value="done"   data-i18n="badge_done">Завершена</option>
+          </select>
+        </div>
+      </div>
+      <div class="det-tabs">
+        <button class="dtab active" onclick="switchDTab('overview',this)" data-i18n="det_tab_ov">Обзор</button>
+        <button class="dtab" onclick="switchDTab('mechanic',this)" data-i18n="det_tab_mech">Механика</button>
+        <button class="dtab" onclick="switchDTab('texts',this)" data-i18n="det_tab_texts">Тексты</button>
+        <button class="dtab" onclick="switchDTab('audit',this)" data-i18n="det_tab_audit">Аудит</button>
+        <button class="dtab" onclick="switchDTab('export',this)" data-i18n="det_tab_export">Экспорт</button>
+        <button class="dtab" onclick="switchDTab('analytics',this)" data-i18n="det_tab_analytics">📊 Факт</button>
+      </div>
+      <div class="det-body" id="det-body"></div>
+    </div><!-- /view-campaign-detail -->
+
+    </div><!-- /bonus-root -->
+
+    <!-- TOURNAMENT -->
+    <div id="tg-root" style="display:none">
+      <div id="tg-content"></div>
+    </div><!-- /tg-root -->
+
+    <!-- LOYALTY -->
+    <div id="ly-root" style="display:none">
+      <div id="ly-content"></div>
+    </div><!-- /ly-root -->
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- Exit confirmation modal — must be before <script> so setUILang finds it in the DOM -->
+<div id="new-camp-modal" class="exit-overlay" style="display:none" onclick="if(event.target===this)closeNewCampModal()">
+  <div class="exit-box">
+    <h3 data-i18n="nc_title">Начать новую кампанию?</h3>
+    <p data-i18n="nc_body">Прогресс текущей кампании будет потерян без сохранения.</p>
+    <div class="exit-actions">
+      <button class="btn btn-outline" onclick="closeNewCampModal()" data-i18n="nc_stay">Продолжить редактирование</button>
+      <button class="btn btn-primary" onclick="closeNewCampModal();startWizard()" data-i18n="nc_confirm">Начать новую</button>
+    </div>
   </div>
 </div>
 
-<div class="wrap">
-
-<!-- ═══════════════════════════ LEFT PANEL ═══════════════════════════ -->
-<div class="left">
-  <div class="pnl-title" data-i18n="pnl_title">Параметры конфигурации</div>
-
-  <!-- Region -->
-  <div class="fg">
-    <div class="fl"><div class="tip-wrap"><span data-i18n="lbl_region">Регион и бизнес-модель</span><span class="tip-btn" onclick="toggleTip(this)">?</span><div class="tip-box" data-i18n="tip_region"></div></div></div>
-    <div class="rgrid">
-      <div class="rcard" id="rc-cis" onclick="pickRegion('cis')">
-        <span class="flag">🌐</span>
-        <div class="rn" data-i18n="reg_cis">СНГ</div>
-        <div class="rs" data-i18n="reg_cis_sub">RU · UA · KZ / Фиат</div>
-      </div>
-      <div class="rcard" id="rc-eu" onclick="pickRegion('eu')">
-        <span class="flag">🇪🇺</span>
-        <div class="rn" data-i18n="reg_eu">EU / UK</div>
-        <div class="rs" data-i18n="reg_eu_sub">EUR · GBP / Фиат</div>
-      </div>
-      <div class="rcard" id="rc-crypto" onclick="pickRegion('crypto')">
-        <span class="flag">🌐</span>
-        <div class="rn" data-i18n="reg_crypto">Global Crypto</div>
-        <div class="rs" data-i18n="reg_crypto_sub">BTC · ETH · USDT</div>
-      </div>
-      <div class="rcard" id="rc-sweep" onclick="pickRegion('sweep')">
-        <span class="flag">🇺🇸</span>
-        <div class="rn" data-i18n="reg_sweep">USA / Sweep</div>
-        <div class="rs" data-i18n="reg_sweep_sub">SC · GC / Sweepcoins</div>
-      </div>
-      <div class="rcard" id="rc-mn" onclick="pickRegion('mn')">
-        <span class="flag">🇲🇳</span>
-        <div class="rn" data-i18n="reg_mn">Монголия</div>
-        <div class="rs" data-i18n="reg_mn_sub">MNT / Фиат</div>
-      </div>
-      <div class="rcard" id="rc-latam" onclick="pickRegion('latam')">
-        <span class="flag">🌎</span>
-        <div class="rn" data-i18n="reg_latam">LatAm</div>
-        <div class="rs" data-i18n="reg_latam_sub">USD / Фиат</div>
-      </div>
+<div id="exit-modal" class="exit-overlay" style="display:none" onclick="if(event.target===this)closeExitModal()">
+  <div class="exit-box">
+    <h3 data-i18n="exit_title">Выйти из приложения?</h3>
+    <p data-i18n="exit_body">Несохранённые данные текущей сессии будут потеряны.</p>
+    <div class="exit-actions">
+      <button class="btn btn-outline" onclick="closeExitModal()" data-i18n="exit_stay">Остаться</button>
+      <button class="btn btn-primary" onclick="doExit()" data-i18n="exit_confirm">Выйти</button>
     </div>
   </div>
-
-  <!-- Players -->
-  <div class="fg">
-    <div class="fl"><div class="tip-wrap"><span data-i18n="lbl_players">Новых игроков / месяц</span><span class="tip-btn" onclick="toggleTip(this)">?</span><div class="tip-box" data-i18n="tip_players"></div></div><em id="plbl"></em></div>
-    <div class="sv" id="pdsp">5 000</div>
-    <input type="range" id="prange" min="100" max="50000" step="100" value="5000" oninput="syncR('p')">
-    <input type="number" id="pnum" value="5000" min="100" max="200000" oninput="syncN('p')" style="margin-top:6px">
-    <div class="sl"><span data-i18n="sl_min">100</span><span data-i18n="sl_max">50 000+</span></div>
-  </div>
-
-  <hr class="dv">
-
-  <!-- Currency -->
-  <div class="fg">
-    <div class="fl"><div class="tip-wrap"><span data-i18n="lbl_sitecur">Основная валюта сайта</span><span class="tip-btn" onclick="toggleTip(this)">?</span><div class="tip-box" data-i18n="tip_sitecur"></div></div></div>
-    <select id="sitecur">
-      <option value="USD" selected>USD — Доллар США</option>
-      <option value="EUR">EUR — Евро</option>
-      <option value="GBP">GBP — Фунт стерлингов</option>
-      <option value="RUB">RUB — Российский рубль</option>
-      <option value="UAH">UAH — Украинская гривна</option>
-      <option value="KZT">KZT — Казахстанский тенге</option>
-      <option value="MNT">MNT — Монгол төгрөг</option>
-      <option value="BTC">BTC — Bitcoin</option>
-      <option value="ETH">ETH — Ethereum</option>
-      <option value="USDT">USDT — Tether</option>
-    </select>
-  </div>
-
-  <!-- Avg deposit -->
-  <div class="fg">
-    <div class="fl"><div class="tip-wrap"><span data-i18n="lbl_avgdep">Средний первый депозит</span><span class="tip-btn" onclick="toggleTip(this)">?</span><div class="tip-box" data-i18n="tip_avgdep"></div></div><em id="dephint"></em></div>
-    <div class="irow">
-      <input type="number" id="avgdep" value="100">
-      <select id="depcur">
-        <option value="USD" selected>USD</option>
-        <option value="EUR">EUR</option>
-        <option value="GBP">GBP</option>
-        <option value="RUB">RUB</option>
-        <option value="UAH">UAH</option>
-        <option value="KZT">KZT</option>
-        <option value="MNT">MNT</option>
-        <option value="BTC">BTC</option>
-        <option value="ETH">ETH</option>
-        <option value="USDT">USDT</option>
-      </select>
-    </div>
-  </div>
-
-  <!-- Platform -->
-  <div class="fg">
-    <div class="fl"><div class="tip-wrap"><span data-i18n="lbl_platform">Платформа</span><span class="tip-btn" onclick="toggleTip(this)">?</span><div class="tip-box" data-i18n="tip_platform"></div></div></div>
-    <div class="chips">
-      <div class="chip on" data-g="plat" data-v="both"   onclick="pickChip(this)" data-i18n="plat_both">Desktop + Mobile</div>
-      <div class="chip"    data-g="plat" data-v="mobile" onclick="pickChip(this)" data-i18n="plat_mobile">Mobile Only</div>
-      <div class="chip"    data-g="plat" data-v="desk"   onclick="pickChip(this)" data-i18n="plat_desk">Desktop Only</div>
-    </div>
-  </div>
-
-  <!-- License -->
-  <div class="fg" id="lic-wrap">
-    <div class="fl"><div class="tip-wrap"><span data-i18n="lbl_license">Лицензия / юрисдикция</span><span class="tip-btn" onclick="toggleTip(this)">?</span><div class="tip-box" data-i18n="tip_license"></div></div></div>
-    <div class="chips">
-      <div class="chip on"  data-g="lic" data-v="mga"     onclick="pickChip(this)" data-i18n="lic_mga">MGA</div>
-      <div class="chip"     data-g="lic" data-v="ukgc"    onclick="pickChip(this)" data-i18n="lic_ukgc">UKGC</div>
-      <div class="chip"     data-g="lic" data-v="curacao" onclick="pickChip(this)" data-i18n="lic_curacao">Curaçao</div>
-      <div class="chip"     data-g="lic" data-v="none"    onclick="pickChip(this)" data-i18n="lic_none">Нет / Офшор</div>
-    </div>
-  </div>
-
-  <!-- RTP threshold -->
-  <div class="fg">
-    <div class="fl"><div class="tip-wrap"><span data-i18n="lbl_rtp">Средний RTP слотов</span><span class="tip-btn" onclick="toggleTip(this)">?</span><div class="tip-box" data-i18n="tip_rtp"></div></div><em id="rtplbl">96%</em></div>
-    <input type="range" id="rtprange" min="90" max="99" step="1" value="96" oninput="document.getElementById('rtplbl').textContent=this.value+'%'">
-    <div class="sl"><span>90%</span><span>99%</span></div>
-  </div>
-
-  <button class="btn-gen" onclick="generate()" data-i18n="btn_gen">⚡ Сгенерировать конфигурацию</button>
 </div>
 
-<!-- ═══════════════════════════ RIGHT PANEL ══════════════════════════ -->
-<div class="right" id="right">
-  <div class="ph" id="ph">
-    <div class="ph-ico">⚙️</div>
-    <div class="ph-t" data-i18n="ph_t">Выберите регион и заполните параметры</div>
-    <div class="ph-s" data-i18n="ph_s">Нажмите «Сгенерировать конфигурацию» — получите полный набор настроек для вашей админки</div>
-  </div>
-  <div id="out" style="display:none"></div>
-</div>
-
-</div><!-- end .wrap -->
-
-<script defer src="app.js"></script>
+<script src="/nav-utils.js"></script>
+<script src="/repo-http.js"></script>
+<script src="/feature-gate.js"></script>
+<script type="module" src="/balance-solver.js"></script>
+<script type="module" src="/tournament-econ.js"></script>
+<script type="module" src="/loyalty-econ.js"></script>
+<script src="/generator.js"></script>
+<script src="/generator-tournament.js"></script>
+<script src="/generator-loyalty.js"></script>
+<script>
+document.addEventListener('click', function(e) {
+  const a = e.target.closest('a[href]');
+  if (!a || !a.closest('.sidebar')) return;
+  const href = a.getAttribute('href');
+  if (!href || href.startsWith('#') || a.target) return;
+  let url;
+  try { url = new URL(href, location.href); } catch(e) { return; }
+  if (url.origin !== location.origin) return;
+  e.preventDefault();
+  // Same page — just switch view without reload
+  if (url.pathname === location.pathname) {
+    const view = url.searchParams.get('view') || 'dashboard';
+    if (typeof currentView !== 'undefined' && currentView === view) return;
+    if (typeof showView === 'function') { showView(view); return; }
+  }
+  // Different page — fade .main then navigate
+  const m = document.querySelector('.main');
+  if (m) { m.style.transition = 'opacity .1s ease'; m.style.opacity = '0'; }
+  setTimeout(() => { location.href = href; }, 110);
+});
+</script>
 </body>
 </html>

@@ -1381,7 +1381,8 @@ function saveAdminCfg() {
   a.download = `admin-config-${draft.scenario?.id||'campaign'}-${new Date().toISOString().slice(0,10)}.txt`;
   a.click();
 }
-function addCampaignToCalendar() {
+function addCampaignToCalendar(opts = {}) {
+  const silent = !!opts.silent; // silent = called from Save: no confirm, no toast, skip dupes
   const mechanic    = draft.mechanicType || draft.scenario?.cat || 'custom';
   const MECH_TO_TYPE = { reload:'reload', cashback:'cashback', freespins:'freespins', free_spins:'freespins', vip:'vip', reactivation:'reactivation', welcome:'reload', ndb:'freespins', dep2:'reload', dep3:'reload' };
   const type        = MECH_TO_TYPE[mechanic?.toLowerCase()] || 'custom';
@@ -1400,6 +1401,7 @@ function addCampaignToCalendar() {
     mechanic:   String(mechanic || ''),
     econ:       draft.econ || null,
     sourceType: 'campaign_generator',
+    savedId:    opts.savedId || null,
   };
   const isRu = currentLang === 'ru';
   try {
@@ -1411,19 +1413,24 @@ function addCampaignToCalendar() {
       c.type     === campaign.type
     );
     if (dupe) {
+      if (silent) return false; // already scheduled — don't create a duplicate event
       const added = new Date(dupe.createdAt).toLocaleDateString();
       const msg   = isRu
         ? `Эта кампания уже добавлена в календарь (${dupe.title}, добавлена ${added}).\nДобавить ещё раз?`
         : `This campaign is already in the calendar (${dupe.title}, added ${added}).\nAdd again?`;
-      if (!confirm(msg)) return;
+      if (!confirm(msg)) return false;
     }
     const now = new Date().toISOString();
-    camps.push({ ...campaign, id: 'cg_' + Date.now(), createdAt: now, updatedAt: now });
+    const rec = { ...campaign, id: 'cg_' + Date.now(), createdAt: now, updatedAt: now };
+    camps.push(rec);
     localStorage.setItem('rc_campaigns', JSON.stringify(camps));
-  } catch {}
+    window.RetomatRepo?.mirror('calendar-events', rec.id, rec);
+  } catch { return false; }
+  if (silent) return true;
   const msg  = isRu ? '📅 Кампания добавлена в Retention Calendar' : '📅 Campaign added to Retention Calendar';
   const link = '<a href="/retention-calendar.html" style="color:var(--gold);font-weight:600">Open Calendar →</a>';
   showToast(`${msg} · ${link}`);
+  return true;
 }
 
 function addDetailToCalendar() {
@@ -1461,8 +1468,10 @@ function addDetailToCalendar() {
       if (!confirm(msg)) return;
     }
     const now = new Date().toISOString();
-    camps.push({ ...entry, id: 'cg_' + Date.now(), createdAt: now, updatedAt: now });
+    const rec = { ...entry, id: 'cg_' + Date.now(), createdAt: now, updatedAt: now };
+    camps.push(rec);
     localStorage.setItem('rc_campaigns', JSON.stringify(camps));
+    window.RetomatRepo?.mirror('calendar-events', rec.id, rec);
   } catch {}
   const msg  = isRu ? '📅 Кампания добавлена в Retention Calendar' : '📅 Campaign added to Retention Calendar';
   const link = '<a href="/retention-calendar.html" style="color:var(--gold);font-weight:600">' + (isRu ? 'Открыть →' : 'Open →') + '</a>';
@@ -1507,6 +1516,9 @@ function openDetail(id) {
   _detailId = id;
   const c = getCampaigns().find(x => x.id === id);
   if (!c) return;
+  // Calendar-created bonuses are thin (no generator config) — open them in the
+  // calendar rather than an empty detail view.
+  if (c.sourceType === 'calendar') { window.location.href = '/retention-calendar.html'; return; }
   document.getElementById('det-name').textContent = c.name || '—';
   document.getElementById('det-badge').innerHTML  = statusBadge(c.status);
   const sel = document.getElementById('det-status');
@@ -1969,7 +1981,7 @@ const I18N = {
     chip_tone_friendly:'😊 Дружелюбный', chip_tone_pro:'🤝 Профессиональный', chip_tone_agg:'⚡ Агрессивный',
     t3_agg_low:'Низкая', t3_agg_mid:'Средняя', t3_agg_high:'Высокая',
     t3_risk_low:'🟢 Низкий', t3_risk_mid:'🟡 Средний', t3_risk_high:'🔴 Высокий',
-    chip_btype_welcome:'💰 1-й депозит', chip_btype_dep2:'💰 2-й депозит', chip_btype_dep3:'🎁 3-й депозит',
+    chip_btype_welcome:'💰 Welcome (1-й депозит)', chip_btype_dep2:'💰 2-й депозит', chip_btype_dep3:'🎁 3-й депозит',
     s4_title:'Тексты и аудит кампании',
     s4_sub:'AI генерирует тексты для каждого канала и проводит аудит рисков',
     s4_tab_texts:'📝 Тексты', s4_tab_audit:'🔍 Аудит',
@@ -2024,7 +2036,7 @@ const I18N = {
     view_configurator:'Конфигуратор', view_wizard:'Новая кампания',
     // Quick start cards
     qc_launch_n:'Первый запуск казино',
-    qc_launch_d:'Полный бонусный пакет: 1-й депозит + Welcome + 2-й/3-й депозит + Cashback — все механики для старта',
+    qc_launch_d:'Полный бонусный пакет: Welcome (1-й депозит) + No Deposit + 2-й/3-й депозит + Cashback — все механики для старта',
     qc_react_n:'Реактивация', qc_react_d:'Вернуть неактивных 7+ дней',
     qc_reload_n:'Reload кампания', qc_reload_d:'Бонус на повторный депозит',
     qc_cashback_n:'Cashback', qc_cashback_d:'Возврат % от проигрышей',
@@ -2048,7 +2060,7 @@ const I18N = {
     mr_pkgs:'Пакеты', mr_maxb:'Макс. бонус', mr_mind:'Мин. депозит',
     mr_wager:'Вейджер', mr_fs:'Фриспины', mr_days:'Срок', mr_days_sfx:' дней', mr_promo:'Промокод',
     // mechanic type labels
-    mt_welcome:'1-й депозит', mt_ndb:'Welcome', mt_reload:'Reload', mt_dep2:'2-й депозит', mt_dep3:'3-й депозит', mt_cashback:'Cashback',
+    mt_welcome:'Welcome (1-й депозит)', mt_ndb:'No Deposit', mt_reload:'Reload', mt_dep2:'2-й депозит', mt_dep3:'3-й депозит', mt_cashback:'Cashback',
     // verdict & econ
     vrd_cheap:'Экономичный ✓', vrd_ok:'Оптимальный ✓', vrd_warn:'Внимание ⚠', vrd_high:'Высокий риск ✗',
     ec_cost:'Расходы кампании', ec_arpu:'ARPU / мес.', ec_ltv:'LTV 3 мес.', ec_roi:'ROI 3 мес.', ec_verdict:'Вердикт', ec_nosrv:'нет ответа от сервера',
@@ -2064,7 +2076,7 @@ const I18N = {
     sc_sport_event:'Спортивное событие', sc_tournament:'Турнир / Ивент',
     sc_cashback:'Cashback кампания', sc_custom:'Кастомный сценарий',
     // Detail view
-    det_back:'← Акции', det_dup:'⎘ Дублировать', det_edit:'✏ Редактировать', det_cal:'📅 В календарь',
+    det_back:'← Акции', det_dup:'⎘ Дублировать', det_edit:'✏ Редактировать', det_cal:'📅 Открыть в календаре',
     det_tab_ov:'Обзор', det_tab_mech:'Механика', det_tab_texts:'Тексты', det_tab_audit:'Аудит', det_tab_export:'Экспорт', det_tab_analytics:'📊 Факт',
     det_ov_scenario:'Сценарий', det_ov_geo:'Регион', det_ov_segment:'Сегмент',
     det_ov_budget:'Бюджет', det_ov_tone:'Тон', det_ov_lang:'Язык текстов',
@@ -2104,7 +2116,7 @@ const I18N = {
     chip_tone_friendly:'😊 Friendly', chip_tone_pro:'🤝 Professional', chip_tone_agg:'⚡ Aggressive',
     t3_agg_low:'Low', t3_agg_mid:'Medium', t3_agg_high:'High',
     t3_risk_low:'🟢 Low', t3_risk_mid:'🟡 Medium', t3_risk_high:'🔴 High',
-    chip_btype_welcome:'💰 1st Deposit', chip_btype_dep2:'💰 2nd Deposit', chip_btype_dep3:'🎁 3rd Deposit',
+    chip_btype_welcome:'💰 Welcome (1st Deposit)', chip_btype_dep2:'💰 2nd Deposit', chip_btype_dep3:'🎁 3rd Deposit',
     s4_title:'Texts & Campaign Audit',
     s4_sub:'AI generates texts for each channel and audits risks',
     s4_tab_texts:'📝 Texts', s4_tab_audit:'🔍 Audit',
@@ -2159,7 +2171,7 @@ const I18N = {
     view_configurator:'Configurator', view_wizard:'New Campaign',
     // Quick start cards
     qc_launch_n:'Casino First Launch',
-    qc_launch_d:'Full bonus package: 1st Deposit + Welcome + 2nd/3rd Deposit + Cashback — all mechanics for launch',
+    qc_launch_d:'Full bonus package: Welcome (1st Deposit) + No Deposit + 2nd/3rd Deposit + Cashback — all mechanics for launch',
     qc_react_n:'Reactivation', qc_react_d:'Re-engage players inactive 7+ days',
     qc_reload_n:'Reload Campaign', qc_reload_d:'Bonus on repeat deposit',
     qc_cashback_n:'Cashback', qc_cashback_d:'Return % of losses',
@@ -2183,7 +2195,7 @@ const I18N = {
     mr_pkgs:'Packages', mr_maxb:'Max Bonus', mr_mind:'Min Deposit',
     mr_wager:'Wager', mr_fs:'Free Spins', mr_days:'Validity', mr_days_sfx:' days', mr_promo:'Promo Code',
     // mechanic type labels
-    mt_welcome:'1st Deposit', mt_ndb:'Welcome', mt_reload:'Reload', mt_dep2:'2nd Deposit', mt_dep3:'3rd Deposit', mt_cashback:'Cashback',
+    mt_welcome:'Welcome (1st Deposit)', mt_ndb:'No Deposit', mt_reload:'Reload', mt_dep2:'2nd Deposit', mt_dep3:'3rd Deposit', mt_cashback:'Cashback',
     // verdict & econ
     vrd_cheap:'Economical ✓', vrd_ok:'Optimal ✓', vrd_warn:'Attention ⚠', vrd_high:'High Risk ✗',
     ec_cost:'Campaign Cost', ec_arpu:'ARPU / mo.', ec_ltv:'LTV 3 mo.', ec_roi:'ROI 3 mo.', ec_verdict:'Verdict', ec_nosrv:'no response from server',
@@ -2199,7 +2211,7 @@ const I18N = {
     sc_sport_event:'Sport Event', sc_tournament:'Tournament / Event',
     sc_cashback:'Cashback Campaign', sc_custom:'Custom Scenario',
     // Detail view
-    det_back:'← Offers', det_dup:'⎘ Duplicate', det_edit:'✏ Edit', det_cal:'📅 Add to Calendar',
+    det_back:'← Offers', det_dup:'⎘ Duplicate', det_edit:'✏ Edit', det_cal:'📅 Open in Calendar',
     det_tab_ov:'Overview', det_tab_mech:'Mechanics', det_tab_texts:'Texts', det_tab_audit:'Audit', det_tab_export:'Export', det_tab_analytics:'📊 Actuals',
     det_ov_scenario:'Scenario', det_ov_geo:'Region', det_ov_segment:'Segment',
     det_ov_budget:'Budget', det_ov_tone:'Tone', det_ov_lang:'Text Language',
@@ -2285,7 +2297,7 @@ function putCampaigns(arr) {
 function saveCampaign() {
   const camps = getCampaigns();
   const id = 'c' + Date.now();
-  camps.unshift({
+  const rec = {
     id,
     name: draft.scenario?.lbl || 'Campaign',
     type: draft.scenario?.cat || '—',
@@ -2309,20 +2321,29 @@ function saveCampaign() {
     explanationRu: draft.explanationRu || null,
     explanationEn: draft.explanationEn || null,
     alternatives:  draft.alternatives  || null,
-  });
+  };
+  camps.unshift(rec);
   putCampaigns(camps);
+  window.RetomatRepo?.mirror('campaigns', rec.id, rec);
+  // Merged action: saving also schedules the campaign in the Retention Calendar
+  // (silent — no confirm/toast; dupes by geo/segment/type are skipped).
+  try { addCampaignToCalendar({ silent: true, savedId: id }); } catch {}
   renderCampaignViews();
   return id;
 }
 
 function deleteCampaign(id) {
   putCampaigns(getCampaigns().filter(c => c.id !== id));
+  window.RetomatRepo?.unmirror('campaigns', id);
   renderCampaignViews();
   closeMenu();
 }
 
 function setCampaignStatus(id, status) {
-  putCampaigns(getCampaigns().map(c => c.id === id ? {...c, status} : c));
+  const next = getCampaigns().map(c => c.id === id ? {...c, status} : c);
+  putCampaigns(next);
+  const rec = next.find(c => c.id === id);
+  if (rec) window.RetomatRepo?.mirror('campaigns', id, rec);
   renderCampaignViews();
   closeMenu();
 }
@@ -2341,14 +2362,30 @@ function statusBadge(s) {
   return `<span class="badge ${cls}">${t('badge_'+s) || s}</span>`;
 }
 
+// Entity-category badge for saved-items tables — the "Тип" column shows the KIND
+// of saved item (Bonus / Tournament / Loyalty), not the mechanic (which moves into
+// the row subtitle). Shared by the dashboard renderers below.
+function catBadge(kind) {
+  const M = {
+    bonus:      { en: 'Bonus',      ru: 'Бонус',      bg: 'rgba(99,102,241,.15)', c: '#818cf8' },
+    tournament: { en: 'Tournament', ru: 'Турнир',     bg: 'rgba(245,158,11,.15)', c: '#f59e0b' },
+    loyalty:    { en: 'Loyalty',    ru: 'Лояльность', bg: 'rgba(168,85,247,.15)', c: '#c084fc' },
+  };
+  const m = M[kind];
+  if (!m) return '—';
+  const label = (typeof currentLang !== 'undefined' && currentLang === 'ru') ? m.ru : m.en;
+  return `<span style="background:${m.bg};color:${m.c};padding:2px 8px;border-radius:6px;font-size:.68rem;font-weight:700;white-space:nowrap">${label}</span>`;
+}
+
 function campaignRowHTML(c) {
   const mech = mechTypeLbl(c.mechanicType);
   const geo  = c.params?.geo ? (GEO_LBL[c.params.geo] || c.params.geo) : '';
   const lang = c.params?.lang ? c.params.lang.toUpperCase() : '';
-  const meta = [mech, geo, lang].filter(Boolean).join(' · ');
+  // mechanic (Launch/Reload/…) lives in the subtitle; Тип column shows the category.
+  const meta = [mech || c.type, geo, lang].filter(Boolean).join(' · ');
   return `<div class="ct-row clickable" onclick="openDetail('${c.id}')">
     <div><div class="ct-name">${esc(c.name)}</div><div class="ct-meta">${esc(meta)}</div></div>
-    <div class="ct-cell">${esc(c.type || '—')}</div>
+    <div class="ct-cell">${catBadge('bonus')}</div>
     <div>${statusBadge(c.status)}</div>
     <div class="ct-cell">${fmtDate(c.date)}</div>
     <div style="text-align:right"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();showCampMenu('${c.id}',this)">···</button></div>
@@ -2372,8 +2409,8 @@ function tournamentRowHTML(t) {
   const seg   = t.params?.segment  || 'all';
   const pool  = t.spec?.prizePool  ? `${t.cur || ''}${t.spec.prizePool.toLocaleString()}` : '—';
   return `<div class="ct-row clickable" onclick="window.location.href='/tournament-generator.html?view=list'">
-    <div><div class="ct-name">${icon} ${esc(t.name || label)}</div><div class="ct-meta">${seg} · ${pool}</div></div>
-    <div class="ct-cell">🏆 ${label}</div>
+    <div><div class="ct-name">${icon} ${esc(t.name || label)}</div><div class="ct-meta">${label} · ${seg} · ${pool}</div></div>
+    <div class="ct-cell">${catBadge('tournament')}</div>
     <div><span class="status-badge status-saved" style="background:rgba(16,185,129,.15);color:#10b981;padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:700">Saved</span></div>
     <div class="ct-cell">${date}</div>
     <div></div>
@@ -2390,11 +2427,11 @@ function loyaltyRowHTML(p) {
   const icon  = MODE_ICON[mode] || '⭐';
   const label = MODE_LABEL[mode] || mode;
   const lift  = econ?.retentionLiftPct != null ? `${econ.retentionLiftPct.toFixed(1)}% lift` : '';
-  const meta  = [cfg?.region?.toUpperCase(), cfg?.segment, lift].filter(Boolean).join(' · ');
+  const meta  = [label, cfg?.region?.toUpperCase(), cfg?.segment, lift].filter(Boolean).join(' · ');
   return `<div class="ct-row clickable" onclick="window.location.href='/loyalty-generator.html'">
     <div><div class="ct-name">${icon} ${esc(p.name)}</div><div class="ct-meta">${esc(meta)}</div></div>
-    <div class="ct-cell">⭐ ${esc(label)}</div>
-    <div><span style="background:rgba(245,158,11,.15);color:#f59e0b;padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:700">Loyalty</span></div>
+    <div class="ct-cell">${catBadge('loyalty')}</div>
+    <div><span class="status-badge status-saved" style="background:rgba(16,185,129,.15);color:#10b981;padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:700">Saved</span></div>
     <div class="ct-cell">${date}</div>
     <div></div>
   </div>`;
@@ -2662,6 +2699,13 @@ showView(getViewParam() || _hashView || 'dashboard');
 renderScenarios();
 renderCampaignViews();
 document.querySelector('.main').classList.add('ready');
+
+// nav-utils runs the migrate+hydrate sync and fires this once the localStorage
+// cache reflects the server; refresh the campaign list + badges then.
+window.addEventListener('retomat:synced', () => {
+  updateAllBadges();
+  renderCampaignViews();
+});
 // Old page-specific onboarding replaced by the global Retomat welcome popup
 // (showRetomatWelcome in nav-utils.js, gated by 'retomat_welcome_done').
 // if (!localStorage.getItem('cg_onboarding_done')) showOnboarding();

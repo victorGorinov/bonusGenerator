@@ -1,10 +1,14 @@
 import { z } from 'zod';
+import { normalizeEmail } from '../domain/auth/email.js';
 
-// trim().toLowerCase() before .email() so both registration and login key off
-// the same normalized address — Postgres' UNIQUE constraint on users.email is
-// case-sensitive, so without this "Alice@x.com" and "alice@x.com" would be
-// treated as different accounts.
-const EmailSchema = z.string().trim().toLowerCase().email().max(320);
+// Normalize (trim + lowercase) before .email() so both registration and login key
+// off the same address — Postgres' UNIQUE on users.email is case-sensitive, so
+// without this "Alice@x.com" and "alice@x.com" would be different accounts.
+// Shares normalizeEmail() with the ADMIN_EMAILS bootstrap so the two can't drift.
+const EmailSchema = z.preprocess(
+  (v) => (typeof v === 'string' ? normalizeEmail(v) : v),
+  z.string().email().max(320),
+);
 
 export const RegisterSchema = z.object({
   name:     z.string().min(1).max(200),

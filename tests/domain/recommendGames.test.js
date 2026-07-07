@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { recommendGames } from '../../src/domain/tournament/recommendGames.js';
+import { recommendGames } from '../../src/domain/games/recommendGames.js';
 
 describe('recommendGames', () => {
 
@@ -90,6 +90,45 @@ describe('recommendGames', () => {
     for (const g of [...primary, ...alternatives]) {
       expect(scores[g.id]).toBeDefined();
     }
+  });
+
+  test('type and scoring omitted → no mechanic gating, mixed mechanics allowed', () => {
+    const { primary, alternatives } = recommendGames({ geo:'de', segment:'mid' });
+    const all = [...primary, ...alternatives];
+    expect(all.length).toBeGreaterThan(0);
+    const mechanics = new Set(all.map(g => g.mechanic));
+    // With no gate, a broad de-region pool should span more than one mechanic type
+    expect(mechanics.size).toBeGreaterThan(1);
+  });
+
+  test('providers filter restricts pool to given providers only', () => {
+    const { primary, alternatives } = recommendGames({ geo:'de', segment:'mid', providers: ['Evolution'] });
+    const all = [...primary, ...alternatives];
+    expect(all.length).toBeGreaterThan(0);
+    for (const g of all) {
+      expect(g.provider).toBe('Evolution');
+    }
+  });
+
+  test('providers filter with unknown provider → empty result, no throw', () => {
+    const result = recommendGames({ geo:'de', segment:'mid', providers: ['Nonexistent Studio'] });
+    expect(result.primary).toEqual([]);
+    expect(result.alternatives).toEqual([]);
+  });
+
+  test('region-level geo (cis) triggers low-denom minBet penalty like ru/kz', () => {
+    // Loyalty/CRM path passes a region directly as geo (no country granularity).
+    const byCountry = recommendGames({ geo:'ru',  segment:'new', type:'slot', scoring:'total_wins' });
+    const byRegion  = recommendGames({ geo:'cis', segment:'new', type:'slot', scoring:'total_wins' });
+    // Both resolve to region 'cis' → identical scoring, incl. the high-minBet penalty.
+    expect(byRegion.scores).toEqual(byCountry.scores);
+    for (const g of byRegion.primary) expect(g.minBetTier).not.toBe('high');
+  });
+
+  test('providers omitted → no provider filtering applied', () => {
+    const { primary, alternatives } = recommendGames({ geo:'de', segment:'mid', type:'slot', scoring:'total_wins' });
+    const providers = new Set([...primary, ...alternatives].map(g => g.provider));
+    expect(providers.size).toBeGreaterThan(1);
   });
 
 });

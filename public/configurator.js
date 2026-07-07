@@ -93,10 +93,21 @@ const CS = {
 
 // AI state per type
 const CAI = {
-  bonus:      { tab:'econ', audit:null, optimize:null, auditLoading:false, optimizeLoading:false },
-  tournament: { tab:'econ', audit:null, optimize:null, auditLoading:false, optimizeLoading:false },
-  loyalty:    { tab:'econ', audit:null, optimize:null, missions:null, auditLoading:false, optimizeLoading:false, missionsLoading:false },
+  bonus:      { tab:'econ', audit:null, optimize:null, games:null, auditLoading:false, optimizeLoading:false, gamesLoading:false },
+  tournament: { tab:'econ', audit:null, optimize:null, games:null, auditLoading:false, optimizeLoading:false, gamesLoading:false },
+  loyalty:    { tab:'econ', audit:null, optimize:null, missions:null, games:null, auditLoading:false, optimizeLoading:false, missionsLoading:false, gamesLoading:false },
 };
+
+// Connected game providers — shared across promo types (operator-level setting,
+// not per-campaign). Empty array = no filter (recommend from all providers).
+const ALL_PROVIDERS = [
+  'Pragmatic Play', "Play'n GO", 'NetEnt', 'Playtech', 'Evolution', 'Hacksaw Gaming',
+  'Nolimit City', 'PG Soft', 'Big Time Gaming', 'Playson', 'Thunderkick', 'ReelPlay',
+  'Reel Kingdom', 'IGT', 'Scientific Games', 'Spribe', 'SmartSoft Gaming', 'Stake Originals',
+  'BGaming',
+];
+let cfgConnectedProviders = [];
+try { cfgConnectedProviders = JSON.parse(localStorage.getItem('cfg_providers') || '[]'); } catch(e) { cfgConnectedProviders = []; }
 
 let _recalcTimer = null;
 let _generating  = false;
@@ -122,7 +133,7 @@ const CFG_I18N = {
     segment_lbl:'Player Segment', platform_lbl:'Platform', rtp_lbl:'Avg Slot RTP',
     seg_new:'🆕 New', seg_mid:'👤 Mid', seg_vip:'👑 VIP',
     plat_both:'Desktop + Mobile', plat_mobile:'Mobile Only', plat_desk:'Desktop Only',
-    mech_welcome:'Welcome Bonus', mech_ndb:'No Deposit Bonus',
+    mech_welcome:'Welcome (1st Deposit)', mech_ndb:'No Deposit Bonus',
     mech_chain:'Deposit Chain', mech_dep2:'2nd Deposit Bonus', mech_dep3:'3rd Deposit Bonus',
     mech_reload:'Reload Bonus', mech_cashback:'Cashback', mech_fs:'Free Spins',
     chain_hint:'Dep2 cohort: 45% of Welcome · Dep3: 25%',
@@ -182,11 +193,16 @@ const CFG_I18N = {
     tier_name:'Tier', tier_pts:'Min Points', tier_cb:'Cashback', tier_fs:'FS/mo', tier_mult:'Bonus Mult.',
     // AI tabs
     tab_econ:'📊 Economics', tab_audit:'🔍 Audit',
-    tab_optimize:'⚡ Optimize', tab_missions:'🎯 Missions',
+    tab_optimize:'⚡ Optimize', tab_missions:'🎯 Missions', tab_games:'🎮 Games',
     run_audit:'🔍 Run Compliance Audit', run_optimize:'⚡ Get Optimization Recs',
     run_missions:'✨ Generate Mission Descriptions',
+    run_games:'🎮 Get Game Recommendations',
     rerun:'↺ Re-run', ai_loading:'Analyzing…',
     recommendations:'Recommendations',
+    games_providers_label:'Connected providers (leave empty = all)',
+    games_popular:'🔥 Popular', games_live:'🃏 Live Casino', games_fast:'🚀 Crash / Fast',
+    games_volatility:'💥 High Volatility', games_mobile:'📱 Mobile-friendly',
+    games_empty:'No games match this filter — try fewer providers.',
     // actions
     save_btn:'💾 Save', calendar_btn:'📅 Add to Calendar',
     saved_toast:'Configuration saved ✓', calendar_toast:'Added to Retention Calendar ✓',
@@ -202,7 +218,7 @@ const CFG_I18N = {
     segment_lbl:'Сегмент игроков', platform_lbl:'Платформа', rtp_lbl:'Средний RTP слотов',
     seg_new:'🆕 Новые', seg_mid:'👤 Средние', seg_vip:'👑 VIP',
     plat_both:'Desktop + Mobile', plat_mobile:'Только Mobile', plat_desk:'Только Desktop',
-    mech_welcome:'Welcome Bonus', mech_ndb:'No Deposit Bonus',
+    mech_welcome:'Welcome (1-й депозит)', mech_ndb:'No Deposit Bonus',
     mech_chain:'Цепочка депозитов', mech_dep2:'2-й депозит', mech_dep3:'3-й депозит',
     mech_reload:'Reload Bonus', mech_cashback:'Кешбэк', mech_fs:'Free Spins',
     chain_hint:'Dep2 когорта: 45% от Welcome · Dep3: 25%',
@@ -258,11 +274,16 @@ const CFG_I18N = {
     loyal_monthly_cost:'Затраты / мес', tier_table_title:'Тиры',
     tier_name:'Тир', tier_pts:'Мин. очков', tier_cb:'Кешбэк', tier_fs:'FS/мес', tier_mult:'Множитель',
     tab_econ:'📊 Экономика', tab_audit:'🔍 Аудит',
-    tab_optimize:'⚡ Оптимизация', tab_missions:'🎯 Миссии',
+    tab_optimize:'⚡ Оптимизация', tab_missions:'🎯 Миссии', tab_games:'🎮 Игры',
     run_audit:'🔍 Запустить аудит', run_optimize:'⚡ Рекомендации',
     run_missions:'✨ Описать миссии',
+    run_games:'🎮 Подобрать игры',
     rerun:'↺ Повторить', ai_loading:'Анализирую…',
     recommendations:'Рекомендации',
+    games_providers_label:'Подключённые провайдеры (пусто = все)',
+    games_popular:'🔥 Популярные', games_live:'🃏 Лайв-казино', games_fast:'🚀 Crash / Быстрые',
+    games_volatility:'💥 Высокая волатильность', games_mobile:'📱 Мобильные',
+    games_empty:'Нет игр под этот фильтр — попробуйте выбрать меньше провайдеров.',
     save_btn:'💾 Сохранить', calendar_btn:'📅 В календарь',
     saved_toast:'Конфигурация сохранена ✓', calendar_toast:'Добавлено в Retention Calendar ✓',
     reg_eu:'Европа (EU/UK)', reg_cis:'СНГ', reg_mn:'Монголия',
@@ -955,7 +976,7 @@ function renderBonusResults(B) {
 
   const tabs = `
     <div class="tab-row">
-      ${['econ','audit','optimize'].map(tab => `
+      ${['econ','audit','optimize','games'].map(tab => `
         <button class="tab${ai.tab===tab?' active':''}" onclick="bonusSetTab('${tab}')">${cfgT('tab_'+tab)}</button>
       `).join('')}
     </div>
@@ -967,7 +988,6 @@ function renderBonusResults(B) {
       <div class="results-title">${cfgT('tab_econ')}</div>
       <div class="results-actions">
         <button class="btn btn-sm btn-outline" onclick="cfgSaveBonusConfig()">${cfgT('save_btn')}</button>
-        <button class="btn btn-sm btn-outline" onclick="cfgBonusToCalendar()">${cfgT('calendar_btn')}</button>
       </div>
     </div>
     ${verdictHtml}
@@ -1418,6 +1438,7 @@ function renderBonusAiContent(B) {
       <button class="btn btn-primary" onclick="runBonusOptimize()">${cfgT('run_optimize')}</button>
     </div>`;
   }
+  if (ai.tab === 'games') return renderGamesTabContent('bonus');
   return '';
 }
 
@@ -1485,6 +1506,119 @@ async function runBonusOptimize() {
   } finally {
     CAI.bonus.optimizeLoading = false;
     document.getElementById('bonus-ai-content').innerHTML = renderBonusAiContent(B);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// GAMES TAB — shared across Bonus / Tournament / Loyalty
+// ══════════════════════════════════════════════════════════════════════════
+
+function _gamesParamsFor(type) {
+  if (type === 'bonus')      return { geo: CS.bonus.geo,      segment: CS.bonus.segment };
+  if (type === 'tournament') return { geo: CS.tournament.geo, segment: CS.tournament.segment };
+  if (type === 'loyalty')    return { geo: CS.loyalty.region, segment: CS.loyalty.segment };
+  return { geo: 'de', segment: 'mid' };
+}
+
+function _aiContentElId(type) {
+  if (type === 'bonus')      return 'bonus-ai-content';
+  if (type === 'tournament') return 'tourn-ai-content';
+  return 'loyalty-ai-content';
+}
+
+function _renderAiContentFor(type) {
+  if (type === 'bonus')      return renderBonusAiContent(CS.bonus);
+  if (type === 'tournament') return renderTournAiContent(CS.tournament);
+  return renderLoyaltyAiContent(CS.loyalty);
+}
+
+function cfgToggleProvider(name, type) {
+  const idx = cfgConnectedProviders.indexOf(name);
+  if (idx >= 0) cfgConnectedProviders.splice(idx, 1);
+  else cfgConnectedProviders.push(name);
+  try { localStorage.setItem('cfg_providers', JSON.stringify(cfgConnectedProviders)); } catch(e){}
+  CAI[type].games = null; // stale — force refetch
+  runGamesRecommend(type);
+}
+
+function renderProviderChecklist(type) {
+  const checks = ALL_PROVIDERS.map(p => {
+    const checked = cfgConnectedProviders.includes(p);
+    const safe = p.replace(/'/g, "\\'");
+    return `<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;margin:2px 6px 2px 0;padding:3px 8px;border-radius:12px;border:1px solid var(--border);background:${checked?'rgba(160,176,255,.12)':'transparent'};cursor:pointer">
+      <input type="checkbox" style="margin:0" ${checked?'checked':''} onchange="cfgToggleProvider('${safe}','${type}')"> ${p}
+    </label>`;
+  }).join('');
+  return `<div style="margin-bottom:12px">
+    <div style="font-size:11px;color:var(--text2);margin-bottom:6px">${cfgT('games_providers_label')}</div>
+    <div style="display:flex;flex-wrap:wrap">${checks}</div>
+  </div>`;
+}
+
+function renderGameChip(g) {
+  return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-radius:8px;border:1px solid var(--border);margin-bottom:5px;font-size:12px">
+    <span>${g.name}</span>
+    <span style="color:var(--text2);font-size:11px">${g.provider}</span>
+  </div>`;
+}
+
+function renderGameSection(title, games) {
+  if (!games || games.length === 0) return '';
+  return `<div style="margin-bottom:14px">
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">${title}</div>
+    ${games.map(renderGameChip).join('')}
+  </div>`;
+}
+
+function renderGamesResult(data) {
+  if (data.error) return `<div class="ph" style="min-height:80px;color:#ef4444">${data.error}</div>`;
+  const s = data.sections || {};
+  const totalGames = Object.values(s).reduce((n, arr) => n + (arr ? arr.length : 0), 0);
+  if (totalGames === 0) return `<div class="ph" style="min-height:80px">${cfgT('games_empty')}</div>`;
+  return `
+    ${renderGameSection(cfgT('games_popular'), s.popular)}
+    ${renderGameSection(cfgT('games_live'), s.live)}
+    ${renderGameSection(cfgT('games_fast'), s.fast)}
+    ${renderGameSection(cfgT('games_volatility'), s.highVolatility)}
+    ${renderGameSection(cfgT('games_mobile'), s.mobileFriendly)}
+  `;
+}
+
+function renderGamesTabContent(type) {
+  const ai = CAI[type];
+  const checklist = renderProviderChecklist(type);
+  if (ai.gamesLoading) return checklist + loadingHtml(cfgT('ai_loading'));
+  if (ai.games) {
+    return checklist + renderGamesResult(ai.games) +
+      `<button class="btn btn-sm btn-outline" onclick="runGamesRecommend('${type}')">${cfgT('rerun')}</button>`;
+  }
+  return checklist + `<div class="ph" style="min-height:120px">
+    <button class="btn btn-primary" onclick="runGamesRecommend('${type}')">${cfgT('run_games')}</button>
+  </div>`;
+}
+
+async function runGamesRecommend(type) {
+  CAI[type].gamesLoading = true;
+  const elId = _aiContentElId(type);
+  const el = document.getElementById(elId);
+  if (el) el.innerHTML = _renderAiContentFor(type);
+  const { geo, segment } = _gamesParamsFor(type);
+  try {
+    const res = await fetch('/api/games/recommend', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ geo, segment, providers: cfgConnectedProviders, uiLang: cfgLang() }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
+    CAI[type].games = await res.json();
+  } catch(e) {
+    CAI[type].games = { error: e.message };
+  } finally {
+    CAI[type].gamesLoading = false;
+    const el2 = document.getElementById(elId);
+    if (el2) el2.innerHTML = _renderAiContentFor(type);
   }
 }
 
@@ -1739,7 +1873,7 @@ function renderTournamentResults(T) {
 
   const tabs = `
     <div class="tab-row">
-      ${['econ','audit','optimize'].map(tab=>`
+      ${['econ','audit','optimize','games'].map(tab=>`
         <button class="tab${ai.tab===tab?' active':''}" onclick="tournSetTab('${tab}')">${cfgT('tab_'+tab)}</button>
       `).join('')}
     </div>
@@ -1751,7 +1885,6 @@ function renderTournamentResults(T) {
       <div class="results-title">${cfgT('tab_econ')}</div>
       <div class="results-actions">
         <button class="btn btn-sm btn-outline" onclick="cfgSaveTournament()">${cfgT('save_btn')}</button>
-        <button class="btn btn-sm btn-outline" onclick="cfgTournToCalendar()">${cfgT('calendar_btn')}</button>
       </div>
     </div>
     ${econCards}
@@ -1861,6 +1994,7 @@ function renderTournAiContent(T) {
       <button class="btn btn-primary" onclick="runTournOptimize()">${cfgT('run_optimize')}</button>
     </div>`;
   }
+  if (ai.tab === 'games') return renderGamesTabContent('tournament');
   return '';
 }
 
@@ -2036,6 +2170,8 @@ function loyalSetSeg(val) {
 
 async function onGenerateLoyalty() {
   if (_generating) return;
+  // Guests can't use Loyalty (backend requireFeature('loyalty')) — clear prompt, not a 403.
+  if (window.FeatureGate && !(await window.FeatureGate.ensure('loyalty'))) return;
   _generating = true;
   const btn = document.getElementById('btn-calculate');
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
@@ -2154,7 +2290,7 @@ function renderLoyaltyResults(LY) {
   const hasMissions = LY.mode !== 'tiers';
   const tabs = `
     <div class="tab-row">
-      ${['econ','audit','optimize', ...(hasMissions?['missions']:[])].map(tab=>`
+      ${['econ','audit','optimize', ...(hasMissions?['missions']:[]), 'games'].map(tab=>`
         <button class="tab${ai.tab===tab?' active':''}" onclick="loyalSetTab('${tab}')">${cfgT('tab_'+tab)}</button>
       `).join('')}
     </div>
@@ -2166,7 +2302,6 @@ function renderLoyaltyResults(LY) {
       <div class="results-title">${cfgT('tab_econ')}</div>
       <div class="results-actions">
         <button class="btn btn-sm btn-outline" onclick="cfgSaveLoyalty()">${cfgT('save_btn')}</button>
-        <button class="btn btn-sm btn-outline" onclick="cfgLoyaltyToCalendar()">${cfgT('calendar_btn')}</button>
       </div>
     </div>
     ${econCards}
@@ -2329,6 +2464,7 @@ function renderLoyaltyAiContent(LY) {
       <button class="btn btn-primary" onclick="runLoyaltyMissions()">${cfgT('run_missions')}</button>
     </div>`;
   }
+  if (ai.tab === 'games') return renderGamesTabContent('loyalty');
   return '';
 }
 
@@ -2530,6 +2666,14 @@ function cfgSaveBonusConfig() {
     config: B.config, costs: B.costs,
   };
   saveCfgEntry(entry);
+  // Silent add to Retention Calendar (merged Save + Add to Calendar)
+  addToRCCalendar({
+    type:'bonus', title:`Bonus · ${geo.lbl}`,
+    sourceType:'bonus_configurator', savedId: id,
+    econ: B.config.econ || {},
+    params: { geo: B.geo, players: B.players, segment: B.segment },
+    cur: geo.cur,
+  }, { silent: true });
   showToast(cfgT('saved_toast'));
 }
 
@@ -2544,12 +2688,24 @@ function cfgSaveTournament() {
     params: { ...T, result: undefined }, result: T.result,
   };
   saveCfgEntry(entry);
+  // Silent add to Retention Calendar (merged Save + Add to Calendar)
+  addToRCCalendar({
+    type:'tournament', title:`Tournament · ${geo.lbl}`,
+    sourceType:'tournament_configurator', savedId: id,
+    econ: T.result.econ || {},
+    params: T.result.params || {},
+    cur: geo.cur,
+  }, { silent: true });
   showToast(cfgT('saved_toast'));
   // Also save to savedTournaments for badge count
   try {
+    const tourRec = { id, name: entry.name, createdAt: entry.createdAt, ...T.result };
     const arr = JSON.parse(localStorage.getItem('savedTournaments') || '[]');
-    arr.push({ id, name: entry.name, createdAt: entry.createdAt, ...T.result });
+    arr.push(tourRec);
     localStorage.setItem('savedTournaments', JSON.stringify(arr));
+    // Mirror to the server too, else the tournament page's hydrate (which
+    // overwrites savedTournaments from the server) would drop this entry.
+    window.RetomatRepo?.mirror('tournaments', id, tourRec);
     if (typeof updateAllBadges === 'function') updateAllBadges();
   } catch(e){}
 }
@@ -2564,6 +2720,25 @@ function cfgSaveLoyalty() {
     params: { ...LY, result: undefined }, result: LY.result,
   };
   saveCfgEntry(entry);
+  // Also save to savedLoyaltyPrograms so it shows in the loyalty library and
+  // feeds Reports/Forecast (mirror to server too, else hydrate would drop it).
+  try {
+    const loyRec = { id, name: entry.name, createdAt: entry.createdAt,
+      params: { region: LY.region, segment: LY.segment }, result: LY.result };
+    const arr = JSON.parse(localStorage.getItem('savedLoyaltyPrograms') || '[]');
+    arr.push(loyRec);
+    localStorage.setItem('savedLoyaltyPrograms', JSON.stringify(arr));
+    window.RetomatRepo?.mirror('loyalty-programs', id, loyRec);
+    if (typeof updateAllBadges === 'function') updateAllBadges();
+  } catch(e){}
+  // Silent add to Retention Calendar (merged Save + Add to Calendar)
+  addToRCCalendar({
+    type:'vip', title:`Loyalty · ${LY.mode}`,
+    sourceType:'loyalty_configurator', savedId: id,
+    econ: LY.result.econ || {},
+    params: { mode: LY.mode, region: LY.region },
+    cur: 'USD',
+  }, { silent: true });
   showToast(cfgT('saved_toast'));
 }
 
@@ -2572,58 +2747,46 @@ function saveCfgEntry(entry) {
     const arr = JSON.parse(localStorage.getItem('cfgSaved') || '[]');
     arr.unshift(entry);
     localStorage.setItem('cfgSaved', JSON.stringify(arr.slice(0,50)));
+    window.RetomatRepo?.mirror('configs', entry.id, entry);
   } catch(e){}
 }
 
-function cfgBonusToCalendar() {
-  const B = CS.bonus;
-  if (!B.config) return;
-  const geo = cfgGeo(B.geo);
-  addToRCCalendar({
-    type:'bonus', title:`Bonus · ${geo.lbl}`,
-    sourceType:'bonus_configurator',
-    econ: B.config.econ || {},
-    params: { geo: B.geo, players: B.players, segment: B.segment },
-    cur: geo.cur,
-  });
-}
-
-function cfgTournToCalendar() {
-  const T = CS.tournament;
-  if (!T.result) return;
-  const geo = cfgGeo(T.geo);
-  addToRCCalendar({
-    type:'tournament', title:`Tournament · ${geo.lbl}`,
-    sourceType:'tournament_configurator',
-    econ: T.result.econ || {},
-    params: T.result.params || {},
-    cur: geo.cur,
-  });
-}
-
-function cfgLoyaltyToCalendar() {
-  const LY = CS.loyalty;
-  if (!LY.result) return;
-  addToRCCalendar({
-    type:'vip', title:`Loyalty · ${LY.mode}`,
-    sourceType:'loyalty_configurator',
-    econ: LY.result.econ || {},
-    params: { mode: LY.mode, region: LY.region },
-    cur: 'USD',
-  });
-}
-
-function addToRCCalendar(data) {
+function addToRCCalendar(data, opts = {}) {
+  const silent = !!(opts && opts.silent); // silent = called from Save: no toast
   try {
-    const today = new Date().toISOString().split('T')[0];
+    // Schedule on the upcoming Mon–Sun week — same logic as the generators.
+    // IMPORTANT: the calendar reads startDate/endDate (NOT start/end); the old
+    // start/end names left the event dateless, so it never rendered.
+    const now    = new Date();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + (now.getDay() === 0 ? 1 : 8 - now.getDay()));
+    const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+    const startDate = monday.toISOString().slice(0, 10);
+    const endDate   = sunday.toISOString().slice(0, 10);
+    const p = data.params || {};
+    const seg = p.segment || 'all';
+    const geo = p.geo || p.region || data.geo || '';
     const camps = JSON.parse(localStorage.getItem('rc_campaigns') || '[]');
+    // Dedup: a silent Save shouldn't pile up identical calendar events for the
+    // same promo (same sourceType + geo + segment + type).
+    const dupe = camps.find(c =>
+      c.sourceType === data.sourceType &&
+      (c.geo || '') === geo &&
+      (c.segment || 'all') === seg &&
+      c.type === data.type
+    );
+    if (dupe && silent) return true;
     const entry = {
       id: genId(),
+      savedId: data.savedId || null,
       title: data.title,
       type: data.type,
+      segment: seg,
+      geo,
+      status: 'draft',
       sourceType: data.sourceType,
-      start: today,
-      end: today,
+      startDate,
+      endDate,
       econ: data.econ,
       params: data.params,
       cur: data.cur,
@@ -2631,8 +2794,10 @@ function addToRCCalendar(data) {
     };
     camps.push(entry);
     localStorage.setItem('rc_campaigns', JSON.stringify(camps));
-    showToast(cfgT('calendar_toast'));
-  } catch(e){}
+    window.RetomatRepo?.mirror('calendar-events', entry.id, entry);
+    if (!silent) showToast(cfgT('calendar_toast'));
+    return true;
+  } catch(e){ return false; }
 }
 
 // ══════════════════════════════════════════════════════════════════════════

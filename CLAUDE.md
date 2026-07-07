@@ -1,6 +1,6 @@
 # CLAUDE.md — Retomat: Retention OS for iGaming
 
-Complete architecture reference for Claude Code sessions. Updated: 2026-07-02.
+Complete architecture reference for Claude Code sessions. Updated: 2026-07-07 (auth Phases 2–4: server-side persistence).
 
 ---
 
@@ -43,10 +43,10 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   ├── config/
 │   │   ├── index.ts                 # Zod EnvSchema (fail-fast), ENV, PORT, API keys, DATABASE_URL, JWT_SECRET/EXPIRY, AI_MODEL, AI_TIMEOUT
 │   │   ├── geo/                     # eu.ts, cis.ts, crypto.ts, sweep.ts, mn.ts, latam.ts
-│   │   └── games/                   # catalog.json (day-1 snapshot, ~15–20 games/geo) + catalog.ts (types + loader)
+│   │   └── games/                   # catalog.json (168 games, 19 providers — manually curated, best-effort RTP/region data, NOT scraped/licensed from SlotCatalog or providers, see Games recommendations section) + catalog.ts (types + loader)
 │   ├── db/
 │   │   ├── client.ts                # Neon/pg Pool singleton
-│   │   └── migrations/001_initial.sql  # users + workspaces (Phase 1 only; saved_*/calendar_* tables are Phase 2)
+│   │   └── migrations/            # 001_initial (users+workspaces) · 002_saved_items · 003_admin_roles (role/status/plan/features) — applied manually via psql
 │   ├── domain/
 │   │   ├── auth/
 │   │   │   ├── hashPassword.ts      # bcrypt hash + verify
@@ -65,8 +65,10 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │   │   └── explanation.ts       # campaignExplanation(), campaignAlternatives()
 │   │   ├── tournament/
 │   │   │   ├── calcEconomics.ts     # calcTournamentEconomics() — SEGMENT_RATIO × totalPlayers → eligible
-│   │   │   ├── benchmarks.ts        # tournamentBenchmarks() — deterministic realism checks
-│   │   │   └── recommendGames.ts    # Pure: catalog scoring → top-5 primary + 5 alternatives
+│   │   │   └── benchmarks.ts        # tournamentBenchmarks() — deterministic realism checks
+│   │   ├── games/                   # Shared game-recommendation engine (used by both Tournament and CRM/campaign contexts)
+│   │   │   ├── recommendGames.ts    # Pure: catalog scoring → { primary, alternatives, scores, all }. type/scoring optional (omit for no mechanic gate/scoring boost — CRM use); providers? filters to connected providers. Moved here from domain/tournament/ 2026-07-07.
+│   │   │   └── sections.ts          # groupGamesBySection() — buckets (non-exclusive) by slotRank/mechanic/volatility/mobile: popular, live, fast, highVolatility, mobileFriendly
 │   │   ├── forecast/
 │   │   │   ├── normalizeCampaign.ts # Campaign → NormalizedActivity | null (by sourceType)
 │   │   │   ├── cannibalization.ts   # MECHANIC_AFFINITY, audienceOverlap, overlapDaysFactor, pairCannibalization
@@ -95,8 +97,9 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │   ├── Auth.ts                  # registerUser(db,input)/loginUser(db,input)/getUserById(db,id) — DB injected as first arg
 │   │   ├── GenerateBonusConfig.ts   # generateBonusConfig(), recalcBonusConfig()
 │   │   ├── GenerateCampaign.ts      # generateCampaign(), texts, audit, optimize (inject AIProvider)
-│   │   ├── GenerateTournament.ts    # generateTournament(), texts, audit, optimize (inject AIProvider)
-│   │   └── GenerateLoyalty.ts       # generateLoyaltyConfig(), recalcLoyaltyConfig(), auditLoyalty(), optimizeLoyalty(), generateLoyaltyMissions()
+│   │   ├── GenerateTournament.ts    # generateTournament(), texts, audit, optimize (inject AIProvider); recommendTournamentGames() — tournament-specific (type/scoring gate + AI rationale)
+│   │   ├── GenerateLoyalty.ts       # generateLoyaltyConfig(), recalcLoyaltyConfig(), auditLoyalty(), optimizeLoyalty(), generateLoyaltyMissions()
+│   │   └── GenerateGameRecommendations.ts # recommendGamesForContext() — deterministic, no-AI CRM game picks (bonus/campaign/loyalty): region+segment+providers → sections. No mechanic gate (unlike recommendTournamentGames).
 │   ├── controllers/                 # All use createXxxController(deps) factory pattern
 │   │   ├── auth.controller.ts       # createAuthController({ db }) — register, login, logout, me; sets/clears httpOnly cookie
 │   │   ├── generate.controller.ts   # createGenerateController()
@@ -104,6 +107,7 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │   ├── tournament.controller.ts # createTournamentController({ ai })
 │   │   ├── loyalty.controller.ts    # createLoyaltyController({ ai }) — generate, recalc, texts, audit, optimize, missions
 │   │   ├── analytics.controller.ts  # createAnalyticsController() — analyze, saveActuals, explain
+│   │   ├── games.controller.ts      # createGamesController() — recommend (no AI deps, deterministic)
 │   │   └── signup.controller.ts     # createSignupController()
 │   ├── services/
 │   │   ├── bonus.service.ts         # generate(), recalc() — thin wrappers
@@ -117,6 +121,7 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │   ├── campaign.routes.ts
 │   │   ├── tournament.routes.ts
 │   │   ├── loyalty.routes.ts        # POST /api/loyalty/generate + /recalc + /texts + /audit + /optimize + /missions
+│   │   ├── games.routes.ts          # POST /api/games/recommend (apiLimiter — no AI call, cheap)
 │   │   ├── signup.routes.ts
 │   │   └── health.routes.ts
 │   ├── middleware/
@@ -139,6 +144,7 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │   ├── tournament.schema.ts     # TournamentGenerateSchema + Input types (Generate/Texts/Audit/Optimize)
 │   │   ├── loyalty.schema.ts        # LoyaltyGenerateSchema + LoyaltyRecalcSchema + LoyaltyMissionsSchema + Input types
 │   │   ├── analysis.schema.ts       # AnalysisSchema + ActualsSchema + ExplainSchema + Input types
+│   │   ├── games.schema.ts          # GamesRecommendSchema { geo, segment, providers?, plat?, uiLang? } + GamesRecommendInput
 │   │   └── signup.schema.ts         # SignupSchema + SignupInput
 │   └── errors/
 │       ├── AppError.ts              # Base error with status + isOperational
@@ -184,7 +190,10 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │   ├── ai-to-campaign.js        # campaignFromAI(), tournamentFromAI()
 │   │   ├── forecast-panel.js        # initForecastPanel(), refreshForecast(), toggleForecastPanel() — imports ../forecast.js
 │   │   └── i18n.js                  # getT() → RU/EN string map
-│   ├── generator.html               # Legacy — 301 → /campaign-generator.html
+│   ├── generator.html               # Unified Generator hub — Bonus / Tournament / Loyalty tabs in one page (forked from campaign-generator.html)
+│   ├── generator.js                 # Bonus tab logic — fork of campaign-generator.js + genSwitchType()/genSetLang()/genToggleGlossary() orchestration
+│   ├── generator-tournament.js      # Tournament tab logic — fork of tournament-generator.js, colliding globals prefixed tg* (e.g. tgDraft, tgShowView)
+│   ├── generator-loyalty.js         # Loyalty tab logic — fork of loyalty-generator.js, colliding globals prefixed ly* (e.g. lyDraft, lyShowView)
 │   ├── privacy.html                 # Privacy Policy (EN/RU)
 │   └── terms.html                   # Terms of Service (EN/RU)
 │   └── dist/                        # Vite output (gitignored except retention-calendar.js)
@@ -217,13 +226,16 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
     ├── domain/forecast.cannibalization.test.js   # matrix symmetry, audienceOverlap, overlapDaysFactor, pairLoss
     ├── domain/forecast.aggregate.test.js         # 0/1/N activities, byDay integrity, pairs ordering
     ├── domain/forecast.parity.test.js            # forecast.js ↔ backend identical Forecast for same inputs
-    ├── domain/recommendGames.test.js             # scoring determinism, type gating (live/slot), geo/segment rules
+    ├── domain/recommendGames.test.js             # scoring determinism, type gating (live/slot), geo/segment rules, optional type/scoring, providers filter
+    ├── domain/games.sections.test.js             # groupGamesBySection bucket correctness, non-exclusive buckets
     ├── domain/compareCampaign.test.js            # percentile bands, flags, currency separation, division-by-zero
     └── integration/
         ├── api.generate.test.js
         ├── api.loyalty.test.js                   # 11 tests
         ├── api.loyalty.missions.test.js          # MockAIProvider fixture, id match, graceful missing ids
+        ├── api.tournament.games.test.js
         ├── api.tournament.optimize.test.js
+        ├── api.games.test.js                     # POST /api/games/recommend — sections, providers filter, validation
         └── security.headers.test.js              # CSP assertions
 ```
 
@@ -269,14 +281,20 @@ Exponential backoff with full jitter. Only retryable errors (429, 5xx, network) 
 
 ## API routes
 
-Only `/api/auth/me` requires a logged-in session (`requireAuth`). Every other `/api/*` route — `/api/generate`, `/api/campaign/*`, `/api/tournament/*`, `/api/loyalty/*`, `/api/reports/*` — is guarded by `optionalAuth`: it attaches `req.user` when a valid `_bt` cookie is present but never rejects an anonymous request. Guests can generate/audit/optimize freely; the account/guest distinction only matters once Phase 2/3 adds server-side saved items (today, saves for both go to browser `localStorage`, so gating generation behind login has no functional effect). `/api/health` and `/api/signup` are unauthenticated too (uptime monitor, marketing lead form). See `src/server/app.ts` for the mount order.
+`/api/auth/me` requires a logged-in session (`requireAuth`); `/api/admin/*` requires an admin (`requireAdmin`). The tool routes — `/api/generate`, `/api/campaign/*`, `/api/tournament/*`, `/api/loyalty/*`, `/api/reports/*`, `/api/games/*` — use `optionalAuth` (attaches `req.user` when a valid `_bt` cookie is present, never rejects anonymous) **plus `requireFeature(x)`**, which gates each on the caller's effective feature access (see **Admin & feature access** below). Guests get `GUEST_FEATURES` (bonus/campaign/tournament/games open; loyalty/reports/calendar → 403); registered users get `plan ⊕ per-user overrides`. `/api/health`, `/api/signup`, and `/api/features` (the effective-feature probe the frontend gates UI on) are unauthenticated. See `src/server/app.ts` for the mount order.
 
 | Method | Path | Limiter | Schema | Handler |
 |--------|------|---------|--------|---------|
 | POST | `/api/auth/register` | authLimiter 5/min | RegisterSchema | `createAuthController().register` — creates user + workspace, sets cookie |
 | POST | `/api/auth/login` | authLimiter 5/min | LoginSchema | `createAuthController().login` — verifies password, sets cookie |
 | POST | `/api/auth/logout` | — | — | `createAuthController().logout` — clears cookie |
-| GET | `/api/auth/me` | — | — (requireAuth) | `createAuthController().me` |
+| GET | `/api/auth/me` | — | — (requireAuth) | `createAuthController().me` — returns `{ user{id,name,email,role}, features }` |
+| GET | `/api/features` | — | — (optionalAuth) | `createAccessController().features` — `{ authenticated, role, plan, features }` effective for caller (guest or user) |
+| GET | `/api/admin/meta` | 30/min + requireAdmin | — | `createAdminController().meta` — `{ features, plans, presets }` for the admin UI |
+| GET | `/api/admin/users` | 30/min + requireAdmin | AdminListQuerySchema (query) | `.list` — `?q=&limit=&offset=` |
+| GET | `/api/admin/users/:id` | ↑ | — | `.get` |
+| PATCH | `/api/admin/users/:id` | ↑ | AdminUpdateUserSchema | `.update` — role/status/plan/features; self- & last-admin guards |
+| DELETE | `/api/admin/users/:id` | ↑ | — | `.remove` — cascades workspace; self- & last-admin guards |
 | POST | `/api/generate` | 30/min | GenerateSchema | `createGenerateController().generate` |
 | POST | `/api/recalc` | 30/min | RecalcSchema | `createGenerateController().recalc` |
 | POST | `/api/campaign/generate` | 20/min | CampaignGenerateSchema | `createCampaignController().generate` |
@@ -294,6 +312,9 @@ Only `/api/auth/me` requires a logged-in session (`requireAuth`). Every other `/
 | POST | `/api/loyalty/audit` | 15/min | LoyaltyAuditSchema | `createLoyaltyController().audit` |
 | POST | `/api/loyalty/optimize` | 15/min | LoyaltyOptimizeSchema | `createLoyaltyController().optimize` |
 | POST | `/api/loyalty/missions` | 15/min | LoyaltyMissionsSchema | `createLoyaltyController().missions` |
+| POST | `/api/games/recommend` | 30/min (apiLimiter) | GamesRecommendSchema | `createGamesController().recommend` — deterministic, no AI call |
+| GET/POST | `/api/saved/:entity` | 30/min (apiLimiter) + requireAuth + requireWorkspace | SaveItemSchema (POST) | `createSavedItemsController().list/save` — upsert by client id |
+| DELETE | `/api/saved/:entity/:id` | ↑ | — | `.remove` — delete by client id. entity ∈ configs\|campaigns\|tournaments\|loyalty-programs\|calendar-events\|calendar-templates |
 | POST | `/api/campaign/actuals` | 30/min | ActualsSchema | `createAnalyticsController().saveActuals` |
 | POST | `/api/campaign/analysis` | 30/min | AnalysisSchema | `createAnalyticsController().analyze` |
 | POST | `/api/campaign/analysis/explain` | 15/min | ExplainSchema | `createAnalyticsController().explain` |
@@ -301,7 +322,7 @@ Only `/api/auth/me` requires a logged-in session (`requireAuth`). Every other `/
 | GET | `/api/health` | — | — | `{ status: 'ok' }` |
 | GET | `/privacy` | — | — | `public/privacy.html` |
 | GET | `/terms` | — | — | `public/terms.html` |
-| GET | `/generator.html` | — | — | 301 → `/campaign-generator.html` |
+| GET | `/generator.html` | — | — | `public/generator.html` — unified Generator hub (Bonus/Tournament/Loyalty tabs), served as a static file |
 
 ---
 
@@ -630,6 +651,19 @@ configurator.html + configurator.js
           missionCostUSD, additionalRevenue3m, avgEarnedPointsPerPlayer, … }
 ```
 
+### Games tab — shared across Bonus / Tournament / Loyalty (Phase 1, 2026-07-07)
+```
+configurator.js (all 3 promo types share this)
+  CS.connectedProviders — localStorage `cfg_providers`; [] = no filter (all 18 providers)
+  → POST /api/games/recommend { geo, segment, providers, uiLang }
+      geo/segment per type: bonus→CS.bonus.{geo,segment}, tournament→CS.tournament.{geo,segment},
+      loyalty→CS.loyalty.{region,segment} (loyalty has no country-level geo — region cluster used directly)
+  ← { sections: { popular, live, fast, highVolatility, mobileFriendly }, scores, region, all }
+      sections are NOT mutually exclusive (a game can appear in several); capped at 8 games each
+  No AI call — deterministic recommendGamesForContext(), same engine as tournament's recommendGames()
+  but with no mechanic gate (type/scoring omitted) since CRM game picks aren't scoped to one mechanic.
+```
+
 ### Legacy Bonus Configurator
 ```
 configurator.html + app.js + configurator-extra.js  ← LEGACY, no longer active
@@ -746,6 +780,7 @@ DATABASE_URL=        # Required — Neon Postgres connection string (postgresql:
 JWT_SECRET=          # Required — min 32 chars, e.g. `openssl rand -hex 32`
 JWT_EXPIRY=          # Default: 7d
 COOKIE_DOMAIN=       # Optional — empty locally, set in prod for the `_bt` auth cookie
+ADMIN_EMAILS=        # Optional — comma-separated emails auto-promoted to role='admin' at register/login (admin bootstrap)
 ```
 
 **Local dev without a real DB:** the server boots and non-DB routes (health, static pages, `/api/generate` if it didn't need auth) work fine with a placeholder `DATABASE_URL` — the Pool is only touched on an actual query (register/login/me). `DATABASE_URL` and `JWT_SECRET` are still required by `EnvSchema` even so (fail-fast on missing config, per existing project convention).
@@ -759,7 +794,7 @@ COOKIE_DOMAIN=       # Optional — empty locally, set in prod for the `_bt` aut
 - **Rate limiting** per endpoint class
 - **requestId middleware**: `x-request-id` on every response
 - **Auth (Phase 1, added 2026-07-02, guest-access revised 2026-07-02, code-review fixes 2026-07-03)**: email+password (bcrypt, 12 rounds), JWT in an httpOnly + Secure(prod/staging) + SameSite=Strict cookie (`_bt`, expiry synced to `JWT_EXPIRY` via `JWT_EXPIRY_MS` — see below). No roles/workspace-members/invites yet — 1 workspace per user, auto-created at registration (see `AUTH_IMPLEMENTATION_PLAN.md`).
-  - Tool routes (`/api/generate`, `/api/campaign/*`, `/api/tournament/*`, `/api/loyalty/*`, `/api/reports/*`) use `optionalAuth`, **not** `requireAuth` — guests can generate/audit/optimize without an account. Only `/api/auth/me` is hard-gated.
+  - Tool routes (`/api/generate`, `/api/campaign/*`, `/api/tournament/*`, `/api/loyalty/*`, `/api/reports/*`, `/api/games/*`) use `optionalAuth` + `requireFeature(x)` — guests reach them without an account but are gated to `GUEST_FEATURES` (see **Admin & feature access**). `/api/auth/me` and `/api/admin/*` are hard-gated.
   - Data persistence (moving `cfgSaved`/`be_campaigns`/`savedTournaments`/`savedLoyaltyPrograms`/`rc_campaigns`/`rc_templates` from localStorage to Postgres) is **not** done yet — that's Phase 2/3 of `AUTH_IMPLEMENTATION_PLAN.md`. Until then, guest and logged-in users save identically to browser `localStorage`; there is intentionally no login-gate on Save/Add-to-Calendar or on the Retention Calendar page. A landing→app login/register interstitial (with a "continue as guest" choice) was considered but deferred until Phase 2/3 actually makes the account/guest distinction functional.
   - **Email normalization**: `auth.schema.ts`'s `EmailSchema` does `.trim().toLowerCase()` before `.email()` — `users.email` has a plain case-sensitive Postgres `UNIQUE` constraint (no citext), so without this, differently-cased emails would create duplicate accounts and logins with a different case than registration would fail.
   - **`db/client.ts`**: `ssl: true` (not `{ rejectUnauthorized: false }`) for `sslmode=require` connection strings — Neon issues publicly-trusted certs, so full TLS chain validation works; disabling it would accept a MITM's self-signed cert. `pool.on('error', ...)` is registered (logs via `logger`) since an unhandled `'error'` on an idle pg client crashes the process.
@@ -768,6 +803,44 @@ COOKIE_DOMAIN=       # Optional — empty locally, set in prod for the `_bt` aut
   - **`requireAuth`/`optionalAuth`** both delegate to `authCookie.ts`'s `resolveUser(req)` — the cookie-read + JWT-verify + `req.user` mapping lives in one place.
 
 **Error response shape**: `{ code: string, message: string }`.
+
+---
+
+## Admin & feature access
+
+**Added 2026-07-07.** Admin panel + per-user feature-access control, forward-compatible with future tariff plans.
+
+**Data model** (migration `003_admin_roles.sql`, applied manually like 001): adds to `users` — `role` (`'user'|'admin'`, default `'user'`), `status` (`'active'|'disabled'`), `plan` (tariff preset key, default `'free'`), `features` (JSONB per-user overrides, default `{}`). All defaulted → existing rows keep full access.
+
+**Layered access resolution** — `src/config/features.ts` (presets) + `src/domain/auth/access.ts` (`resolveFeatureAccess`). Precedence, highest first:
+1. `status='disabled'` → all off
+2. `role='admin'` → all on
+3. per-user override (`features[k]` is a boolean) wins over…
+4. …the plan preset `FEATURE_PRESETS[plan]`
+5. guest (no row) → `GUEST_FEATURES`
+
+`FEATURES = bonus, campaign, tournament, loyalty, games, reports, calendar`. `GUEST_FEATURES` = bonus/campaign/tournament/games on, loyalty/reports/calendar off. `FEATURE_PRESETS.free` = all-on today (registered users unchanged); `pro` is a placeholder — **this is the tariff-plan seam**: adding a tier = add a preset row + a plan option in the admin UI, no enforcement/route/schema changes. Per-user `features` stays an OVERRIDE layer (absent key = inherit plan), so changing a user's plan moves their access wherever no explicit override is set.
+
+**Enforcement (from DB, never the JWT — so changes apply within seconds):**
+- `requireFeature(feature)` (`src/middleware/requireFeature.ts`) — on each tool route. Guest → `GUEST_FEATURES` (no DB hit). Logged-in → `getUserAccessById`, behind a **5s bounded TTL cache** (`ACCESS_TTL_MS`) so the Configurator's per-slider `/api/recalc` burst doesn't re-read the row every call; admin changes still apply within the TTL. Failure handling avoids elevation: `row === null` (deleted user / malformed token `sub` — `getUserAccessById` returns null for a non-UUID id instead of throwing) → treat as guest (safe, no overrides possible); a **thrown** lookup error (transient DB) → **fail closed** 503 `SERVICE_UNAVAILABLE` (a restrictive per-user override could otherwise be bypassed). → 403 `FEATURE_FORBIDDEN`.
+- `requireAdmin` (`src/middleware/requireAdmin.ts`) — self-contained (resolves cookie itself, no upstream optionalAuth). **Fail-closed**: any error/missing-row/non-admin/disabled → 403 `FORBIDDEN`. Sets `req.adminId` for self-protection guards.
+
+**`disabled` is enforced on every authenticated surface, not just tool routes:**
+- **Login** (`loginUser`) — a disabled account is rejected 403 `ACCOUNT_DISABLED` (can't re-mint a session).
+- **`/api/auth/me`** — 403 `ACCOUNT_DISABLED`.
+- **`/api/saved/*`** — `requireActiveUser` (`src/middleware/requireActiveUser.ts`, runs after `requireAuth`, before `requireWorkspace`) → 403 `ACCOUNT_DISABLED`, uncached so revocation is immediate.
+- **Tool routes** — `requireFeature` resolves disabled → all-off → 403 `FEATURE_FORBIDDEN`.
+
+**Admin bootstrap** — `ADMIN_EMAILS` env (comma-separated, normalized via shared `normalizeEmail()`; `isAdminEmail()` in `config/index.ts`). **Register-time only**: listed addresses register straight as `admin`. There is intentionally **no login-time re-sync** — the admin panel is the single source of truth for roles after registration (a login re-sync would silently revert panel demotions and never demote on env removal). Promoting a pre-existing account is done via the panel (or one-time SQL for the very first admin).
+
+**Admin API** — `src/use-cases/AdminUsers.ts` (guards) → `admin.controller.ts` (`createAdminController({ db })`) → `admin.routes.ts` (`router.use(apiLimiter, requireAdmin)`; list uses `validateQuery(AdminListQuerySchema)`). Guards run **inside a transaction** (`updateUser`/`deleteUser` do `SELECT … FOR UPDATE` on the target + lock the active-admin set before the last-admin check) so concurrent demotes/deletes can't race past `LAST_ADMIN` to zero admins. Also can't self-demote/-disable/-delete. `updateUser` stores only overrides differing from the plan preset. Search (`listUsers`) escapes `%`/`_` and uses `ESCAPE '\'`.
+
+**Frontend** — `public/admin.html` + `admin.js` (self-gates via `/api/features`; only a genuine non-admin answer shows the denied screen, transient meta/list errors show a retryable error). `effective()` mirrors backend precedence exactly (**disabled → admin → override → plan**); dirty-detection compares pruned-vs-pruned so a redundant stored override doesn't false-flag a row. `nav-utils.js` `_rtmRenderUserChip` shows an **Admin** link only when `me().role==='admin'`. `/api/auth/me` returns `{ user{…,role}, features }`; `/api/features` returns the effective map for any caller.
+- **`public/feature-gate.js`** — shared frontend gate loaded on loyalty/reports/configurator/generator pages. `FeatureGate.ensure(feature)` (called at each generate handler entry: loyalty `generateProgram`, configurator `onGenerateLoyalty`, reports `doGenerate`) shows a "sign in required" overlay when the feature is off for the caller, instead of the request 403-ing into an opaque error. Cosmetic — the real gate is `requireFeature`.
+
+**Tests**: `access.test.js` (resolve precedence), `accessResolve.disabled.test.js` (uuid-tolerant lookup), `adminUsers.test.js` (guards via a fake Pool+client — no real DB), `api.guestAccess.test.js` (hybrid gating: guest 200 for bonus/campaign/tournament/games, 403 for loyalty/reports, `/api/features` shape, admin 401), `api.disabledUser.test.js` (live-DB: disabled account blocked at login/me/saved/tool routes).
+
+**Not done (future):** billing/subscriptions (Stripe, `plan_expires_at`, status webhooks), an editable `plans` DB table (presets live in code for now), and a plan selector wired to real tiers — all deferred; the seam above absorbs them without schema/enforcement changes.
 
 ---
 
@@ -849,17 +922,19 @@ These are non-obvious facts that have caused bugs; always verify before touching
 
 **`topCashbackRate`** — stored in UI state as percentage integer (e.g., `10`), sent to API divided by 100 (i.e., `0.10`). Schema: `max(0.30)`.
 
+**`src/config/games/catalog.json` provenance** — 160 entries, manually curated from general industry knowledge (real, well-known titles per provider), NOT scraped or licensed from SlotCatalog or provider sites (both explicitly prohibit scraping/reuse in their ToS — see chat history 2026-07-07 for the research). RTP values are generally accurate (publicly disclosed per-game by regulation) but **regions/segments/slotRank are best-effort approximations**, not verified against real per-jurisdiction licensing. Treat as demo/illustrative data — if this ever needs to back real per-operator recommendations, source a real per-provider game feed (SlotCatalog API license, or the operator's own aggregator export) instead of expanding this file further by hand.
+
+**`recommendGames()` `type`/`scoring` are now optional** (generalized 2026-07-07 for the Games tab) — omitting both means no mechanic gate and no scoring-model boost, just region/segment/provider/minBet/mobile/popularity scoring. Tournament call sites (`recommendTournamentGames`) always pass both and are unaffected. The `all` field on the return value is the full filtered+sorted pool (not truncated to top 10 like `primary`/`alternatives`) — use it when grouping into sections, since a top-10 slice can hide entire mechanics (e.g. zero live/crash games if slots dominate the top scores).
+
 ---
 
 ## Pending work
 
-**P0 (auth — `AUTH_IMPLEMENTATION_PLAN.md`, Phase 1 done, 2/3/4 remain):**
-- Neon DB provisioned via Vercel Marketplace, `DATABASE_URL`/`JWT_SECRET`/`JWT_EXPIRY` set on the `bonus-generator` project (Production/Preview/Development) and pulled into local `.env`. `001_initial.sql` applied — `users`/`workspaces` exist. (Initially set up on the wrong project, `bonus-engine` — see Environments section — and fixed 2026-07-03.)
-- Phase 2: `saved_configs`/`ai_campaigns`/`saved_tournaments`/`saved_loyalty_programs`/`calendar_events`/`calendar_templates` tables + CRUD routes — this is also the point where the account/guest distinction becomes functionally real (guests keep localStorage-only saves; accounts get durable Postgres saves)
-- Phase 3: frontend repo-layers (configurator.js, campaign-generator.js, tournament-generator.js, loyalty-generator.js, retention-calendar/repository.js) switched from localStorage to the Phase-2 API
-- Phase 4: one-time localStorage → API migration on first login + integration tests against a real/test DB
-- Landing→app login/register interstitial with a "continue as guest" choice — designed but deliberately deferred until Phase 2/3 (see Security section); revisit then
-- Header UI: show logged-in user's name + logout button (nav-utils.js) — not built yet
+**P0 (auth — `AUTH_IMPLEMENTATION_PLAN.md`, Phases 1–4 DONE 2026-07-07):**
+- ~~Neon DB, Phase 1 auth core~~ — done 2026-07-03 (see Completed log).
+- ~~Phase 2/3/4 (server-side persistence + frontend repo-layers + migration)~~ — done 2026-07-07 (see Completed log + "Server-side persistence" section below).
+- Landing→app login/register interstitial with a "continue as guest" choice — designed but still deferred; the account/guest split is now functionally real (accounts persist to Postgres, guests to localStorage), so this can be revisited. Current UX choice: transparent localStorage fallback for guests, no forced redirect (nav-utils shows a "Sign in" link / user chip instead).
+- Remaining polish: `saved_configs` has no read UI yet (write-only mirror — Configurator never listed cfgSaved); per-workspace `connectedProviders` (still localStorage `cfg_providers`); optional server-side conflict/merge if the same account edits on two devices offline (last-write-wins today via client-id upsert).
 
 **P1 (tests):**
 - Add DK snapshot to `buildConfig.test.js`
@@ -874,6 +949,7 @@ These are non-obvious facts that have caused bugs; always verify before touching
 **P2 (features):**
 - Task A: Projected result per AI recommendation (apply param-change to 5-factor formula, show lift delta)
 - Retention Calendar: read `?rcDate=` query param in tournament-generator.js to pre-fill date from calendar redirect
+- Game recommendations Phase 2: replace hand-curated `catalog.json` with a real per-provider game feed (SlotCatalog API license, or the operator's own aggregator export — see Critical data model pitfalls for why scraping isn't an option), add genre tags/releaseDate/jackpot flag, build full lobby-style sections (New Releases, Jackpots) beyond the current Popular/Live/Fast/Volatility/Mobile buckets, move `connectedProviders` from localStorage to a per-workspace setting once Phase 2/3 auth persistence lands
 
 **P3 (frontend):**
 - Convert `onclick=` handlers to `addEventListener` → remove `scriptSrcAttr: 'unsafe-inline'` from CSP
@@ -888,11 +964,15 @@ These are non-obvious facts that have caused bugs; always verify before touching
 
 ## Completed work log
 
+- ~~**Auth Phases 2–4 (server-side persistence + frontend sync + migration)**~~ — done 2026-07-07. Backend: migration `002_saved_items.sql` (applied to live Neon via `scripts/migrate.ts` — psql isn't installed, runs the `.sql` through the pg pool) creates six uniform per-workspace tables `{id, workspace_id, client_id, data JSONB, created_at, updated_at}` + `UNIQUE(workspace_id, client_id)` — **deviates from the plan's per-column `saved_configs`** (pointless: cfgSaved has no read path) in favour of a uniform blob keyed by the record's own client id. New `src/use-cases/SavedItems.ts` (generic list/upsert/delete over an `ENTITIES` whitelist — table names never come from input), `savedItems.controller.ts`, `savedItems.routes.ts` (single generic `/:entity` + `/:entity/:id`, mounted `/api/saved`, behind `requireAuth`+`requireWorkspace`), `requireWorkspace.ts` (resolves `req.workspaceId` from `req.user.id`, in-memory cached 1:1), `savedItems.schema.ts` (`{id, data}` upsert). Entities: `configs | campaigns | tournaments | loyalty-programs | calendar-events | calendar-templates`. Client id stays the identity → **no server-id reconciliation on the frontend and idempotent migration via `ON CONFLICT`**. Tests: `tests/integration/api.savedItems.test.js` (real DB, graceful-skip if unreachable, self-cleaning). Frontend model = **localStorage stays the working cache; logged-in users additionally mirror every write to the server and hydrate the caches on load**, so reports.js (reads localStorage directly) needs no changes. New `public/repo-http.js` (`window.RetomatRepo`: `isAuthed/pull/mirror/unmirror/hydrate`). `nav-utils.js` owns the whole sync: on load, if authed → **migrate guest localStorage → server once (`migrated_v1` flag), THEN hydrate all six caches, then fire `retomat:synced`** (ordering matters — hydrate before migrate would wipe guest data with an empty server); also renders the header user chip (name + Logout) / "Sign in" link, and `_rtmLogout` clears the caches + `migrated_v1` so a following guest doesn't inherit the account's data. Each page listens for `retomat:synced` and re-renders (generators + twins `generator*.js` + `reports.js` + retention-calendar `loadAll()`). Save/delete sites in configurator.js / campaign-generator.js / tournament-generator.js / loyalty-generator.js **and their `generator*.js` twins** mirror/unmirror; the external "Add to Calendar" writers (which poke `rc_campaigns` directly, bypassing repository.js) also mirror to `calendar-events`. `retention-calendar/repository.js` mirrors writes only (reads stay local; nav-utils owns hydration) — rebuild the bundle after touching it. `repo-http.js` added to all nav-utils pages. Guest access on tool routes unchanged (still `optionalAuth`). Verified end-to-end live (register → me → save → list → calendar-events → guest 401). Note: same-origin fetch already sends the `_bt` cookie by default, so the plan's "add credentials:'include' to every fetch" was unnecessary — only `repo-http.js` sets it explicitly.
 - ~~**Auth Phase 1 (core)**~~ — done 2026-07-02: `users`/`workspaces` tables + `001_initial.sql` (applied to a real Neon DB provisioned via Vercel Marketplace), bcrypt + JWT httpOnly-cookie auth, `authLimiter` 5/min, `login.html`/`register.html`. Verified end-to-end against the live DB (register → me → logout → login → wrong-password rejected).
 - ~~**Auth guest access**~~ — done 2026-07-02, same day as Phase 1: reverted the initial "guard everything" decision. Tool routes (generate/campaign/tournament/loyalty/reports) switched from `requireAuth` to `optionalAuth` — guests can generate/audit/optimize freely. Removed `auth-guard.js` (401→redirect) since it no longer had anything to guard against. Rationale: saved items are still localStorage-only (Phase 2/3 not built), so gating generation behind login had no functional benefit and only added friction — see Security section.
 - ~~**Auth code-review fixes**~~ — done 2026-07-03, from a full code-review of the unpushed auth+landing diff (8 finder agents + verify pass, see Security section for the list): fixed TLS cert validation (`ssl: true`, was `rejectUnauthorized: false`), email case-sensitivity (normalize via `auth.schema.ts`), a registration race condition (unique-violation → 409 instead of 500), cookie/JWT-expiry desync (`JWT_EXPIRY_MS` via the `ms` package). Added `pool.on('error', ...)`, closed a test-coverage gap (`tests/integration/api.guestAccess.test.js` — campaign/tournament/loyalty/reports guest access through the real `app.js`, not a bespoke express instance), and deduped `requireAuth`/`optionalAuth` (→ `authCookie.ts`'s `resolveUser`) and `login.js`/`register.js` (→ shared `auth-form.js` + `.auth-*` classes in `styles.css`).
+- ~~**Admin & feature access**~~ — done 2026-07-07: migration 003 (role/status/plan/features on `users`, applied), layered `resolveFeatureAccess` (`config/features.ts` + `domain/auth/access.ts`), `requireFeature` on all tool routes + `requireAdmin` (fail-closed) on `/api/admin/*`, `ADMIN_EMAILS` bootstrap, admin CRUD API (`AdminUsers.ts` guards: self- & last-admin), `GET /api/features` + `me` enrichment, `public/admin.html`+`admin.js`, nav Admin link. Tariff-plan seam laid in (`FEATURE_PRESETS` + `plan` column) but billing/plan-editing UI deferred. See **Admin & feature access** section.
+  - **Code-review fixes** (same day, from an 8-finder review of the feature): (1) `disabled` now enforced at login/`me`/`/api/saved` (`requireActiveUser`), not only tool routes; (2) `ADMIN_EMAILS` is register-time only — dropped the login re-sync that reverted panel demotions; (3) `requireFeature` fails **closed** (503) on a thrown lookup error and `getUserAccessById` returns null for a non-UUID id, closing a fail-open elevation; (4) added a 5s TTL access cache for the `/api/recalc` hot path; (5) `admin.js` precedence fixed (disabled→admin) + pruned-vs-pruned dirty detection + robust denied/self handling; (6) last-admin guard made transactional (`SELECT … FOR UPDATE`, no TOCTOU); (7) escaped `%`/`_` in admin search; (8) `public/feature-gate.js` gives guests a "sign in" prompt on loyalty/reports instead of an opaque 403. Cleanups: shared `normalizeEmail`, `ALL_ON`/`fill` reuse, `validateQuery` middleware, removed dead `getUserById`.
 - ~~**Unified Configurator**~~ — done: configurator.html + configurator.js (Bonus/Tournament/Loyalty), AI tabs, Economics panels, minD/maxWin overrides
 - ~~**I4 (Loyalty AI)**~~ — done: missions endpoint, narratives, tier-link layer, persistence tests
 - ~~**R3 (CG Basic/Expert toggle)**~~ — done: `cg_expert_mode` localStorage, VIP defaults to expert
 - ~~**R4-B (Audit rule field)**~~ — done: `rule?: string` in AuditResponseSchema, buildAuditPrompt instruction, display in campaign-generator + tournament audit
 - ~~**Economics UX clarity (tasks/ui-clarity-tooltips.md)**~~ — done 2026-06-22: currency fix (SITECUR_TO_USD), card subtitles, "Бонусная нагрузка" rename, scenario table columns, base segment row, abbreviation tooltips (LTV/ROI/RTP/вейджер), scenario dot layout, first-principles breakdown table (computeBonusBreakdown + renderBonusBreakdownTable), F1 nonlinear penalty + F2 effective value recalibration, ROI Платформы vs ROI Бонуса rename, MAX RISK top-level fix, factor table CSS grid alignment
+- ~~**Game recommendations Phase 1 (CRM context)**~~ — done 2026-07-07: catalog expanded 58→160 games (manual curation, see Critical data model pitfalls for provenance caveat); `recommendGames.ts` generalized (type/scoring now optional, `providers?` filter added, `all` field for untruncated pool) and moved `domain/tournament/` → `domain/games/`; new `domain/games/sections.ts` (groupGamesBySection); new `GenerateGameRecommendations.ts` use-case (no AI, deterministic); new `POST /api/games/recommend` route (apiLimiter); new "Games" tab added to Bonus/Tournament/Loyalty in the unified Configurator, with a shared `CS.connectedProviders` checklist (localStorage `cfg_providers`) — see Games tab data-flow section. Phase 2 (real per-provider game feed, genre tags, jackpot/new-release sections, full lobby merchandising) deferred — see Pending work.

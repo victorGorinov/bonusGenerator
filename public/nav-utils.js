@@ -12,11 +12,15 @@ const _NAV_I18N = {
     nav_tournament:  'Tournaments',
     nav_setup_guide: 'Setup Guide',
     nav_loyalty:     'Loyalty Program',
+    nav_generator:   'Generator',
     nav_soon:        'Soon',
     nav_analytics:   'Analytics',
     nav_reports:     'Reports',
     nav_settings:    'Settings',
     nav_back:        '← Back to home',
+    nav_logout:      'Logout',
+    nav_signin:      'Sign in',
+    nav_admin:       'Admin',
     nav_rc_new:      '+ New Campaign',
     nav_rc_ai:       '🤖 AI-Assisted',
     nav_rc_templates:'📄 Templates',
@@ -49,11 +53,15 @@ const _NAV_I18N = {
     nav_tournament:  'Турниры',
     nav_setup_guide: 'Гайд настройки',
     nav_loyalty:     'Лояльность',
+    nav_generator:   'Генератор',
     nav_soon:        'Скоро',
     nav_analytics:   'Аналитика',
     nav_reports:     'Отчёты',
     nav_settings:    'Настройки',
     nav_back:        '← На главную',
+    nav_logout:      'Выйти',
+    nav_signin:      'Войти',
+    nav_admin:       'Админка',
     nav_rc_new:      '+ Новая кампания',
     nav_rc_ai:       '🤖 AI-генерация',
     nav_rc_templates:'📄 Шаблоны',
@@ -153,6 +161,99 @@ function updateAllBadges() {
     });
     updateAllBadges();
   } catch(e) {}
+})();
+
+// ── ACCOUNT SYNC + HEADER ─────────────────────────────────────────────────────
+// For a logged-in user: hydrate the localStorage caches from the server ONCE per
+// browser session (not per page load — that would burn the /api/saved rate limit
+// and risk overwriting an in-flight write), then fire 'retomat:synced' so each
+// page re-renders. Also renders the user chip (name + Logout) / a "Sign in" link
+// into the topbar. Guests are a no-op and keep working localStorage-only.
+// No guest→server migration: accounts start empty (product decision); the first
+// authed load overwrites any leftover guest localStorage with the server copy.
+// Requires repo-http.js.
+
+// [entity, localStorageKey] — must match src/use-cases/SavedItems.ts ENTITIES.
+var _RTM_COLLECTIONS = [
+  ['configs',            'cfgSaved'],
+  ['campaigns',          'be_campaigns'],
+  ['tournaments',        'savedTournaments'],
+  ['loyalty-programs',   'savedLoyaltyPrograms'],
+  ['calendar-events',    'rc_campaigns'],
+  ['calendar-templates', 'rc_templates'],
+];
+
+var _RTM_HYDRATED_KEY = 'rtm_hydrated_v1'; // sessionStorage — one hydrate per session
+
+function _rtmHydrateAll() {
+  // Independent GETs — run them in parallel, not 6 serial round-trips.
+  return Promise.all(_RTM_COLLECTIONS.map(function (c) {
+    return window.RetomatRepo.hydrate(c[0], c[1]);
+  }));
+}
+
+async function _rtmSync() {
+  if (!window.RetomatRepo) return;
+  try {
+    if (!(await window.RetomatRepo.isAuthed())) return;
+    // Already hydrated this session? localStorage still holds that copy across
+    // same-tab navigations, so skip the network work and don't re-fire the event.
+    try { if (sessionStorage.getItem(_RTM_HYDRATED_KEY)) return; } catch (e) {}
+    await _rtmHydrateAll();                       // server → localStorage caches
+    try { sessionStorage.setItem(_RTM_HYDRATED_KEY, '1'); } catch (e) {}
+    updateAllBadges();
+    window.dispatchEvent(new CustomEvent('retomat:synced'));
+  } catch (e) {}
+}
+
+async function _rtmLogout() {
+  try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch (e) {}
+  // Clear the mirrored caches + session hydrate flag so a following guest doesn't
+  // see the previous account's data and the next login re-hydrates cleanly.
+  try {
+    _RTM_COLLECTIONS.forEach(function (c) { localStorage.removeItem(c[1]); });
+    sessionStorage.removeItem(_RTM_HYDRATED_KEY);
+  } catch (e) {}
+  location.href = '/login.html';
+}
+window._rtmLogout = _rtmLogout;
+
+async function _rtmRenderUserChip() {
+  if (!window.RetomatRepo) return;
+  var user = null;
+  try { user = await window.RetomatRepo.me(); } catch (e) {} // shared /api/auth/me probe
+  var host = document.querySelector('.topbar-right') || document.querySelector('.nav-footer');
+  if (!host) return;
+  var existing = document.getElementById('rtm-user-chip');
+  if (existing) existing.remove();
+  var lang = (function () { try { return localStorage.getItem('bonusLang') || 'en'; } catch (e) { return 'en'; } })();
+  var t = _NAV_I18N[lang] || _NAV_I18N.en;
+  var chip = document.createElement('span');
+  chip.id = 'rtm-user-chip';
+  chip.style.cssText = 'display:inline-flex;align-items:center;gap:8px;margin-right:10px;font-size:.72rem;color:var(--muted,#8892a4)';
+  if (user) {
+    // Admin link surfaces only for role='admin' (role comes from /api/auth/me, DB-fresh).
+    var adminLink = user.role === 'admin'
+      ? '<a href="/admin.html" data-i18n="nav_admin" style="color:var(--accent,#a0b0ff);font-weight:700;text-decoration:none">' + t.nav_admin + '</a>'
+      : '';
+    chip.innerHTML =
+      adminLink +
+      '<span title="' + (user.email || '') + '" style="font-weight:600;color:var(--text,#e8eaf0)">' +
+      (user.name || user.email || 'Account') + '</span>' +
+      '<button type="button" id="rtm-logout-btn" data-i18n="nav_logout" style="background:none;border:1px solid var(--border,#1e2740);color:inherit;' +
+      'border-radius:100px;padding:2px 10px;font-size:.68rem;font-weight:700;cursor:pointer;font-family:inherit">' + t.nav_logout + '</button>';
+  } else {
+    chip.innerHTML = '<a href="/login.html" data-i18n="nav_signin" style="color:var(--accent,#a0b0ff);font-weight:700;text-decoration:none">' + t.nav_signin + '</a>';
+  }
+  host.insertBefore(chip, host.firstChild);
+  var btn = document.getElementById('rtm-logout-btn');
+  if (btn) btn.addEventListener('click', _rtmLogout);
+}
+
+(function () {
+  function boot() { _rtmSync(); _rtmRenderUserChip(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
 })();
 
 // ── GLOBAL WELCOME POPUP ──────────────────────────────────────────────────────

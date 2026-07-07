@@ -4,7 +4,7 @@ import { buildTournamentAuditPrompt }     from '../ai/prompts/tournament-audit.p
 import { buildGamesPrompt }               from '../ai/prompts/tournament-games.prompt.js';
 import { buildTournamentOptimizePrompt }  from '../ai/prompts/tournament-optimize.prompt.js';
 import { parseTournamentTextsResponse, parseTournamentAuditResponse, parseGamesResponse, parseTournamentOptimizeResponse } from '../ai/parser.js';
-import { recommendGames }                 from '../domain/tournament/recommendGames.js';
+import { recommendGames }                 from '../domain/games/recommendGames.js';
 import { tournamentBenchmarks }           from '../domain/tournament/benchmarks.js';
 import { GEO_CFG }                        from '../domain/campaign/scenarios.js';
 import type { TournamentGenerateInput, TournamentTextsInput, TournamentAuditInput, TournamentGamesInput, TournamentOptimizeInput } from '../validation/tournament.schema.js';

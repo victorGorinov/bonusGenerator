@@ -38,13 +38,18 @@ const MECHANIC_TO_TYPE = {
  * @returns {import('./types.js').Campaign}
  */
 export function campaignFromAI(aiResult, params) {
-  const mechanic   = aiResult.mechanic || aiResult.mechanicType || '';
-  const type       = MECHANIC_TO_TYPE[mechanic.toLowerCase()] || 'custom';
+  // The API returns `mechanic` as the full config OBJECT and `mechanicType` as the
+  // string tag ("reload", "welcome", …). Use the string for the type lookup/label —
+  // calling .toLowerCase() on the object throws and blows up the whole flow.
+  const mechanicType = aiResult.mechanicType
+    || (typeof aiResult.mechanic === 'string' ? aiResult.mechanic : '')
+    || '';
+  const type       = MECHANIC_TO_TYPE[mechanicType.toLowerCase()] || 'custom';
   const startDate  = nextMonday();
   const endDate    = addDays(startDate, 6);
 
   return {
-    title:      `${mechanic || 'Campaign'} · ${(params.geo || '').toUpperCase()} / ${params.segment || 'all'}`,
+    title:      `${mechanicType || 'Campaign'} · ${(params.geo || '').toUpperCase()} / ${params.segment || 'all'}`,
     type,
     segment:    params.segment   || 'all',
     geo:        params.geo       || '',
@@ -52,7 +57,7 @@ export function campaignFromAI(aiResult, params) {
     endDate,
     status:     'draft',
     brands:     ['default'],
-    mechanic,
+    mechanic:   mechanicType,
     rewards:    extractRewards(aiResult),
     econ:       aiResult.econ || null,
     sourceType: 'campaign_generator',

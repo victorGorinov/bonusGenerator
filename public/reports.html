@@ -214,14 +214,11 @@ select.form-input{cursor:pointer}
   </div>
   <nav class="sb-nav">
     <div class="nav-lbl"><span data-tr-en>Main</span><span data-tr-ru>Главное</span></div>
-    <a href="/retention-calendar.html" class="nav-item"><span class="nav-icon">📅</span><span data-tr-en>Retention Calendar</span><span data-tr-ru>Календарь</span></a>
     <a href="/campaign-generator.html" class="nav-item"><span class="nav-icon">📊</span><span data-tr-en>Dashboard</span><span data-tr-ru>Дашборд</span></a>
+    <a href="/retention-calendar.html" class="nav-item"><span class="nav-icon">📅</span><span data-tr-en>Retention Calendar</span><span data-tr-ru>Календарь</span></a>
     <div class="nav-lbl" style="margin-top:6px"><span data-tr-en>Tools</span><span data-tr-ru>Инструменты</span></div>
     <a href="/configurator.html" class="nav-item"><span class="nav-icon">⚙️</span> Configurator</a>
-    <a href="/campaign-generator.html?view=offer-gen" class="nav-item"><span class="nav-icon">🚀</span><span data-tr-en>Bonuses</span><span data-tr-ru>Бонусы</span><span class="nav-badge" id="nav-offer-gen-badge" style="display:none"></span></a>
-    <a href="/tournament-generator.html?view=list" class="nav-item" id="nav-tourn-gen"><span class="nav-icon">🏆</span><span data-tr-en>Tournaments</span><span data-tr-ru>Турниры</span><span class="nav-chevron">▸</span><span class="nav-badge" id="nav-tourn-gen-badge" style="display:none"></span></a>
-    <a href="/tournament-generator.html#setup" class="nav-item nav-sub" id="nav-setup-guide"><span class="nav-icon" style="font-size:11px;opacity:.55">└</span><span data-tr-en>Setup Guide</span><span data-tr-ru>Гайд настройки</span></a>
-    <a href="/loyalty-generator.html" class="nav-item"><span class="nav-icon">⭐</span><span data-tr-en>Loyalty Program</span><span data-tr-ru>Лояльность</span><span class="nav-badge" id="nav-loyalty-badge" style="display:none"></span></a>
+    <a href="/generator.html" class="nav-item"><span class="nav-icon">🧩</span><span data-tr-en>Generator</span><span data-tr-ru>Генератор</span></a>
     <div class="nav-lbl" style="margin-top:6px"><span data-tr-en>Analytics</span><span data-tr-ru>Аналитика</span></div>
     <a href="/reports.html" class="nav-item active"><span class="nav-icon">📋</span><span data-tr-en>Reports</span><span data-tr-ru>Отчёты</span><span class="nav-badge" id="nav-reports-badge" style="display:none"></span></a>
     <button class="nav-item off"><span class="nav-icon">⚙️</span><span data-tr-en>Settings</span><span data-tr-ru>Настройки</span></button>
@@ -249,6 +246,8 @@ select.form-input{cursor:pointer}
 <div class="toast" id="toast"></div>
 
 <script src="/nav-utils.js"></script>
+<script src="/repo-http.js"></script>
+<script src="/feature-gate.js"></script>
 <script type="module" src="/forecast.js"></script>
 <script src="/reports.js"></script>
 <script>

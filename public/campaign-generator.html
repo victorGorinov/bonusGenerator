@@ -343,14 +343,11 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   </div>
   <nav class="sb-nav">
     <div class="nav-lbl"><span data-tr-en>Main</span><span data-tr-ru>Главное</span></div>
-    <a href="/retention-calendar.html" class="nav-item"><span class="nav-icon">📅</span><span data-tr-en>Retention Calendar</span><span data-tr-ru>Календарь</span></a>
     <button class="nav-item" onclick="showView('dashboard')"><span class="nav-icon">📊</span><span data-tr-en>Dashboard</span><span data-tr-ru>Дашборд</span></button>
+    <a href="/retention-calendar.html" class="nav-item"><span class="nav-icon">📅</span><span data-tr-en>Retention Calendar</span><span data-tr-ru>Календарь</span></a>
     <div class="nav-lbl" style="margin-top:6px"><span data-tr-en>Tools</span><span data-tr-ru>Инструменты</span></div>
     <a class="nav-item" href="/configurator.html"><span class="nav-icon">⚙️</span><span>Configurator</span></a>
-    <a class="nav-item" href="/campaign-generator.html?view=offer-gen"><span class="nav-icon">🚀</span><span data-tr-en>Bonuses</span><span data-tr-ru>Бонусы</span><span class="nav-badge" id="nav-offer-gen-badge" style="display:none"></span></a>
-    <a class="nav-item" href="/tournament-generator.html?view=list"><span class="nav-icon">🏆</span><span data-tr-en>Tournaments</span><span data-tr-ru>Турниры</span><span class="nav-chevron">▸</span><span class="nav-badge" id="nav-tourn-gen-badge" style="display:none"></span></a>
-    <a class="nav-item nav-sub" href="/tournament-generator.html#setup"><span class="nav-icon" style="font-size:11px;opacity:.55">└</span><span data-tr-en>Setup Guide</span><span data-tr-ru>Гайд настройки</span></a>
-    <a class="nav-item" href="/loyalty-generator.html"><span class="nav-icon">⭐</span><span data-tr-en>Loyalty Program</span><span data-tr-ru>Лояльность</span><span class="nav-badge" id="nav-loyalty-badge" style="display:none"></span></a>
+    <a class="nav-item" href="/generator.html"><span class="nav-icon">🧩</span><span data-tr-en>Generator</span><span data-tr-ru>Генератор</span></a>
     <div class="nav-lbl" style="margin-top:6px"><span data-tr-en>Analytics</span><span data-tr-ru>Аналитика</span></div>
     <a href="/reports.html" class="nav-item"><span class="nav-icon">📋</span><span data-tr-en>Reports</span><span data-tr-ru>Отчёты</span><span class="nav-badge" id="nav-reports-badge" style="display:none"></span></a>
     <button class="nav-item off"><span class="nav-icon">⚙️</span><span data-tr-en>Settings</span><span data-tr-ru>Настройки</span></button>
@@ -758,7 +755,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
                 <div class="sum-row"><span class="sr-l" data-i18n="s5_sum_channels">Каналы</span><span class="sr-v">Push · Email · SMS</span></div>
                 <div style="margin-top:13px;display:flex;flex-direction:column;gap:8px">
                   <button class="btn btn-primary" style="width:100%" onclick="finishCampaign()" data-i18n="btn_create_camp">✓ Создать кампанию</button>
-                  <button class="btn btn-outline" style="width:100%" onclick="addCampaignToCalendar()">📅 <span data-i18n="btn_add_calendar">Add to Calendar</span></button>
                 </div>
               </div>
             </div>
@@ -808,7 +804,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
         <div class="det-acts">
           <button class="btn btn-outline btn-sm" onclick="duplicateCampaign()" data-i18n="det_dup">⎘ Дублировать</button>
           <button class="btn btn-outline btn-sm" onclick="editCampaign()" data-i18n="det_edit">✏ Редактировать</button>
-          <button class="btn btn-outline btn-sm" onclick="addDetailToCalendar()" data-i18n="det_cal">📅 В календарь</button>
+          <a class="btn btn-outline btn-sm" href="/retention-calendar.html" data-i18n="det_cal">📅 Открыть в календаре</a>
           <select id="det-status" class="form-select" style="font-size:.78rem;padding:5px 10px;height:30px" onchange="detailSetStatus(this.value)">
             <option value="draft"  data-i18n="badge_draft">Черновик</option>
             <option value="active" data-i18n="badge_active">Активна</option>
@@ -854,6 +850,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 </div>
 
 <script src="/nav-utils.js"></script>
+<script src="/repo-http.js"></script>
 <script src="/campaign-generator.js"></script>
 <script>
 document.addEventListener('click', function(e) {

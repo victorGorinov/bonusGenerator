@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Users & Access — Retomat</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+  .adm-body { background:#0f1115; color:#e6e8ee; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; margin:0; min-height:100vh; }
+  .adm-wrap { max-width:1180px; margin:0 auto; padding:28px 20px 80px; }
+  .adm-top { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:22px; }
+  .adm-logo { font-size:20px; font-weight:700; letter-spacing:.3px; }
+  .adm-logo span { color:#d4af37; }
+  .adm-h { font-size:14px; color:#9aa0ac; }
+  .adm-tools { display:flex; gap:10px; align-items:center; }
+  .adm-tools input { background:#171a21; border:1px solid #262b36; color:#e6e8ee; border-radius:8px; padding:8px 11px; font-size:13px; min-width:220px; }
+  .adm-btn { background:#1d222c; border:1px solid #2b313d; color:#e6e8ee; border-radius:8px; padding:8px 13px; font-size:13px; cursor:pointer; }
+  .adm-btn:hover { border-color:#3a4150; }
+  .adm-btn.gold { background:#d4af37; color:#171a21; border-color:#d4af37; font-weight:600; }
+  .adm-btn.danger { color:#ff8a8a; border-color:#4a2b2b; }
+  .adm-btn.danger:hover { background:#2a1818; }
+  .adm-btn:disabled { opacity:.45; cursor:default; }
+  .adm-lang { font-size:12px; color:#9aa0ac; cursor:pointer; padding:4px 8px; border-radius:6px; }
+  .adm-lang.active { color:#d4af37; }
+  .adm-msg { padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:16px; display:none; }
+  .adm-msg.err { background:#2a1818; color:#ff9d9d; display:block; }
+  .adm-msg.ok  { background:#16241a; color:#8fe0a4; display:block; }
+  .adm-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .adm-table th { text-align:left; color:#8a90a0; font-weight:500; font-size:11px; text-transform:uppercase; letter-spacing:.5px; padding:0 10px 10px; border-bottom:1px solid #232833; }
+  .adm-table td { padding:12px 10px; border-bottom:1px solid #1b1f28; vertical-align:top; }
+  .adm-table tr:hover td { background:#141821; }
+  .adm-user b { display:block; }
+  .adm-user span { color:#8a90a0; font-size:12px; }
+  .adm-badge { display:inline-block; font-size:10px; padding:2px 7px; border-radius:20px; margin-top:4px; }
+  .adm-badge.admin { background:#3a2f12; color:#e8c766; }
+  .adm-badge.disabled { background:#3a1e1e; color:#ff9d9d; }
+  select.adm-sel { background:#171a21; border:1px solid #262b36; color:#e6e8ee; border-radius:7px; padding:6px 8px; font-size:12px; }
+  .adm-feats { display:grid; grid-template-columns:repeat(2,minmax(90px,1fr)); gap:3px 12px; }
+  .adm-feats label { display:flex; align-items:center; gap:6px; font-size:12px; color:#c7ccd6; cursor:pointer; }
+  .adm-feats input { accent-color:#d4af37; }
+  .adm-actions { display:flex; flex-direction:column; gap:6px; }
+  .adm-empty { text-align:center; color:#8a90a0; padding:40px; }
+  .adm-dirty td { background:#191d16 !important; }
+  a.adm-back { color:#9aa0ac; text-decoration:none; font-size:13px; }
+  a.adm-back:hover { color:#d4af37; }
+</style>
+</head>
+<body class="adm-body">
+  <div class="adm-wrap">
+    <div class="adm-top">
+      <div>
+        <div class="adm-logo">Reto<span>mat</span> · <span id="t-title">Admin</span></div>
+        <div class="adm-h" id="t-sub">Users &amp; feature access</div>
+      </div>
+      <div class="adm-tools">
+        <input type="search" id="adm-search" placeholder="Search email / name…">
+        <span class="adm-lang" data-lang="en">EN</span>
+        <span class="adm-lang" data-lang="ru">RU</span>
+        <a class="adm-back" href="/retention-calendar.html">← <span id="t-back">Back</span></a>
+      </div>
+    </div>
+
+    <div class="adm-msg" id="adm-msg"></div>
+
+    <div id="adm-content"><div class="adm-empty" id="t-loading">Loading…</div></div>
+  </div>
+  <script type="module" src="/admin.js"></script>
+</body>
+</html>

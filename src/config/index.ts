@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import 'dotenv/config';
+import { normalizeEmail } from '../domain/auth/email.js';
 
 const EnvSchema = z.object({
   ANTHROPIC_API_KEY: z.string().min(10, 'ANTHROPIC_API_KEY is required'),
@@ -11,6 +12,9 @@ const EnvSchema = z.object({
   JWT_SECRET:        z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   JWT_EXPIRY:        z.string().default('7d'),
   COOKIE_DOMAIN:     z.string().optional(),
+  // Comma-separated emails auto-promoted to role='admin' at register/login.
+  // Bootstraps the first admin without a manual SQL UPDATE in prod.
+  ADMIN_EMAILS:      z.string().default(''),
 });
 
 const _env = EnvSchema.safeParse(process.env);
@@ -32,4 +36,15 @@ export const COOKIE_DOMAIN     = ENV.COOKIE_DOMAIN;
 
 export const AI_MODEL   = 'claude-haiku-4-5-20251001' as const;
 export const AI_TIMEOUT = 30_000;
+
+// Normalized via the shared normalizeEmail() (same transform auth.schema.ts
+// applies), so a listed address matches regardless of the casing it was
+// registered with.
+const ADMIN_EMAIL_SET = new Set(
+  ENV.ADMIN_EMAILS.split(',').map((e) => normalizeEmail(e)).filter(Boolean),
+);
+
+export function isAdminEmail(email: string): boolean {
+  return ADMIN_EMAIL_SET.has(normalizeEmail(email));
+}
 

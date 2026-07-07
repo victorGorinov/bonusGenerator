@@ -1,7 +1,8 @@
 import type { Pool } from 'pg';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { AppError } from '../errors/AppError.js';
-import { registerUser, loginUser, getUserById } from '../use-cases/Auth.js';
+import { registerUser, loginUser, getUserAccessById } from '../use-cases/Auth.js';
+import { resolveFeatureAccess } from '../domain/auth/access.js';
 import { signAuthToken, JWT_EXPIRY_MS } from '../domain/auth/jwt.js';
 import { AUTH_COOKIE } from '../middleware/requireAuth.js';
 import { ENV, COOKIE_DOMAIN } from '../config/index.js';
@@ -49,10 +50,15 @@ export function createAuthController({ db }: Deps) {
       if (!req.user) throw new AppError('Authentication required', 401, 'UNAUTHENTICATED');
       // Re-fetch rather than trusting req.user (decoded from the JWT): catches
       // an account deleted after the token was issued (404 below) and returns
-      // name/email fresher than a cookie that can be stale for up to JWT_EXPIRY.
-      const user = await getUserById(db, req.user.id);
-      if (!user) throw new AppError('User not found', 404, 'NOT_FOUND');
-      res.json({ user });
+      // role/features/name/email fresher than a cookie that can be stale for up
+      // to JWT_EXPIRY (so an admin's role/access change reflects on next load).
+      const row = await getUserAccessById(db, req.user.id);
+      if (!row) throw new AppError('User not found', 404, 'NOT_FOUND');
+      if (row.status === 'disabled') throw new AppError('Account disabled', 403, 'ACCOUNT_DISABLED');
+      res.json({
+        user:     { id: row.id, name: row.name, email: row.email, role: row.role },
+        features: resolveFeatureAccess(row),
+      });
     }),
   };
 }
