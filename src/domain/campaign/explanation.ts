@@ -1,4 +1,5 @@
 import { SCENARIO_MSG, SCENARIO_MSG_EN } from './scenarios.js';
+import { getBenchmark } from '../../config/benchmarks/bonusBenchmarks.js';
 
 type BonusCfg = Record<string, unknown>;
 
@@ -12,6 +13,11 @@ export function campaignExplanation(scenarioId: string, mechanicType: string, cf
   const licStr = lic === 'ukgc' ? 'UKGC' : lic === 'mga' ? 'MGA' : 'Curaçao';
   const r      = cfg['r'] as string;
   const wager  = cfg['wager'] as Record<string, unknown> | undefined;
+  const wW     = (wager?.['wW'] as number) || 35;
+  // Honest wager rationale: the wager is a geo/license baseline, NOT a model-optimised
+  // value. Surface the recommended range instead of over-claiming "optimal".
+  const wBench = getBenchmark('w_wager', r, lic);
+  const wRange = wBench ? `${wBench.band.min}–${wBench.band.max}×` : null;
 
   if (isEn) {
     const regMap: Record<string, string> = { eu:`EU/${licStr}`, cis:'CIS', crypto:'Crypto', mn:'Mongolia', latam:'LatAm', sweep:'USA Sweep' };
@@ -36,7 +42,9 @@ export function campaignExplanation(scenarioId: string, mechanicType: string, cf
     }
     const wStr = mechanicType === 'cashback'
       ? 'Cashback without wagering increases the player trust score and reduces complaints by 40%'
-      : `Wagering ×${wager?.['wW'] || 35} calculated via Truncated Normal — optimal balance of payouts and margin`;
+      : wRange
+        ? `Wagering ×${wW} — baseline for ${regStr}; recommended range ${wRange}`
+        : `Wagering ×${wW} — baseline for ${regStr}/${licStr}`;
     return [m1, m2, `Parameters adapted for ${regStr} region and licensing requirements`, wStr];
   }
 
@@ -62,7 +70,9 @@ export function campaignExplanation(scenarioId: string, mechanicType: string, cf
   }
   const wStr = mechanicType === 'cashback'
     ? 'Cashback без вейджера повышает trust score игрока и снижает жалобы на 40%'
-    : `Вейджер ×${wager?.['wW'] || 35} рассчитан по Truncated Normal — оптимальный баланс выплат и маржи`;
+    : wRange
+      ? `Вейджер ×${wW} — baseline для ${regStr}; рекомендуемый диапазон ${wRange}`
+      : `Вейджер ×${wW} — baseline для ${regStr}/${licStr}`;
   return [m1, m2, `Параметры адаптированы под регион ${regStr} и лицензионные требования`, wStr];
 }
 

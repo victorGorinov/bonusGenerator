@@ -166,7 +166,7 @@ describe('buildConfig — EU/DGA (Denmark)', () => {
   const cfg = buildConfig({ ...eu, lic: 'dga', sitecur: 'DKK', depcur: 'DKK' });
 
   it('caps welcome maxB ≤ 1000 DKK',    () => expect(cfg.welcome.maxB).toBeLessThanOrEqual(1000));
-  it('wW = 25 (DGA market practice)',    () => expect(cfg.wager.wW).toBe(25));
+  it('wW = 10 (DGA legal cap, was mislabelled 25)', () => expect(cfg.wager.wW).toBe(10));
   it('NDB validity = 60 days',           () => expect(cfg.ndb.days).toBe(60));
   it('reg strings present',              () => expect(cfg.reg).toHaveLength(4));
 });

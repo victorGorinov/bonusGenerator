@@ -39,14 +39,17 @@ export const EU = {
       reg:     ['reg_ukgc_1', 'reg_ukgc_2', 'reg_ukgc_3', 'reg_ukgc_4', 'reg_ukgc_5', 'reg_ukgc_6'] as string[],
     },
     // Denmark — Spillemyndigheden (DGA) license
-    // Statutory hard cap: 1 000 DKK max bonus per offer, min 60-day validity for wagering
-    // Market practice wagering: 25x (range 10–35x); ROFUS check mandatory before bonus award
+    // Statutory hard caps (verified 2026-07-19, sources: iclg Denmark 2026, SCCG):
+    //   · Max bonus 1 000 DKK per offer
+    //   · Wagering requirement MUST NOT exceed 10x (deposit+bonus) — legal ceiling, not market practice
+    //   · Min 60-day validity for wagering; ROFUS check mandatory before bonus award
+    // (Previously mislabelled here as "25x market practice" — corrected to the 10x legal cap.)
     // 2025 DGA update: T&Cs must appear in same font size as the promotional offer
     dga: {
       welcome: { maxBMin: 200, maxBMax: 1000 },
-      ndb:     { type: 'fs_restricted' as string, amt: 0, ndCur: 'FS', wager: 20, maxW_x: 3, fs: 20, days: 60, note: 'dga_note' },
+      ndb:     { type: 'fs_restricted' as string, amt: 0, ndCur: 'FS', wager: 10, maxW_x: 3, fs: 20, days: 60, note: 'dga_note' },
       reload:  { maxBMax: 500, fs: 25 },
-      wager:   { wW: 25, wN: 30, wF: 25, mb: 'v_dga_max_bet', days: 60 },
+      wager:   { wW: 10, wN: 10, wF: 10, mb: 'v_dga_max_bet', days: 60 },
       dep2:    { maxBMulti: 3, maxBMin: 0, maxBMax: 750, fs: 30 },
       dep3:    { maxBMulti: 2, maxBMin: 0, maxBMax: 500, fs: 20 },
       reg:     ['reg_dga_1', 'reg_dga_2', 'reg_dga_3', 'reg_dga_4'] as string[],

@@ -2,11 +2,20 @@ import { truncNormalPayout }          from './payout.js';
 import { GEO }                        from '../../config/geo/index.js';
 import { GLOBAL_LICENSE_OVERRIDES }   from '../../config/geo/global-licenses.js';
 import { CHAIN_PROGRESSION }          from './chainModel.js';
+import { LICENSE_WAGER_CAP }          from '../../config/benchmarks/bonusBenchmarks.js';
 
 type GeoValue = (typeof GEO)[keyof typeof GEO];
 
 function clamp(val: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, val));
+}
+
+// Clamp a wager multiple to the license's legal ceiling (UK/DK 10×), applied to ALL bonus
+// types. Single source of truth is LICENSE_WAGER_CAP so the generated values match the UI
+// benchmark bands. No-op for licenses without a cap.
+function capLicenseWager(v: number, license: string): number {
+  const cap = LICENSE_WAGER_CAP[license];
+  return cap != null ? Math.min(v, cap) : v;
 }
 
 function buildWelcome(geo: GeoValue, dep: number, cur: string, license: string): Record<string, unknown> {
@@ -75,12 +84,15 @@ function buildWager(geo: GeoValue, rt: number, license: string): Record<string, 
   const licCfg  = (geo as Record<string, unknown>)['licenses'] as Record<string, Record<string, unknown>> | undefined;
   const ov      = (licCfg?.[license]?.['wager'] ?? {}) as Record<string, unknown>;
   const globalOv = (GLOBAL_LICENSE_OVERRIDES[license]?.wager ?? {}) as Record<string, unknown>;
+  // Regulatory cap applies to every wager field, not just welcome — otherwise reload (wR) etc.
+  // silently inherit an above-ceiling base value (e.g. DGA/UKGC reload would keep 25× > 10×).
+  const cap = (v: unknown) => (typeof v === 'number' ? capLicenseWager(v, license) : v);
   return {
     model: 'standard',
-    wW: ov['wW'] ?? globalOv['wW'] ?? base['wW'],
-    wN: ov['wN'] ?? globalOv['wN'] ?? base['wN'],
-    wR: ov['wR'] ?? globalOv['wR'] ?? base['wR'],
-    wF: ov['wF'] ?? globalOv['wF'] ?? base['wF'],
+    wW: cap(ov['wW'] ?? globalOv['wW'] ?? base['wW']),
+    wN: cap(ov['wN'] ?? globalOv['wN'] ?? base['wN']),
+    wR: cap(ov['wR'] ?? globalOv['wR'] ?? base['wR']),
+    wF: cap(ov['wF'] ?? globalOv['wF'] ?? base['wF']),
     mb: ov['mb'] ?? globalOv['mb'] ?? base['mb'],
     days: base['days'], basis: base['basis'], games: base['games'], gameRtp: rt,
   };
@@ -123,7 +135,7 @@ function buildDep2(geo: GeoValue, dep: number, cur: string, wMinD: number, wager
   const maxBMax   = ov['maxBMax']   ?? (d['maxBMax'] as number);
   const fs        = ov['fs']        ?? (d['fs'] as number);
   const maxB = clamp(Math.round(dep * maxBMulti), maxBMin, maxBMax);
-  return { type: 'match', pct: d['pct'], maxB, minD: wMinD, cur: d['cur'] ?? cur, fs, days: d['days'] ?? 30, wager: wagerWW, code: 'DEP2', trigger: 'v_2nd_purchase' };
+  return { type: 'match', pct: d['pct'], maxB, minD: wMinD, cur: d['cur'] ?? cur, fs, days: d['days'] ?? 30, wager: capLicenseWager(wagerWW, license), code: 'DEP2', trigger: 'v_2nd_purchase' };
 }
 
 function buildDep3(geo: GeoValue, dep: number, cur: string, wMinD: number, wagerWW: number, license: string): Record<string, unknown> {
@@ -139,7 +151,9 @@ function buildDep3(geo: GeoValue, dep: number, cur: string, wMinD: number, wager
   const fs        = ov['fs']        ?? (d['fs'] as number);
   const wagerOffset = (d['wagerOffset'] as number) ?? 0;
   const maxB = clamp(Math.round(dep * maxBMulti), maxBMin, maxBMax);
-  return { type: 'match', pct: d['pct'], maxB, minD: wMinD, cur: d['cur'] ?? cur, fs, days: d['days'] ?? 30, wager: Math.max(25, wagerWW + wagerOffset), code: 'DEP3', trigger: 'v_3rd_purchase' };
+  // The 25× floor is a "don't set the chain wager too low" default; the license cap must still
+  // win over it (else DGA/UKGC dep3 = max(25, …) = 25 > the 10× legal ceiling).
+  return { type: 'match', pct: d['pct'], maxB, minD: wMinD, cur: d['cur'] ?? cur, fs, days: d['days'] ?? 30, wager: capLicenseWager(Math.max(25, wagerWW + wagerOffset), license), code: 'DEP3', trigger: 'v_3rd_purchase' };
 }
 
 export interface BuildConfigParams {

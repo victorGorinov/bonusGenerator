@@ -127,10 +127,29 @@ const CFG_I18N = {
     mech_chain:'Deposit Chain', mech_dep2:'2nd Deposit Bonus', mech_dep3:'3rd Deposit Bonus',
     mech_reload:'Reload Bonus', mech_cashback:'Cashback', mech_fs:'Free Spins',
     chain_hint:'Dep2 cohort: 45% of Welcome · Dep3: 25%',
-    match_lbl:'Match %', wager_lbl:'Wager ×', max_bonus_lbl:'Max Bonus',
+    match_lbl:'Match', wager_lbl:'Wager', max_bonus_lbl:'Max Bonus',
     min_dep_lbl:'Min Deposit', max_win_lbl:'Max Win', zero_means_no_cap:'0 = no cap',
     amount_lbl:'Amount', max_cash_lbl:'Max Cash',
-    pct_lbl:'Rate %', count_lbl:'Spins', value_lbl:'Spin value', cb_wager_lbl:'Wager ×',
+    // A1 benchmark bands
+    bench_rec:'Rec.', bench_cap:'Cap',
+    bench_state_on:'on target', bench_state_below:'below range', bench_state_above:'above range', bench_state_over_cap:'exceeds cap',
+    bench_why_w_wager:'Welcome wager balances player appeal against abuse protection. Welcome is an acquisition tool (low margin), so a high wager hurts conversion. Market practice: {rec}×. Above {max}× players see the bonus as poor value.',
+    bench_why_rl_wager:'Reload targets loyal players — softer terms than welcome, usually ~5× lower. Margin lives here, but don\'t over-raise the wager: the goal is retention, not one-off profit.',
+    bench_why_ndb_wager:'NDB is a no-deposit bonus (free money), so the wager is higher and a max-win cap is typical. But players widely ignore NDB above 35× — the market trend is downward. Rec.: {rec}×.',
+    bench_why_w_pct:'Match %: 100% is the universal standard (the casino doubles the deposit). Above 100% is deliberate marketing spend, not a default: it needs a higher wager and raises cost. Practice range: 100–200%.',
+    bench_why_rl_pct:'Reload match is usually lower than welcome (25–75%), with an amount cap. Common practice — 50%.',
+    // A2 roles + guardrail
+    role_acq:'Acquisition · low-margin', role_ret:'Retention · margin',
+    role_acq_tip:'Welcome and NDB are the lowest-margin part of bonus economics but critical for marketing and new-player conversion. Don\'t chase margin here — profit comes from reload, cashback, and the deposit chain.',
+    role_ret_tip:'Reload, cashback, and 2nd/3rd deposits drive retention of already-acquired players. The main margin sits here — but soft terms matter more than one-off profit.',
+    guardrail_wager:'⚠ Welcome wager {value}× is above market practice ({rec}×). A high wager on the first bonus reduces new-player conversion — welcome should attract, not earn. Consider {min}–{max}×.',
+    // A4 regulatory notes
+    reg_warn_br_welcome:'🚫 Regulatory ban: in regulated Brazil ("Bets" regime, Law 14.790/2023, Art. 29) welcome bonuses are prohibited in any form, including free spins. The mechanic is kept for offshore/grey scenarios — for licensed BR, remove it manually.',
+    reg_warn_br_soft:'⚠ Check local restrictions: Brazil\'s rules on bonuses for existing players are ambiguous — verify before launch.',
+    reg_note_ukgc:'⚖ UKGC cap: wager on all bonuses ≤ 10× (effective 19 Jan 2026).',
+    reg_note_dga:'⚖ Denmark (DGA) cap: wager ≤ 10× and bonus amount ≤ DKK 1000 for any bonus.',
+    reg_note_coljuegos:'ℹ Colombia (Coljuegos, Res. 20250022644): total bonuses capped at 1.6% of GGR/month — plan budget, not wager.',
+    pct_lbl:'Rate', count_lbl:'Spins', value_lbl:'Spin value', cb_wager_lbl:'Wager ×',
     calculate:'⚡ Calculate', recalculate:'↻ Recalculate',
     // econ
     econ_cost_p50:'P50 Cost', econ_cost_ratio:'Cost / Deposits', econ_max_risk:'Max Risk (P90)',
@@ -212,10 +231,29 @@ const CFG_I18N = {
     mech_chain:'Цепочка депозитов', mech_dep2:'2-й депозит', mech_dep3:'3-й депозит',
     mech_reload:'Reload Bonus', mech_cashback:'Кешбэк', mech_fs:'Free Spins',
     chain_hint:'Dep2 когорта: 45% от Welcome · Dep3: 25%',
-    match_lbl:'Match %', wager_lbl:'Вейджер ×', max_bonus_lbl:'Макс. бонус',
+    match_lbl:'Матч', wager_lbl:'Вейджер', max_bonus_lbl:'Макс. бонус',
     min_dep_lbl:'Мин. депозит', max_win_lbl:'Макс. выигрыш', zero_means_no_cap:'0 = без лимита',
+    // A1 benchmark bands
+    bench_rec:'Рекоменд.', bench_cap:'Лимит',
+    bench_state_on:'в норме', bench_state_below:'ниже нормы', bench_state_above:'выше нормы', bench_state_over_cap:'превышает лимит',
+    bench_why_w_wager:'Вейджер велкама — баланс между привлекательностью для игрока и защитой от абуза. Велкам работает на привлечение (низкая маржа), поэтому высокий вейджер бьёт по конверсии. Рыночная практика: {rec}×. Выше {max}× игроки воспринимают бонус как невыгодный.',
+    bench_why_rl_wager:'Релоуд нацелен на лояльную аудиторию — условия мягче велкама, обычно на ~5× ниже. Здесь живёт маржа, но не задирайте вейджер: цель — удержание, а не разовый заработок.',
+    bench_why_ndb_wager:'NDB — бездепозитный бонус (free money), поэтому вейджер выше и обычно есть кэп на макс-выигрыш. Но игроки массово игнорируют NDB с вейджером выше 35× — тренд рынка вниз. Рекоменд.: {rec}×.',
+    bench_why_w_pct:'Процент матча: 100% — универсальный стандарт (казино удваивает депозит). Выше 100% — осознанные маркетинговые траты, а не дефолт: требует более высокого вейджера и повышает стоимость. Диапазон практики: 100–200%.',
+    bench_why_rl_pct:'Матч релоуда обычно ниже велкама (25–75%), с кэпом суммы. Частая практика — 50%.',
+    // A2 roles + guardrail
+    role_acq:'Привлечение · low-margin', role_ret:'Удержание · маржа',
+    role_acq_tip:'Велкам и NDB — самая низкомаржинальная часть экономики бонусов, но критичны для маркетинга и конверсии новых игроков. Не гонитесь за маржой здесь — прибыль приходит из релоуда, кэшбэка и депозитной цепочки.',
+    role_ret_tip:'Релоуд, кэшбэк и 2-й/3-й депозиты работают на удержание уже привлечённых игроков. Здесь основная маржа — но мягкие условия важнее разового заработка.',
+    guardrail_wager:'⚠ Вейджер велкама {value}× выше рыночной практики ({rec}×). Высокий вейджер на первом бонусе снижает конверсию новых игроков — велкам должен привлекать, а не зарабатывать. Рассмотрите {min}–{max}×.',
+    // A4 regulatory notes
+    reg_warn_br_welcome:'🚫 Регуляторный запрет: в регулируемой Бразилии (режим «Bets», Law 14.790/2023, ст. 29) велкам-бонусы запрещены в любой форме, включая фриспины. Механика оставлена для оффшорных/грей-сценариев — для лицензированного BR удалите её вручную.',
+    reg_warn_br_soft:'⚠ Проверьте локальные ограничения: правила Бразилии по бонусам действующим игрокам неоднозначны — уточните перед запуском.',
+    reg_note_ukgc:'⚖ Лимит UKGC: вейджер на все бонусы ≤ 10× (действует с 19.01.2026).',
+    reg_note_dga:'⚖ Лимит Дании (DGA): вейджер ≤ 10× и сумма бонуса ≤ DKK 1000 на любой бонус.',
+    reg_note_coljuegos:'ℹ Колумбия (Coljuegos, Res. 20250022644): суммарные бонусы ограничены 1.6% GGR/мес — планируйте бюджет, а не вейджер.',
     amount_lbl:'Сумма', max_cash_lbl:'Макс. выплата',
-    pct_lbl:'Процент %', count_lbl:'Спинов', value_lbl:'Цена спина', cb_wager_lbl:'Вейджер ×',
+    pct_lbl:'Процент', count_lbl:'Спинов', value_lbl:'Цена спина', cb_wager_lbl:'Вейджер ×',
     calculate:'⚡ Рассчитать', recalculate:'↻ Пересчитать',
     econ_cost_p50:'P50 Стоимость', econ_cost_ratio:'Стоимость / Депозиты', econ_max_risk:'Макс. риск (P90)',
     econ_arpu:'ARPU', econ_ltv3:'LTV 3 мес', econ_roi:'ROI кампании', roi_platform_sub:'инкрем. выручка / бонусный бюджет',
@@ -620,6 +658,7 @@ function renderBonusMechanicsCard(B) {
   return `
     <div class="card" style="overflow:visible">
       <div class="card-title">${cfgT('mechanics')}</div>
+      ${cfgLicenseBanner()}
       <div class="mech-list">
         ${renderMechRow('welcome', B)}
         ${renderMechRow('ndb',     B)}
@@ -640,26 +679,26 @@ function renderMechRow(key, B) {
   const noCapHint = `<span class="mp-unit">${cfgT('zero_means_no_cap')}</span>`;
 
   if (key === 'welcome') {
-    params = `<div class="mech-params-grid">
-      ${mpInp('w_pct',        cfgT('match_lbl'),       ov.w_pct,        '%', 1,200)}
-      ${mpInp('w_wager',      cfgT('wager_lbl'),        ov.w_wager,      '×', 1,100)}
+    params = `${cfgRegBanner('welcome')}<div class="mech-params-grid">
+      ${mpInpBench('w_pct',   cfgT('match_lbl'),        ov.w_pct,        '%', 1,200, 'w_pct')}
+      ${mpInpBench('w_wager', cfgT('wager_lbl'),        ov.w_wager,      '×', 1,100, 'w_wager')}
       ${mpInp('w_maxB',       cfgT('max_bonus_lbl'),    ov.w_maxB,       '',  1,100000)}
       ${mpInp('w_minD',       cfgT('min_dep_lbl'),      ov.w_minD,       '',  0,100000)}
       ${mpInpHint('w_maxWin', cfgT('max_win_lbl'),      ov.w_maxWin,     '', 0, 100000, noCapHint)}
       ${mpInp('w_hitrate',    cfgT('hitrate_lbl'),      ov.w_hitrate,    '', 0.01,1.0, '0.05')}
       ${mpInp('w_days',       cfgT('days_lbl'),         ov.w_days,       'd', 1,365)}
       ${mpInp('w_bet_factor', cfgT('bet_factor_lbl'),   ov.w_bet_factor, '×', 0.1,1.0, '0.05')}
-    </div>`;
+    </div><div id="guardrail-w_wager">${cfgGuardrailInner(ov.w_wager)}</div>`;
   } else if (key === 'ndb') {
-    params = `<div class="mech-params-grid">
-      ${mpInp('ndb_amt',    cfgT('amount_lbl'),   ov.ndb_amt,    '',  1,10000)}
-      ${mpInp('ndb_wager',  cfgT('wager_lbl'),    ov.ndb_wager,  '×', 1,100)}
+    params = `${cfgRegBanner('ndb')}<div class="mech-params-grid">
+      ${mpInp('ndb_amt',        cfgT('amount_lbl'),   ov.ndb_amt,    '',  1,10000)}
+      ${mpInpBench('ndb_wager', cfgT('wager_lbl'),    ov.ndb_wager,  '×', 1,100, 'ndb_wager')}
       ${mpInpHint('ndb_maxWin', cfgT('max_win_lbl'), ov.ndb_maxWin, '', 0, 100000, noCapHint)}
     </div>`;
   } else if (key === 'reload') {
-    params = `<div class="mech-params-grid">
-      ${mpInp('rl_pct',    cfgT('match_lbl'),    ov.rl_pct,    '%', 1,200)}
-      ${mpInp('rl_wager',  cfgT('wager_lbl'),    ov.rl_wager,  '×', 1,100)}
+    params = `${cfgRegBanner('reload')}<div class="mech-params-grid">
+      ${mpInpBench('rl_pct',   cfgT('match_lbl'),    ov.rl_pct,    '%', 1,200, 'rl_pct')}
+      ${mpInpBench('rl_wager', cfgT('wager_lbl'),    ov.rl_wager,  '×', 1,100, 'rl_wager')}
       ${mpInp('rl_maxB',   cfgT('max_bonus_lbl'),ov.rl_maxB,   '',  1,100000)}
       ${mpInp('rl_minD',   cfgT('min_dep_lbl'),  ov.rl_minD,   '',  0,100000)}
       ${mpInpHint('rl_maxWin', cfgT('max_win_lbl'), ov.rl_maxWin, '', 0, 100000, noCapHint)}
@@ -683,6 +722,7 @@ function renderMechRow(key, B) {
       <div class="mech-header" onclick="toggleMech('${key}')">
         <div class="mech-toggle">✓</div>
         <div class="mech-name">${cfgT('mech_'+key)}</div>
+        ${cfgRoleBadge(key)}
         ${isOn ? `<div class="mech-badge">${cfgT('tab_econ').replace('📊 ','')}</div>` : ''}
       </div>
       <div class="mech-params">${params}</div>
@@ -706,6 +746,7 @@ function renderChainGroup(B) {
           <div class="mech-header" onclick="toggleMech('dep2')">
             <div class="mech-toggle">✓</div>
             <div class="mech-name" style="font-size:.8rem">${cfgT('mech_dep2')}</div>
+            ${cfgRoleBadge('dep2')}
             <span style="font-size:.68rem;color:var(--muted)">×0.45</span>
           </div>
           <div class="mech-params">
@@ -722,6 +763,7 @@ function renderChainGroup(B) {
           <div class="mech-header" onclick="toggleMech('dep3')">
             <div class="mech-toggle">✓</div>
             <div class="mech-name" style="font-size:.8rem">${cfgT('mech_dep3')}</div>
+            ${cfgRoleBadge('dep3')}
             <span style="font-size:.68rem;color:var(--muted)">×0.25</span>
           </div>
           <div class="mech-params">
@@ -777,6 +819,122 @@ function mpInpHint(id, label, val, unit, min, max, hintHtml) {
            onchange="bonusOvChange('${id}',this.value)">
     <div style="margin-top:2px;line-height:1.2">${hintHtml}</div>
   </div>`;
+}
+
+// ── A1/A2/A4: benchmark bands, role badges, regulatory notes ────────────────
+
+// Resolve the caller's region + license from the selected bonus geo.
+function cfgBonusRL() {
+  const g = cfgGeo(CS.bonus.geo);
+  return { region: g.region || 'eu', license: g.lic || 'none' };
+}
+
+function _escAttr(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// Fill {rec}/{min}/{max}/{value} placeholders in an i18n template.
+function cfgBenchFill(tpl, bench, value) {
+  return String(tpl)
+    .replace(/\{rec\}/g,   bench ? bench.band.rec : '')
+    .replace(/\{min\}/g,   bench ? bench.band.min : '')
+    .replace(/\{max\}/g,   bench ? bench.band.max : '')
+    .replace(/\{value\}/g, value != null ? value : '');
+}
+
+// Inner HTML of the benchmark line (range + coloured chip + why-tooltip) for a value.
+// `id` is the ov field id — used to skip the chip for currency-denominated params, whose value
+// is shown in local currency but whose band is USD (classifying either basis would mislead).
+function cfgBenchInner(benchParam, value, id) {
+  const RB = window.RetomatBenchmarks;
+  if (!RB) return '';
+  const { region, license } = cfgBonusRL();
+  const bench = RB.getBenchmark(benchParam, region, license);
+  if (!bench) return '';
+  const v = parseFloat(value);
+  const money = id && typeof MONEY_OV !== 'undefined' && MONEY_OV.has(id);
+  const state = (money || isNaN(v)) ? null : RB.classifyValue(v, bench);
+  const unitSym = bench.unit === 'x' ? '×' : bench.unit === '%' ? '%' : '';
+  const isCap = !!bench.cap;
+  const rangeLbl = isCap ? cfgT('bench_cap') : cfgT('bench_rec');
+  const rangeTxt = isCap
+    ? `${rangeLbl}: ≤${bench.cap.max}${unitSym}`
+    : `${rangeLbl}: ${bench.band.min}–${bench.band.max}${unitSym}`;
+  const chip = state
+    ? `<span class="mp-bench-chip mp-bench-${state}">${cfgT('bench_state_' + state)}</span>`
+    : '';
+  const why = _escAttr(cfgBenchFill(cfgT(bench.whyKey), bench, value));
+  return `<span class="mp-bench-range">${rangeTxt}</span>${chip}<span class="mp-bench-why" title="${why}">ⓘ</span>`;
+}
+
+// Like mpInp, but with a live benchmark line below the input.
+function mpInpBench(id, label, val, unit, min, max, benchParam) {
+  const u = ovUnit(id, unit);
+  return `<div class="mp-row">
+    <div class="mp-lbl">${label}${u ? ` <span class="mp-unit">${u}</span>` : ''}</div>
+    <input class="mp-inp" id="mp-${id}" type="number" value="${ovToDisp(id, val)}" min="${min}" max="${max}" step="1"
+           oninput="cfgBenchUpdate('${id}','${benchParam}',this.value)" onchange="bonusOvChange('${id}',this.value)">
+    <div class="mp-bench" id="mp-bench-${id}">${cfgBenchInner(benchParam, val, id)}</div>
+  </div>`;
+}
+
+// Live-update the benchmark line (and the welcome guardrail) as the user types.
+function cfgBenchUpdate(id, benchParam, value) {
+  const el = document.getElementById('mp-bench-' + id);
+  if (el) el.innerHTML = cfgBenchInner(benchParam, value, id);
+  if (id === 'w_wager') cfgRefreshGuardrail(value);
+}
+
+// Welcome-wager guardrail banner: shown when the value exceeds the recommended max.
+function cfgGuardrailInner(value) {
+  const RB = window.RetomatBenchmarks;
+  if (!RB) return '';
+  const { region, license } = cfgBonusRL();
+  const bench = RB.getBenchmark('w_wager', region, license);
+  if (!bench) return '';
+  const v = parseFloat(value);
+  const state = isNaN(v) ? null : RB.classifyValue(v, bench);
+  if (state !== 'above' && state !== 'over_cap') return '';
+  return `<div class="mech-guardrail">${cfgBenchFill(cfgT('guardrail_wager'), bench, v)}</div>`;
+}
+function cfgRefreshGuardrail(value) {
+  const el = document.getElementById('guardrail-w_wager');
+  if (el) el.innerHTML = cfgGuardrailInner(value);
+}
+
+// Role badge for a mechanic (Acquisition/low-margin vs Retention/margin).
+const MECH_ROLE = { welcome:'acq', ndb:'acq', reload:'ret', cashback:'ret', dep2:'ret', dep3:'ret' };
+function cfgRoleBadge(key) {
+  const role = MECH_ROLE[key];
+  if (!role) return '';
+  const lbl = role === 'acq' ? cfgT('role_acq') : cfgT('role_ret');
+  const tip = _escAttr(role === 'acq' ? cfgT('role_acq_tip') : cfgT('role_ret_tip'));
+  return `<span class="mech-role mech-role-${role}" title="${tip}">${lbl}</span>`;
+}
+
+// Per-mechanic regulatory banner — ONLY the mechanic-specific BR notes (welcome = hard
+// prohibition, ndb/reload = soft). License-wide caps (UK/DK/CO) are rendered once by
+// cfgLicenseBanner instead of repeating on every mechanic card.
+function cfgRegBanner(mechanic) {
+  const RB = window.RetomatBenchmarks;
+  if (!RB) return '';
+  const { license } = cfgBonusRL();
+  if (license !== 'bets_br') return '';
+  const key = RB.regulatoryNote(license, mechanic);
+  if (!key) return '';
+  const hard = key === 'reg_warn_br_welcome';
+  return `<div class="mech-reg${hard ? ' mech-reg-hard' : ''}">${cfgT(key)}</div>`;
+}
+
+// License-wide regulatory note (UK/DK/CO), shown once above the mechanics list.
+function cfgLicenseBanner() {
+  const RB = window.RetomatBenchmarks;
+  if (!RB) return '';
+  const { license } = cfgBonusRL();
+  if (license === 'bets_br') return ''; // BR notes are mechanic-specific (see cfgRegBanner)
+  const key = RB.regulatoryNote(license, 'welcome');
+  if (!key) return '';
+  return `<div class="mech-reg">${cfgT(key)}</div>`;
 }
 
 function toggleMech(key) {
@@ -2951,4 +3109,11 @@ function addToRCCalendar(data, opts = {}) {
   cfgRender();
   const main = document.getElementById('main');
   if (main) main.classList.add('ready');
+  // This classic script runs during parsing — BEFORE the deferred ESM helpers
+  // (bonus-benchmarks.js sets window.RetomatBenchmarks). Deferred modules execute before
+  // DOMContentLoaded, so re-render once then so the benchmark bands populate (empty on the
+  // first pass if the module wasn't ready). Harmless: init state is idempotent.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => cfgRender(), { once: true });
+  }
 })();

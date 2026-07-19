@@ -34,8 +34,11 @@ export const LATAM = {
     },
     // Mexico — SEGOB permits (Ley Federal de Juegos y Sorteos). Relatively
     // permissive; KYC + published T&Cs + responsible-gaming tools required.
+    // Welcome wager 35x market average (verified 2026-07-19) — override the
+    // offshore base wW:40, which is above MX practice.
     segob: {
       welcome: { maxBMin: 250, maxBMax: 500 },
+      wager:   { wW: 35 },
       reg:     ['reg_segob_1', 'reg_segob_2'] as string[],
     },
     // Colombia — Coljuegos (Ley 1753/2015), first fully regulated online market
@@ -47,8 +50,11 @@ export const LATAM = {
     },
     // Peru — MINCETUR (Ley 31557), regulated since 2024. 0.3% ISI consumption
     // tax on deposits; KYC + responsible-gaming measures mandatory.
+    // Welcome wager 35x market average (verified 2026-07-19; players value 20–35x)
+    // — override the offshore base wW:40.
     mincetur: {
       welcome: { maxBMax: 450 },
+      wager:   { wW: 35 },
       reg:     ['reg_mincetur_1', 'reg_mincetur_2'] as string[],
     },
   } as Record<string, Record<string, unknown>>,

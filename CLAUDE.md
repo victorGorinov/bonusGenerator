@@ -42,7 +42,8 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   ├── server/app.ts                # Express: helmet CSP, requestId, pino-http, routes, static
 │   ├── config/
 │   │   ├── index.ts                 # Zod EnvSchema (fail-fast), ENV, PORT, API keys, DATABASE_URL, JWT_SECRET/EXPIRY, AI_MODEL, AI_TIMEOUT
-│   │   ├── geo/                     # eu.ts, cis.ts, crypto.ts, sweep.ts, mn.ts, latam.ts
+│   │   ├── geo/                     # eu.ts, cis.ts, crypto.ts, sweep.ts, mn.ts, latam.ts (latam has per-country license blocks: bets_br/segob/coljuegos/mincetur)
+│   │   ├── benchmarks/              # bonusBenchmarks.ts — recommended param ranges + regulatory caps per geo/license (see "Parameter benchmarks & explainability")
 │   │   └── games/                   # catalog.json (168 games, 19 providers — manually curated, best-effort RTP/region data, NOT scraped/licensed from SlotCatalog or providers, see Games recommendations section) + catalog.ts (types + loader)
 │   ├── db/
 │   │   ├── client.ts                # Neon/pg Pool singleton
@@ -164,6 +165,7 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   ├── nav-utils.js                 # Shared across all pages: updateAllBadges(), applyNavLang(), initNavSubgroups()
 │   ├── balance-solver.js            # solveToTarget() — generic parameter solver for Balance-to-Profit
 │   ├── bonus-cost.js                # Client-side bonus cost model (parity with backend recalcCosts); supports minD/maxWin overrides
+│   ├── bonus-benchmarks.js          # Client mirror of src/config/benchmarks/bonusBenchmarks.ts — param benchmark bands + regulatory notes (window.RetomatBenchmarks)
 │   ├── loyalty-econ.js              # Client-side loyalty economics (parity with backend calcLoyaltyEconomics)
 │   ├── tournament-econ.js           # Client-side tournament economics (parity with backend calcTournamentEconomics)
 │   ├── forecast.js                  # Client-side port of src/domain/forecast/ — normalizeCampaign, aggregateForecast, MECHANIC_AFFINITY
@@ -904,10 +906,38 @@ Four browser-side JS modules mirror backend domain logic for real-time recalcula
 | `public/balance-solver.js` | — (generic solver) | tournament/loyalty/configurator |
 | `public/forecast.js` | `src/domain/forecast/` (3 files) | retention-calendar/forecast-panel.js |
 | `public/loyalty-missions-link.js` | `src/domain/loyalty/linkMissions.ts` | loyalty-generator.js (Step 2 preview) |
+| `public/bonus-benchmarks.js` | `src/config/benchmarks/bonusBenchmarks.ts` | configurator.js (parameter benchmark bands) |
 
 **balance-solver.js** — `solveToTarget({ draft, levers, recalc, metricOf, target, constraints?, maxIter? })`: iterates over `levers` (enum swaps + multiplicative steps) until `metricOf(recalc(draft)) >= target` or all levers exhausted. `constraints` — optional array of `{ check(draft, cfg) → bool }` guards; a lever step is skipped if it would violate any constraint (used by bonus solver to enforce license wager/bonus caps). Returns `{ draft, reached }`.
 
 **Parity tests** in `tests/domain/*.parity.test.js` assert identical output between JS modules and backend TypeScript for the same inputs. Run before shipping changes to either side.
+
+---
+
+## Parameter benchmarks & explainability (Слой A, 2026-07-19)
+
+Answers expert feedback: "why these params, what happens if I change them, and where's the data from?" The bonus parameters are geo/license **defaults** (a lookup, not a model-optimised value) — the UI now says so honestly and shows a recommended range instead of over-claiming.
+
+**Data module** — `src/config/benchmarks/bonusBenchmarks.ts` (single source of truth) + `public/bonus-benchmarks.js` (browser mirror, `window.RetomatBenchmarks`, parity-tested). API:
+- `getBenchmark(param, region, license)` → `{ band:{min,rec,max}, unit, whyKey, cap? }` or `null`. `param ∈ w_wager | rl_wager | ndb_wager | w_pct | rl_pct | ndb_amt`. Welcome wager is geo/license-specific (by-license table with region fallback); the rest are geo-independent market norms. **Regulatory wager caps** (UK/DK 10×) are always attached for `ukgc`/`dga` and clamp the band, producing an `over_cap` state above the ceiling.
+- `classifyValue(value, bench)` → `'below' | 'on' | 'above' | 'over_cap'` (the chip colour).
+- `regulatoryNote(license, mechanic)` → i18n key or null. BR `bets_br`: welcome → `reg_warn_br_welcome` (hard — welcome bonuses are **prohibited** by Law 14.790/2023 Art. 29, but the mechanic is NOT auto-removed — operator deletes manually); reload/ndb → `reg_warn_br_soft`. UK/DK/CO → their note keys.
+
+**Provenance:** benchmark ranges researched 2026-07-19 from market-practice + regulatory sources — see `tasks/param-explainability-plan.md` (per-geo + per-LATAM-country wager tables with citations) and `tasks/param-explainability-copy.md` (all RU/EN strings). Wager-by-geo is firm; match%/reload/NDB are market norms; UK/DK caps + BR prohibition + CO 1.6%-GGR volume cap are regulatory facts.
+
+**Configurator UI** (`configurator.js`, `renderMechRow`):
+- `mpInpBench(id, label, val, unit, min, max, benchParam)` — like `mpInp` but renders a live benchmark line (recommended range + coloured chip + ℹ "why" tooltip) that reclassifies on `oninput` via `cfgBenchUpdate`. Applied to **currency-independent** params only (wager, match %); `ndb_amt` is deliberately NOT chipped (its band is USD but the field shows local currency → would misclassify).
+- `cfgRoleBadge(key)` — mechanic role badge: welcome/ndb = `Acquisition · low-margin`, reload/cashback/dep2/dep3 = `Retention · margin` (encodes "welcome is a loss-leader, margin lives in retention").
+- `cfgGuardrailInner` — welcome-wager guardrail banner shown when the value exceeds the recommended max (`above`/`over_cap`).
+- `cfgRegBanner(mechanic)` — regulatory banner per mechanic (BR hard/soft, UK/DK/CO notes).
+- `cfgBonusRL()` resolves `{region, license}` from `cfgGeo(CS.bonus.geo)`. i18n keys (`bench_*`, `role_*`, `guardrail_wager`, `reg_*`) live in `CFG_I18N` (EN+RU).
+- **Load-order note:** `configurator.js` is a classic script that inits during parse, BEFORE the deferred ESM helpers set `window.RetomatBenchmarks`; the init IIFE re-renders once on `DOMContentLoaded` (deferred modules run before it) so benchmark bands populate.
+
+**A3 honest copy** — `src/domain/campaign/explanation.ts` imports `getBenchmark`; the wager rationale changed from the false "calculated via Truncated Normal — optimal balance" to "baseline for {region}; recommended range {min}–{max}×".
+
+**A4 data fixes** — `src/config/geo/eu.ts` DGA welcome wager `25→10` (was above Denmark's 10× legal cap — a real data bug); `src/config/geo/latam.ts` added `wW:35` override to `segob` (MX) + `mincetur` (PE) (were inheriting the offshore base 40, above MX/PE practice).
+
+**Tests:** `bonus.benchmarks.parity.test.js` (server↔client matrix + regulatory sanity), `geo.wagerOverrides.test.js` (DGA/MX/PE/AR-CL/BR wager in buildConfig), `explanation.wager.test.js` (no "optimal", surfaces range). **Not yet ported to the `generator.js` hub** — deferred to a 2nd iteration as a passive "vs benchmark" annotation (hub is a read-only AI-wizard, no editable param fields); data module already shared so the port is cheap.
 
 ---
 
@@ -971,6 +1001,7 @@ These are non-obvious facts that have caused bugs; always verify before touching
 
 ## Completed work log
 
+- ~~**Parameter benchmarks & explainability (Слой A)**~~ — done 2026-07-19, from expert feedback ("why these params, what happens if I change them, where's the data from?"). New `src/config/benchmarks/bonusBenchmarks.ts` + `public/bonus-benchmarks.js` mirror (`getBenchmark`/`classifyValue`/`regulatoryNote`, parity-tested): recommended wager/match/NDB ranges + regulatory caps (UK/DK 10×) per geo/license, ranges **researched with citations** (`tasks/param-explainability-plan.md`, `tasks/param-explainability-copy.md`). Configurator (`configurator.js`) now shows, next to each currency-independent param, a live benchmark line (range + green/amber/red chip + ℹ "why"), mechanic role badges (welcome/ndb = Acquisition·low-margin, reload/cashback/dep = Retention·margin), a welcome-wager guardrail banner, and per-license regulatory banners (🇧🇷 BR welcome-prohibition hard-warning **without auto-removing the mechanic**, BR reload/ndb soft note, UK/DK/CO notes). Honest copy fix in `explanation.ts` ("optimal balance via Truncated Normal" → "baseline; recommended range"). **Data bugs fixed:** DGA welcome wager `25→10` (exceeded Denmark's 10× legal cap), MX/PE `wW:35` override (were inheriting offshore base 40). Cosmetic: removed doubled unit labels (`Match % %`→`Match %`). Tests: `bonus.benchmarks.parity`, `geo.wagerOverrides`, `explanation.wager` (678 total green). Verified in-browser across DE/UK/BR/MX. Hub (`generator.js`) port deferred to a 2nd iteration (read-only wizard → passive annotation). See **Parameter benchmarks & explainability** section.
 - ~~**Auth Phases 2–4 (server-side persistence + frontend sync + migration)**~~ — done 2026-07-07. Backend: migration `002_saved_items.sql` (applied to live Neon via `scripts/migrate.ts` — psql isn't installed, runs the `.sql` through the pg pool) creates six uniform per-workspace tables `{id, workspace_id, client_id, data JSONB, created_at, updated_at}` + `UNIQUE(workspace_id, client_id)` — **deviates from the plan's per-column `saved_configs`** (pointless: cfgSaved has no read path) in favour of a uniform blob keyed by the record's own client id. New `src/use-cases/SavedItems.ts` (generic list/upsert/delete over an `ENTITIES` whitelist — table names never come from input), `savedItems.controller.ts`, `savedItems.routes.ts` (single generic `/:entity` + `/:entity/:id`, mounted `/api/saved`, behind `requireAuth`+`requireWorkspace`), `requireWorkspace.ts` (resolves `req.workspaceId` from `req.user.id`, in-memory cached 1:1), `savedItems.schema.ts` (`{id, data}` upsert). Entities: `configs | campaigns | tournaments | loyalty-programs | calendar-events | calendar-templates`. Client id stays the identity → **no server-id reconciliation on the frontend and idempotent migration via `ON CONFLICT`**. Tests: `tests/integration/api.savedItems.test.js` (real DB, graceful-skip if unreachable, self-cleaning). Frontend model = **localStorage stays the working cache; logged-in users additionally mirror every write to the server and hydrate the caches on load**, so reports.js (reads localStorage directly) needs no changes. New `public/repo-http.js` (`window.RetomatRepo`: `isAuthed/pull/mirror/unmirror/hydrate`). `nav-utils.js` owns the whole sync: on load, if authed → **migrate guest localStorage → server once (`migrated_v1` flag), THEN hydrate all six caches, then fire `retomat:synced`** (ordering matters — hydrate before migrate would wipe guest data with an empty server); also renders the header user chip (name + Logout) / "Sign in" link, and `_rtmLogout` clears the caches + `migrated_v1` so a following guest doesn't inherit the account's data. Each page listens for `retomat:synced` and re-renders (generators + twins `generator*.js` + `reports.js` + retention-calendar `loadAll()`). Save/delete sites in configurator.js / campaign-generator.js / tournament-generator.js / loyalty-generator.js **and their `generator*.js` twins** mirror/unmirror; the external "Add to Calendar" writers (which poke `rc_campaigns` directly, bypassing repository.js) also mirror to `calendar-events`. `retention-calendar/repository.js` mirrors writes only (reads stay local; nav-utils owns hydration) — rebuild the bundle after touching it. `repo-http.js` added to all nav-utils pages. Guest access on tool routes unchanged (still `optionalAuth`). Verified end-to-end live (register → me → save → list → calendar-events → guest 401). Note: same-origin fetch already sends the `_bt` cookie by default, so the plan's "add credentials:'include' to every fetch" was unnecessary — only `repo-http.js` sets it explicitly.
 - ~~**Auth Phase 1 (core)**~~ — done 2026-07-02: `users`/`workspaces` tables + `001_initial.sql` (applied to a real Neon DB provisioned via Vercel Marketplace), bcrypt + JWT httpOnly-cookie auth, `authLimiter` 5/min, `login.html`/`register.html`. Verified end-to-end against the live DB (register → me → logout → login → wrong-password rejected).
 - ~~**Auth guest access**~~ — done 2026-07-02, same day as Phase 1: reverted the initial "guard everything" decision. Tool routes (generate/campaign/tournament/loyalty/reports) switched from `requireAuth` to `optionalAuth` — guests can generate/audit/optimize freely. Removed `auth-guard.js` (401→redirect) since it no longer had anything to guard against. Rationale: saved items are still localStorage-only (Phase 2/3 not built), so gating generation behind login had no functional benefit and only added friction — see Security section.
