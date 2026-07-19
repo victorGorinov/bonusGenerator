@@ -1981,7 +1981,7 @@ const I18N = {
     chip_tone_friendly:'😊 Дружелюбный', chip_tone_pro:'🤝 Профессиональный', chip_tone_agg:'⚡ Агрессивный',
     t3_agg_low:'Низкая', t3_agg_mid:'Средняя', t3_agg_high:'Высокая',
     t3_risk_low:'🟢 Низкий', t3_risk_mid:'🟡 Средний', t3_risk_high:'🔴 Высокий',
-    chip_btype_welcome:'💰 Welcome (1-й депозит)', chip_btype_dep2:'💰 2-й депозит', chip_btype_dep3:'🎁 3-й депозит',
+    chip_btype_ndb:'🎁 No Deposit', chip_btype_welcome:'💰 1-й депозит (Welcome)', chip_btype_dep2:'💰 2-й депозит', chip_btype_dep3:'🎁 3-й депозит',
     s4_title:'Тексты и аудит кампании',
     s4_sub:'AI генерирует тексты для каждого канала и проводит аудит рисков',
     s4_tab_texts:'📝 Тексты', s4_tab_audit:'🔍 Аудит',
@@ -2036,7 +2036,7 @@ const I18N = {
     view_configurator:'Конфигуратор', view_wizard:'Новая кампания',
     // Quick start cards
     qc_launch_n:'Первый запуск казино',
-    qc_launch_d:'Полный бонусный пакет: Welcome (1-й депозит) + No Deposit + 2-й/3-й депозит + Cashback — все механики для старта',
+    qc_launch_d:'Полный бонусный пакет: 1-й депозит (Welcome) + No Deposit + 2-й/3-й депозит + Cashback — все механики для старта',
     qc_react_n:'Реактивация', qc_react_d:'Вернуть неактивных 7+ дней',
     qc_reload_n:'Reload кампания', qc_reload_d:'Бонус на повторный депозит',
     qc_cashback_n:'Cashback', qc_cashback_d:'Возврат % от проигрышей',
@@ -2060,7 +2060,7 @@ const I18N = {
     mr_pkgs:'Пакеты', mr_maxb:'Макс. бонус', mr_mind:'Мин. депозит',
     mr_wager:'Вейджер', mr_fs:'Фриспины', mr_days:'Срок', mr_days_sfx:' дней', mr_promo:'Промокод',
     // mechanic type labels
-    mt_welcome:'Welcome (1-й депозит)', mt_ndb:'No Deposit', mt_reload:'Reload', mt_dep2:'2-й депозит', mt_dep3:'3-й депозит', mt_cashback:'Cashback',
+    mt_welcome:'1-й депозит (Welcome)', mt_ndb:'No Deposit', mt_reload:'Reload', mt_dep2:'2-й депозит', mt_dep3:'3-й депозит', mt_cashback:'Cashback',
     // verdict & econ
     vrd_cheap:'Экономичный ✓', vrd_ok:'Оптимальный ✓', vrd_warn:'Внимание ⚠', vrd_high:'Высокий риск ✗',
     ec_cost:'Расходы кампании', ec_arpu:'ARPU / мес.', ec_ltv:'LTV 3 мес.', ec_roi:'ROI 3 мес.', ec_verdict:'Вердикт', ec_nosrv:'нет ответа от сервера',
@@ -2116,7 +2116,7 @@ const I18N = {
     chip_tone_friendly:'😊 Friendly', chip_tone_pro:'🤝 Professional', chip_tone_agg:'⚡ Aggressive',
     t3_agg_low:'Low', t3_agg_mid:'Medium', t3_agg_high:'High',
     t3_risk_low:'🟢 Low', t3_risk_mid:'🟡 Medium', t3_risk_high:'🔴 High',
-    chip_btype_welcome:'💰 Welcome (1st Deposit)', chip_btype_dep2:'💰 2nd Deposit', chip_btype_dep3:'🎁 3rd Deposit',
+    chip_btype_ndb:'🎁 No Deposit', chip_btype_welcome:'💰 1st Deposit (Welcome)', chip_btype_dep2:'💰 2nd Deposit', chip_btype_dep3:'🎁 3rd Deposit',
     s4_title:'Texts & Campaign Audit',
     s4_sub:'AI generates texts for each channel and audits risks',
     s4_tab_texts:'📝 Texts', s4_tab_audit:'🔍 Audit',
@@ -2171,7 +2171,7 @@ const I18N = {
     view_configurator:'Configurator', view_wizard:'New Campaign',
     // Quick start cards
     qc_launch_n:'Casino First Launch',
-    qc_launch_d:'Full bonus package: Welcome (1st Deposit) + No Deposit + 2nd/3rd Deposit + Cashback — all mechanics for launch',
+    qc_launch_d:'Full bonus package: 1st Deposit (Welcome) + No Deposit + 2nd/3rd Deposit + Cashback — all mechanics for launch',
     qc_react_n:'Reactivation', qc_react_d:'Re-engage players inactive 7+ days',
     qc_reload_n:'Reload Campaign', qc_reload_d:'Bonus on repeat deposit',
     qc_cashback_n:'Cashback', qc_cashback_d:'Return % of losses',
@@ -2195,7 +2195,7 @@ const I18N = {
     mr_pkgs:'Packages', mr_maxb:'Max Bonus', mr_mind:'Min Deposit',
     mr_wager:'Wager', mr_fs:'Free Spins', mr_days:'Validity', mr_days_sfx:' days', mr_promo:'Promo Code',
     // mechanic type labels
-    mt_welcome:'Welcome (1st Deposit)', mt_ndb:'No Deposit', mt_reload:'Reload', mt_dep2:'2nd Deposit', mt_dep3:'3rd Deposit', mt_cashback:'Cashback',
+    mt_welcome:'1st Deposit (Welcome)', mt_ndb:'No Deposit', mt_reload:'Reload', mt_dep2:'2nd Deposit', mt_dep3:'3rd Deposit', mt_cashback:'Cashback',
     // verdict & econ
     vrd_cheap:'Economical ✓', vrd_ok:'Optimal ✓', vrd_warn:'Attention ⚠', vrd_high:'High Risk ✗',
     ec_cost:'Campaign Cost', ec_arpu:'ARPU / mo.', ec_ltv:'LTV 3 mo.', ec_roi:'ROI 3 mo.', ec_verdict:'Verdict', ec_nosrv:'no response from server',
