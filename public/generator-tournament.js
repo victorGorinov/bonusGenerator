@@ -10,8 +10,12 @@ const GEO_OPTIONS = [
   { val:'kz', lbl:'🇰🇿 Kazakhstan (KZT)' },
   { val:'mn', lbl:'🇲🇳 Mongolia (MNT)' },
   { val:'us', lbl:'🇺🇸 USA Sweepstakes' },
-  { val:'mx', lbl:'🇲🇽 Mexico (USD)' },
   { val:'br', lbl:'🇧🇷 Brazil (USD)' },
+  { val:'mx', lbl:'🇲🇽 Mexico (USD)' },
+  { val:'co', lbl:'🇨🇴 Colombia (USD)' },
+  { val:'ar', lbl:'🇦🇷 Argentina (USD)' },
+  { val:'pe', lbl:'🇵🇪 Peru (USD)' },
+  { val:'cl', lbl:'🇨🇱 Chile (USD)' },
 ];
 
 const TOURNAMENT_TYPES = [
@@ -309,7 +313,7 @@ async function fetchGamesIfNeeded() {
     const res = await fetch('/api/tournament/games', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ geo: p.geo, segment: p.segment, type: tgDraft.type, scoring: p.scoring }),
+      body: JSON.stringify({ geo: p.geo, segment: p.segment, type: tgDraft.type, scoring: p.scoring, uiLang: localStorage.getItem('bonusLang') || 'en' }),
     });
     if (!res.ok) throw new Error('fetch failed');
     _gamesData = { _key: key, result: await res.json() };
@@ -520,20 +524,21 @@ const SEGMENT_RATIO_UI = {
 // ── PRIZE POOL RECOMMENDATION ─────────────────────────────────────────────────
 const GEO_TO_REGION_UI = {
   de:'eu', fr:'eu', es:'eu', it:'eu', nl:'eu', dk:'eu', uk:'eu',
-  ru:'cis', kz:'cis', mn:'mn', us:'sweep', mx:'latam', br:'latam',
+  ru:'cis', kz:'cis', mn:'mn', us:'sweep',
+  br:'latam', mx:'latam', co:'latam', ar:'latam', pe:'latam', cl:'latam',
 };
+// Default display currency per geo = the region-local currency (LatAm now local,
+// not USD — matches geo-data.js `local`; the toggle switches local ↔ USD).
 const GEO_TO_CUR_UI = {
   de:'EUR', fr:'EUR', es:'EUR', it:'EUR', nl:'EUR', dk:'DKK', uk:'GBP',
-  ru:'RUB', kz:'KZT', mn:'MNT', us:'USD', mx:'USD', br:'USD',
+  ru:'RUB', kz:'KZT', mn:'MNT', us:'USD',
+  br:'BRL', mx:'MXN', co:'COP', ar:'ARS', pe:'PEN', cl:'CLP',
 };
-const CURRENCIES = [...new Set(GEO_OPTIONS.map(g => {
-  const m = g.lbl.match(/\(([A-Z]+)\)/);
-  return m ? m[1] : (GEO_TO_CUR_UI[g.val] || 'USD');
-}))];
 // local units per 1 USD — mirrors deriveLocalFxRate() backend logic
 const GEO_FX_RATE_UI = {
   de:0.92, fr:0.92, es:0.92, it:0.92, nl:0.92, dk:7.37, uk:0.79,
-  ru:90.9,  kz:500,  mn:3448, us:1.00, mx:1.00, br:1.00,
+  ru:90.9,  kz:500,  mn:3448, us:1.00,
+  br:5.5, mx:18.5, co:4100, ar:1050, pe:3.75, cl:950,
 };
 // Derived from GEO_TO_CUR_UI + GEO_FX_RATE_UI — first geo that uses each currency wins
 const CUR_FX_RATE_UI = Object.fromEntries(
@@ -575,6 +580,21 @@ function getSegRatio(seg) {
 
 function deriveLocalFxRateForUI(geo) {
   return GEO_FX_RATE_UI[geo] || 1;
+}
+
+// Geo select (grouped by region, geo-data.js) → default to the region-local
+// currency; the currency toggle switches region-local ↔ USD (identical to the
+// Configurator). Currency is a setup parameter applied at generation.
+function tgPickGeo(geo) {
+  tgDraft.params.geo = geo;
+  tgDraft.params.currency = GEO_TO_CUR_UI[geo] || 'EUR';
+  tgDraft.params._prizeAutoSet = true;
+  tgRenderStep();
+}
+function tgSetCur(cur) {
+  tgDraft.params.currency = cur;
+  tgDraft.params._prizeAutoSet = true;
+  tgRenderStep();
 }
 
 function updateEligibleHint() {
@@ -682,16 +702,19 @@ ${tgWizProgressHTML(2)}
   <div class="card-title">${tg('geo_title')}</div>
   <div class="form-row">
     <label class="form-label">${tg('geo_market')}</label>
-    <select class="form-input" id="f-geo" onchange="tgDraft.params.geo=this.value;tgDraft.params.currency=GEO_TO_CUR_UI[this.value]||'EUR';tgDraft.params._prizeAutoSet=true;tgRenderStep()">
-      ${GEO_OPTIONS.map(g => `<option value="${g.val}"${p.geo===g.val?' selected':''}>${g.lbl}</option>`).join('')}
+    <select class="form-input" id="f-geo" onchange="tgPickGeo(this.value)">
+      ${window.GeoData.groups((localStorage.getItem('bonusLang')||'en')==='ru'?'ru':'en').map(gr =>
+        `<optgroup label="${gr.label}">${gr.items.map(g => `<option value="${g.val}"${p.geo===g.val?' selected':''}>${g.lbl}</option>`).join('')}</optgroup>`
+      ).join('')}
     </select>
   </div>
-  <div class="form-row">
+  ${(GEO_TO_CUR_UI[p.geo]||'EUR')!=='USD' ? `<div class="form-row">
     <label class="form-label">${tg('geo_currency')}</label>
-    <select class="form-input" id="f-currency" onchange="tgDraft.params.currency=this.value;tgDraft.params._prizeAutoSet=true;tgRenderStep()" style="max-width:160px">
-      ${CURRENCIES.map(c => `<option value="${c}"${(p.currency||'EUR')===c?' selected':''}>${c}</option>`).join('')}
-    </select>
-  </div>
+    <div class="chips">
+      <div class="chip${(p.currency||GEO_TO_CUR_UI[p.geo])!=='USD'?' on':''}" onclick="tgSetCur('${GEO_TO_CUR_UI[p.geo]||'EUR'}')">${GEO_TO_CUR_UI[p.geo]||'EUR'}</div>
+      <div class="chip${(p.currency||GEO_TO_CUR_UI[p.geo])==='USD'?' on':''}" onclick="tgSetCur('USD')">USD</div>
+    </div>
+  </div>` : ''}
   <div class="form-row">
     <label class="form-label">${tg('geo_segment')}</label>
     <div class="chips">
@@ -826,7 +849,7 @@ function buildTechSpec() {
   const p    = tgDraft.params;
   const isRu = (localStorage.getItem('bonusLang') || 'en') === 'ru';
 
-  const geoLabel    = GEO_OPTIONS.find(g => g.val === p.geo)?.lbl?.replace(/^.+?\s/, '') || p.geo;
+  const geoLabel    = (isRu ? window.GeoData.of(p.geo)?.ru : window.GeoData.of(p.geo)?.en) || p.geo;
   const fmt         = n => cur + ' ' + Math.round(n).toLocaleString();
   const typeNames   = tg('type_names');
   const entryLbls   = tg('entry_labels');

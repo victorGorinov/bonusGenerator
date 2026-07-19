@@ -12,9 +12,9 @@ const SCENARIOS = [
 function getProgSteps() {
   return [t('prog_1'),t('prog_2'),t('prog_3'),t('prog_4'),t('prog_5')];
 }
-const GEO_LBL   = {eu:'🇪🇺 EU / UK',de:'🇩🇪 Germany',fr:'🇫🇷 France',es:'🇪🇸 Spain',it:'🇮🇹 Italy',nl:'🇳🇱 Netherlands',dk:'🇩🇰 Denmark',uk:'🇬🇧 UK',ru:'🌐 Russia',kz:'🇰🇿 Kazakhstan',mx:'🇲🇽 Mexico',br:'🇧🇷 Brazil',mn:'🇲🇳 Mongolia',us:'🇺🇸 USA'};
+const GEO_LBL   = {eu:'🇪🇺 EU / UK',de:'🇩🇪 Germany',fr:'🇫🇷 France',es:'🇪🇸 Spain',it:'🇮🇹 Italy',nl:'🇳🇱 Netherlands',dk:'🇩🇰 Denmark',uk:'🇬🇧 UK',ru:'🌐 Russia',kz:'🇰🇿 Kazakhstan',br:'🇧🇷 Brazil',mx:'🇲🇽 Mexico',co:'🇨🇴 Colombia',ar:'🇦🇷 Argentina',pe:'🇵🇪 Peru',cl:'🇨🇱 Chile',mn:'🇲🇳 Mongolia',us:'🇺🇸 USA'};
 const SEG_LBL   = {new:'Новые',mid:'Средние',vip:'VIP'};
-const GEO_CURRENCY = {de:'EUR',fr:'EUR',es:'EUR',it:'EUR',nl:'EUR',dk:'DKK',uk:'GBP',ru:'RUB',kz:'KZT',mx:'MXN',br:'BRL',mn:'MNT',us:'USD'};
+const GEO_CURRENCY = {de:'EUR',fr:'EUR',es:'EUR',it:'EUR',nl:'EUR',dk:'DKK',uk:'GBP',ru:'RUB',kz:'KZT',br:'USD',mx:'USD',co:'USD',ar:'USD',pe:'USD',cl:'USD',mn:'MNT',us:'USD'};
 
 // Returns undefined for unknown geo — callers decide the fallback
 function getSitecurByGeo(geo) {
@@ -23,8 +23,124 @@ function getSitecurByGeo(geo) {
   return cur;
 }
 
+// ── Geo list + currency toggle (identical model to the Configurator) ──────────
+// Single source is geo-data.js. Backend computes in geo.cur (LatAm = USD); the
+// currency toggle only changes the DISPLAY currency (region-local default / USD),
+// converting the API response for rendering — the backend is never re-scaled.
+function genCurMode() { return draft.params._curMode || 'local'; }
+function genGeo() { return window.GeoData.of(draft.params.geo || 'de'); }
+function genDispFactor() { return window.GeoData.curFactor(genGeo(), genCurMode()); }
+function genDispCur() { return window.GeoData.dispCur(genGeo(), genCurMode()); }
+
+// Populate #p-geo with region-grouped country options from geo-data.js.
+function genFillGeoSelect() {
+  const sel = document.getElementById('p-geo');
+  if (!sel || !window.GeoData) return;
+  if (!draft.params.geo) draft.params.geo = 'de';
+  const lang = (typeof currentLang !== 'undefined' && currentLang === 'ru') ? 'ru' : 'en';
+  sel.innerHTML = window.GeoData.groups(lang).map(gr =>
+    `<optgroup label="${gr.label}">` +
+    gr.items.map(g => `<option value="${g.val}"${g.val === draft.params.geo ? ' selected' : ''}>${g.lbl}</option>`).join('') +
+    `</optgroup>`
+  ).join('');
+  genRenderCurToggle();
+}
+
+// Currency toggle chips (hidden when the geo has no local≠USD choice).
+function genRenderCurToggle() {
+  const box = document.getElementById('p-cur-toggle');
+  if (!box) return;
+  const geo = genGeo();
+  if (!geo || geo.local === 'USD') { box.innerHTML = ''; return; }
+  const mode = genCurMode();
+  const lbl = (typeof currentLang !== 'undefined' && currentLang === 'ru') ? 'Валюта отображения' : 'Display currency';
+  box.innerHTML =
+    `<div style="font-size:11px;color:var(--muted);margin-bottom:4px">${lbl}</div>` +
+    `<div class="chip-group" style="gap:6px">` +
+    `<div class="chip${mode==='local'?' active':''}" onclick="genSetCurMode('local')">${geo.local}</div>` +
+    `<div class="chip${mode==='usd'?' active':''}" onclick="genSetCurMode('usd')">USD</div></div>`;
+}
+
+// Direct country selection (grouped select) — sets geo + backend sitecur + lang + lic.
+function genPickGeo(geo) {
+  draft.params.geo = geo;
+  draft.params._curMode = 'local';
+  draft.params.sitecur = getSitecurByGeo(geo) ?? 'USD';
+  // Invalidate any prior result — it was generated for the old geo/currency, so
+  // converting it by the new geo's factor would be wrong (goStep(3) regenerates).
+  draft._apiResult = null;
+  const lang = GEO_LANG[geo] || 'en';
+  const langSel = document.getElementById('p-lang');
+  if (langSel) langSel.value = lang;
+  draft.params.lang = lang;
+  draft.params.lic = 'auto';
+  document.querySelectorAll('.chip[data-g="lic"]').forEach(c => c.classList.toggle('active', c.dataset.v === 'auto'));
+  genRenderCurToggle();
+}
+
+function genSetCurMode(mode) {
+  draft.params._curMode = mode;
+  genRenderCurToggle();
+  // Re-render the result view (if already generated) in the new display currency.
+  if (draft._apiResult && !draft._apiResult.error && document.getElementById('econCard')) {
+    renderMechanicResults(draft._apiResult);
+  }
+}
+
+// Convert a /api/campaign/generate response to the display currency (pure).
+// Scales sitecur money fields; leaves USD benchmarks (arpu/cac/ltv3/mBudget) and
+// ratios untouched. factor === 1 → returns the input unchanged.
+function genConvertData(raw, factor, toCur) {
+  if (!raw || factor === 1) return raw;
+  const d = JSON.parse(JSON.stringify(raw));
+  const num = v => (typeof v === 'number' ? Math.round(v * factor) : v);
+  // "1700 USD" | "∞" → "9350 BRL" (scale + relabel; passes non-amounts through).
+  const moneyStr = s => {
+    if (typeof s !== 'string') return s;
+    const m = s.match(/^([\d.,]+)\s*([A-Za-z]+)?$/);
+    if (!m) return s;
+    return `${Math.round(parseFloat(m[1].replace(/,/g, '')) * factor).toLocaleString('en')} ${toCur}`;
+  };
+  const convMech = m => {
+    if (!m || typeof m !== 'object') return;
+    for (const k of ['maxB', 'minD', 'amt']) if (typeof m[k] === 'number') m[k] = num(m[k]);
+    // Cashback amounts are "N CUR" strings (not numbers) — convert + relabel too.
+    for (const k of ['minLoss', 'maxAmt']) if (typeof m[k] === 'string') m[k] = moneyStr(m[k]);
+    if (Array.isArray(m.tiers)) m.tiers.forEach(t => { t.from = moneyStr(t.from); t.to = moneyStr(t.to); });
+    if (typeof m.cur === 'string') m.cur = toCur;
+  };
+  if (typeof d.cur === 'string') d.cur = toCur;
+  convMech(d.mechanic);
+  for (const map of ['allMechanics', 'selectedMechanics']) {
+    if (d[map] && typeof d[map] === 'object') Object.values(d[map]).forEach(convMech);
+  }
+  const e = d.econ;
+  if (e && typeof e === 'object') {
+    for (const k of ['bonusSize', 'maxRisk', 'stressTest']) if (typeof e[k] === 'number') e[k] = num(e[k]);
+    for (const s of ['sP10', 'sP50', 'sP90']) {
+      const sc = e[s]; if (!sc) continue;
+      if (typeof sc.cost === 'number') sc.cost = num(sc.cost);
+      if (typeof sc.payout === 'number') sc.payout = +(sc.payout * factor).toFixed(2);
+      if (typeof sc.turnover === 'number') sc.turnover = num(sc.turnover);
+    }
+    if (e.chain && typeof e.chain === 'object') {
+      if (typeof e.chain.chainCost === 'number') e.chain.chainCost = num(e.chain.chainCost);
+      if (typeof e.chain.chainMaxRisk === 'number') e.chain.chainMaxRisk = num(e.chain.chainMaxRisk);
+      if (Array.isArray(e.chain.steps)) e.chain.steps.forEach(st => {
+        if (typeof st.bonusSize === 'number') st.bonusSize = +(st.bonusSize * factor).toFixed(2);
+        if (typeof st.cost === 'number') st.cost = num(st.cost);
+      });
+    }
+    // arpu / cac / ltv3 / mBudget / totLTV stay USD; costRatio/roi3 are ratios.
+  }
+  return d;
+}
+
+// The current API result converted to the display currency (for all render sites).
+function genDispData() { return genConvertData(draft._apiResult, genDispFactor(), genDispCur()); }
+
 // ── STATE ─────────────────────────────────────────────────────────────────────
-let draft = { scenario: null, params: { vertical:'casino', segment:'mid', games:'slots', tone:'friendly', agg:'low', risk:'low', lic:'auto' } };
+let draft = { scenario: null, params: { vertical:'casino', segment:'mid', games:'slots', tone:'friendly', agg:'low', risk:'mid', lic:'auto' } };
 
 // ── VIEWS ─────────────────────────────────────────────────────────────────────
 function showView(name) {
@@ -62,7 +178,7 @@ function updateCampaignBadge() {
 
 // ── WIZARD ────────────────────────────────────────────────────────────────────
 function startWizard() {
-  draft = { scenario:null, _step:1, params:{vertical:'casino',segment:'mid',games:'slots',tone:'friendly',agg:'low',risk:'low',lic:'auto', bonusTypes:['reload']} };
+  draft = { scenario:null, _step:1, params:{vertical:'casino',segment:'mid',games:'slots',tone:'friendly',agg:'low',risk:'mid',lic:'auto', bonusTypes:['reload']} };
   renderScenarios();
   goStep(1);
   showView('wizard');
@@ -82,33 +198,15 @@ function goStep(n) {
   document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('step-'+n).classList.add('active');
   if (n === 2) {
-    // Restore step-2 DOM state from draft.params (don't call syncLangToGeo —
-    // it resets lang/lic/euPending which destroys user's edits on back-navigation).
-    const geo = document.getElementById('p-geo').value;
-    const euWrap = document.getElementById('eu-ctry-wrap');
-    if (euWrap) euWrap.style.display = geo === 'eu' ? 'block' : 'none';
-    if (geo === 'eu' && draft.params.geo && draft.params.geo !== 'eu') {
-      document.querySelectorAll('.chip[data-g="eu-ctry"]').forEach(c => {
-        c.classList.toggle('active', c.dataset.v === draft.params.geo);
-      });
-      draft.params._euPending = false;
-    }
-    updateRiskHint(draft.params.risk || 'low');
+    // Region-grouped country select from geo-data.js (identical to Configurator).
+    genFillGeoSelect();
+    updateRiskHint(draft.params.risk || 'mid');
   }
   if (n === 3) {
+    // Every geo option is a country (grouped select) — take it directly.
     const geoSel = document.getElementById('p-geo').value;
-    if (geoSel === 'eu') {
-      if (!draft.params.geo || draft.params._euPending) {
-        alert(t('s2_eu_required') || 'Выберите страну EU / UK');
-        goStep(2);
-        return;
-      }
-      // draft.params.geo already set by pickEuCountry — leave it, but set sitecur
-      draft.params.sitecur = getSitecurByGeo(draft.params.geo) ?? 'EUR';
-    } else {
-      draft.params.geo = geoSel;
-      draft.params.sitecur = getSitecurByGeo(geoSel) ?? 'EUR';
-    }
+    draft.params.geo = geoSel;
+    draft.params.sitecur = getSitecurByGeo(geoSel) ?? 'USD';
     draft.params.budget  = parseFloat(document.getElementById('p-budget').value) || 5000;
     draft.params.players = parseInt(document.getElementById('cg-pnum').value) || 5000;
     draft.params.lang   = document.getElementById('p-lang').value;
@@ -206,48 +304,9 @@ function selScenario(id, el) {
 }
 
 // ── STEP 2 ────────────────────────────────────────────────────────────────────
-const GEO_LANG = { de:'de', fr:'en', es:'es', it:'en', nl:'en', dk:'da', uk:'en', ru:'ru', kz:'ru', mx:'es', br:'es', mn:'mn', us:'en', eu:'en' };
-
-function syncLangToGeo(geo) {
-  const euWrap = document.getElementById('eu-ctry-wrap');
-  if (euWrap) euWrap.style.display = geo === 'eu' ? 'block' : 'none';
-
-  if (geo === 'eu') {
-    // Reset country chip selection; actual geo set by pickEuCountry
-    document.querySelectorAll('.chip[data-g="eu-ctry"]').forEach(c => c.classList.remove('active'));
-    draft.params._euPending = true;
-    return;
-  }
-
-  draft.params._euPending = false;
-  const lang = GEO_LANG[geo] || 'en';
-  const sel = document.getElementById('p-lang');
-  if (sel) sel.value = lang;
-  draft.params.lang = lang;
-  // Reset license to auto when geo changes — geo determines the default license
-  draft.params.lic = 'auto';
-  document.querySelectorAll('.chip[data-g="lic"]').forEach(c => {
-    c.classList.toggle('active', c.dataset.v === 'auto');
-  });
-}
-
-function pickEuCountry(el) {
-  document.querySelectorAll('.chip[data-g="eu-ctry"]').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  const code = el.dataset.v;
-  draft.params.geo = code;
-  draft.params.sitecur = getSitecurByGeo(code) ?? 'EUR';
-  draft.params._euPending = false;
-  // Sync language and reset license
-  const lang = GEO_LANG[code] || 'en';
-  const sel = document.getElementById('p-lang');
-  if (sel) sel.value = lang;
-  draft.params.lang = lang;
-  draft.params.lic = 'auto';
-  document.querySelectorAll('.chip[data-g="lic"]').forEach(c => {
-    c.classList.toggle('active', c.dataset.v === 'auto');
-  });
-}
+const GEO_LANG = { de:'de', fr:'en', es:'es', it:'en', nl:'en', dk:'da', uk:'en', ru:'ru', kz:'ru', br:'es', mx:'es', co:'es', ar:'es', pe:'es', cl:'es', mn:'mn', us:'en', eu:'en' };
+// (geo selection is handled by genPickGeo / genFillGeoSelect above — the old
+//  EU-expander helpers syncLangToGeo/pickEuCountry were removed with the flat select.)
 
 function pickChip(el) {
   const g = el.dataset.g;
@@ -742,6 +801,10 @@ function renderMechanicResults(data) {
   draft.alternatives   = data.alternatives;
   draft.econ           = data.econ;
 
+  // draft.* above keep the raw (backend-currency) values for AI payloads; from
+  // here on render in the display currency (factor === 1 → unchanged).
+  data = genConvertData(data, genDispFactor(), genDispCur());
+
   // Mechanic card — tabs if multiple types selected
   const types = data.requestedTypes || [data.mechanicType];
   const TAB_LBL = {
@@ -975,8 +1038,8 @@ async function _cgApplyRecs(recs) {
 function switchMechTab(type, el) {
   document.querySelectorAll('.mech-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  const data = draft._apiResult;
-  if (!data) return;
+  if (!draft._apiResult) return;
+  const data = genDispData(); // display-currency copy for rendering
   const mech = data.selectedMechanics?.[type] || data.allMechanics?.[type];
   const tc = document.getElementById('mechTabContent');
   if (tc) tc.innerHTML = mechRows(mech, type, data);
@@ -984,12 +1047,13 @@ function switchMechTab(type, el) {
 
 function switchMechanic(type) {
   if (!draft._apiResult?.allMechanics) return;
-  const data = draft._apiResult;
-  const mech = data.allMechanics[type];
-  if (!mech) return;
-
-  draft.mechanics    = mech;
+  // Keep the raw mechanic for AI payloads; render from the display-currency copy.
+  draft.mechanics    = draft._apiResult.allMechanics[type];
   draft.mechanicType = type;
+  if (!draft.mechanics) return;
+
+  const data = genDispData();
+  const mech = data.allMechanics[type];
 
   document.getElementById('mechCard').innerHTML =
     `<div class="rc-title">${t('rc_mech')}</div>
@@ -1254,7 +1318,7 @@ function generateAdminConfig() {
   const line = '─'.repeat(54);
   const now  = new Date().toISOString().slice(0,10);
 
-  const GEO_NAME = {eu:'EU / UK',de:'Germany',fr:'France',es:'Spain',it:'Italy',nl:'Netherlands',dk:'Denmark',uk:'United Kingdom',ru:'Russia',kz:'Kazakhstan',mx:'Mexico',br:'Brazil',mn:'Mongolia',us:'USA (Sweep)'};
+  const GEO_NAME = {eu:'EU / UK',de:'Germany',fr:'France',es:'Spain',it:'Italy',nl:'Netherlands',dk:'Denmark',uk:'United Kingdom',ru:'Russia',kz:'Kazakhstan',br:'Brazil',mx:'Mexico',co:'Colombia',ar:'Argentina',pe:'Peru',cl:'Chile',mn:'Mongolia',us:'USA (Sweep)'};
   const SEG_NAME = {new:'New players',mid:'Regular players',vip:'VIP'};
   const LBL = {welcome:'1ST_DEPOSIT',ndb:'WELCOME_NODEP',reload:'RELOAD',dep2:'2ND_DEPOSIT',dep3:'3RD_DEPOSIT',cashback:'CASHBACK'};
   const VERDICT = {verdict_cheap:'WEAK (raise match % or lower wager)',verdict_ok:'OPTIMAL',verdict_warn:'HIGH LOAD — review wager/maxB',verdict_high:'LOSS-MAKING — urgent fix required'};
@@ -2261,8 +2325,9 @@ function setUILang(lang) {
     el.textContent = t('step_ctr').replace('{n}', el.dataset.step);
   });
   updateTopbar(currentView);
-  // Re-render risk hint in the new language if step 2 is visible
-  if (draft._step === 2) updateRiskHint(draft.params.risk || 'low');
+  // Re-render risk hint + re-fill the geo select (JS-built optgroup/toggle labels
+  // aren't [data-i18n], so they must be rebuilt for the new language) on step 2.
+  if (draft._step === 2) { updateRiskHint(draft.params.risk || 'mid'); genFillGeoSelect(); }
   if (!['dashboard','configurator'].includes(currentView)) {
     const tbr = document.getElementById('tb-right');
     if (tbr && tbr.innerHTML) tbr.innerHTML = `<button class="btn btn-primary btn-sm" onclick="startWizard()">${t('btn_new_camp')}</button>`;

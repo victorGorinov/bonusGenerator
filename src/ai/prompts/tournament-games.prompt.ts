@@ -12,8 +12,16 @@ const GEO_NAME: Record<string, string> = {
   kz: 'Kazakhstan',
   us: 'United States (sweepstakes)',
   mn: 'Mongolia',
-  mx: 'Mexico',
   br: 'Brazil',
+  mx: 'Mexico',
+  co: 'Colombia',
+  ar: 'Argentina',
+  pe: 'Peru',
+  cl: 'Chile',
+};
+
+const LANG_NAME: Record<string, string> = {
+  en: 'English', ru: 'Russian', es: 'Spanish', de: 'German', da: 'Danish', mn: 'Mongolian',
 };
 
 const REGION_NAME: Record<string, string> = {
@@ -55,20 +63,24 @@ interface GamesPromptParams {
   type:     string;
   scoring:  string;
   primary:  Game[];
+  lang?:    string;
 }
 
-export function buildGamesPrompt({ region, geo, segment, type, scoring, primary }: GamesPromptParams): string {
+export function buildGamesPrompt({ region, geo, segment, type, scoring, primary, lang }: GamesPromptParams): string {
   const countryName  = GEO_NAME[geo]  ?? geo.toUpperCase();
   const regionName   = REGION_NAME[region] ?? region;
   const segmentName  = SEGMENT_NAME[segment] ?? segment;
   const typeName     = TYPE_NAME[type]   ?? type;
   const scoringName  = SCORING_NAME[scoring] ?? scoring;
+  const langName     = LANG_NAME[lang ?? 'en'] ?? 'English';
 
   const gameList = primary
     .map(g => `- ${g.name} (${g.provider}) | mechanic:${g.mechanic} | volatility:${g.volatility} | RTP:${g.rtp}%`)
     .join('\n');
 
   return `You are a casino product specialist. A tournament has been configured and a deterministic algorithm selected these games. Write a brief rationale (1 short paragraph) explaining why this game pool fits the audience, and a one-liner "why it fits" for each game.
+
+Write the "rationale" and every game "why" in ${langName}. Keep game names, provider names and RTP values as-is.
 
 Tournament context:
 - Country: ${countryName}

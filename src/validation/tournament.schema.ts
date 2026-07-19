@@ -4,7 +4,7 @@ export const TournamentGenerateSchema = z.object({
   type:   z.enum(['slot', 'live', 'mixed', 'prize_drop']),
   params: z.object({
     geo:          z.string().min(2).max(3),
-    lic:          z.enum(['auto','mga','ukgc','dga','curacao','anjouan','kahnawake','gibraltar','isle_of_man','none']).default('auto'),
+    lic:          z.enum(['auto','mga','ukgc','dga','bets_br','segob','coljuegos','mincetur','curacao','anjouan','kahnawake','gibraltar','isle_of_man','none']).default('auto'),
     segment:      z.enum(['all','new','vip','dormant','depositors']).default('all'),
     totalPlayers: z.number().int().min(100).max(500_000).default(5000),
     entryModel:   z.enum(['freeroll','buyin','ticket']),

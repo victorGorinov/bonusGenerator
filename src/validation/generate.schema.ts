@@ -7,7 +7,7 @@ export const GenerateSchema = z.object({
   depcur:  z.string().min(2).max(10),
   avgdep:  z.coerce.number().min(1).max(100_000),
   plat:    z.enum(['both', 'mobile', 'desk']),
-  lic:     z.enum(['mga', 'ukgc', 'dga', 'curacao', 'anjouan', 'kahnawake', 'gibraltar', 'isle_of_man', 'none']).optional(),
+  lic:     z.enum(['mga', 'ukgc', 'dga', 'bets_br', 'segob', 'coljuegos', 'mincetur', 'curacao', 'anjouan', 'kahnawake', 'gibraltar', 'isle_of_man', 'none']).optional(),
   rtp:     z.coerce.number().min(50).max(99.9),
   riskAdj: z.coerce.number().optional(),
   segment: z.enum(['new', 'mid', 'vip']).optional(),

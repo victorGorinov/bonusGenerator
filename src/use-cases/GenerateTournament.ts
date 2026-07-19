@@ -26,7 +26,7 @@ export async function generateTournamentTexts(input: TournamentTextsInput, ai: A
 }
 
 export async function recommendTournamentGames(input: TournamentGamesInput, ai: AIProvider) {
-  const { geo, segment, type, scoring, plat } = input;
+  const { geo, segment, type, scoring, plat, uiLang } = input;
   const region = GEO_CFG[geo]?.region ?? geo;
 
   // Deterministic pool — no AI, always fast
@@ -38,7 +38,7 @@ export async function recommendTournamentGames(input: TournamentGamesInput, ai: 
 
   if (primary.length > 0) {
     try {
-      const prompt = buildGamesPrompt({ region, geo, segment, type, scoring, primary });
+      const prompt = buildGamesPrompt({ region, geo, segment, type, scoring, primary, lang: uiLang });
       const raw = await ai.generate(prompt, { maxTokens: 600 });
       const parsed = parseGamesResponse(raw);
       rationale = parsed.rationale;

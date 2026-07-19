@@ -31,6 +31,13 @@ const STABLE_USD_TO_LOCAL: Record<string, number> = {
   RUB:  90.9,
   KZT:  500,
   MNT:  3448,
+  // LatAm local currencies (per geo-data.js RATES — keep in sync).
+  BRL:  5.5,
+  MXN:  18.5,
+  COP:  4100,
+  ARS:  1050,
+  PEN:  3.75,
+  CLP:  950,
   BTC:  0.000015,
   ETH:  0.00042,
 };

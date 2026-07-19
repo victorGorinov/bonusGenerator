@@ -4,21 +4,10 @@
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
 
-const CFG_GEO = [
-  { val:'de', lbl:'🇩🇪 Germany',     region:'eu',     lic:'mga',  cur:'EUR', avgdep:50 },
-  { val:'fr', lbl:'🇫🇷 France',      region:'eu',     lic:'mga',  cur:'EUR', avgdep:45 },
-  { val:'es', lbl:'🇪🇸 Spain',       region:'eu',     lic:'mga',  cur:'EUR', avgdep:40 },
-  { val:'it', lbl:'🇮🇹 Italy',       region:'eu',     lic:'mga',  cur:'EUR', avgdep:40 },
-  { val:'nl', lbl:'🇳🇱 Netherlands', region:'eu',     lic:'mga',  cur:'EUR', avgdep:55 },
-  { val:'dk', lbl:'🇩🇰 Denmark',     region:'eu',     lic:'dga',  cur:'DKK', avgdep:700 },
-  { val:'uk', lbl:'🇬🇧 UK',          region:'eu',     lic:'ukgc', cur:'GBP', avgdep:45 },
-  { val:'ru', lbl:'🇷🇺 Russia',      region:'cis',    lic:'none', cur:'RUB', avgdep:3000 },
-  { val:'kz', lbl:'🇰🇿 Kazakhstan',  region:'cis',    lic:'none', cur:'KZT', avgdep:15000 },
-  { val:'mn', lbl:'🇲🇳 Mongolia',    region:'mn',     lic:'none', cur:'MNT', avgdep:80000 },
-  { val:'us', lbl:'🇺🇸 USA Sweep',   region:'sweep',  lic:'none', cur:'USD', avgdep:30 },
-  { val:'mx', lbl:'🇲🇽 Mexico',      region:'latam',  lic:'none', cur:'USD', avgdep:35 },
-  { val:'br', lbl:'🇧🇷 Brazil',      region:'latam',  lic:'none', cur:'USD', avgdep:30 },
-];
+// Geo list — single source is public/geo-data.js (loaded before this file).
+// `cur` here is the BACKEND currency (sent as sitecur); LatAm is USD, with the
+// local display currency in `local`/`localRate`. See geo-data.js for the model.
+const CFG_GEO = (window.GEO_DATA || []);
 
 const TOURN_TYPES = [
   { val:'slot',       icon:'🎰', name_en:'Slots',       name_ru:'Слоты',       desc_en:'Leaderboard by slot performance', desc_ru:'Лидерборд по слотам' },
@@ -48,6 +37,7 @@ const CS = {
 
   bonus: {
     geo: 'de',
+    curMode: 'local',   // 'local' (region currency, default) | 'usd'
     players: 5000,
     segment: 'mid',
     plat: 'both',
@@ -71,7 +61,7 @@ const CS = {
   },
 
   tournament: {
-    type: 'slot', geo: 'de',
+    type: 'slot', geo: 'de', curMode: 'local',
     segment: 'all', totalPlayers: 5000,
     duration: 'weekly', prizePool: 5000,
     poolModel: 'fixed', distribution: 'top_n',
@@ -81,7 +71,7 @@ const CS = {
   },
 
   loyalty: {
-    mode: 'hybrid', region: 'eu', segment: 'mid',
+    mode: 'hybrid', geo: 'de', region: 'eu', curMode: 'local', segment: 'mid',
     players: 5000, avgdep: 100, arpu: 50,
     numTiers: 5, topCashbackRate: 10,
     earnRateDeposit: 10, earnRateWager: 1,
@@ -129,7 +119,7 @@ const CFG_I18N = {
     type_bonus:'🎁 Bonus', type_tourn:'🏆 Tournament', type_loyal:'⭐ Loyalty',
     // bonus
     base_params:'Base Parameters', mechanics:'Bonus Mechanics',
-    geo_lbl:'Market / GEO', players_lbl:'Monthly New Players',
+    geo_lbl:'Market / GEO', currency_lbl:'Display Currency', players_lbl:'Monthly New Players',
     segment_lbl:'Player Segment', platform_lbl:'Platform', rtp_lbl:'Avg Slot RTP',
     seg_new:'🆕 New', seg_mid:'👤 Mid', seg_vip:'👑 VIP',
     plat_both:'Desktop + Mobile', plat_mobile:'Mobile Only', plat_desk:'Desktop Only',
@@ -214,7 +204,7 @@ const CFG_I18N = {
     title: 'Конфигуратор',
     type_bonus:'🎁 Бонусы', type_tourn:'🏆 Турниры', type_loyal:'⭐ Лояльность',
     base_params:'Базовые параметры', mechanics:'Механики бонусов',
-    geo_lbl:'Рынок / GEO', players_lbl:'Новых игроков / месяц',
+    geo_lbl:'Рынок / GEO', currency_lbl:'Валюта отображения', players_lbl:'Новых игроков / месяц',
     segment_lbl:'Сегмент игроков', platform_lbl:'Платформа', rtp_lbl:'Средний RTP слотов',
     seg_new:'🆕 Новые', seg_mid:'👤 Средние', seg_vip:'👑 VIP',
     plat_both:'Desktop + Mobile', plat_mobile:'Только Mobile', plat_desk:'Только Desktop',
@@ -308,6 +298,12 @@ function fmtCur(val, cur) {
   if (cur === 'RUB') return n.toLocaleString('ru') + ' ₽';
   if (cur === 'KZT') return n.toLocaleString('ru') + ' ₸';
   if (cur === 'DKK') return n.toLocaleString('en') + ' kr';
+  if (cur === 'BRL') return 'R$' + n.toLocaleString('en');
+  if (cur === 'MXN') return 'MX$' + n.toLocaleString('en');
+  if (cur === 'PEN') return 'S/' + n.toLocaleString('en');
+  if (cur === 'COP') return n.toLocaleString('en') + ' COP';
+  if (cur === 'ARS') return 'AR$' + n.toLocaleString('en');
+  if (cur === 'CLP') return n.toLocaleString('en') + ' CLP';
   return n.toLocaleString('en') + ' ' + (cur || '');
 }
 
@@ -317,6 +313,77 @@ function fmtPct(v) {
 }
 
 function cfgGeo(val) { return CFG_GEO.find(g => g.val === val) || CFG_GEO[0]; }
+
+// ── Currency toggle (display layer) ─────────────────────────────────────────
+// Backend always computes in geo.cur (LatAm = USD). The toggle only changes the
+// display currency: region-local (default) or USD. All conversion is done via
+// window.GeoData helpers on the API responses; the backend is never re-scaled.
+function curModeOf(type) { return (CS[type] && CS[type].curMode) || 'local'; }
+// Synthetic geo for Loyalty's crypto/global option (no country, USD, no toggle).
+const CRYPTO_GEO = { val:'crypto', cur:'USD', local:'USD', rate:1, localRate:1, region:'crypto', lbl:'🌐 Crypto / Global' };
+function geoOfType(type) {
+  const g = type === 'loyalty' ? (CS.loyalty.geo || 'de') : CS[type].geo;
+  if (g === 'crypto') return CRYPTO_GEO;
+  return cfgGeo(g);
+}
+
+// Money-valued keys of the flat tournament/loyalty econ objects — the single
+// source of what gets currency-converted (via GeoData.scaleFields). Everything
+// not listed (participants, ratios, %, break-even counts) stays as-is.
+const TOURN_ECON_MONEY = [
+  'ggrLiftLow','ggrLiftMid','ggrLiftHigh','netMarginLow','netMarginMid','netMarginHigh',
+  'costPerActiveLow','costPerActiveMid','costPerActiveHigh','prizePoolCost','retentionValue','totalValueMid',
+];
+const LOYALTY_ECON_MONEY = [
+  'monthlyCostUSD','tierRewardCostUSD','missionCostUSD','additionalRevenue3m','totalLiabilityUSD',
+];
+
+// Small note shown above AI Audit/Optimize output: the AI reasons over the raw
+// backend config, so its amounts are in the backend currency, not the display one.
+function aiCurNote(type) {
+  const backendCur = type === 'loyalty' ? 'USD' : geoOfType(type).cur;
+  if (dispCurCode(type) === backendCur) return '';
+  const isRu = cfgLang() === 'ru';
+  return `<div style="font-size:11px;color:var(--muted);margin-bottom:8px">💱 ${isRu ? 'Суммы в AI-рекомендациях указаны в' : 'AI recommendation amounts are in'} ${backendCur}</div>`;
+}
+// Backend base currency per tool: Bonus/Tournament compute in geo.cur (EU→EUR,
+// LatAm→USD); Loyalty is currency-agnostic and always computes in USD.
+function dispBaseRate(type) { return type === 'loyalty' ? 1 : geoOfType(type).rate; }
+function dispFactor(type) { return window.GeoData.dispRate(geoOfType(type), curModeOf(type)) / dispBaseRate(type); }
+function dispCurCode(type) { return window.GeoData.dispCur(geoOfType(type), curModeOf(type)); }
+
+// Whether a currency choice exists for this geo (hide the toggle when it doesn't).
+function hasCurChoice(geo) { return geo && geo.local !== 'USD'; }
+
+function renderCurToggle(type) {
+  const geo = geoOfType(type);
+  if (!hasCurChoice(geo)) return '';
+  const mode = curModeOf(type);
+  return `
+    <div class="form-row">
+      <label class="form-label">${cfgT('currency_lbl')}</label>
+      <div class="chips">
+        <div class="chip${mode==='local'?' on':''}" onclick="setCurMode('${type}','local')">${geo.local}</div>
+        <div class="chip${mode==='usd'?' on':''}" onclick="setCurMode('${type}','usd')">USD</div>
+      </div>
+    </div>`;
+}
+
+function setCurMode(type, mode) {
+  if (!CS[type]) return;
+  CS[type].curMode = mode;
+  cfgRender();
+}
+
+// <optgroup>-grouped geo <option>s (grouped by region) for a <select>.
+function cfgGeoOptions(selectedVal) {
+  const groups = window.GeoData.groups(cfgLang());
+  return groups.map(gr =>
+    `<optgroup label="${gr.label}">` +
+    gr.items.map(g => `<option value="${g.val}"${g.val===selectedVal?' selected':''}>${g.lbl}</option>`).join('') +
+    `</optgroup>`
+  ).join('');
+}
 
 // ── GLOSSARY ──────────────────────────────────────────────────────────────
 
@@ -511,7 +578,7 @@ function renderBonusSection() {
 }
 
 function renderBonusBaseCard(B, geo) {
-  const geoOpts = CFG_GEO.map(g => `<option value="${g.val}"${g.val===B.geo?' selected':''}>${g.lbl}</option>`).join('');
+  const geoOpts = cfgGeoOptions(B.geo);
   return `
     <div class="card">
       <div class="card-title">${cfgT('base_params')}</div>
@@ -519,6 +586,7 @@ function renderBonusBaseCard(B, geo) {
         <label class="form-label">${cfgT('geo_lbl')}</label>
         <select class="form-input" onchange="bonusSetGeo(this.value)">${geoOpts}</select>
       </div>
+      ${renderCurToggle('bonus')}
       <div class="form-row">
         <label class="form-label">${cfgT('players_lbl')}</label>
         <input class="form-input" type="number" value="${B.players}" min="100" max="200000" step="100"
@@ -671,20 +739,41 @@ function renderChainGroup(B) {
   `;
 }
 
+// Money-valued override ids — displayed/edited in the chosen display currency
+// while stored internally in the backend currency (geo.cur).
+const MONEY_OV = new Set([
+  'w_maxB','w_minD','w_maxWin','ndb_amt','ndb_maxWin',
+  'd2_maxB','d2_minD','d2_maxWin','d3_maxB','d3_minD','d3_maxWin',
+  'rl_maxB','rl_minD','rl_maxWin','fs_value','fs_maxWin',
+]);
+// Convert a stored (backend-currency) override value to the display currency.
+function ovToDisp(id, val) {
+  if (!MONEY_OV.has(id)) return val;
+  const f = dispFactor('bonus');
+  return id === 'fs_value' ? +(val * f).toFixed(2) : Math.round(val * f);
+}
+// Append the display currency code to a money override's unit hint.
+function ovUnit(id, unit) {
+  if (!MONEY_OV.has(id)) return unit;
+  return dispCurCode('bonus');
+}
+
 function mpInp(id, label, val, unit, min, max, step=null) {
   const s = step !== null ? step : (id === 'fs_value' ? '0.01' : '1');
+  const u = ovUnit(id, unit);
   return `<div class="mp-row">
-    <div class="mp-lbl">${label}${unit ? ` <span class="mp-unit">${unit}</span>` : ''}</div>
-    <input class="mp-inp" id="mp-${id}" type="number" value="${val}" min="${min}" max="${max}" step="${s}"
+    <div class="mp-lbl">${label}${u ? ` <span class="mp-unit">${u}</span>` : ''}</div>
+    <input class="mp-inp" id="mp-${id}" type="number" value="${ovToDisp(id, val)}" min="${min}" max="${max}" step="${s}"
            onchange="bonusOvChange('${id}',this.value)">
   </div>`;
 }
 
 // Like mpInp but with an extra hint line below the input
 function mpInpHint(id, label, val, unit, min, max, hintHtml) {
+  const u = ovUnit(id, unit);
   return `<div class="mp-row">
-    <div class="mp-lbl">${label}${unit ? ` <span class="mp-unit">${unit}</span>` : ''}</div>
-    <input class="mp-inp" id="mp-${id}" type="number" value="${val}" min="${min}" max="${max}" step="1"
+    <div class="mp-lbl">${label}${u ? ` <span class="mp-unit">${u}</span>` : ''}</div>
+    <input class="mp-inp" id="mp-${id}" type="number" value="${ovToDisp(id, val)}" min="${min}" max="${max}" step="1"
            onchange="bonusOvChange('${id}',this.value)">
     <div style="margin-top:2px;line-height:1.2">${hintHtml}</div>
   </div>`;
@@ -708,8 +797,10 @@ function toggleMech(key) {
 
 function bonusSetGeo(val) {
   CS.bonus.geo = val;
+  CS.bonus.curMode = 'local'; // default to the new region's currency
   const geo = cfgGeo(val);
-  // Update ov defaults based on new currency scale
+  // Update ov defaults based on new currency scale (ov is stored in geo.cur — the
+  // BACKEND currency; display conversion happens at the render/recalc boundary).
   const scaleFactor = geo.avgdep / 50;
   CS.bonus.ov.w_maxB  = Math.round(200  * scaleFactor);
   CS.bonus.ov.ndb_amt = Math.round(10   * scaleFactor);
@@ -734,7 +825,10 @@ function bonusSetPlat(v) {
 }
 
 function bonusOvChange(key, val) {
-  CS.bonus.ov[key] = parseFloat(val) || 0;
+  let v = parseFloat(val) || 0;
+  // Money fields are entered in the display currency → store in backend currency.
+  if (MONEY_OV.has(key)) v = v / dispFactor('bonus');
+  CS.bonus.ov[key] = v;
   scheduleBonusRecalc();
 }
 
@@ -834,7 +928,11 @@ async function runBonusRecalc() {
   } catch(e) { console.error('recalc error:', e); }
 }
 
-function updateBonusCostDisplay(data, cfg) {
+function updateBonusCostDisplay(rawData, rawCfg) {
+  // Display-currency layer (factor === 1 → passthrough).
+  const _f  = dispFactor('bonus');
+  const data = window.GeoData.convertCosts(rawData, _f);
+  const cfg  = window.GeoData.convertConfigCurrency(rawCfg, _f, dispCurCode('bonus'));
   const cur = cfg.cur || 'USD';
   const costs = data.costs;
   const upd = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = fmtCur(v, cur); };
@@ -872,8 +970,11 @@ function updateBonusCostDisplay(data, cfg) {
 }
 
 function renderBonusResults(B) {
-  const cfg   = B.config;
-  const costs = B.costs;
+  // Display-currency layer: convert the raw (backend-currency) config + costs for
+  // rendering only. factor === 1 (non-LatAm local mode) returns the input as-is.
+  const _f    = dispFactor('bonus');
+  const cfg   = window.GeoData.convertConfigCurrency(B.config, _f, dispCurCode('bonus'));
+  const costs = window.GeoData.convertCosts(B.costs, _f);
   const E     = cfg.econ || {};
   const cur   = cfg.cur || 'USD';
   const pl    = cfg.pl  || B.players;
@@ -1120,7 +1221,9 @@ function computeBonusBreakdown({ bonusSize, wagerX, rtp, pl, conv }) {
 function renderBonusBreakdownTable(B, v, cur, isRu) {
   const cfg = B.config;
   const E   = cfg.econ || {};
-  const bonusSize = E.bonusSize || 0;
+  // bonusSize is in backend currency; computeBonusBreakdown is linear in it, so
+  // scaling by the display factor converts every derived money value (cur passed in).
+  const bonusSize = (E.bonusSize || 0) * dispFactor('bonus');
   const wagerX    = v.wagerX;
   const rtp       = v.rtp;
   const pl        = E.pl || B.players || 1;
@@ -1169,7 +1272,7 @@ function renderBonusBreakdownTable(B, v, cur, isRu) {
       ${rowPP(L.ggrR,       fmtCur(base.ggrPerWager, cur), false, null)}
       ${rowPP(L.payoutR,    fmtCur(base.payoutPerPlayer, cur), false, null)}
       ${rowPP(L.netPPR,     (base.netPerPlayer>=0?'+':'')+fmtCur(Math.abs(base.netPerPlayer), cur), true, netPPClr)}
-      ${rowPP(L.ltv3TotalR, fmtCur((E.ltv3||0)*pl, 'USD'), false, 'var(--success)')}
+      ${rowPP(L.ltv3TotalR, fmtCur((E.ltv3||0)*pl*dispFactor('bonus'), cur), false, 'var(--success)')}
 
       <div style="font-size:11px;font-weight:600;color:var(--text2);margin:12px 0 4px">${L.perCamp}</div>
       <table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed">
@@ -1211,17 +1314,21 @@ function renderBonusAiContent(B) {
     const fmtN = n => Math.abs(n) >= 1e6
       ? (n/1e6).toFixed(1)+'M'
       : Math.abs(n) >= 1e3 ? (n/1e3).toFixed(0)+'k' : String(Math.round(n));
-    const cur = cfg.cur || 'USD';
+    // Display-currency layer: convert the raw config + costs for rendering only.
+    const _f     = dispFactor('bonus');
+    const dcfg   = window.GeoData.convertConfigCurrency(cfg, _f, dispCurCode('bonus'));
+    const cur    = dcfg.cur || 'USD';
 
     // ── Currency conversion table (sitecur → USD) for net result fix ───────
     // P1 bug: P10/P90 cost adjustments were in sitecur, net was in USD
     const SITECUR_TO_USD = { USD:1, USDT:1, SC:1, EUR:1/0.92, GBP:1/0.79,
-      DKK:1/7.37, RUB:1/90.9, KZT:1/500, MNT:1/3448, BTC:1/0.000015, ETH:1/0.00042 };
+      DKK:1/7.37, RUB:1/90.9, KZT:1/500, MNT:1/3448, BTC:1/0.000015, ETH:1/0.00042,
+      BRL:1/5.5, MXN:1/18.5, COP:1/4100, ARS:1/1050, PEN:1/3.75, CLP:1/950 };
     const fxToUsd = SITECUR_TO_USD[cur] ?? 1;
 
     // ── P10/P50/P90 cost scenarios ──────────────────────────────────────────
-    const E      = cfg.econ || {};
-    const costs  = B.costs;
+    const E      = dcfg.econ || {};
+    const costs  = window.GeoData.convertCosts(B.costs, _f);
     const pl     = cfg.pl || B.players || 1;
     const p10c   = costs ? costs.costs.w_p10 : (E.sP10?.cost || 0);
     const p50c   = costs ? costs.costs.w_p50 : (E.sP50?.cost || 0);
@@ -1321,7 +1428,7 @@ function renderBonusAiContent(B) {
           </div>
           <div class="econ-card-sm" style="border-color:${netClr}">
             <div class="econ-label">${L.netlbl}</div>
-            <div class="econ-val" style="color:${netClr}">${(eco.net>=0?'+':'')}$${fmtN(Math.abs(eco.net))}</div>
+            <div class="econ-val" style="color:${netClr}">${(eco.net>=0?'+':'')}${fmtCur(Math.abs(eco.net * _f), cur)}</div>
             <div class="card-subtitle">${L.netsub}</div>
           </div>
         </div>
@@ -1425,7 +1532,7 @@ function renderBonusAiContent(B) {
 
   if (ai.tab === 'audit') {
     if (ai.auditLoading) return loadingHtml(cfgT('ai_loading'));
-    if (ai.audit)        return renderAuditContent(ai.audit);
+    if (ai.audit)        return aiCurNote('bonus') + renderAuditContent(ai.audit);
     return `<div class="ph" style="min-height:120px">
       <button class="btn btn-primary" onclick="runBonusAudit()">${cfgT('run_audit')}</button>
     </div>`;
@@ -1433,7 +1540,7 @@ function renderBonusAiContent(B) {
 
   if (ai.tab === 'optimize') {
     if (ai.optimizeLoading) return loadingHtml(cfgT('ai_loading'));
-    if (ai.optimize)        return renderOptimizeContent(ai.optimize);
+    if (ai.optimize)        return aiCurNote('bonus') + renderOptimizeContent(ai.optimize);
     return `<div class="ph" style="min-height:120px">
       <button class="btn btn-primary" onclick="runBonusOptimize()">${cfgT('run_optimize')}</button>
     </div>`;
@@ -1516,7 +1623,7 @@ async function runBonusOptimize() {
 function _gamesParamsFor(type) {
   if (type === 'bonus')      return { geo: CS.bonus.geo,      segment: CS.bonus.segment };
   if (type === 'tournament') return { geo: CS.tournament.geo, segment: CS.tournament.segment };
-  if (type === 'loyalty')    return { geo: CS.loyalty.region, segment: CS.loyalty.segment };
+  if (type === 'loyalty')    return { geo: CS.loyalty.geo || CS.loyalty.region, segment: CS.loyalty.segment };
   return { geo: 'de', segment: 'mid' };
 }
 
@@ -1661,8 +1768,14 @@ function renderTournTypeCard(T) {
   `;
 }
 
+function tournSetGeo(v) {
+  CS.tournament.geo = v;
+  CS.tournament.curMode = 'local';
+  cfgRender();
+}
+
 function renderTournAudienceCard(T) {
-  const geoOpts = CFG_GEO.map(g=>`<option value="${g.val}"${g.val===T.geo?' selected':''}>${g.lbl}</option>`).join('');
+  const geoOpts = cfgGeoOptions(T.geo);
   const segments = [
     {val:'all',lbl:'seg_all'},{val:'depositors',lbl:'seg_depositors'},
     {val:'new',lbl:'seg_new'},{val:'vip',lbl:'seg_vip'},{val:'dormant',lbl:'seg_dormant'},
@@ -1672,8 +1785,9 @@ function renderTournAudienceCard(T) {
       <div class="card-title">${cfgT('tourn_params')} — ${cfgT('tourn_geo').split('/')[0]}</div>
       <div class="form-row">
         <label class="form-label">${cfgT('tourn_geo')}</label>
-        <select class="form-input" onchange="CS.tournament.geo=this.value">${geoOpts}</select>
+        <select class="form-input" onchange="tournSetGeo(this.value)">${geoOpts}</select>
       </div>
+      ${renderCurToggle('tournament')}
       <div class="form-row">
         <label class="form-label">${cfgT('tourn_players')}</label>
         <input class="form-input" type="number" value="${T.totalPlayers}" min="100" step="100"
@@ -1701,13 +1815,14 @@ function renderTournSetupCard(T) {
   const dur = T.duration;
   const lang = cfgLang();
   const geo = cfgGeo(T.geo);
+  const _tf = dispFactor('tournament');
   return `
     <div class="card">
       <div class="card-title">${cfgT('tourn_params')} — ${cfgT('tourn_prize').split(' ')[0]}</div>
       <div class="form-row">
-        <label class="form-label">${cfgT('tourn_prize')} (${geo.cur})</label>
-        <input class="form-input" type="number" value="${T.prizePool}" min="100" step="100"
-               onchange="CS.tournament.prizePool=+this.value||1000">
+        <label class="form-label">${cfgT('tourn_prize')} (${dispCurCode('tournament')})</label>
+        <input class="form-input" type="number" value="${Math.round(T.prizePool * _tf)}" min="100" step="100"
+               onchange="CS.tournament.prizePool=(+this.value||1000)/dispFactor('tournament')">
       </div>
       <div class="form-row">
         <label class="form-label">${cfgT('tourn_pool_model')}</label>
@@ -1828,22 +1943,23 @@ async function onGenerateTournament() {
 function renderTournamentResults(T) {
   const d   = T.result;
   const econ = d.econ || {};
-  const geo  = cfgGeo(T.geo);
-  const cur  = d.cur || geo.cur;
   const ai   = CAI.tournament;
+  // Display-currency layer (factor === 1 → passthrough). Backend econ is in d.cur.
+  const _tf  = dispFactor('tournament');
+  const cur  = dispCurCode('tournament');
 
   const eligible   = econ.eligible              || 0;
   const expPart    = econ.participantsMid        || 0;
-  const ggrLift    = econ.ggrLiftMid             || 0;
+  const ggrLift    = (econ.ggrLiftMid            || 0);
   const roi        = econ.roi                    || 0;
   const engagement = econ.engagementMultiplier   || 1.5;
-  const cpp        = econ.costPerActiveMid       || 0;
+  const cpp        = (econ.costPerActiveMid      || 0) * _tf;
 
   const econCards = `
     <div class="econ-grid">
       ${econCard('', cfgT('econ_eligible'),    fmtN(eligible),          cfgT('seg_'+T.segment)||T.segment, '')}
       ${econCard('', cfgT('econ_participation'),fmtN(expPart),           cfgT('per_mo'), '')}
-      ${econCard('', cfgT('econ_ggr_lift'),    typeof ggrLift==='number'&&ggrLift<2 ? fmtPct(ggrLift) : '+'+fmtN(ggrLift,0), '', ggrLift>0?'pos':'')}
+      ${econCard('', cfgT('econ_ggr_lift'),    typeof ggrLift==='number'&&ggrLift<2 ? fmtPct(ggrLift) : '+'+fmtN(ggrLift*_tf,0), '', ggrLift>0?'pos':'')}
       ${econCard('', cfgT('econ_roi_tourn'),   (roi||0).toFixed(0)+'%', cfgT('of_deposits'), roi>0?'pos':'neg')}
       ${econCard('', cfgT('econ_engagement'),  fmtN(engagement,2)+'×',  'vs normal play',    'pos')}
       ${econCard('', cfgT('econ_cost_active'), fmtCur(cpp, cur),        cfgT('per_player'),  '')}
@@ -1857,14 +1973,14 @@ function renderTournamentResults(T) {
     prizeHtml = `
       <div class="card" style="margin-bottom:16px">
         <div class="card-title" style="margin-bottom:10px">
-          Prize Distribution (${cur} ${fmtN(T.prizePool)} pool)
+          Prize Distribution (${cur} ${fmtN(T.prizePool * _tf)} pool)
         </div>
         ${prizes.slice(0,10).map((p,i) => {
           const pct = T.prizePool > 0 ? (p.amount / T.prizePool) * 100 : 0;
           return `<div class="prize-row">
             <span class="prize-place">#${i+1}</span>
             <div class="prize-bar-wrap"><div class="prize-bar" style="width:${Math.min(100,pct)}%"></div></div>
-            <span class="prize-amt">${fmtCur(p.amount, cur)}</span>
+            <span class="prize-amt">${fmtCur(p.amount * _tf, cur)}</span>
           </div>`;
         }).join('')}
       </div>
@@ -1907,9 +2023,12 @@ function tournSetTab(tab) {
 
 function renderTournEconContent(T) {
   const d    = T.result;
-  const econ = d.econ || {};
-  const cur  = d.cur || cfgGeo(T.geo).cur;
   const isRu = cfgLang() === 'ru';
+  // Display-currency layer (factor === 1 → passthrough). scaleFields converts
+  // every money key of the econ object once; counts/ratios are left untouched.
+  const _tf  = dispFactor('tournament');
+  const cur  = dispCurCode('tournament');
+  const econ = window.GeoData.scaleFields(d.econ || {}, _tf, TOURN_ECON_MONEY);
 
   const pLow  = econ.participantsLow  || 0;
   const pMid  = econ.participantsMid  || 0;
@@ -1982,14 +2101,14 @@ function renderTournAiContent(T) {
   if (ai.tab === 'econ') return renderTournEconContent(T);
   if (ai.tab === 'audit') {
     if (ai.auditLoading) return loadingHtml(cfgT('ai_loading'));
-    if (ai.audit)        return renderAuditContent(ai.audit);
+    if (ai.audit)        return aiCurNote('tournament') + renderAuditContent(ai.audit);
     return `<div class="ph" style="min-height:120px">
       <button class="btn btn-primary" onclick="runTournAudit()">${cfgT('run_audit')}</button>
     </div>`;
   }
   if (ai.tab === 'optimize') {
     if (ai.optimizeLoading) return loadingHtml(cfgT('ai_loading'));
-    if (ai.optimize)        return renderTournOptimizeContent(ai.optimize);
+    if (ai.optimize)        return aiCurNote('tournament') + renderTournOptimizeContent(ai.optimize);
     return `<div class="ph" style="min-height:120px">
       <button class="btn btn-primary" onclick="runTournOptimize()">${cfgT('run_optimize')}</button>
     </div>`;
@@ -2081,17 +2200,30 @@ function renderLoyaltyModeCard(LY, lang) {
   `;
 }
 
+function loyalSetGeo(v) {
+  CS.loyalty.geo = v;
+  // 'crypto' is a region-only option (no country) — Loyalty is region-agnostic,
+  // so it's just a label; keep it out of cfgGeo (which would fall back to de/eu).
+  CS.loyalty.region = v === 'crypto' ? 'crypto' : cfgGeo(v).region;
+  CS.loyalty.curMode = 'local';
+  cfgRender();
+}
+
 function renderLoyaltyAudienceCard(LY) {
-  const regOpts = ['eu','cis','mn','latam','sweep','crypto'].map(r=>
-    `<option value="${r}"${r===LY.region?' selected':''}>${cfgT('reg_'+r)}</option>`
-  ).join('');
+  const isRu = cfgLang() === 'ru';
+  const geoOpts = cfgGeoOptions(LY.geo || 'de') +
+    `<optgroup label="${isRu ? 'Глобально' : 'Global'}">` +
+    `<option value="crypto"${LY.geo === 'crypto' ? ' selected' : ''}>🌐 Crypto / Global</option></optgroup>`;
+  const _lf = dispFactor('loyalty');
+  const _lc = dispCurCode('loyalty');
   return `
     <div class="card">
       <div class="card-title">${cfgT('loyal_audience')}</div>
       <div class="form-row">
         <label class="form-label">${cfgT('loyal_region')}</label>
-        <select class="form-input" onchange="CS.loyalty.region=this.value">${regOpts}</select>
+        <select class="form-input" onchange="loyalSetGeo(this.value)">${geoOpts}</select>
       </div>
+      ${renderCurToggle('loyalty')}
       <div class="form-row">
         <label class="form-label">${cfgT('loyal_segment')}</label>
         <div class="chips">
@@ -2104,14 +2236,14 @@ function renderLoyaltyAudienceCard(LY) {
                onchange="CS.loyalty.players=+this.value||5000">
       </div>
       <div class="form-row">
-        <label class="form-label">${cfgT('loyal_avgdep')} (USD)</label>
-        <input class="form-input" type="number" value="${LY.avgdep}" min="1" step="1"
-               onchange="CS.loyalty.avgdep=+this.value||100">
+        <label class="form-label">${cfgT('loyal_avgdep')} (${_lc})</label>
+        <input class="form-input" type="number" value="${Math.round(LY.avgdep * _lf)}" min="1" step="1"
+               onchange="CS.loyalty.avgdep=(+this.value||100)/dispFactor('loyalty')">
       </div>
       <div class="form-row">
-        <label class="form-label">${cfgT('loyal_arpu')}</label>
-        <input class="form-input" type="number" value="${LY.arpu}" min="1" step="1"
-               onchange="CS.loyalty.arpu=+this.value||50">
+        <label class="form-label">${cfgT('loyal_arpu')} (${_lc})</label>
+        <input class="form-input" type="number" value="${Math.round(LY.arpu * _lf)}" min="1" step="1"
+               onchange="CS.loyalty.arpu=(+this.value||50)/dispFactor('loyalty')">
       </div>
     </div>
   `;
@@ -2213,8 +2345,10 @@ async function onGenerateLoyalty() {
 
 function renderLoyaltyResults(LY) {
   const d   = LY.result;
-  const econ = d.econ || {};
   const ai   = CAI.loyalty;
+  const _lf  = dispFactor('loyalty');
+  const _lc  = dispCurCode('loyalty');
+  const econ = window.GeoData.scaleFields(d.econ || {}, _lf, LOYALTY_ECON_MONEY);
 
   const costMo    = econ.monthlyCostUSD    || 0;
   const costGgr   = (econ.costRatioPct    || 0) / 100;
@@ -2225,12 +2359,12 @@ function renderLoyaltyResults(LY) {
 
   const econCards = `
     <div class="econ-grid">
-      ${econCard('', cfgT('loyal_monthly_cost'), '$'+fmtN(costMo), cfgT('per_mo'), '')}
+      ${econCard('', cfgT('loyal_monthly_cost'), fmtCur(costMo, _lc), cfgT('per_mo'), '')}
       ${econCard('', cfgT('econ_cost_ggr'),  fmtPct(costGgr),  'of GGR',          costGgr<0.15?'pos':costGgr<0.25?'neu':'neg')}
       ${econCard('', cfgT('econ_retention'), fmtPct(retention),'lift',             'pos')}
       ${econCard('', cfgT('econ_ltv3'),      fmtPct(roi3),     '3-month',         roi3>0?'pos':'neg')}
       ${econCard('', cfgT('econ_breakeven'), breakeven != null ? fmtN(breakeven,1)+' mo' : '—', 'months', '')}
-      ${econCard('', cfgT('econ_liability'), '$'+fmtN(liability), 'unredeemed pts', '')}
+      ${econCard('', cfgT('econ_liability'), fmtCur(liability, _lc), 'unredeemed pts', '')}
     </div>
   `;
 
@@ -2325,8 +2459,13 @@ function loyalSetTab(tab) {
 
 function renderLoyaltyEconContent(LY) {
   const d    = LY.result;
-  const econ = d.econ || {};
   const isRu = cfgLang() === 'ru';
+  // Display-currency layer: Loyalty econ is USD; scaleFields converts money keys
+  // once (factor === 1 in USD mode; for non-LatAm local mode = native rate).
+  const _lf  = dispFactor('loyalty');
+  const _lc  = dispCurCode('loyalty');
+  const M    = v => fmtCur(v, _lc);
+  const econ = window.GeoData.scaleFields(d.econ || {}, _lf, LOYALTY_ECON_MONEY);
 
   const monthly     = econ.monthlyCostUSD     || 0;
   const tierCost    = econ.tierRewardCostUSD   || 0;
@@ -2369,11 +2508,11 @@ function renderLoyaltyEconContent(LY) {
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:${s.isMid?'#a0b0ff':'var(--text2)'}">${s.badge}</div>
         <div style="font-size:11px;color:var(--text);font-weight:600;margin:2px 0 8px">${s.lbl}</div>
         <div style="border-top:1px solid rgba(255,255,255,.07);padding-top:7px">
-          ${lyScRow(isRu?'Затраты/мес':'Monthly cost', '$'+fmtN(sCost), null)}
+          ${lyScRow(isRu?'Затраты/мес':'Monthly cost', M(sCost), null)}
           ${lyScRow(isRu?'Нагрузка / GGR':'Cost / GGR', sRatio.toFixed(1)+'%', null)}
           ${lyScRow('ROI 3' + (isRu?'мес':'mo'), fmtPct(sRoi), sRoi>0?'#10b981':'#ef4444')}
           <div style="border-top:1px solid rgba(255,255,255,.07);margin-top:5px;padding-top:5px">
-            ${lyScRow(isRu?'Чистый результат':'Net result (3mo)', (sNet>=0?'+':'')+'$'+fmtN(Math.abs(sNet)), scColor(sNet))}
+            ${lyScRow(isRu?'Чистый результат':'Net result (3mo)', (sNet>=0?'+':'')+M(Math.abs(sNet)), scColor(sNet))}
           </div>
         </div>
       </div>`;
@@ -2403,11 +2542,11 @@ function renderLoyaltyEconContent(LY) {
       <div style="display:flex;gap:7px;margin-bottom:16px">${scenCols}</div>
 
       <div class="econ-grid" style="margin-bottom:16px">
-        ${econCard('', L.moCost,   '$'+fmtN(monthly),          isRu?'всего программа':'total program',   '')}
+        ${econCard('', L.moCost,   M(monthly),                 isRu?'всего программа':'total program',   '')}
         ${econCard('', L.costGgr,  costRatio.toFixed(1)+'%',   isRu?'от выручки':'of gross revenue',     costRatio<15?'pos':costRatio<25?'neu':'neg')}
         ${econCard('', L.retLift,  retention.toFixed(1)+'%',   '+activity',   'pos')}
         ${econCard('', L.roi,      fmtPct(roi3),               '3-month',     roi3>0?'pos':'neg')}
-        ${econCard('', L.addRev,   '$'+fmtN(rev3m),            '3-month',     'pos')}
+        ${econCard('', L.addRev,   M(rev3m),                   '3-month',     'pos')}
         ${econCard('', L.be,       breakeven != null ? fmtN(breakeven,1)+' mo' : '—', isRu?'мес':'months', '')}
       </div>
       <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">${L.breakdown}</div>
@@ -2415,17 +2554,17 @@ function renderLoyaltyEconContent(LY) {
         <tbody>
           <tr style="border-bottom:1px solid rgba(255,255,255,.05)">
             <td style="padding:7px 8px">${L.ptRedeem}</td>
-            <td style="text-align:right;padding:7px 8px">$${fmtN(redeemCost)}</td>
+            <td style="text-align:right;padding:7px 8px">${M(redeemCost)}</td>
             <td style="text-align:right;padding:7px 8px;color:var(--text2)">${monthly>0?(redeemCost/monthly*100).toFixed(0)+'%':''}</td>
           </tr>
           <tr style="border-bottom:1px solid rgba(255,255,255,.05)">
             <td style="padding:7px 8px">${L.tierRew}</td>
-            <td style="text-align:right;padding:7px 8px">$${fmtN(tierCost)}</td>
+            <td style="text-align:right;padding:7px 8px">${M(tierCost)}</td>
             <td style="text-align:right;padding:7px 8px;color:var(--text2)">${monthly>0?(tierCost/monthly*100).toFixed(0)+'%':''}</td>
           </tr>
           <tr>
             <td style="padding:7px 8px">${L.misRew}</td>
-            <td style="text-align:right;padding:7px 8px">$${fmtN(missionCost)}</td>
+            <td style="text-align:right;padding:7px 8px">${M(missionCost)}</td>
             <td style="text-align:right;padding:7px 8px;color:var(--text2)">${monthly>0?(missionCost/monthly*100).toFixed(0)+'%':''}</td>
           </tr>
         </tbody>
@@ -2434,7 +2573,7 @@ function renderLoyaltyEconContent(LY) {
       <div class="econ-grid">
         ${econCard('', L.earned,   fmtN(ptsEarned,0)+' pts',   isRu?'в месяц':'per month',  '')}
         ${econCard('', L.redeemed, fmtN(ptsRedeemed,0)+' pts', isRu?'в месяц':'per month',  '')}
-        ${econCard('', L.liab,     '$'+fmtN(liability),         isRu?'непогашено':'unredeemed', '')}
+        ${econCard('', L.liab,     M(liability),                isRu?'непогашено':'unredeemed', '')}
       </div>
     </div>
   `;
@@ -2445,14 +2584,14 @@ function renderLoyaltyAiContent(LY) {
   if (ai.tab === 'econ') return renderLoyaltyEconContent(LY);
   if (ai.tab === 'audit') {
     if (ai.auditLoading) return loadingHtml(cfgT('ai_loading'));
-    if (ai.audit)        return renderAuditContent(ai.audit);
+    if (ai.audit)        return aiCurNote('loyalty') + renderAuditContent(ai.audit);
     return `<div class="ph" style="min-height:120px">
       <button class="btn btn-primary" onclick="runLoyaltyAudit()">${cfgT('run_audit')}</button>
     </div>`;
   }
   if (ai.tab === 'optimize') {
     if (ai.optimizeLoading) return loadingHtml(cfgT('ai_loading'));
-    if (ai.optimize)        return renderOptimizeContent(ai.optimize);
+    if (ai.optimize)        return aiCurNote('loyalty') + renderOptimizeContent(ai.optimize);
     return `<div class="ph" style="min-height:120px">
       <button class="btn btn-primary" onclick="runLoyaltyOptimize()">${cfgT('run_optimize')}</button>
     </div>`;

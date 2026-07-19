@@ -12,9 +12,9 @@ const SCENARIOS = [
 function getProgSteps() {
   return [t('prog_1'),t('prog_2'),t('prog_3'),t('prog_4'),t('prog_5')];
 }
-const GEO_LBL   = {eu:'🇪🇺 EU / UK',de:'🇩🇪 Germany',fr:'🇫🇷 France',es:'🇪🇸 Spain',it:'🇮🇹 Italy',nl:'🇳🇱 Netherlands',dk:'🇩🇰 Denmark',uk:'🇬🇧 UK',ru:'🌐 Russia',kz:'🇰🇿 Kazakhstan',mx:'🇲🇽 Mexico',br:'🇧🇷 Brazil',mn:'🇲🇳 Mongolia',us:'🇺🇸 USA'};
+const GEO_LBL   = {eu:'🇪🇺 EU / UK',de:'🇩🇪 Germany',fr:'🇫🇷 France',es:'🇪🇸 Spain',it:'🇮🇹 Italy',nl:'🇳🇱 Netherlands',dk:'🇩🇰 Denmark',uk:'🇬🇧 UK',ru:'🌐 Russia',kz:'🇰🇿 Kazakhstan',br:'🇧🇷 Brazil',mx:'🇲🇽 Mexico',co:'🇨🇴 Colombia',ar:'🇦🇷 Argentina',pe:'🇵🇪 Peru',cl:'🇨🇱 Chile',mn:'🇲🇳 Mongolia',us:'🇺🇸 USA'};
 const SEG_LBL   = {new:'Новые',mid:'Средние',vip:'VIP'};
-const GEO_CURRENCY = {de:'EUR',fr:'EUR',es:'EUR',it:'EUR',nl:'EUR',dk:'DKK',uk:'GBP',ru:'RUB',kz:'KZT',mx:'MXN',br:'BRL',mn:'MNT',us:'USD'};
+const GEO_CURRENCY = {de:'EUR',fr:'EUR',es:'EUR',it:'EUR',nl:'EUR',dk:'DKK',uk:'GBP',ru:'RUB',kz:'KZT',br:'USD',mx:'USD',co:'USD',ar:'USD',pe:'USD',cl:'USD',mn:'MNT',us:'USD'};
 
 // Returns undefined for unknown geo — callers decide the fallback
 function getSitecurByGeo(geo) {
@@ -205,7 +205,7 @@ function selScenario(id, el) {
 }
 
 // ── STEP 2 ────────────────────────────────────────────────────────────────────
-const GEO_LANG = { de:'de', fr:'en', es:'es', it:'en', nl:'en', dk:'da', uk:'en', ru:'ru', kz:'ru', mx:'es', br:'es', mn:'mn', us:'en', eu:'en' };
+const GEO_LANG = { de:'de', fr:'en', es:'es', it:'en', nl:'en', dk:'da', uk:'en', ru:'ru', kz:'ru', br:'es', mx:'es', co:'es', ar:'es', pe:'es', cl:'es', mn:'mn', us:'en', eu:'en' };
 
 function syncLangToGeo(geo) {
   const euWrap = document.getElementById('eu-ctry-wrap');
@@ -1253,7 +1253,7 @@ function generateAdminConfig() {
   const line = '─'.repeat(54);
   const now  = new Date().toISOString().slice(0,10);
 
-  const GEO_NAME = {eu:'EU / UK',de:'Germany',fr:'France',es:'Spain',it:'Italy',nl:'Netherlands',dk:'Denmark',uk:'United Kingdom',ru:'Russia',kz:'Kazakhstan',mx:'Mexico',br:'Brazil',mn:'Mongolia',us:'USA (Sweep)'};
+  const GEO_NAME = {eu:'EU / UK',de:'Germany',fr:'France',es:'Spain',it:'Italy',nl:'Netherlands',dk:'Denmark',uk:'United Kingdom',ru:'Russia',kz:'Kazakhstan',br:'Brazil',mx:'Mexico',co:'Colombia',ar:'Argentina',pe:'Peru',cl:'Chile',mn:'Mongolia',us:'USA (Sweep)'};
   const SEG_NAME = {new:'New players',mid:'Regular players',vip:'VIP'};
   const LBL = {welcome:'1ST_DEPOSIT',ndb:'WELCOME_NODEP',reload:'RELOAD',dep2:'2ND_DEPOSIT',dep3:'3RD_DEPOSIT',cashback:'CASHBACK'};
   const VERDICT = {verdict_cheap:'WEAK (raise match % or lower wager)',verdict_ok:'OPTIMAL',verdict_warn:'HIGH LOAD — review wager/maxB',verdict_high:'LOSS-MAKING — urgent fix required'};

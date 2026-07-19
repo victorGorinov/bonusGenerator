@@ -97,6 +97,48 @@ describe('buildConfig — LatAm', () => {
   it('no reg strings',                 () => expect(cfg.reg).toBeNull());
 });
 
+// ── LatAm — per-country licenses (regulated markets) ──────────────────────────
+
+describe('buildConfig — LatAm/Brazil (bets_br)', () => {
+  const cfg = buildConfig({ ...lat, lic: 'bets_br' });
+
+  it('reg strings present',            () => expect(cfg.reg).toEqual(['reg_betsbr_1', 'reg_betsbr_2', 'reg_betsbr_3']));
+  it('welcome maxB ≤ 400 (tighter cap)', () => expect(cfg.welcome.maxB).toBeLessThanOrEqual(400));
+  it('wager wW = 35',                  () => expect(cfg.wager.wW).toBe(35));
+});
+
+describe('buildConfig — LatAm/Mexico (segob)', () => {
+  const cfg = buildConfig({ ...lat, lic: 'segob' });
+
+  it('reg strings present',            () => expect(cfg.reg).toEqual(['reg_segob_1', 'reg_segob_2']));
+  it('welcome maxB between 250-500',   () => {
+    expect(cfg.welcome.maxB).toBeGreaterThanOrEqual(250);
+    expect(cfg.welcome.maxB).toBeLessThanOrEqual(500);
+  });
+});
+
+describe('buildConfig — LatAm/Colombia (coljuegos)', () => {
+  const cfg = buildConfig({ ...lat, lic: 'coljuegos' });
+
+  it('reg strings present',            () => expect(cfg.reg).toEqual(['reg_coljuegos_1', 'reg_coljuegos_2']));
+  it('wager wW = 35',                  () => expect(cfg.wager.wW).toBe(35));
+});
+
+describe('buildConfig — LatAm/Peru (mincetur)', () => {
+  const cfg = buildConfig({ ...lat, lic: 'mincetur' });
+
+  it('reg strings present',            () => expect(cfg.reg).toEqual(['reg_mincetur_1', 'reg_mincetur_2']));
+  it('welcome maxB ≤ 450',             () => expect(cfg.welcome.maxB).toBeLessThanOrEqual(450));
+});
+
+describe('buildConfig — LatAm/Argentina & Chile (offshore, none)', () => {
+  it('Argentina uses offshore default — no reg strings', () => {
+    const cfg = buildConfig({ ...lat, lic: 'none' });
+    expect(cfg.reg).toBeNull();
+    expect(cfg.cur).toBe('USD');
+  });
+});
+
 // ── riskAdj ───────────────────────────────────────────────────────────────────
 
 describe('buildConfig — riskAdj', () => {

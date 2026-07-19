@@ -403,8 +403,15 @@ Country → geo/license (`GEO_CFG` in `src/domain/campaign/scenarios.ts`):
 ```
 de/fr/es/it/nl → eu, mga, EUR    dk → eu, dga, DKK    uk → eu, ukgc, GBP
 ru → cis, none, RUB    kz → cis, none, KZT    mn → mn, none, MNT
-us → sweep, none, USD    mx/br → latam, none, USD
+us → sweep, none, USD
+LatAm (all sitecur=USD in backend — see currency-layer note below):
+  br → latam, bets_br    mx → latam, segob    co → latam, coljuegos
+  pe → latam, mincetur   ar → latam, none     cl → latam, none
 ```
+
+**LatAm split (2026-07-19)** — LatAm broken into 6 countries mirroring EU's per-country model. `latam.ts` now has a `licenses:{}` block (like EU's `ukgc`/`dga`): regulated markets carry their own license (`bets_br` Brazil/SPA, `segob` Mexico, `coljuegos` Colombia, `mincetur` Peru — each with `reg` strings + welcome/wager overrides, **all amounts in USD**); Argentina (provincial) and Chile (grey market) use the offshore Curaçao default (`none`). New license keys added to the `lic` enums in `generate`/`campaign`/`tournament` schemas + `reg_*` i18n in `app.js` (4 langs). Backend computes **all LatAm in USD** — a single shared `LATAM` geo object can't hold 6 currency scales (BRL ×5.5 … COP ×4100), so local currency is a **display layer**, never a backend re-scale.
+
+**Currency layer (display-only, `public/geo-data.js`)** — single source of truth for the geo list (replaces the ~6 duplicated dicts). Each geo has `cur` (backend currency, sent as sitecur — LatAm=USD), `rate` (units of cur/USD), `local`+`localRate` (region display currency). A currency toggle in the unified Configurator (Bonus/Tournament/Loyalty tabs) picks the display currency — **region-local by default, USD optional** — via `GeoData.convertConfigCurrency()`/`convertCosts()` applied to the API responses at pure-render boundaries (`renderBonusResults`, `updateBonusCostDisplay`, econ tabs) and to money input fields (avgdep/prize/overrides). USD econ benchmarks (arpu/cac/ltv3) and ratios are never converted. Loyalty is currency-agnostic (always USD backend) → its factor uses base=1, not geo.rate (see `dispBaseRate()`). Loyalty tab now uses a country selector grouped by region (`cfgGeoOptions`), deriving region from the country. Standalone generators (campaign/tournament + `generator*.js` twins) got the 4 new countries added to their geo dicts (additive; no currency toggle there — the Configurator is the primary tool). Tests: `tests/domain/geo.currency.test.js` (converter + factor + list integrity), `buildConfig.test.js` (per-license LatAm snapshots).
 
 ---
 

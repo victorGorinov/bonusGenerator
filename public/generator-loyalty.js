@@ -67,12 +67,62 @@ const lyDraft = {
   redeemMinPoints: 1000,
   pointsExpiry:    0,
   missionCount:    3,
-  region:          'eu',
+  geo:             'de',       // country (grouped select from geo-data.js)
+  region:          'eu',       // derived from geo — sent to the API
+  _curMode:        'local',    // 'local' (region currency) | 'usd'
   segment:         'mid',
   players:         5000,
-  avgdep:          100,
-  arpu:            50,
+  avgdep:          100,        // stored in USD (backend); displayed × factor
+  arpu:            50,         // stored in USD
 };
+
+// ── Geo + currency (identical model to the Configurator's Loyalty tab) ────────
+// Loyalty is currency-agnostic on the backend (always USD); the toggle only
+// converts the DISPLAY (region-local default / USD). Base rate is USD (1), so the
+// factor is the display currency's rate (not divided by a geo base like Bonus).
+const LY_CRYPTO_GEO = { val:'crypto', cur:'USD', local:'USD', rate:1, localRate:1, region:'crypto', en:'Crypto / Global', ru:'Crypto / Global', lbl:'🌐 Crypto / Global' };
+function lyGeo() { return lyDraft.geo === 'crypto' ? LY_CRYPTO_GEO : window.GeoData.of(lyDraft.geo || 'de'); }
+function lyCurMode() { return lyDraft._curMode || 'local'; }
+function lyDispFactor() { return lyCurMode() === 'usd' ? 1 : lyGeo().localRate; }
+function lyDispCur() { return lyCurMode() === 'usd' ? 'USD' : lyGeo().local; }
+function lyFmtNum(n) {
+  if (Math.abs(n) >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (Math.abs(n) >= 1000)    return (n / 1000).toFixed(1) + 'K';
+  return Math.round(n).toLocaleString();
+}
+// Region-grouped country <option>s from geo-data.js + a Crypto/Global option.
+function lyGeoOptions() {
+  const lang = (localStorage.getItem('bonusLang') || 'en') === 'ru' ? 'ru' : 'en';
+  const groups = window.GeoData.groups(lang).map(gr =>
+    `<optgroup label="${gr.label}">${gr.items.map(g => `<option value="${g.val}"${lyDraft.geo === g.val ? ' selected' : ''}>${g.lbl}</option>`).join('')}</optgroup>`
+  ).join('');
+  const cryptoLbl = lang === 'ru' ? 'Глобально' : 'Global';
+  return groups + `<optgroup label="${cryptoLbl}"><option value="crypto"${lyDraft.geo === 'crypto' ? ' selected' : ''}>🌐 Crypto / Global</option></optgroup>`;
+}
+function lyPickGeo(geo) {
+  lyDraft.geo = geo;
+  lyDraft.region = geo === 'crypto' ? 'crypto' : (window.GeoData.of(geo).region);
+  lyDraft._curMode = 'local';
+  renderStep1();
+}
+function lySetCur(mode) {
+  lyDraft._curMode = mode;
+  // Re-render whichever wizard step is active so the result econ updates live too.
+  if (step === 3 && lastResult) renderStep3(lastResult);
+  else renderStep1();
+}
+// Currency toggle for the result view (result geo = generation geo).
+function lyCurToggleHTML() {
+  if (lyGeo().local === 'USD') return '';
+  const isRu = (localStorage.getItem('bonusLang') || 'en') === 'ru';
+  return `<div class="form-row" style="margin-bottom:10px">
+    <label class="form-label">${isRu ? 'Валюта отображения' : 'Display currency'}</label>
+    <div class="chips">
+      <div class="chip${lyCurMode() !== 'usd' ? ' on' : ''}" onclick="lySetCur('local')">${lyGeo().local}</div>
+      <div class="chip${lyCurMode() === 'usd' ? ' on' : ''}" onclick="lySetCur('usd')">USD</div>
+    </div>
+  </div>`;
+}
 
 // ── LOCALSTORAGE ───────────────────────────────────────────────────────────────
 
@@ -637,8 +687,14 @@ function missionListHTML(missions) {
 }
 
 
-function econGridHTML(econ, prevEcon) {
+// opts.factor / opts.cur override the display currency (saved-program detail view
+// passes {factor:1, cur:'USD'} — cross-geo programs are shown in USD, the common
+// denominator; the live result view uses the current toggle by default).
+function econGridHTML(econ, prevEcon, opts) {
   const p = prevEcon || null;
+  const _lf  = opts && opts.factor != null ? opts.factor : lyDispFactor(); // USD → display (1 in USD mode)
+  const _cur = (opts && opts.cur) || lyDispCur();
+  const M    = v => (_cur === 'USD' ? '$' + lyFmtNum(v) : lyFmtNum(v) + ' ' + _cur);
   const roi3m = econ.roi3m;
   const roiClass  = roi3m >= 1.5 ? 'pos' : roi3m >= 0.8 ? 'neu' : 'neg';
   const liftClass = econ.retentionLiftPct >= 15 ? 'pos' : econ.retentionLiftPct >= 8 ? 'neu' : 'neg';
@@ -648,9 +704,9 @@ function econGridHTML(econ, prevEcon) {
   return `<div class="econ-grid">
     <div class="econ-card">
       <div class="econ-label">${lyT('cost_lbl')}</div>
-      <div class="econ-val ${costClass}">${fmtUSD(econ.monthlyCostUSD)}</div>
+      <div class="econ-val ${costClass}">${M(econ.monthlyCostUSD * _lf)}</div>
       <div class="econ-sub">${lyT('econ_sub_mo')}</div>
-      ${deltaBadge(econ.monthlyCostUSD, p?.monthlyCostUSD, { lowerBetter: true, fmt: d => (d > 0 ? '+' : '') + fmtUSD(Math.abs(d)).replace('$', '') })}
+      ${deltaBadge(econ.monthlyCostUSD, p?.monthlyCostUSD, { lowerBetter: true, fmt: d => (d > 0 ? '+' : '') + lyFmtNum(Math.abs(d) * _lf) })}
     </div>
     <div class="econ-card">
       <div class="econ-label">${lyT('cost_ratio')}</div>
@@ -677,9 +733,9 @@ function econGridHTML(econ, prevEcon) {
     </div>
     <div class="econ-card">
       <div class="econ-label">${lyT('liability')}</div>
-      <div class="econ-val neu">${fmtUSD(econ.totalLiabilityUSD)}</div>
+      <div class="econ-val neu">${M(econ.totalLiabilityUSD * _lf)}</div>
       <div class="econ-sub">${lyT('econ_sub_pts')}</div>
-      ${deltaBadge(econ.totalLiabilityUSD, p?.totalLiabilityUSD, { lowerBetter: true, fmt: d => (d > 0 ? '+' : '') + fmtUSD(Math.abs(d)).replace('$', '') })}
+      ${deltaBadge(econ.totalLiabilityUSD, p?.totalLiabilityUSD, { lowerBetter: true, fmt: d => (d > 0 ? '+' : '') + lyFmtNum(Math.abs(d) * _lf) })}
     </div>
   </div>`;
 }
@@ -816,10 +872,6 @@ function renderStep1() {
       <span class="tc-desc">${m.desc}</span>
     </div>`).join('');
 
-  const regionOpts = REGIONS.map(r =>
-    `<option value="${r.val}" ${lyDraft.region === r.val ? 'selected' : ''}>${r.lbl}</option>`
-  ).join('');
-
   const segChips = SEGMENTS.map(s => `
     <div class="chip ${lyDraft.segment === s.val ? 'on' : ''}" onclick="setDraft('segment','${s.val}');renderStep1()">
       ${s.lbl}
@@ -840,8 +892,15 @@ function renderStep1() {
   <div class="card">
     <div class="form-row">
       <label class="form-label">${lyT('region')}</label>
-      <select class="form-input" onchange="setDraft('region',this.value)">${regionOpts}</select>
+      <select class="form-input" onchange="lyPickGeo(this.value)">${lyGeoOptions()}</select>
     </div>
+    ${lyGeo().local !== 'USD' ? `<div class="form-row">
+      <label class="form-label">${(localStorage.getItem('bonusLang')||'en')==='ru'?'Валюта отображения':'Display currency'}</label>
+      <div class="chips">
+        <div class="chip${lyCurMode()!=='usd'?' on':''}" onclick="lySetCur('local')">${lyGeo().local}</div>
+        <div class="chip${lyCurMode()==='usd'?' on':''}" onclick="lySetCur('usd')">USD</div>
+      </div>
+    </div>` : ''}
     <div class="form-row" style="margin-bottom:0">
       <label class="form-label">${lyT('segment')}</label>
       <div class="chips">${segChips}</div>
@@ -856,14 +915,14 @@ function renderStep1() {
           oninput="setDraft('players',+this.value)">
       </div>
       <div class="form-row" style="margin-bottom:0">
-        <label class="form-label">${lyT('avgdep')}</label>
-        <input class="form-input" type="number" min="1" max="10000" value="${lyDraft.avgdep}"
-          oninput="setDraft('avgdep',+this.value)">
+        <label class="form-label">${lyT('avgdep').replace(/\s*\(USD\)/,'')} (${lyDispCur()})</label>
+        <input class="form-input" type="number" min="1" value="${Math.round(lyDraft.avgdep * lyDispFactor())}"
+          oninput="setDraft('avgdep',(+this.value||1)/lyDispFactor())">
       </div>
       <div class="form-row" style="margin-bottom:0">
-        <label class="form-label">${lyT('arpu')}</label>
-        <input class="form-input" type="number" min="1" max="10000" value="${lyDraft.arpu}"
-          oninput="setDraft('arpu',+this.value)">
+        <label class="form-label">${lyT('arpu').replace(/\s*\(USD[^)]*\)/,'')} (${lyDispCur()})</label>
+        <input class="form-input" type="number" min="1" value="${Math.round(lyDraft.arpu * lyDispFactor())}"
+          oninput="setDraft('arpu',(+this.value||1)/lyDispFactor())">
       </div>
     </div>
   </div>
@@ -1102,6 +1161,7 @@ function renderAiTabBody(data, tiers, missions, missionSection) {
     return `
       <div class="card">
         <div class="card-title">${lyT('econ_card_title')}</div>
+        ${lyCurToggleHTML()}
         ${actionPanelHTML(econ)}
         ${econGridHTML(econ, _prevEcon)}
       </div>
@@ -1371,7 +1431,7 @@ function renderDetailView(id) {
 
   <div class="card">
     <div class="card-title">📊 Economics</div>
-    ${econGridHTML(econ)}
+    ${econGridHTML(econ, null, { factor: 1, cur: 'USD' })}
   </div>
 
   <div class="card">

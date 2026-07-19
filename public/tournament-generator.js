@@ -10,8 +10,12 @@ const GEO_OPTIONS = [
   { val:'kz', lbl:'🇰🇿 Kazakhstan (KZT)' },
   { val:'mn', lbl:'🇲🇳 Mongolia (MNT)' },
   { val:'us', lbl:'🇺🇸 USA Sweepstakes' },
-  { val:'mx', lbl:'🇲🇽 Mexico (USD)' },
   { val:'br', lbl:'🇧🇷 Brazil (USD)' },
+  { val:'mx', lbl:'🇲🇽 Mexico (USD)' },
+  { val:'co', lbl:'🇨🇴 Colombia (USD)' },
+  { val:'ar', lbl:'🇦🇷 Argentina (USD)' },
+  { val:'pe', lbl:'🇵🇪 Peru (USD)' },
+  { val:'cl', lbl:'🇨🇱 Chile (USD)' },
 ];
 
 const TOURNAMENT_TYPES = [
@@ -299,7 +303,7 @@ async function fetchGamesIfNeeded() {
     const res = await fetch('/api/tournament/games', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ geo: p.geo, segment: p.segment, type: draft.type, scoring: p.scoring }),
+      body: JSON.stringify({ geo: p.geo, segment: p.segment, type: draft.type, scoring: p.scoring, uiLang: localStorage.getItem('bonusLang') || 'en' }),
     });
     if (!res.ok) throw new Error('fetch failed');
     _gamesData = { _key: key, result: await res.json() };

@@ -740,27 +740,10 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
         <div class="params-grid">
           <div class="fg">
             <div class="fl" data-i18n="s2_geo">Гео / Страна</div>
-            <select class="form-select" id="p-geo" onchange="syncLangToGeo(this.value)">
-              <option value="eu">🇪🇺 EU / UK</option>
-              <option value="ru">🌐 Russia (RU)</option>
-              <option value="kz">🇰🇿 Kazakhstan (KZ)</option>
-              <option value="mx">🇲🇽 Mexico (MX)</option>
-              <option value="br">🇧🇷 Brazil (BR)</option>
-              <option value="mn">🇲🇳 Mongolia (MN)</option>
-              <option value="us">🇺🇸 USA (Sweepstakes)</option>
-            </select>
-            <div id="eu-ctry-wrap" style="display:none;margin-top:8px">
-              <div style="font-size:11px;color:var(--muted);margin-bottom:6px" data-i18n="s2_eu_pick">Выберите страну</div>
-              <div class="chip-group" style="flex-wrap:wrap;gap:6px">
-                <div class="chip" data-g="eu-ctry" data-v="de" onclick="pickEuCountry(this)">🇩🇪 DE</div>
-                <div class="chip" data-g="eu-ctry" data-v="fr" onclick="pickEuCountry(this)">🇫🇷 FR</div>
-                <div class="chip" data-g="eu-ctry" data-v="es" onclick="pickEuCountry(this)">🇪🇸 ES</div>
-                <div class="chip" data-g="eu-ctry" data-v="it" onclick="pickEuCountry(this)">🇮🇹 IT</div>
-                <div class="chip" data-g="eu-ctry" data-v="nl" onclick="pickEuCountry(this)">🇳🇱 NL</div>
-                <div class="chip" data-g="eu-ctry" data-v="dk" onclick="pickEuCountry(this)">🇩🇰 DK</div>
-                <div class="chip" data-g="eu-ctry" data-v="uk" onclick="pickEuCountry(this)">🇬🇧 UK</div>
-              </div>
-            </div>
+            <!-- Grouped-by-region country select — populated from geo-data.js
+                 (genFillGeoSelect), identical source to the Configurator. -->
+            <select class="form-select" id="p-geo" onchange="genPickGeo(this.value)"></select>
+            <div id="p-cur-toggle" style="margin-top:8px"></div>
           </div>
           <div class="fg">
             <div class="fl" data-i18n="s2_vertical">Вертикаль</div>
@@ -820,8 +803,8 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
           <div class="fg full">
             <div class="fl" data-i18n="s2_risk">Риск-уровень</div>
             <div class="toggle3" style="max-width:340px">
-              <button class="t3-btn active" data-g="risk" data-v="low" onclick="pickT3(this)" data-i18n="t3_risk_low">🟢 Низкий</button>
-              <button class="t3-btn" data-g="risk" data-v="mid" onclick="pickT3(this)" data-i18n="t3_risk_mid">🟡 Средний</button>
+              <button class="t3-btn" data-g="risk" data-v="low" onclick="pickT3(this)" data-i18n="t3_risk_low">🟢 Низкий</button>
+              <button class="t3-btn active" data-g="risk" data-v="mid" onclick="pickT3(this)" data-i18n="t3_risk_mid">🟡 Средний</button>
               <button class="t3-btn" data-g="risk" data-v="high" onclick="pickT3(this)" data-i18n="t3_risk_high">🔴 Высокий</button>
             </div>
             <div id="riskHint" style="margin-top:8px;font-size:11.5px;line-height:1.55;color:#8892a4;padding:8px 10px;background:rgba(255,255,255,.03);border-radius:7px;border-left:2px solid #4f6ef7"></div>
@@ -1111,6 +1094,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
   </div>
 </div>
 
+<script src="/geo-data.js"></script>
 <script src="/nav-utils.js"></script>
 <script src="/repo-http.js"></script>
 <script src="/feature-gate.js"></script>

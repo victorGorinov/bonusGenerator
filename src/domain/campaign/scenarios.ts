@@ -29,8 +29,15 @@ export const GEO_CFG: Record<string, {
   mn: { region:'mn',    lic:'none', sitecur:'MNT', depcur:'MNT',
         avgdep:    { new: 40000,  mid: 100000, vip: 500000 },
         avgdepUSD: { new: 12,     mid: 29,     vip: 145    } },
-  mx: { region:'latam', lic:'none', sitecur:'USD', depcur:'USD' },
-  br: { region:'latam', lic:'none', sitecur:'USD', depcur:'USD' },
+  // LatAm — backend computes in USD; local-currency display is a frontend layer
+  // (see public/geo-data.js). Regulated markets carry their own license; Argentina
+  // (provincial) and Chile (grey market) use the offshore Curaçao default ('none').
+  br: { region:'latam', lic:'bets_br',   sitecur:'USD', depcur:'USD' },
+  mx: { region:'latam', lic:'segob',     sitecur:'USD', depcur:'USD' },
+  co: { region:'latam', lic:'coljuegos', sitecur:'USD', depcur:'USD' },
+  ar: { region:'latam', lic:'none',      sitecur:'USD', depcur:'USD' },
+  pe: { region:'latam', lic:'mincetur',  sitecur:'USD', depcur:'USD' },
+  cl: { region:'latam', lic:'none',      sitecur:'USD', depcur:'USD' },
 };
 
 export const TONE_DESC: Record<string, string> = {
