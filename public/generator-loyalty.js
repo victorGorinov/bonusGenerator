@@ -397,6 +397,39 @@ function lyShowToast(msg) {
   setTimeout(() => el && el.remove(), 3000);
 }
 
+// ── COMPETITOR ANALYSIS (loyalty twin) — via window.CompetitorAnalysis.wire ──────
+function lyCompOwnParams() {
+  const d = lyDraft, ru = localStorage.getItem('bonusLang') === 'ru';
+  return {
+    tiers:        String(d.numTiers),
+    topCashback:  Math.round((d.topCashbackRate || 0) * 100) + '%',   // stored as a 0–0.30 fraction
+    earnRate:     (d.earnRateDeposit != null ? d.earnRateDeposit : '') + ' / $1',
+    redeemRate:   (d.redeemRate != null ? d.redeemRate : '') + ' = $1',
+    pointsExpiry: d.pointsExpiry > 0 ? d.pointsExpiry + (ru ? ' дн.' : ' d') : (ru ? 'бессрочно' : 'never'),
+  };
+}
+let _lyCompW = null;
+function _lyCompInst() {
+  if (!_lyCompW && window.CompetitorAnalysis) {
+    _lyCompW = window.CompetitorAnalysis.wire({
+      promoType: 'loyalty', fnPrefix: 'lyComp', areaId: 'ly-comp-area', nameInputId: 'ly-comp-name',
+      lang: () => (localStorage.getItem('bonusLang') === 'ru' ? 'ru' : 'en'),
+      region: () => (lyDraft.region || lyDraft.geo || 'eu'),
+      ownLabel: () => (localStorage.getItem('bonusLang') === 'ru' ? 'Программа лояльности' : 'Loyalty program'),
+      ownParams: lyCompOwnParams,
+      onToast: lyShowToast,
+    });
+  }
+  return _lyCompW;
+}
+function _lyCompHtml() { const i = _lyCompInst(); return i ? i.html() : ''; }
+window.lyCompSearchAI  = () => { const i = _lyCompInst(); return i ? i.searchAI() : undefined; };
+window.lyCompAddManual = () => { const i = _lyCompInst(); return i ? i.addManual() : undefined; };
+window.lyCompSetParam  = (idx, k, v) => { const i = _lyCompInst(); return i ? i.setParam(idx, k, v) : undefined; };
+window.lyCompRemove    = (idx) => { const i = _lyCompInst(); return i ? i.remove(idx) : undefined; };
+window.lyCompRun       = () => { const i = _lyCompInst(); return i ? i.run() : undefined; };
+window.lyCompSave      = () => { const i = _lyCompInst(); return i ? i.save() : undefined; };
+
 // ── ACTION PANEL (Apply / Balance) ───────────────────────────────────────────
 
 const UI_BOUNDS = {
@@ -1145,6 +1178,11 @@ function renderStep3(data) {
 
   <div id="ai-tab-body">
     ${renderAiTabBody(data, tiers, missions, missionSection)}
+  </div>
+
+  <div style="margin-top:26px;border-top:1px solid var(--border);padding-top:18px">
+    <div class="step-title" style="font-size:.95rem;margin-bottom:12px">${localStorage.getItem('bonusLang')==='ru' ? '⚔️ Анализ конкурентов' : '⚔️ Competitor analysis'}</div>
+    <div id="ly-comp-area">${_lyCompHtml()}</div>
   </div>
 
   <div class="nav-footer">

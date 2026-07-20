@@ -315,6 +315,46 @@ function whSVG(segments) {
 
 function whFmt(n, cur) { return (cur ? cur + ' ' : '') + Math.round(+n||0).toLocaleString('en-US'); }
 
+// ── COMPETITOR ANALYSIS (wheel twin) — via window.CompetitorAnalysis.wire ───────
+function whCompOwnParams() {
+  const ru = localStorage.getItem('bonusLang') === 'ru';
+  const d = whDraft || {};
+  const segs = (whLastResult && whLastResult.spec && whLastResult.spec.segments) || [];
+  const total = segs.reduce((a, s) => a + Math.max(0, s.weight), 0) || 1;
+  const nothing = segs.filter((s) => s.prizeType === 'nothing').reduce((a, s) => a + Math.max(0, s.weight), 0);
+  const occ  = { welcome: 'Welcome', daily: ru ? 'Ежедневное' : 'Daily', vip: 'VIP' };
+  const spin = { on_deposit: ru ? 'По депозиту' : 'On deposit', on_login: ru ? 'По входу' : 'On login', daily: ru ? 'Ежедневно' : 'Daily', weekly: ru ? 'Еженедельно' : 'Weekly' };
+  return {
+    occasion:   occ[d.preset] || d.preset || '',
+    segments:   segs.length ? String(segs.length) : '',
+    topPrize:   '',   // prize types are heterogeneous (cash / FS / multiplier / %) — no single comparable "top prize"
+    spinCost:   spin[d.frequency] || d.frequency || '',
+    emptySlots: segs.length ? Math.round(nothing / total * 100) + '%' : '',
+    winWager:   '',   // the wheel-winnings wager isn't carried in the generated spec
+  };
+}
+let _whCompW = null;
+function _whCompInst() {
+  if (!_whCompW && window.CompetitorAnalysis) {
+    _whCompW = window.CompetitorAnalysis.wire({
+      promoType: 'wheel', fnPrefix: 'whComp', areaId: 'wh-comp-area', nameInputId: 'wh-comp-name',
+      lang: () => (localStorage.getItem('bonusLang') === 'ru' ? 'ru' : 'en'),
+      region: () => ((whDraft && whDraft.geo) || 'de'),
+      ownLabel: () => (localStorage.getItem('bonusLang') === 'ru' ? 'Колесо фортуны' : 'Wheel of Fortune'),
+      ownParams: whCompOwnParams,
+      onToast: (typeof whToast === 'function' ? whToast : undefined),
+    });
+  }
+  return _whCompW;
+}
+function _whCompHtml() { const i = _whCompInst(); return i ? i.html() : ''; }
+window.whCompSearchAI  = () => { const i = _whCompInst(); return i ? i.searchAI() : undefined; };
+window.whCompAddManual = () => { const i = _whCompInst(); return i ? i.addManual() : undefined; };
+window.whCompSetParam  = (idx, k, v) => { const i = _whCompInst(); return i ? i.setParam(idx, k, v) : undefined; };
+window.whCompRemove    = (idx) => { const i = _whCompInst(); return i ? i.remove(idx) : undefined; };
+window.whCompRun       = () => { const i = _whCompInst(); return i ? i.run() : undefined; };
+window.whCompSave      = () => { const i = _whCompInst(); return i ? i.save() : undefined; };
+
 // ── Result view ─────────────────────────────────────────────────────────────
 function renderWhResult() {
   const d = whLastResult;
@@ -377,6 +417,11 @@ function renderWhResult() {
 <div class="card">
   <button class="btn btn-outline" id="wh-btn-audit" onclick="whRunAudit()">${wh('audit')}</button>
   <div id="wh-audit-area" style="margin-top:14px">${whLastAudit ? whRenderAuditHTML(whLastAudit) : ''}</div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <div class="card-title">${localStorage.getItem('bonusLang')==='ru' ? '⚔️ Анализ конкурентов' : '⚔️ Competitor analysis'}</div>
+  <div id="wh-comp-area">${_whCompHtml()}</div>
 </div>`;
 }
 

@@ -1133,6 +1133,47 @@ ${gamesSection()}
 </div>`;
 }
 
+// ── COMPETITOR ANALYSIS (tournament twin) — via window.CompetitorAnalysis.wire ──
+function tgCompOwnParams() {
+  const p = tgDraft.params, ru = localStorage.getItem('bonusLang') === 'ru';
+  const cur = p.currency || 'EUR';
+  const M = {
+    dist:  { top_n:'Top-N', flat: ru?'Равномерно':'Flat', top_heavy:'Top-heavy', tiered: ru?'По тирам':'Tiered' },
+    seg:   { all: ru?'Все':'All', new: ru?'Новые':'New', vip:'VIP', dormant: ru?'Спящие':'Dormant', depositors: ru?'Депозиторы':'Depositors' },
+    freq:  { flash:'Flash', daily:'Daily', weekly:'Weekly', monthly:'Monthly', multi_round: ru?'Мульти-раунд':'Multi-round' },
+    entry: { freeroll: ru?'Бесплатно':'Free', buyin:'Buy-in', ticket: ru?'Билет':'Ticket' },
+  };
+  const lbl = (k, code) => (M[k] && M[k][code]) || code || '';
+  return {
+    prizePool:    p.prizePool ? p.prizePool + ' ' + cur : '',
+    distribution: lbl('dist', p.distribution),
+    segmentReach: lbl('seg', p.segment),
+    frequency:    lbl('freq', p.duration),
+    entry:        lbl('entry', p.entryModel),
+  };
+}
+let _tgCompW = null;
+function _tgCompInst() {
+  if (!_tgCompW && window.CompetitorAnalysis) {
+    _tgCompW = window.CompetitorAnalysis.wire({
+      promoType: 'tournament', fnPrefix: 'tgComp', areaId: 'tg-comp-area', nameInputId: 'tg-comp-name',
+      lang: () => (localStorage.getItem('bonusLang') === 'ru' ? 'ru' : 'en'),
+      region: () => (tgDraft.params.geo || 'de'),
+      ownLabel: () => (localStorage.getItem('bonusLang') === 'ru' ? 'Турнир' : 'Tournament'),
+      ownParams: tgCompOwnParams,
+      onToast: (typeof showToast === 'function' ? showToast : undefined),
+    });
+  }
+  return _tgCompW;
+}
+function _tgCompHtml() { const i = _tgCompInst(); return i ? i.html() : ''; }
+window.tgCompSearchAI  = () => { const i = _tgCompInst(); return i ? i.searchAI() : undefined; };
+window.tgCompAddManual = () => { const i = _tgCompInst(); return i ? i.addManual() : undefined; };
+window.tgCompSetParam  = (idx, k, v) => { const i = _tgCompInst(); return i ? i.setParam(idx, k, v) : undefined; };
+window.tgCompRemove    = (idx) => { const i = _tgCompInst(); return i ? i.remove(idx) : undefined; };
+window.tgCompRun       = () => { const i = _tgCompInst(); return i ? i.run() : undefined; };
+window.tgCompSave      = () => { const i = _tgCompInst(); return i ? i.save() : undefined; };
+
 // ── STEP 4: AI Texts & Audit ─────────────────────────────────────────────────
 function tgRenderStep4() {
   const hasTexts = !!tgLastTexts;
@@ -1153,6 +1194,11 @@ ${tgWizProgressHTML(4)}
 
 <div id="texts-area">${hasTexts ? tgRenderTextsHTML(tgLastTexts) : ''}</div>
 <div id="audit-area">${hasAudit ? tgRenderAuditHTML(tgLastAudit) : ''}</div>
+
+<div style="margin-top:26px;border-top:1px solid var(--border);padding-top:18px">
+  <div class="step-title" style="font-size:.95rem;margin-bottom:12px">${localStorage.getItem('bonusLang')==='ru' ? '⚔️ Анализ конкурентов' : '⚔️ Competitor analysis'}</div>
+  <div id="tg-comp-area">${_tgCompHtml()}</div>
+</div>
 
 <div class="nav-footer">
   <button class="btn btn-outline" onclick="tgGoStep(3)">${tg('btn_back_spec')}</button>

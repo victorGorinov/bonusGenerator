@@ -121,6 +121,15 @@ const I18N = {
     legWin: 'Retomat more attractive', legPar: 'on par / strategic choice', legLose: 'competitor more attractive',
     verdict: 'AI verdict', strengths: '▲ Strengths', weaknesses: '▼ Weaknesses', recs: 'Recommendations to strengthen',
     benchmark: 'Benchmark', current: 'now', suggested: 'suggest',
+    // control chrome — used by the hub twins so they don't each re-declare these
+    ownLabel: 'Your offer', compLabel: 'Competitors (up to 3)', namePh: 'Casino name',
+    findAi: '🔍 Find via AI', addManual: '✍️ Manual', run: '⚡ Run AI analysis',
+    analyzing: 'Analysing competitiveness…', searching: 'Searching the web…',
+    badgeAi: 'AI', badgeAiUnconf: 'AI · unconfirmed', badgeManual: 'manual', srcLink: 'source ↗',
+    max: 'Up to 3 competitors', addHint: 'Add at least one competitor.', nameReq: 'Enter a casino name',
+    notfound: 'No reliable source found — marked unconfirmed', rerun: '↺ Re-run', save: '💾 Save',
+    saved: 'Comparison saved ✓', needGen: 'Generate the promo first.',
+    transparency: '⚙️ generated · 🔍 AI-found (with source) · ✍️ manual. The AI never invents numbers — unfound values are marked "н/д" and excluded from the verdict.',
   },
   ru: {
     param: 'Параметр', you: 'Retomat (вы)', gen: '⚙️ сгенерировано', aiSrc: '🔍 AI-поиск', manSrc: '✍️ вручную',
@@ -128,6 +137,14 @@ const I18N = {
     legWin: 'Retomat выгоднее', legPar: 'на уровне / стратегия', legLose: 'конкурент выгоднее',
     verdict: 'Вердикт AI', strengths: '▲ Сильные стороны', weaknesses: '▼ Слабые стороны', recs: 'Рекомендации по усилению',
     benchmark: 'Бенчмарк', current: 'сейчас', suggested: 'предложение',
+    ownLabel: 'Ваше предложение', compLabel: 'Конкуренты (до 3)', namePh: 'Название казино',
+    findAi: '🔍 Найти через AI', addManual: '✍️ Вручную', run: '⚡ Запустить AI-анализ',
+    analyzing: 'Анализ конкурентности…', searching: 'Идёт поиск в интернете…',
+    badgeAi: 'AI', badgeAiUnconf: 'AI · не подтв.', badgeManual: 'вручную', srcLink: 'источник ↗',
+    max: 'Максимум 3 конкурента', addHint: 'Добавьте хотя бы одного конкурента.', nameReq: 'Введите название казино',
+    notfound: 'Достоверный источник не найден — помечено как не подтверждено', rerun: '↺ Пересчитать', save: '💾 Сохранить',
+    saved: 'Сравнение сохранено ✓', needGen: 'Сначала сгенерируйте промо.',
+    transparency: '⚙️ сгенерировано · 🔍 найдено AI (с источником) · ✍️ вручную. AI не выдумывает цифры — значения без источника помечаются «н/д» и не идут в вердикт.',
   },
 };
 function T(lang) { return I18N[lang === 'ru' ? 'ru' : 'en']; }
@@ -206,8 +223,138 @@ export function renderVerdict(lang, result) {
     <div class="ca-recs">${recs}</div>`;
 }
 
+// ── Full panel + wiring (used by the Generator hub twins) ──────────────────────
+// renderPanel builds the whole competitor panel as an HTML string; onclick
+// handlers are namespaced by fnPrefix so several hosts can coexist on one page.
+function renderCard(promoType, lang, comp, i, fnPrefix) {
+  const t = T(lang);
+  const defs = PARAM_DEFS[promoType] || [];
+  const ai = comp.source === 'ai_search';
+  const badge = ai ? (comp.confidence === 'unconfirmed' ? t.badgeAiUnconf : t.badgeAi) : t.badgeManual;
+  const fields = defs.map((d) => {
+    const label = lang === 'ru' ? d.ru : d.en;
+    const val = (comp.params && comp.params[d.key]) || '';
+    if (ai) return `<div class="ca-f"><span class="ca-fl">${label}</span><span class="ca-fv">${esc(val || 'н/д')}</span></div>`;
+    return `<div class="ca-f"><span class="ca-fl">${label}</span><input class="ca-fi" value="${esc(val)}" oninput="${fnPrefix}SetParam(${i},'${d.key}',this.value)"></div>`;
+  }).join('');
+  const src = ai && comp.sourceUrl ? `<a href="${esc(comp.sourceUrl)}" target="_blank" rel="noopener" class="ca-srclink">${t.srcLink}</a>` : '';
+  return `<div class="ca-card"><div class="ca-card-head"><span class="ca-card-name">${ai ? '🔍' : '✍️'} ${esc(comp.name)}</span><span class="ca-badge">${badge}</span>${src}<a class="ca-x" onclick="${fnPrefix}Remove(${i})">✕</a></div><div class="ca-fields">${fields}</div></div>`;
+}
+
+export function renderPanel(o) {
+  const t = T(o.lang);
+  if (o.needGen) return `<div class="ca-hint" style="padding:16px 0">${esc(t.needGen)}</div>`;
+  const defs = PARAM_DEFS[o.promoType] || [];
+  const ownChips = defs.map((d) => `<span class="ca-own-chip"><b>${o.lang === 'ru' ? d.ru : d.en}:</b> ${esc((o.ownParams && o.ownParams[d.key]) || '—')}</span>`).join('');
+  const cards = (o.list || []).map((c, i) => renderCard(o.promoType, o.lang, c, i, o.fnPrefix)).join('');
+  const addRow = (o.list && o.list.length >= 3) ? '' : `<div class="ca-add">
+    <input id="${o.nameInputId}" placeholder="${esc(t.namePh)}">
+    <button class="ca-prim" onclick="${o.fnPrefix}SearchAI()">${t.findAi}</button>
+    <button onclick="${o.fnPrefix}AddManual()">${t.addManual}</button>
+  </div>`;
+  let result = '';
+  if (o.loading) result = `<div class="ca-hint" style="padding:16px 0">${esc(t.analyzing)}</div>`;
+  else if (o.result && o.result.error) result = `<div style="color:#EF4444;padding:12px 0">${esc(o.result.error)}</div>`;
+  else if (o.result) result = `<div class="ca-run-again"><button onclick="${o.fnPrefix}Run()">${t.rerun}</button><button onclick="${o.fnPrefix}Save()">${t.save}</button></div>`
+    + renderComparisonTable(o.promoType, o.lang, o.ownLabel, o.ownParams, o.list) + renderVerdict(o.lang, o.result);
+  else if (o.list && o.list.length) result = `<div class="ca-run"><button class="ca-prim" onclick="${o.fnPrefix}Run()">${t.run}</button></div>`;
+  else result = `<div class="ca-hint">${esc(t.addHint)}</div>`;
+  return `<div class="ca-panel">
+    <div class="ca-sec-label">${esc(t.ownLabel)}</div><div class="ca-own-chips">${ownChips}</div>
+    <div class="ca-sec-label">${esc(t.compLabel)}</div>${cards}
+    ${o.searching ? `<div class="ca-hint" style="padding:12px 0">${esc(t.searching)}</div>` : addRow}
+    ${result}
+    <div class="ca-note">${esc(t.transparency)}</div>
+  </div>`;
+}
+
+// wire() bundles the state machine + fetch/FeatureGate/save logic for one host
+// (a Generator twin). cfg supplies the host-specific bits as functions:
+//   { promoType, fnPrefix, areaId, nameInputId, lang(), region(), ownLabel(),
+//     ownParams(), needGen?(), onToast? }.
+// Returns { html, render, searchAI, addManual, setParam, remove, run, save }.
+export function wire(cfg) {
+  const state = { list: [], result: null, loading: false, searching: false };
+  const toast = cfg.onToast || (() => {});
+  const gate = async () => !window.FeatureGate || (await window.FeatureGate.ensure('competitorComparison'));
+  const html = () => renderPanel({
+    promoType: cfg.promoType, lang: cfg.lang(), ownLabel: cfg.ownLabel(), ownParams: cfg.ownParams(),
+    list: state.list, result: state.result, loading: state.loading, searching: state.searching,
+    fnPrefix: cfg.fnPrefix, nameInputId: cfg.nameInputId, needGen: cfg.needGen ? cfg.needGen() : false,
+  });
+  const render = () => { const el = document.getElementById(cfg.areaId); if (el) el.innerHTML = html(); };
+  return {
+    html, render,
+    setParam(i, key, val) { if (state.list[i]) state.list[i].params[key] = val; },
+    addManual() {
+      if (state.list.length >= 3) { toast(strings(cfg.lang()).max); return; }
+      const inp = document.getElementById(cfg.nameInputId);
+      const name = (inp && inp.value.trim()) || (cfg.lang() === 'ru' ? 'Конкурент' : 'Competitor');
+      state.list.push({ name, source: 'manual', params: {} }); state.result = null; render();
+    },
+    remove(i) { state.list.splice(i, 1); state.result = null; render(); },
+    async searchAI() {
+      if (!(await gate())) return;
+      if (state.list.length >= 3) { toast(strings(cfg.lang()).max); return; }
+      const inp = document.getElementById(cfg.nameInputId);
+      const name = (inp && inp.value.trim()) || '';
+      if (!name) { toast(strings(cfg.lang()).nameReq); return; }
+      state.searching = true; render();
+      try {
+        const res = await fetch('/api/competitor/search', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ casinoName: name, region: cfg.region(), promoType: cfg.promoType, uiLang: cfg.lang() }),
+        });
+        if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || ('HTTP ' + res.status)); }
+        const f = await res.json();
+        state.list.push({ name: f.name, source: 'ai_search', confidence: f.confidence, sourceUrl: f.sourceUrl, params: f.params || {} });
+        state.result = null;
+        if (!f.found) toast(strings(cfg.lang()).notfound);
+      } catch (e) { toast(e.message); }
+      finally { state.searching = false; render(); }
+    },
+    async run() {
+      if (!(await gate())) return;
+      if (!state.list.length) return;
+      state.loading = true; render();
+      try {
+        const body = {
+          region: cfg.region(), promoType: cfg.promoType,
+          ownOffer: { label: cfg.ownLabel(), params: cfg.ownParams() },
+          competitors: state.list.map((x) => ({ name: x.name, source: x.source, confidence: x.confidence, sourceUrl: x.sourceUrl, params: x.params })),
+          uiLang: cfg.lang(),
+        };
+        const res = await fetch('/api/competitor/compare', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+        });
+        if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || ('HTTP ' + res.status)); }
+        state.result = await res.json();
+      } catch (e) { state.result = { error: e.message }; }
+      finally { state.loading = false; render(); }
+    },
+    save() {
+      if (!state.result || state.result.error) return;
+      const id = 'comp_' + Date.now().toString(36) + Math.round(Math.random() * 1e6).toString(36);
+      const rec = {
+        id, type: 'competitor-comparison', promoType: cfg.promoType,
+        createdAt: new Date().toISOString(), region: cfg.region(),
+        ownOffer: { label: cfg.ownLabel(), params: cfg.ownParams() }, competitors: state.list, result: state.result,
+      };
+      try {
+        const arr = JSON.parse(localStorage.getItem('cfgSavedComparisons') || '[]');
+        arr.push(rec); localStorage.setItem('cfgSavedComparisons', JSON.stringify(arr));
+      } catch (e) {}
+      if (window.RetomatRepo) window.RetomatRepo.mirror('competitor-comparisons', id, rec);
+      toast(strings(cfg.lang()).saved);
+    },
+  };
+}
+
+export function strings(lang) { return T(lang); }
+
 if (typeof window !== 'undefined') {
   window.CompetitorAnalysis = {
     PARAM_DEFS, parseNum, classifyCell, buildRows, renderComparisonTable, renderVerdict, esc,
+    renderPanel, wire, strings,
   };
 }
