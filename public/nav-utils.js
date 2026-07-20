@@ -98,6 +98,8 @@ function applyNavLang(lang) {
     var key = el.getAttribute('data-i18n');
     if (dict[key] !== undefined) el.textContent = dict[key];
   });
+  // Keep the collapsed-rail tooltips + toggle aria-label in sync with the new language.
+  if (typeof window._rtmNavCollapseSync === 'function') window._rtmNavCollapseSync();
 }
 
 // ── BADGES ───────────────────────────────────────────────────────────────────
@@ -254,6 +256,133 @@ async function _rtmRenderUserChip() {
   function boot() { _rtmSync(); _rtmRenderUserChip(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
+})();
+
+// ── SIDEBAR COLLAPSE (compact icon-rail) ──────────────────────────────────────
+// Shared across all 7 app pages (they all use the same .sidebar/.main + --sidebar-w
+// pattern). Overriding --sidebar-w on body.nav-collapsed shrinks both the sidebar
+// width and the .main margin in one rule. The toggle is a round chevron button
+// pinned to the sidebar's right edge (floats half over the content).
+// State persists in localStorage ('nav_collapsed'); with no stored pref the rail
+// starts collapsed on ≤768px (mobile default) and expanded on desktop.
+
+(function initNavCollapse() {
+  var LS_KEY = 'nav_collapsed';
+
+  function injectStyle() {
+    if (document.getElementById('rtm-nav-collapse-style')) return;
+    var st = document.createElement('style');
+    st.id = 'rtm-nav-collapse-style';
+    st.textContent = [
+      /* collapsed rail: shrink the shared width variable → sidebar + main both follow */
+      'body.nav-collapsed{--sidebar-w:60px}',
+      'body.nav-collapsed .nav-item>span:not(.nav-icon),',
+      'body.nav-collapsed .nav-lbl,',
+      'body.nav-collapsed .nav-badge,',
+      'body.nav-collapsed .nav-chevron,',
+      'body.nav-collapsed .sb-logo-tag,',
+      'body.nav-collapsed .sb-back span{display:none}',
+      'body.nav-collapsed .sb-logo{display:none}',
+      /* collapse any expanded subgroup — icon-less sub-items would otherwise leave blank indented rows */
+      'body.nav-collapsed .nav-sub{display:none}',
+      'body.nav-collapsed .nav-item{justify-content:center;padding-left:0;padding-right:0;gap:0}',
+      'body.nav-collapsed .sb-foot{display:flex;justify-content:center;padding-left:0;padding-right:0}',
+      /* round edge toggle — pinned to the sidebar's right border, floats over content.
+         top:80px keeps it clear of the 64px sticky .topbar header. */
+      '.rtm-nav-toggle{position:absolute;top:80px;right:-14px;z-index:60;width:28px;height:28px;',
+      'border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;',
+      'font-family:inherit;font-size:16px;line-height:1;background:#2a2560;color:#c7caf0;',
+      'border:1px solid rgba(255,255,255,.18);box-shadow:0 2px 8px rgba(0,0,0,.45);',
+      'transition:background .15s,color .15s,border-color .15s,transform .1s}',
+      '.rtm-nav-toggle:hover{background:var(--accent,#4f6ef7);color:#fff;border-color:var(--accent,#4f6ef7)}',
+      '.rtm-nav-toggle:active{transform:scale(.9)}',
+      '.rtm-nav-toggle .rtm-nav-toggle-ico{pointer-events:none;margin-top:-1px}',
+      'body.nav-collapsed .rtm-nav-toggle{right:-14px}',
+    ].join('');
+    document.head.appendChild(st);
+  }
+
+  function currentLang() {
+    try { return localStorage.getItem('bonusLang') || 'en'; } catch (e) { return 'en'; }
+  }
+
+  // Give each nav-item a title (hover tooltip) AND an aria-label so the collapsed
+  // rail stays usable — the label span goes display:none when collapsed (dropping
+  // out of the a11y tree), so the accessible name must live on the item itself.
+  // The emoji icon is marked aria-hidden so screen readers don't announce it as name.
+  function refreshTitles() {
+    var lang = currentLang();
+    document.querySelectorAll('.sb-nav .nav-item').forEach(function (it) {
+      var span = it.querySelector('span[data-tr-' + lang + ']') ||
+                 it.querySelector('span:not(.nav-icon):not(.nav-badge)');
+      var txt = span ? span.textContent.trim() : '';
+      if (txt) {
+        it.setAttribute('title', txt);
+        it.setAttribute('aria-label', txt);
+      }
+      var ico = it.querySelector('.nav-icon');
+      if (ico) ico.setAttribute('aria-hidden', 'true');
+    });
+  }
+
+  function apply(collapsed, toggleBtn) {
+    document.body.classList.toggle('nav-collapsed', collapsed);
+    if (toggleBtn) {
+      var isRu = currentLang() === 'ru';
+      // Chevron points the way the panel will move: ‹ = collapse (push in), › = expand (pull out).
+      toggleBtn.querySelector('.rtm-nav-toggle-ico').textContent = collapsed ? '›' : '‹';
+      var lbl = collapsed ? (isRu ? 'Развернуть меню' : 'Expand menu')
+                          : (isRu ? 'Свернуть меню' : 'Collapse menu');
+      toggleBtn.setAttribute('title', lbl);
+      toggleBtn.setAttribute('aria-label', lbl);
+      toggleBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    }
+    // FullCalendar (retention-calendar) sizes to its container — nudge a reflow.
+    try { window.dispatchEvent(new Event('resize')); } catch (e) {}
+  }
+
+  var toggleBtn = null; // module-level ref so the lang-sync hook can re-render labels
+
+  function init() {
+    var sidebar = document.querySelector('.sidebar');
+    var nav = sidebar && sidebar.querySelector('.sb-nav');
+    if (!sidebar || !nav) return; // page without the app sidebar
+    if (sidebar.querySelector('.rtm-nav-toggle')) return; // guard against double-init
+    injectStyle();
+    refreshTitles();
+
+    var stored;
+    try { stored = localStorage.getItem(LS_KEY); } catch (e) { stored = null; }
+    var collapsed = stored === '1' ? true
+                  : stored === '0' ? false
+                  : (window.innerWidth <= 768); // no pref → mobile default
+
+    var btn = document.createElement('button');
+    btn.className = 'rtm-nav-toggle';
+    btn.type = 'button';
+    btn.innerHTML = '<span class="rtm-nav-toggle-ico"></span>';
+    sidebar.appendChild(btn); // sibling of .sb-nav → not clipped by its overflow
+    toggleBtn = btn;
+
+    apply(collapsed, btn);
+
+    btn.addEventListener('click', function () {
+      collapsed = !document.body.classList.contains('nav-collapsed');
+      apply(collapsed, btn);
+      try { localStorage.setItem(LS_KEY, collapsed ? '1' : '0'); } catch (e) {}
+    });
+  }
+
+  // Re-localise tooltips + the toggle label after a live language switch (pages
+  // that swap language without reloading call applyNavLang, which invokes this).
+  window._rtmNavCollapseSync = function () {
+    if (!toggleBtn) return;
+    refreshTitles();
+    apply(document.body.classList.contains('nav-collapsed'), toggleBtn);
+  };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
 })();
 
 // ── GLOBAL WELCOME POPUP ──────────────────────────────────────────────────────
