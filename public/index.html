@@ -244,7 +244,7 @@
   @media (max-width: 680px) { .steps { flex-direction: column; gap: 28px; } .steps::before { display: none; } }
 
   /* ── FEATURE STRIP ── */
-  .feat-strip-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; margin-top: 44px; }
+  .feat-strip-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 28px; margin-top: 44px; }
   .feat-strip-item { display: flex; flex-direction: column; gap: 10px; }
   .feat-strip-icon {
     width: 44px; height: 44px; border-radius: 12px; background: var(--accent-soft);
@@ -377,7 +377,7 @@
           <div class="trust-item">⚡ <span data-i18n="tr1">Ready in 2 min</span></div>
           <div class="trust-item">🔒 <span data-i18n="tr2">No signup required</span></div>
           <div class="trust-item">✅ <span data-i18n="tr3">Free during beta</span></div>
-          <div class="trust-item">🌍 <span data-i18n="tr4">9 jurisdictions</span></div>
+          <div class="trust-item">🌍 <span data-i18n="tr4">17 jurisdictions</span></div>
         </div>
       </div>
 
@@ -584,6 +584,7 @@
           <li><span class="ps-icon ps-icon-yes">✓</span><span data-i18n="sol_2">One workspace — every campaign, tournament, and offer in a shared calendar</span></li>
           <li><span class="ps-icon ps-icon-yes">✓</span><span data-i18n="sol_3">AI checks wager caps and license rules automatically, per jurisdiction</span></li>
           <li><span class="ps-icon ps-icon-yes">✓</span><span data-i18n="sol_4">Overlap detection flags conflicts before they go live</span></li>
+          <li><span class="ps-icon ps-icon-yes">✓</span><span data-i18n="sol_5">Benchmark any offer against real competitors before you launch — no more launching blind</span></li>
         </ul>
       </div>
     </div>
@@ -631,7 +632,7 @@
       <div class="feat-strip-item reveal">
         <div class="feat-strip-icon">🌍</div>
         <h3 data-i18n="fs1_h">Multi-geo ready</h3>
-        <p data-i18n="fs1_p">9 jurisdictions pre-configured — correct wager caps, currencies, and license rules out of the box.</p>
+        <p data-i18n="fs1_p">17 jurisdictions pre-configured — correct wager caps, currencies, and license rules out of the box.</p>
       </div>
       <div class="feat-strip-item reveal">
         <div class="feat-strip-icon">⚖️</div>
@@ -647,6 +648,11 @@
         <div class="feat-strip-icon">⚡</div>
         <h3 data-i18n="fs4_h">Ready in under 2 minutes</h3>
         <p data-i18n="fs4_p">Mechanic, 5-channel copy, and cost model — generated together, ready to hand to your CRM team.</p>
+      </div>
+      <div class="feat-strip-item reveal">
+        <div class="feat-strip-icon">🔍</div>
+        <h3 data-i18n="fs5_h">Benchmark against rivals</h3>
+        <p data-i18n="fs5_p">See how your bonus, tournament or loyalty offer stacks up against competitors in your GEO — AI finds their terms and shows where you win or lose the player.</p>
       </div>
     </div>
   </div>
