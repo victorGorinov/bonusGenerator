@@ -35,6 +35,11 @@ export const JWT_EXPIRY        = ENV.JWT_EXPIRY;
 export const COOKIE_DOMAIN     = ENV.COOKIE_DOMAIN;
 
 export const AI_MODEL   = 'claude-haiku-4-5-20251001' as const;
+// Live web-search calls (competitor lookup) run on a stronger model: better at
+// finding + summarising real public bonus terms, and it supports the
+// dynamic-filtering web_search tool. Only the /api/competitor/search path uses
+// it; everything else stays on the cheaper Haiku AI_MODEL.
+export const AI_SEARCH_MODEL = 'claude-sonnet-5' as const;
 export const AI_TIMEOUT = 30_000;
 
 // Normalized via the shared normalizeEmail() (same transform auth.schema.ts

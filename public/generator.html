@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="/competitor-analysis.css">
 <style>
 :root {
   --bg:#0a0d14; --bg2:#0f1420; --bg3:#141926; --card:#161c2d;
@@ -450,6 +451,50 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 @media(max-width:600px){#tg-root .ct-hd,#tg-root .ct-row{grid-template-columns:1fr 70px 60px}}
 @keyframes tgCardFlash{0%{background:rgba(16,185,129,.12)}100%{background:transparent}}
 
+/* ══════════ WHEEL (scoped under #wh-root) ══════════ */
+#wh-root .step-header{margin-bottom:24px}
+#wh-root .step-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(79,110,247,.15);border:1px solid rgba(79,110,247,.3);color:#a0b0ff;font-size:.7rem;font-weight:700;padding:4px 12px;border-radius:100px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em}
+#wh-root .step-title{font-size:1.35rem;font-weight:700;margin-bottom:4px}
+#wh-root .step-sub{color:var(--muted);font-size:.85rem}
+#wh-root .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+#wh-root .card-title{font-weight:600;font-size:.88rem;margin-bottom:12px;color:#a0b0ff}
+#wh-root .card-grid{display:grid;gap:16px}
+#wh-root .form-row{margin-bottom:16px}
+#wh-root .form-label{display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+#wh-root .form-input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;transition:border-color .2s}
+#wh-root .form-input:focus{border-color:var(--accent)}
+#wh-root select.form-input{cursor:pointer}
+#wh-root .chips{display:flex;flex-wrap:wrap;gap:7px}
+#wh-root .chip{padding:5px 13px;border-radius:100px;border:1px solid var(--border);font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s;color:var(--muted);background:transparent}
+#wh-root .chip:hover{border-color:var(--accent);color:var(--accent)}
+#wh-root .chip.on{background:rgba(79,110,247,.2);border-color:rgba(79,110,247,.6);color:#a0b0ff}
+#wh-root .econ-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+#wh-root .econ-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;text-align:center}
+#wh-root .ec-label,#wh-root .econ-label{font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+#wh-root .ec-val,#wh-root .econ-val{font-size:1.25rem;font-weight:700}
+#wh-root .ec-val.pos,#wh-root .econ-val.pos{color:var(--success)}
+#wh-root .ec-val.neg,#wh-root .econ-val.neg{color:#ef4444}
+#wh-root .ec-sub,#wh-root .econ-sub{font-size:.68rem;color:var(--muted);margin-top:2px}
+#wh-root .tab-row{display:flex;gap:2px;background:var(--bg3);border-radius:8px;padding:3px;margin:12px 0 16px}
+#wh-root .tab{padding:6px 14px;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;color:var(--muted);transition:all .15s;border:none;background:transparent;font-family:inherit}
+#wh-root .tab.active{background:var(--card);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.3)}
+#wh-root .text-variant{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px}
+#wh-root .text-variant-label{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+#wh-root .text-variant-body{font-size:.83rem;line-height:1.55;color:var(--text)}
+#wh-root .loader{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.85rem;padding:20px 0}
+#wh-root .spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0}
+#wh-root .prog-wrap{max-width:480px;margin:40px auto;padding:20px 0}
+#wh-root .prog-title{font-size:1.05rem;font-weight:700;text-align:center;margin-bottom:5px}
+#wh-root .prog-sub{text-align:center;color:var(--muted);font-size:.82rem;margin-bottom:20px}
+#wh-root .alert{border-radius:8px;padding:10px 14px;font-size:.82rem;margin-bottom:12px}
+#wh-root .alert-warn{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);color:var(--warn)}
+#wh-root .ctable{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+#wh-root .ct-hd,#wh-root .ct-row{display:grid;grid-template-columns:1fr 120px 90px 80px 48px;padding:10px 16px;align-items:center;gap:8px}
+#wh-root .ct-hd{border-bottom:1px solid var(--border);font-size:.68rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+#wh-root .ct-row{border-bottom:1px solid var(--border);font-size:.83rem}
+#wh-root .ct-row:last-child{border-bottom:none}
+@media(max-width:700px){#wh-root .econ-grid{grid-template-columns:1fr 1fr}#wh-root .card-grid{grid-template-columns:1fr!important}}
+
 /* ══════════ LOYALTY (scoped under #ly-root) ══════════ */
 #ly-root .btn-gold{background:linear-gradient(135deg,#b45309,var(--gold));color:#fff;border:none}
 #ly-root .btn-gold:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(245,158,11,.4)}
@@ -587,7 +632,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
     <button class="nav-item" onclick="showView('dashboard')"><span class="nav-icon">📊</span><span data-tr-en>Dashboard</span><span data-tr-ru>Дашборд</span></button>
     <a href="/retention-calendar.html" class="nav-item"><span class="nav-icon">📅</span><span data-tr-en>Retention Calendar</span><span data-tr-ru>Календарь</span></a>
     <div class="nav-lbl" style="margin-top:6px"><span data-tr-en>Tools</span><span data-tr-ru>Инструменты</span></div>
-    <a class="nav-item" href="/configurator.html"><span class="nav-icon">⚙️</span><span>Configurator</span></a>
+    <a class="nav-item" href="/configurator.html"><span class="nav-icon">⚙️</span><span data-tr-en>Configurator</span><span data-tr-ru>Конфигуратор</span></a>
     <a class="nav-item active" href="/generator.html"><span class="nav-icon">🧩</span><span data-tr-en>Generator</span><span data-tr-ru>Генератор</span></a>
     <div class="nav-lbl" style="margin-top:6px"><span data-tr-en>Analytics</span><span data-tr-ru>Аналитика</span></div>
     <a href="/reports.html" class="nav-item"><span class="nav-icon">📋</span><span data-tr-en>Reports</span><span data-tr-ru>Отчёты</span><span class="nav-badge" id="nav-reports-badge" style="display:none"></span></a>
@@ -626,6 +671,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
       <button class="type-btn active" data-type="bonus" onclick="genSwitchType('bonus')">🎁 <span data-tr-en>Bonus</span><span data-tr-ru>Бонус</span></button>
       <button class="type-btn" data-type="tournament" onclick="genSwitchType('tournament')">🏆 <span data-tr-en>Tournament</span><span data-tr-ru>Турнир</span></button>
       <button class="type-btn" data-type="loyalty" onclick="genSwitchType('loyalty')">⭐ <span data-tr-en>Loyalty</span><span data-tr-ru>Лояльность</span></button>
+      <button class="type-btn" data-type="wheel" onclick="genSwitchType('wheel')">🎡 <span data-tr-en>Wheel</span><span data-tr-ru>Колесо</span></button>
     </div>
 
     <div id="bonus-root">
@@ -908,6 +954,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
         <div class="ch-tabs" id="s4tabs">
           <button class="ch-tab active" onclick="switchS4('texts',this)" data-i18n="s4_tab_texts">📝 Тексты</button>
           <button class="ch-tab" onclick="switchS4('audit',this)" data-i18n="s4_tab_audit">🔍 Аудит</button>
+          <button class="ch-tab" onclick="switchS4('competitors',this)" data-i18n="s4_tab_competitors">⚔️ Конкуренты</button>
         </div>
 
         <!-- Texts -->
@@ -950,6 +997,11 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
           </div>
           <div id="s4a-content"></div>
           <div id="s4a-error" style="display:none;color:#EF4444;font-size:.83rem;padding:16px 0"></div>
+        </div>
+
+        <!-- Competitors -->
+        <div id="s4-competitors" class="ch-content">
+          <div id="s4c-content"></div>
         </div>
 
         <div class="wiz-foot">
@@ -1068,6 +1120,11 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
       <div id="ly-content"></div>
     </div><!-- /ly-root -->
 
+    <!-- WHEEL -->
+    <div id="wh-root" style="display:none">
+      <div id="wh-content"></div>
+    </div><!-- /wh-root -->
+
   </div><!-- /content -->
 </div><!-- /main -->
 
@@ -1101,9 +1158,12 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 <script type="module" src="/balance-solver.js"></script>
 <script type="module" src="/tournament-econ.js"></script>
 <script type="module" src="/loyalty-econ.js"></script>
+<script type="module" src="/wheel-econ.js"></script>
+<script type="module" src="/competitor-analysis.js"></script>
 <script src="/generator.js"></script>
 <script src="/generator-tournament.js"></script>
 <script src="/generator-loyalty.js"></script>
+<script src="/generator-wheel.js"></script>
 <script>
 document.addEventListener('click', function(e) {
   const a = e.target.closest('a[href]');

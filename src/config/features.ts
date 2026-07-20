@@ -18,7 +18,9 @@ export const FEATURES = [
   'campaign',
   'tournament',
   'loyalty',
+  'wheel',
   'games',
+  'competitorComparison',
   'reports',
   'calendar',
 ] as const;
@@ -38,8 +40,12 @@ export const GUEST_FEATURES: FeatureMap = {
   bonus:      true,
   campaign:   true,
   tournament: true,
+  wheel:      true,
   games:      true,
   loyalty:    false,
+  // Closed to guests: live AI web search costs money per call, so competitor
+  // analysis requires an account.
+  competitorComparison: false,
   reports:    false,
   calendar:   false,
 };

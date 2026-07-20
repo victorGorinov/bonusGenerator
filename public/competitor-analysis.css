@@ -1,0 +1,77 @@
+/* Competitor analysis panel — styles for the shared window.CompetitorAnalysis
+   render output + the configurator/hub competitor tab. Linked by both
+   configurator.html and generator.html (neither loads a common stylesheet).
+   Uses only tokens defined on BOTH pages (--success/--warn/--card/--bg3/--bg2/
+   --border/--muted/--text/--accent); red is hardcoded #EF4444 because --danger
+   exists only on the configurator. */
+.ca-panel{display:flex;flex-direction:column;gap:12px}
+.ca-panel button{cursor:pointer;font-family:inherit;font-size:.78rem;font-weight:600;padding:7px 13px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);transition:all .15s}
+.ca-panel button:hover{border-color:var(--accent)}
+.ca-panel .btn-primary-ca,.ca-panel button.ca-prim{background:var(--accent);border-color:var(--accent);color:#fff}
+.ca-panel input{font-family:inherit;font-size:.8rem;padding:6px 9px;border-radius:7px;border:1px solid var(--border);background:var(--bg2);color:var(--text);outline:none}
+.ca-sec-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
+.ca-own-chips{display:flex;flex-wrap:wrap;gap:6px}
+.ca-own-chip{font-size:12px;padding:4px 9px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text)}
+.ca-own-chip b{color:var(--muted);font-weight:600}
+.ca-card{border:1px solid var(--border);border-radius:10px;background:var(--card);padding:10px 12px;margin-bottom:8px}
+.ca-card-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.ca-card-name{font-weight:600;font-size:13px}
+.ca-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:999px;background:rgba(79,110,247,.16);color:#8fb0ee}
+.ca-srclink{font-size:11px;color:var(--warn);text-decoration:none}
+.ca-srclink:hover{text-decoration:underline}
+.ca-x{margin-left:auto;cursor:pointer;color:var(--muted);font-size:13px}
+.ca-x:hover{color:#EF4444}
+.ca-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px}
+.ca-f{display:flex;flex-direction:column;gap:2px}
+.ca-fl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.ca-fv{font-size:13px;font-weight:600}
+.ca-fi{font-size:12px !important;padding:4px 7px !important;width:100%}
+.ca-add{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:4px 0}
+.ca-add input{flex:1;min-width:160px}
+.ca-run{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px}
+.ca-hint{font-size:12px;color:var(--muted)}
+.ca-run-again{display:flex;gap:8px;margin-bottom:10px}
+.ca-table-scroll{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin-top:6px}
+.ca-table{border-collapse:collapse;width:100%;min-width:520px;font-size:12.5px}
+.ca-table thead th{text-align:left;padding:9px 11px;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);vertical-align:bottom}
+.ca-table thead th .ca-co{display:block;font-size:12.5px;text-transform:none;letter-spacing:0;color:var(--text);font-weight:700;margin-bottom:2px}
+.ca-table thead th .ca-src{font-size:10px;font-weight:500}
+.ca-table th.ca-own,.ca-table td.ca-own{background:rgba(245,158,11,.08)}
+.ca-table th.ca-own .ca-co{color:var(--warn)}
+.ca-table tbody th{text-align:left;padding:8px 11px;font-weight:500;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap}
+.ca-table tbody td{padding:8px 11px;border-bottom:1px solid var(--border);white-space:nowrap}
+.ca-table tbody tr:last-child th,.ca-table tbody tr:last-child td{border-bottom:none}
+.ca-cell{display:inline-flex;align-items:center;gap:6px}
+.ca-pill{font-size:10px;font-weight:600;padding:2px 7px;border-radius:999px}
+.ca-pill.ca-win{color:var(--success);background:rgba(16,185,129,.14)}
+.ca-pill.ca-lose{color:#EF4444;background:rgba(239,68,68,.14)}
+.ca-pill.ca-par,.ca-pill.ca-strategic{color:#8fb0ee;background:rgba(79,110,247,.12)}
+.ca-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:11px;color:var(--muted)}
+.ca-legend span{display:inline-flex;align-items:center;gap:5px}
+.ca-dot{width:8px;height:8px;border-radius:2px;display:inline-block}
+.ca-dot.ca-win{background:var(--success)}.ca-dot.ca-lose{background:#EF4444}.ca-dot.ca-par{background:#8fb0ee}
+.ca-vsum{padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg3);font-size:13px;line-height:1.5;margin-top:12px}
+.ca-verdict-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.ca-vcard{border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:var(--card)}
+.ca-vcard h4{margin:0 0 9px;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.ca-vcard.ca-str h4{color:var(--success)}.ca-vcard.ca-weak h4{color:#EF4444}
+.ca-vcard ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.ca-vcard li{display:flex;gap:8px;font-size:12.5px;color:var(--text);line-height:1.4}
+.ca-mk{flex:none;font-weight:700}
+.ca-str .ca-mk{color:var(--success)}.ca-weak .ca-mk{color:#EF4444}
+.ca-recs-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:12px}
+.ca-recs{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.ca-rec{border:1px solid var(--border);border-radius:10px;padding:11px 13px;background:var(--card)}
+.ca-rec-head{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:5px}
+.ca-rec-name{font-weight:600;font-size:13px}
+.ca-change{font-size:12px}
+.ca-from{color:var(--muted);text-decoration:line-through}
+.ca-to{color:var(--success);font-weight:600}
+.ca-impact{font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;text-transform:uppercase}
+.ca-imp-high{color:#EF4444;background:rgba(239,68,68,.14)}
+.ca-imp-med{color:var(--warn);background:rgba(245,158,11,.14)}
+.ca-imp-low{color:var(--muted);background:rgba(136,146,164,.14)}
+.ca-why{font-size:12px;color:var(--muted);line-height:1.45;margin:0}
+.ca-bm{color:#8fb0ee}
+.ca-note{margin-top:10px;padding:10px 12px;border:1px solid var(--border);border-left:3px solid var(--warn);border-radius:8px;background:var(--bg3);font-size:11.5px;color:var(--muted);line-height:1.5}
+@media(max-width:620px){.ca-verdict-grid{grid-template-columns:1fr}}

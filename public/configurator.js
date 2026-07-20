@@ -79,6 +79,15 @@ const CS = {
     pointsExpiry: 0, missionCount: 3,
     result: null,
   },
+
+  wheel: {
+    preset: 'welcome', geo: 'de', curMode: 'local',
+    segment: 'depositors', players: 5000, avgDeposit: 100,
+    frequency: 'on_deposit', rtp: 96, wager: 30,
+    segments: null,     // materialized lazily from preset; holds user tweaks
+    _segKey: null,      // tracks preset+avgDeposit to know when to re-materialize
+    result: null,
+  },
 };
 
 // AI state per type
@@ -86,6 +95,7 @@ const CAI = {
   bonus:      { tab:'econ', audit:null, optimize:null, games:null, auditLoading:false, optimizeLoading:false, gamesLoading:false },
   tournament: { tab:'econ', audit:null, optimize:null, games:null, auditLoading:false, optimizeLoading:false, gamesLoading:false },
   loyalty:    { tab:'econ', audit:null, optimize:null, missions:null, games:null, auditLoading:false, optimizeLoading:false, missionsLoading:false, gamesLoading:false },
+  wheel:      { tab:'econ', audit:null, optimize:null, games:null, auditLoading:false, optimizeLoading:false, gamesLoading:false },
 };
 
 // Connected game providers — shared across promo types (operator-level setting,
@@ -116,7 +126,22 @@ function cfgSetLang(lang) {
 const CFG_I18N = {
   en: {
     title: 'Configurator',
-    type_bonus:'🎁 Bonus', type_tourn:'🏆 Tournament', type_loyal:'⭐ Loyalty',
+    type_bonus:'🎁 Bonus', type_tourn:'🏆 Tournament', type_loyal:'⭐ Loyalty', type_wheel:'🎡 Wheel',
+    // wheel
+    wheel_setup:'Wheel Setup', wheel_visual:'Wheel & Segments', wheel_preset:'Preset',
+    preset_welcome:'Welcome', preset_daily:'Daily', preset_vip:'VIP',
+    wheel_geo:'Market / GEO', wheel_segment:'Audience', wheel_freq:'Spin Cadence',
+    wheel_players:'Total Players', wheel_avgdep:'Avg Deposit', wheel_wager:'Bonus Wager',
+    freq_on_deposit:'On Deposit', freq_daily:'Daily', freq_weekly:'Weekly', freq_one_time:'One-time',
+    prize_free_spins:'Free Spins', prize_bonus_money:'Bonus Money', prize_cashback:'Cashback',
+    prize_multiplier:'Multiplier', prize_jackpot:'Jackpot', prize_physical:'Prize', prize_nothing:'No Win',
+    wheel_seg_prize:'Prize', wheel_seg_value:'Value', wheel_seg_weight:'Weight', wheel_seg_prob:'Chance',
+    wheel_ev:'EV / Spin', wheel_prog_cost:'Program Cost', wheel_ggr_uplift:'GGR Uplift',
+    wheel_ret_value:'Retention Value', wheel_net:'Net Result', wheel_roi:'ROI',
+    wheel_per_spin:'per spin', wheel_total_value:'value / cost',
+    wheel_scenarios:'Participation Scenarios', wheel_cost_ratio:'Cost / GGR',
+    wheel_cost_active:'Cost / Player', wheel_max_risk:'Max Risk', wheel_breakeven:'Break-even',
+    wheel_top_prize:'incl. 1 top prize', wheel_ai_hint:'Calculate to unlock AI audit & optimization.',
     // bonus
     base_params:'Base Parameters', mechanics:'Bonus Mechanics',
     geo_lbl:'Market / GEO', currency_lbl:'Display Currency', players_lbl:'Monthly New Players',
@@ -212,6 +237,18 @@ const CFG_I18N = {
     games_popular:'🔥 Popular', games_live:'🃏 Live Casino', games_fast:'🚀 Crash / Fast',
     games_volatility:'💥 High Volatility', games_mobile:'📱 Mobile-friendly',
     games_empty:'No games match this filter — try fewer providers.',
+    // Competitor analysis
+    tab_competitors:'⚔️ Competitors',
+    comp_own_label:'Your offer', comp_competitors_label:'Competitors (up to 3)',
+    comp_name_ph:'Casino name', comp_find_ai:'🔍 Find via AI', comp_add_manual:'✍️ Add manually',
+    comp_run:'⚡ Run AI analysis', comp_run_hint:'Compares your offer against the competitors',
+    comp_analyzing:'Analysing competitiveness…', comp_searching:'Searching the web…',
+    comp_ai:'AI', comp_ai_unconf:'AI · unconfirmed', comp_manual:'manual', comp_source:'source ↗',
+    comp_max:'Up to 3 competitors', comp_none:'No competitors added yet.',
+    comp_add_hint:'Add at least one competitor to run the analysis.',
+    comp_name_req:'Enter a casino name first', comp_notfound:'No reliable public source found — marked unconfirmed',
+    comp_own_bonus:'Welcome bonus', comp_own_tournament:'Tournament', comp_own_loyalty:'Loyalty program', comp_own_wheel:'Wheel of Fortune',
+    comp_transparency:'⚙️ generated · 🔍 AI-found (with source) · ✍️ manual. The AI never invents numbers — values it cannot confirm are marked "н/д" and excluded from the verdict.',
     // actions
     save_btn:'💾 Save', calendar_btn:'📅 Add to Calendar',
     saved_toast:'Configuration saved ✓', calendar_toast:'Added to Retention Calendar ✓',
@@ -221,7 +258,22 @@ const CFG_I18N = {
   },
   ru: {
     title: 'Конфигуратор',
-    type_bonus:'🎁 Бонусы', type_tourn:'🏆 Турниры', type_loyal:'⭐ Лояльность',
+    type_bonus:'🎁 Бонусы', type_tourn:'🏆 Турниры', type_loyal:'⭐ Лояльность', type_wheel:'🎡 Колесо',
+    // wheel
+    wheel_setup:'Настройка колеса', wheel_visual:'Колесо и сегменты', wheel_preset:'Пресет',
+    preset_welcome:'Welcome', preset_daily:'Ежедневное', preset_vip:'VIP',
+    wheel_geo:'Рынок / GEO', wheel_segment:'Аудитория', wheel_freq:'Частота спинов',
+    wheel_players:'Всего игроков', wheel_avgdep:'Средний депозит', wheel_wager:'Вейджер бонуса',
+    freq_on_deposit:'За депозит', freq_daily:'Ежедневно', freq_weekly:'Еженедельно', freq_one_time:'Разово',
+    prize_free_spins:'Фриспины', prize_bonus_money:'Бонус деньги', prize_cashback:'Кэшбек',
+    prize_multiplier:'Множитель', prize_jackpot:'Джекпот', prize_physical:'Приз', prize_nothing:'Пусто',
+    wheel_seg_prize:'Приз', wheel_seg_value:'Значение', wheel_seg_weight:'Вес', wheel_seg_prob:'Шанс',
+    wheel_ev:'EV / спин', wheel_prog_cost:'Стоимость программы', wheel_ggr_uplift:'Прирост GGR',
+    wheel_ret_value:'Ретеншн-ценность', wheel_net:'Чистый результат', wheel_roi:'ROI',
+    wheel_per_spin:'за спин', wheel_total_value:'ценность / стоимость',
+    wheel_scenarios:'Сценарии участия', wheel_cost_ratio:'Стоим. / GGR',
+    wheel_cost_active:'Стоим. / игрока', wheel_max_risk:'Макс. риск', wheel_breakeven:'Окупаемость',
+    wheel_top_prize:'вкл. 1 топ-приз', wheel_ai_hint:'Рассчитайте, чтобы открыть AI-аудит и оптимизацию.',
     base_params:'Базовые параметры', mechanics:'Механики бонусов',
     geo_lbl:'Рынок / GEO', currency_lbl:'Валюта отображения', players_lbl:'Новых игроков / месяц',
     segment_lbl:'Сегмент игроков', platform_lbl:'Платформа', rtp_lbl:'Средний RTP слотов',
@@ -312,6 +364,18 @@ const CFG_I18N = {
     games_popular:'🔥 Популярные', games_live:'🃏 Лайв-казино', games_fast:'🚀 Crash / Быстрые',
     games_volatility:'💥 Высокая волатильность', games_mobile:'📱 Мобильные',
     games_empty:'Нет игр под этот фильтр — попробуйте выбрать меньше провайдеров.',
+    // Анализ конкурентов
+    tab_competitors:'⚔️ Конкуренты',
+    comp_own_label:'Ваше предложение', comp_competitors_label:'Конкуренты (до 3)',
+    comp_name_ph:'Название казино', comp_find_ai:'🔍 Найти через AI', comp_add_manual:'✍️ Ввести вручную',
+    comp_run:'⚡ Запустить AI-анализ', comp_run_hint:'Сравнит ваше предложение с конкурентами',
+    comp_analyzing:'Анализ конкурентности…', comp_searching:'Идёт поиск в интернете…',
+    comp_ai:'AI', comp_ai_unconf:'AI · не подтв.', comp_manual:'вручную', comp_source:'источник ↗',
+    comp_max:'Максимум 3 конкурента', comp_none:'Конкуренты пока не добавлены.',
+    comp_add_hint:'Добавьте хотя бы одного конкурента для анализа.',
+    comp_name_req:'Сначала введите название казино', comp_notfound:'Достоверный публичный источник не найден — помечено как не подтверждено',
+    comp_own_bonus:'Welcome-бонус', comp_own_tournament:'Турнир', comp_own_loyalty:'Программа лояльности', comp_own_wheel:'Колесо фортуны',
+    comp_transparency:'⚙️ сгенерировано · 🔍 найдено AI (с источником) · ✍️ вручную. AI не выдумывает цифры — значения без источника помечаются «н/д» и не идут в вердикт.',
     save_btn:'💾 Сохранить', calendar_btn:'📅 В календарь',
     saved_toast:'Конфигурация сохранена ✓', calendar_toast:'Добавлено в Retention Calendar ✓',
     reg_eu:'Европа (EU/UK)', reg_cis:'СНГ', reg_mn:'Монголия',
@@ -556,15 +620,16 @@ function cfgRender() {
   document.getElementById('topbar-title').textContent = cfgT('title');
   document.getElementById('topbar-sub').textContent =
     CS.type === 'bonus' ? cfgT('type_bonus') :
-    CS.type === 'tournament' ? cfgT('type_tourn') : cfgT('type_loyal');
+    CS.type === 'tournament' ? cfgT('type_tourn') :
+    CS.type === 'wheel' ? cfgT('type_wheel') : cfgT('type_loyal');
   const content = document.getElementById('content');
   content.innerHTML = renderTypeSwitch() + renderMainContent();
   bindEvents();
 }
 
 function renderTypeSwitch() {
-  const types = ['bonus','tournament','loyalty'];
-  const keys  = ['type_bonus','type_tourn','type_loyal'];
+  const types = ['bonus','tournament','loyalty','wheel'];
+  const keys  = ['type_bonus','type_tourn','type_loyal','type_wheel'];
   return `<div class="type-switch">${types.map((tp,i) =>
     `<button class="type-btn${CS.type===tp?' active':''}" onclick="cfgSwitchType('${tp}')">${cfgT(keys[i])}</button>`
   ).join('')}</div>`;
@@ -574,6 +639,7 @@ function renderMainContent() {
   if (CS.type === 'bonus')      return renderBonusSection();
   if (CS.type === 'tournament') return renderTournamentSection();
   if (CS.type === 'loyalty')    return renderLoyaltySection();
+  if (CS.type === 'wheel')      return renderWheelSection();
   return '';
 }
 
@@ -1235,7 +1301,7 @@ function renderBonusResults(B) {
 
   const tabs = `
     <div class="tab-row">
-      ${['econ','audit','optimize','games'].map(tab => `
+      ${['econ','audit','optimize','games','competitors'].map(tab => `
         <button class="tab${ai.tab===tab?' active':''}" onclick="bonusSetTab('${tab}')">${cfgT('tab_'+tab)}</button>
       `).join('')}
     </div>
@@ -1704,6 +1770,7 @@ function renderBonusAiContent(B) {
     </div>`;
   }
   if (ai.tab === 'games') return renderGamesTabContent('bonus');
+  if (ai.tab === 'competitors') return renderCompetitorTabContent('bonus');
   return '';
 }
 
@@ -1782,18 +1849,21 @@ function _gamesParamsFor(type) {
   if (type === 'bonus')      return { geo: CS.bonus.geo,      segment: CS.bonus.segment };
   if (type === 'tournament') return { geo: CS.tournament.geo, segment: CS.tournament.segment };
   if (type === 'loyalty')    return { geo: CS.loyalty.geo || CS.loyalty.region, segment: CS.loyalty.segment };
+  if (type === 'wheel')      return { geo: CS.wheel.geo,      segment: CS.wheel.segment };
   return { geo: 'de', segment: 'mid' };
 }
 
 function _aiContentElId(type) {
   if (type === 'bonus')      return 'bonus-ai-content';
   if (type === 'tournament') return 'tourn-ai-content';
+  if (type === 'wheel')      return 'wheel-ai-content';
   return 'loyalty-ai-content';
 }
 
 function _renderAiContentFor(type) {
   if (type === 'bonus')      return renderBonusAiContent(CS.bonus);
   if (type === 'tournament') return renderTournAiContent(CS.tournament);
+  if (type === 'wheel')      return renderWheelAiContent(CS.wheel);
   return renderLoyaltyAiContent(CS.loyalty);
 }
 
@@ -1885,6 +1955,248 @@ async function runGamesRecommend(type) {
     const el2 = document.getElementById(elId);
     if (el2) el2.innerHTML = _renderAiContentFor(type);
   }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// COMPETITOR ANALYSIS (shared across all promo types) — uses window.CompetitorAnalysis
+// ══════════════════════════════════════════════════════════════════════════
+
+// Delegates to the shared module's escaper (loaded before any competitor render)
+// so the escape map lives in exactly one place.
+function _compEsc(s) {
+  return window.CompetitorAnalysis
+    ? window.CompetitorAnalysis.esc(s)
+    : String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+// Lazy-init: CAI[type] is rebuilt on regenerate (like `games`), dropping `comp`.
+// Recreating on demand keeps the competitor tab crash-safe after a re-Calculate.
+function _compState(type) {
+  if (!CAI[type].comp) CAI[type].comp = { list: [], result: null, loading: false, searching: false };
+  return CAI[type].comp;
+}
+function _reRenderComp(type) {
+  const el = document.getElementById(_aiContentElId(type));
+  if (el) el.innerHTML = _renderAiContentFor(type);
+}
+function _compRegionFor(type) {
+  if (type === 'loyalty') return CS.loyalty.region || CS.loyalty.geo || 'eu';
+  return CS[type].geo || 'de';
+}
+function _compOwnLabel(type) { return cfgT('comp_own_' + type); }
+
+// Map internal codes → human labels for the categorical params.
+function _compLabel(kind, code) {
+  const ru = cfgLang() === 'ru';
+  const M = {
+    dist:  { top_n:'Top-N', flat: ru?'Равномерно':'Flat', top_heavy:'Top-heavy', tiered: ru?'По тирам':'Tiered' },
+    seg:   { all: ru?'Все':'All', new: ru?'Новые':'New', mid: ru?'Актив':'Mid', vip:'VIP', dormant: ru?'Спящие':'Dormant', depositors: ru?'Депозиторы':'Depositors' },
+    freq:  { flash:'Flash', daily:'Daily', weekly:'Weekly', monthly:'Monthly', multi_round: ru?'Мульти-раунд':'Multi-round', on_deposit: ru?'По депозиту':'On deposit', on_login: ru?'По входу':'On login' },
+    entry: { freeroll: ru?'Бесплатно':'Free', buyin:'Buy-in', by_deposit: ru?'По депозиту':'By deposit' },
+    preset:{ welcome:'Welcome', daily:'Daily', vip:'VIP' },
+  };
+  return (M[kind] && M[kind][code]) || code || '';
+}
+
+// Own-offer snapshot, keyed by CompetitorAnalysis PARAM_DEFS for the promo type.
+function _compOwnParamsFor(type) {
+  const ru = cfgLang() === 'ru';
+  if (type === 'bonus') {
+    const o = CS.bonus.ov, cur = cfgGeo(CS.bonus.geo).cur;
+    return {
+      matchPct: o.w_pct + '%',
+      maxBonus: fmtCur(o.w_maxB, cur),
+      wager: o.w_wager + '×',
+      minDeposit: fmtCur(o.w_minD, cur),
+      maxWin: o.w_maxWin > 0 ? fmtCur(o.w_maxWin, cur) : (ru ? 'нет лимита' : 'no limit'),
+      validityDays: o.w_days + (ru ? ' дн.' : ' d'),
+    };
+  }
+  if (type === 'tournament') {
+    const t = CS.tournament, cur = cfgGeo(t.geo).cur;
+    return {
+      prizePool: fmtCur(t.prizePool, cur),
+      distribution: _compLabel('dist', t.distribution),
+      segmentReach: _compLabel('seg', t.segment),
+      frequency: _compLabel('freq', t.duration),
+      entry: _compLabel('entry', t.entryModel),
+    };
+  }
+  if (type === 'loyalty') {
+    const l = CS.loyalty;
+    return {
+      tiers: String(l.numTiers),
+      topCashback: l.topCashbackRate + '%',
+      earnRate: l.earnRateDeposit + (ru ? ' очк.' : ' pt'),
+      redeemRate: l.redeemRate + ' = 1',
+      pointsExpiry: l.pointsExpiry > 0 ? l.pointsExpiry + (ru ? ' дн.' : ' d') : (ru ? 'бессрочно' : 'never'),
+    };
+  }
+  const w = CS.wheel; // wheel
+  const segCount = Array.isArray(w.segments) ? w.segments.length : '';
+  return {
+    occasion: _compLabel('preset', w.preset),
+    segments: String(segCount),
+    topPrize: '',   // best-effort: user can fill for a manual competitor comparison
+    spinCost: _compLabel('freq', w.frequency),
+    emptySlots: '',
+    winWager: w.wager + '×',
+  };
+}
+
+function _renderCompCard(type, comp, i, defs, lang) {
+  const ai = comp.source === 'ai_search';
+  const badge = ai ? (comp.confidence === 'unconfirmed' ? cfgT('comp_ai_unconf') : cfgT('comp_ai')) : cfgT('comp_manual');
+  const fields = defs.map(d => {
+    const label = lang === 'ru' ? d.ru : d.en;
+    const val = comp.params?.[d.key] ?? '';
+    if (ai) return `<div class="ca-f"><span class="ca-fl">${label}</span><span class="ca-fv">${_compEsc(val || 'н/д')}</span></div>`;
+    return `<div class="ca-f"><span class="ca-fl">${label}</span><input class="inp ca-fi" value="${_compEsc(val)}" oninput="compSetParam('${type}',${i},'${d.key}',this.value)"></div>`;
+  }).join('');
+  const src = ai && comp.sourceUrl ? `<a href="${_compEsc(comp.sourceUrl)}" target="_blank" rel="noopener" class="ca-srclink">${cfgT('comp_source')}</a>` : '';
+  return `<div class="ca-card">
+    <div class="ca-card-head">
+      <span class="ca-card-name">${ai ? '🔍' : '✍️'} ${_compEsc(comp.name)}</span>
+      <span class="ca-badge">${badge}</span>${src}
+      <a class="ca-x" onclick="compRemove('${type}',${i})" title="✕">✕</a>
+    </div>
+    <div class="ca-fields">${fields}</div>
+  </div>`;
+}
+
+function renderCompetitorTabContent(type) {
+  const CAmod = window.CompetitorAnalysis;
+  if (!CAmod) return `<div class="ph" style="min-height:80px">…</div>`;
+  const c = _compState(type);
+  const lang = cfgLang();
+  const defs = CAmod.PARAM_DEFS[type] || [];
+  const own = _compOwnParamsFor(type);
+  const ownChips = defs.map(d => `<span class="ca-own-chip"><b>${lang === 'ru' ? d.ru : d.en}:</b> ${_compEsc(own[d.key] || '—')}</span>`).join('');
+  const cards = c.list.map((comp, i) => _renderCompCard(type, comp, i, defs, lang)).join('');
+  const addRow = c.list.length >= 3 ? '' : `<div class="ca-add">
+    <input id="ca-name-${type}" class="inp" placeholder="${cfgT('comp_name_ph')}">
+    <button class="btn btn-sm btn-primary" onclick="compSearchAI('${type}')">${cfgT('comp_find_ai')}</button>
+    <button class="btn btn-sm btn-outline" onclick="compAddManual('${type}')">${cfgT('comp_add_manual')}</button>
+  </div>`;
+
+  let result = '';
+  if (c.loading) {
+    result = loadingHtml(cfgT('comp_analyzing'));
+  } else if (c.result && c.result.error) {
+    result = `<div class="ph" style="min-height:60px;color:#ef4444">${_compEsc(c.result.error)}</div>`;
+  } else if (c.result) {
+    result = `<div class="ca-run-again">
+        <button class="btn btn-sm btn-outline" onclick="compRunAnalysis('${type}')">${cfgT('rerun')}</button>
+        <button class="btn btn-sm btn-outline" onclick="compSaveComparison('${type}')">${cfgT('save_btn')}</button>
+      </div>`
+      + CAmod.renderComparisonTable(type, lang, _compOwnLabel(type), own, c.list)
+      + CAmod.renderVerdict(lang, c.result);
+  } else if (c.list.length) {
+    result = `<div class="ca-run"><button class="btn btn-primary" onclick="compRunAnalysis('${type}')">${cfgT('comp_run')}</button>
+      <span class="ca-run-hint">${cfgT('comp_run_hint')}</span></div>`;
+  } else {
+    result = `<div class="ca-hint">${cfgT('comp_add_hint')}</div>`;
+  }
+
+  return `
+    <div class="ca-panel">
+      <div class="ca-sec-label">${cfgT('comp_own_label')}</div>
+      <div class="ca-own-chips">${ownChips}</div>
+      <div class="ca-sec-label">${cfgT('comp_competitors_label')}</div>
+      ${cards}
+      ${c.searching ? loadingHtml(cfgT('comp_searching')) : addRow}
+      ${result}
+      <div class="ca-note">${cfgT('comp_transparency')}</div>
+    </div>`;
+}
+
+function compSetParam(type, i, key, val) {
+  const comp = _compState(type).list[i];
+  if (comp) comp.params[key] = val;
+}
+
+function compAddManual(type) {
+  const c = _compState(type);
+  if (c.list.length >= 3) { showToast(cfgT('comp_max')); return; }
+  const nameEl = document.getElementById('ca-name-' + type);
+  const name = (nameEl && nameEl.value.trim()) || (cfgLang() === 'ru' ? 'Конкурент' : 'Competitor');
+  c.list.push({ name, source: 'manual', params: {} });
+  c.result = null;
+  _reRenderComp(type);
+}
+
+function compRemove(type, i) {
+  const c = _compState(type);
+  c.list.splice(i, 1);
+  c.result = null;
+  _reRenderComp(type);
+}
+
+async function compSearchAI(type) {
+  if (window.FeatureGate && !(await window.FeatureGate.ensure('competitorComparison'))) return;
+  const c = _compState(type);
+  if (c.list.length >= 3) { showToast(cfgT('comp_max')); return; }
+  const nameEl = document.getElementById('ca-name-' + type);
+  const name = (nameEl && nameEl.value.trim()) || '';
+  if (!name) { showToast(cfgT('comp_name_req')); return; }
+  c.searching = true; _reRenderComp(type);
+  try {
+    const res = await fetch('/api/competitor/search', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ casinoName: name, region: _compRegionFor(type), promoType: type, uiLang: cfgLang() }),
+    });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || ('HTTP ' + res.status)); }
+    const found = await res.json();
+    c.list.push({ name: found.name, source: 'ai_search', confidence: found.confidence, sourceUrl: found.sourceUrl, params: found.params || {} });
+    c.result = null;
+    if (!found.found) showToast(cfgT('comp_notfound'));
+  } catch (e) {
+    showToast(e.message);
+  } finally {
+    c.searching = false; _reRenderComp(type);
+  }
+}
+
+async function compRunAnalysis(type) {
+  if (window.FeatureGate && !(await window.FeatureGate.ensure('competitorComparison'))) return;
+  const c = _compState(type);
+  if (!c.list.length) return;
+  c.loading = true; _reRenderComp(type);
+  try {
+    const body = {
+      region: _compRegionFor(type), promoType: type,
+      ownOffer: { label: _compOwnLabel(type), params: _compOwnParamsFor(type) },
+      competitors: c.list.map(x => ({ name: x.name, source: x.source, confidence: x.confidence, sourceUrl: x.sourceUrl, params: x.params })),
+      uiLang: cfgLang(),
+    };
+    const res = await fetch('/api/competitor/compare', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || ('HTTP ' + res.status)); }
+    c.result = await res.json();
+  } catch (e) {
+    c.result = { error: e.message };
+  } finally {
+    c.loading = false; _reRenderComp(type);
+  }
+}
+
+function compSaveComparison(type) {
+  const c = _compState(type);
+  if (!c.result || c.result.error) return;
+  const id = genId();
+  const rec = {
+    id, type: 'competitor-comparison', promoType: type,
+    createdAt: new Date().toISOString(), region: _compRegionFor(type),
+    ownOffer: { label: _compOwnLabel(type), params: _compOwnParamsFor(type) },
+    competitors: c.list, result: c.result,
+  };
+  try {
+    const arr = JSON.parse(localStorage.getItem('cfgSavedComparisons') || '[]');
+    arr.push(rec);
+    localStorage.setItem('cfgSavedComparisons', JSON.stringify(arr));
+  } catch (e) {}
+  if (window.RetomatRepo) window.RetomatRepo.mirror('competitor-comparisons', id, rec);
+  showToast(cfgT('saved_toast'));
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -2147,7 +2459,7 @@ function renderTournamentResults(T) {
 
   const tabs = `
     <div class="tab-row">
-      ${['econ','audit','optimize','games'].map(tab=>`
+      ${['econ','audit','optimize','games','competitors'].map(tab=>`
         <button class="tab${ai.tab===tab?' active':''}" onclick="tournSetTab('${tab}')">${cfgT('tab_'+tab)}</button>
       `).join('')}
     </div>
@@ -2272,6 +2584,7 @@ function renderTournAiContent(T) {
     </div>`;
   }
   if (ai.tab === 'games') return renderGamesTabContent('tournament');
+  if (ai.tab === 'competitors') return renderCompetitorTabContent('tournament');
   return '';
 }
 
@@ -2582,7 +2895,7 @@ function renderLoyaltyResults(LY) {
   const hasMissions = LY.mode !== 'tiers';
   const tabs = `
     <div class="tab-row">
-      ${['econ','audit','optimize', ...(hasMissions?['missions']:[]), 'games'].map(tab=>`
+      ${['econ','audit','optimize', ...(hasMissions?['missions']:[]), 'games','competitors'].map(tab=>`
         <button class="tab${ai.tab===tab?' active':''}" onclick="loyalSetTab('${tab}')">${cfgT('tab_'+tab)}</button>
       `).join('')}
     </div>
@@ -2762,6 +3075,7 @@ function renderLoyaltyAiContent(LY) {
     </div>`;
   }
   if (ai.tab === 'games') return renderGamesTabContent('loyalty');
+  if (ai.tab === 'competitors') return renderCompetitorTabContent('loyalty');
   return '';
 }
 
@@ -2945,6 +3259,478 @@ function renderMissionsContent(data) {
 
 function loadingHtml(msg) {
   return `<div class="loader"><div class="spinner"></div><span>${msg}</span></div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// WHEEL OF FORTUNE SECTION
+// ══════════════════════════════════════════════════════════════════════════
+
+const WHEEL_SEG_COLORS = {
+  free_spins:'#60A5FA', bonus_money:'#10B981', cashback:'#F59E0B',
+  multiplier:'#A78BFA', jackpot:'#EF4444', physical:'#EC4899', nothing:'#64748B',
+};
+// Money-valued keys of the flat wheel econ object (for GeoData.scaleFields).
+const WHEEL_ECON_MONEY = [
+  'arpu','evPerSpin','topPrizeCost','programCostLow','programCostMid','programCostHigh',
+  'ggrUpliftMid','retentionValue','totalValueMid','netResultMid','costPerActiveMid','maxRisk',
+];
+
+// Materialize preset segments lazily; re-materialize when preset or avgDeposit
+// changes (a fresh layout), but keep per-segment tweaks otherwise.
+function wheelEnsureSegments(W) {
+  if (!window._wheelEcon) return W.segments || [];
+  const key = W.preset + ':' + W.avgDeposit;
+  if (!W.segments || W._segKey !== key) {
+    W.segments = window._wheelEcon.materializeSegments(W.preset, W.avgDeposit);
+    W._segKey  = key;
+  }
+  return W.segments;
+}
+
+// Client-side econ (mirror of the backend) — instant preview + live tweak recalc.
+function wheelComputeEcon(W) {
+  if (!window._wheelEcon) return null;
+  const geo = cfgGeo(W.geo);
+  return window._wheelEcon.calcWheelEconomics({
+    region:     geo.region, segment: W.segment, players: W.players,
+    avgDeposit: W.avgDeposit, segments: W.segments, frequency: W.frequency,
+    sitecur:    geo.cur, geo: W.geo, rtp: W.rtp / 100, wager: W.wager,
+  });
+}
+
+function wheelSegLabel(seg, cur, factor) {
+  const v = seg.prizeValue;
+  switch (seg.prizeType) {
+    case 'free_spins':  return v + ' FS';
+    case 'bonus_money': return fmtCur(v * factor, cur);
+    case 'cashback':    return Math.round(v * 100) + '%';
+    case 'multiplier':  return v + '×';
+    case 'jackpot':     return '🎰 ' + fmtCur(v * factor, cur);
+    case 'physical':    return '🎁 ' + fmtCur(v * factor, cur);
+    case 'nothing':     return '—';
+    default:            return '';
+  }
+}
+
+function renderWheelSVG(segments) {
+  const total = segments.reduce((s, g) => s + Math.max(0, g.weight), 0) || 1;
+  const cx = 120, cy = 120, r = 110;
+  let ang = -Math.PI / 2;
+  const parts = segments.map(seg => {
+    const frac = Math.max(0, seg.weight) / total;
+    const a2   = ang + frac * 2 * Math.PI;
+    const x1 = cx + r * Math.cos(ang), y1 = cy + r * Math.sin(ang);
+    const x2 = cx + r * Math.cos(a2),  y2 = cy + r * Math.sin(a2);
+    const large = frac > 0.5 ? 1 : 0;
+    const mid = (ang + a2) / 2;
+    const lx = cx + r * 0.62 * Math.cos(mid), ly = cy + r * 0.62 * Math.sin(mid);
+    const color = WHEEL_SEG_COLORS[seg.prizeType] || '#64748B';
+    const path = `<path d="M${cx} ${cy} L${x1.toFixed(1)} ${y1.toFixed(1)} A${r} ${r} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} Z" fill="${color}" stroke="#0b1020" stroke-width="1.5" opacity="0.9"/>`;
+    const pct = Math.round(frac * 100);
+    const label = pct >= 6
+      ? `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" fill="#fff" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">${pct}%</text>`
+      : '';
+    ang = a2;
+    return path + label;
+  }).join('');
+  return `<svg viewBox="0 0 240 240" width="240" height="240" style="max-width:100%;display:block;margin:0 auto">
+    ${parts}
+    <circle cx="${cx}" cy="${cy}" r="26" fill="#0b1020" stroke="#a0b0ff" stroke-width="2"/>
+    <text x="${cx}" y="${cy}" font-size="22" text-anchor="middle" dominant-baseline="middle">🎡</text>
+    <polygon points="${cx - 9},4 ${cx + 9},4 ${cx},26" fill="#a0b0ff"/>
+  </svg>`;
+}
+
+function renderWheelSection() {
+  const W = CS.wheel;
+  wheelEnsureSegments(W);
+  return `
+    <div class="card-grid" style="margin-bottom:16px">
+      ${renderWheelSetupCard(W)}
+      ${renderWheelVisualCard(W)}
+    </div>
+    <div style="text-align:center;margin-bottom:28px">
+      <button class="btn btn-primary btn-lg" onclick="onGenerateWheel()" id="btn-calculate">
+        ${cfgT(W.result ? 'recalculate' : 'calculate')}
+      </button>
+    </div>
+    <div id="wheel-results">${renderWheelResults(W)}</div>
+  `;
+}
+
+function renderWheelSetupCard(W) {
+  const geoOpts = cfgGeoOptions(W.geo);
+  const _wf = dispFactor('wheel');
+  const cur = dispCurCode('wheel');
+  const presets   = [['welcome','preset_welcome'],['daily','preset_daily'],['vip','preset_vip']];
+  const segments  = [['depositors','seg_depositors'],['all','seg_all'],['new','seg_new'],['vip','seg_vip'],['dormant','seg_dormant']];
+  const freqs     = [['on_deposit','freq_on_deposit'],['daily','freq_daily'],['weekly','freq_weekly'],['one_time','freq_one_time']];
+  return `
+    <div class="card">
+      <div class="card-title">${cfgT('wheel_setup')}</div>
+      <div class="form-row">
+        <label class="form-label">${cfgT('wheel_preset')}</label>
+        <div class="chips">
+          ${presets.map(([v,k])=>`<div class="chip${W.preset===v?' on':''}" onclick="wheelSetPreset('${v}')">${cfgT(k)}</div>`).join('')}
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">${cfgT('wheel_geo')}</label>
+        <select class="form-input" onchange="wheelSetGeo(this.value)">${geoOpts}</select>
+      </div>
+      ${renderCurToggle('wheel')}
+      <div class="form-row">
+        <label class="form-label">${cfgT('wheel_segment')}</label>
+        <div class="chips">
+          ${segments.map(([v,k])=>`<div class="chip${W.segment===v?' on':''}" onclick="wheelSet('segment','${v}')">${cfgT(k)}</div>`).join('')}
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">${cfgT('wheel_freq')}</label>
+        <div class="chips" style="flex-wrap:wrap">
+          ${freqs.map(([v,k])=>`<div class="chip${W.frequency===v?' on':''}" onclick="wheelSet('frequency','${v}')">${cfgT(k)}</div>`).join('')}
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">${cfgT('wheel_players')}</label>
+        <input class="form-input" type="number" value="${W.players}" min="100" step="100"
+               onchange="wheelSetNum('players', this.value, 5000)">
+      </div>
+      <div class="form-row">
+        <label class="form-label">${cfgT('wheel_avgdep')} (${cur})</label>
+        <input class="form-input" type="number" value="${Math.round(W.avgDeposit * _wf)}" min="1" step="10"
+               onchange="wheelSetAvgDep(this.value)">
+      </div>
+      <div class="form-row">
+        <label class="form-label">${cfgT('wheel_wager')} — <span style="font-weight:700;color:var(--text)">${W.wager}×</span></label>
+        <input type="range" min="0" max="60" step="5" value="${W.wager}"
+               onchange="wheelSetNum('wager', this.value, 30)">
+      </div>
+    </div>
+  `;
+}
+
+function renderWheelVisualCard(W) {
+  const segs = W.segments || [];
+  // Prize values are edited in the backend (site) currency directly — no display
+  // conversion here, so crypto/high-divisor currencies don't round money to 0.
+  const cur = geoOfType('wheel').cur;
+  const total = segs.reduce((s,g)=>s+Math.max(0,g.weight),0) || 1;
+  const inpStyle = 'width:100%;padding:4px 7px;font-size:12px;height:auto';
+  const rows = segs.map((seg,i) => {
+    const color = WHEEL_SEG_COLORS[seg.prizeType] || '#64748B';
+    const pct = Math.round(Math.max(0,seg.weight)/total*100);
+    const isMoney = seg.prizeType==='bonus_money'||seg.prizeType==='jackpot'||seg.prizeType==='physical';
+    const unit = isMoney ? cur
+      : seg.prizeType==='cashback'   ? '%'
+      : seg.prizeType==='free_spins' ? 'FS'
+      : seg.prizeType==='multiplier' ? '×' : '';
+    let valCell;
+    if (seg.prizeType==='nothing') {
+      valCell = `<span style="color:var(--text2)">—</span>`;
+    } else if (seg.prizeType==='cashback') {
+      valCell = `<input class="form-input" style="${inpStyle}" type="number" min="0" max="100" step="1"
+        value="${Math.round(seg.prizeValue*100)}" onchange="wheelSetSegVal(${i}, this.value, 'cashback')">`;
+    } else {
+      const step = isMoney ? '10' : seg.prizeType==='multiplier' ? '0.5' : '5';
+      valCell = `<input class="form-input" style="${inpStyle}" type="number" min="0" step="${step}"
+        value="${seg.prizeValue}" onchange="wheelSetSegVal(${i}, this.value)">`;
+    }
+    return `<tr>
+      <td style="padding:5px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${color};margin-right:6px;vertical-align:middle"></span>${cfgT('prize_'+seg.prizeType)}</td>
+      <td style="padding:5px 6px"><div style="display:flex;align-items:center;gap:5px">${valCell}<span style="color:var(--text2);font-size:11px;flex-shrink:0;min-width:22px">${unit}</span></div></td>
+      <td style="padding:5px 6px"><input class="form-input" style="${inpStyle}" type="number" min="0" step="1"
+        value="${seg.weight}" onchange="wheelSetSegWeight(${i}, this.value)"></td>
+      <td style="padding:5px 6px;text-align:right;color:var(--text2);font-size:12px">${pct}%</td>
+    </tr>`;
+  }).join('');
+  return `
+    <div class="card">
+      <div class="card-title">${cfgT('wheel_visual')}</div>
+      <div id="wheel-visual">${renderWheelSVG(segs)}</div>
+      <table style="width:100%;table-layout:fixed;border-collapse:collapse;font-size:12px;margin-top:12px">
+        <colgroup><col style="width:38%"><col style="width:29%"><col style="width:19%"><col style="width:14%"></colgroup>
+        <thead><tr style="color:var(--text2)">
+          <th style="text-align:left;padding:4px 6px;font-weight:600;font-size:11px">${cfgT('wheel_seg_prize')}</th>
+          <th style="text-align:left;padding:4px 6px;font-weight:600;font-size:11px">${cfgT('wheel_seg_value')}</th>
+          <th style="text-align:left;padding:4px 6px;font-weight:600;font-size:11px">${cfgT('wheel_seg_weight')}</th>
+          <th style="text-align:right;padding:4px 6px;font-weight:600;font-size:11px">${cfgT('wheel_seg_prob')}</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+// ── Wheel state setters ─────────────────────────────────────────────────────
+function wheelSetPreset(v) {
+  CS.wheel.preset = v;
+  CS.wheel.segments = null;  // force re-materialize from the new preset
+  CS.wheel._segKey  = null;
+  CS.wheel.frequency = (window._wheelEcon?.WHEEL_PRESETS[v]?.defaultFrequency) || CS.wheel.frequency;
+  cfgRender();
+}
+function wheelSetGeo(v) {
+  CS.wheel.geo = v;
+  CS.wheel.curMode = 'local';
+  cfgRender();
+}
+function wheelSet(key, val) {
+  CS.wheel[key] = val;
+  wheelSyncLocal();
+  cfgRender();
+}
+function wheelSetNum(key, val, def) {
+  CS.wheel[key] = +val || def;
+  wheelSyncLocal();
+  cfgRender();
+}
+function wheelSetAvgDep(val) {
+  // Input is in display currency → store in backend (site) currency.
+  CS.wheel.avgDeposit = Math.max(1, Math.round((+val || 100) / dispFactor('wheel')));
+  CS.wheel.segments = null;  // rich-prize amounts are derived from avgDeposit
+  CS.wheel._segKey  = null;
+  cfgRender();
+}
+function wheelSetSegWeight(i, val) {
+  const W = CS.wheel;
+  if (!W.segments || !W.segments[i]) return;
+  W.segments[i].weight = Math.max(0, +val || 0);
+  wheelSyncLocal();
+  cfgRender();
+}
+function wheelSetSegVal(i, val, kind) {
+  const W = CS.wheel;
+  if (!W.segments || !W.segments[i]) return;
+  let v = Math.max(0, +val || 0);
+  if (kind === 'cashback') v = Math.min(1, v / 100);   // percent → fraction
+  W.segments[i].prizeValue = v;
+  wheelSyncLocal();
+  cfgRender();
+}
+
+// Recompute econ locally after a tweak so results react instantly (no API call).
+function wheelSyncLocal() {
+  const W = CS.wheel;
+  if (!W.result) return;
+  const econ = wheelComputeEcon(W);
+  if (econ) {
+    W.result.econ = econ;
+    if (W.result.spec) W.result.spec.segments = W.segments;
+  }
+}
+
+async function onGenerateWheel() {
+  if (_generating) return;
+  _generating = true;
+  const btn = document.getElementById('btn-calculate');
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+  const W = CS.wheel;
+  wheelEnsureSegments(W);
+  const geo = cfgGeo(W.geo);
+  const body = {
+    params: {
+      geo: W.geo, segment: W.segment, preset: W.preset, frequency: W.frequency,
+      players: W.players, avgDeposit: W.avgDeposit,
+      segments: W.segments, rtp: W.rtp / 100, wager: W.wager,
+      lang: cfgLang(), tone: 'professional',
+    }
+  };
+  try {
+    const res = await fetch('/api/wheel/generate', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
+    W.result = await res.json();
+    // Keep the editable segments in sync with what the server materialized.
+    if (W.result.spec?.segments) { W.segments = W.result.spec.segments; }
+    CAI.wheel = { tab:'econ', audit:null, optimize:null, games:null, auditLoading:false, optimizeLoading:false, gamesLoading:false };
+    cfgRender();
+  } catch(e) {
+    showToast('Error: ' + e.message, '#ef4444');
+  } finally {
+    _generating = false;
+    const b = document.getElementById('btn-calculate');
+    if (b) { b.disabled = false; b.textContent = cfgT(CS.wheel.result ? 'recalculate' : 'calculate'); }
+  }
+}
+
+function renderWheelResults(W) {
+  // Econ preview is always available (client mirror); AI tabs appear after Generate.
+  const econRaw = W.result?.econ || wheelComputeEcon(W);
+  if (!econRaw) return `<div class="ph" style="min-height:80px">${cfgT('ai_loading')}</div>`;
+  const _wf  = dispFactor('wheel');
+  const cur  = dispCurCode('wheel');
+  const econ = window.GeoData.scaleFields(econRaw, _wf, WHEEL_ECON_MONEY);
+
+  const net = econ.netResultMid || 0;
+  const econCards = `
+    <div class="econ-grid">
+      ${econCard('', cfgT('wheel_ev'),        fmtCur(econ.evPerSpin||0, cur),      cfgT('wheel_per_spin'), '')}
+      ${econCard('', cfgT('wheel_prog_cost'), fmtCur(econ.programCostMid||0, cur), cfgT('per_mo'), '')}
+      ${econCard('', cfgT('wheel_ggr_uplift'),fmtCur(econ.ggrUpliftMid||0, cur),   cfgT('per_mo'), 'pos')}
+      ${econCard('', cfgT('wheel_ret_value'), fmtCur(econ.retentionValue||0, cur), cfgT('per_mo'), 'pos')}
+      ${econCard('', cfgT('wheel_net'),       fmtCur(net, cur),                    cfgT('per_mo'), net>=0?'pos':'neg')}
+      ${econCard('', cfgT('wheel_roi'),       (econ.roi||0).toFixed(0)+'%',        cfgT('wheel_total_value'), (econ.roi||0)>=100?'pos':'neg')}
+    </div>
+  `;
+
+  const hasResult = !!W.result;
+  const tabsCard = hasResult ? `
+    <div class="card">
+      <div class="card-title" style="margin-bottom:10px">${cfgT('tab_audit')} & ${cfgT('tab_optimize')}</div>
+      <div class="tab-row">
+        ${['econ','audit','optimize','games','competitors'].map(tab=>`
+          <button class="tab${CAI.wheel.tab===tab?' active':''}" onclick="wheelSetTab('${tab}')">${cfgT('tab_'+tab)}</button>
+        `).join('')}
+      </div>
+      <div id="wheel-ai-content">${renderWheelAiContent(W)}</div>
+    </div>
+  ` : `<div class="card"><div class="ph" style="min-height:60px">${cfgT('wheel_ai_hint')}</div></div>`;
+
+  return `
+    <div class="results-hdr">
+      <div class="results-title">${cfgT('tab_econ')}</div>
+      <div class="results-actions">
+        <button class="btn btn-sm btn-outline" onclick="cfgSaveWheel()">${cfgT('save_btn')}</button>
+      </div>
+    </div>
+    ${econCards}
+    ${renderWheelScenarioTable(econ, cur)}
+    ${tabsCard}
+  `;
+}
+
+function renderWheelScenarioTable(econ, cur) {
+  const isRu = cfgLang() === 'ru';
+  const th = s => `<th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);font-weight:600;font-size:11px">${s}</th>`;
+  const td = (v, bold, color) => `<td style="text-align:right;padding:8px;border-bottom:1px solid rgba(255,255,255,.04);${bold?'font-weight:700;':''}${color?'color:'+color+';':''}">${v}</td>`;
+  const L = isRu
+    ? { low:'🔴 Низкий', mid:'⚪ Ожидаемый', high:'🟢 Высокий', part:'Участники', cost:'Стоимость программы' }
+    : { low:'🔴 Low', mid:'⚪ Expected', high:'🟢 High', part:'Participants', cost:'Program Cost' };
+  return `
+    <div class="card" style="margin:12px 0">
+      <div class="card-title" style="margin-bottom:8px">${cfgT('wheel_scenarios')}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="color:var(--text2)">
+          <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px"></th>
+          ${th(L.low)} ${th(L.mid)} ${th(L.high)}
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td style="padding:8px;color:var(--text2);font-size:11px;border-bottom:1px solid rgba(255,255,255,.04)">${L.part}</td>
+            ${td(fmtN(econ.participantsLow||0), false, null)} ${td(fmtN(econ.participantsMid||0), true, '#a0b0ff')} ${td(fmtN(econ.participantsHigh||0), false, null)}
+          </tr>
+          <tr>
+            <td style="padding:8px;color:var(--text2);font-size:11px">${L.cost}</td>
+            ${td(fmtCur(econ.programCostLow||0, cur), false, null)} ${td(fmtCur(econ.programCostMid||0, cur), true, '#a0b0ff')} ${td(fmtCur(econ.programCostHigh||0, cur), false, null)}
+          </tr>
+        </tbody>
+      </table>
+      <div class="econ-grid" style="margin-top:10px">
+        ${econCard('', cfgT('wheel_cost_ratio'),  (econ.costRatio||0).toFixed(1)+'%',  cfgT('of_deposits'), '')}
+        ${econCard('', cfgT('wheel_cost_active'),  fmtCur(econ.costPerActiveMid||0, cur), cfgT('per_player'), '')}
+        ${econCard('', cfgT('wheel_max_risk'),     fmtCur(econ.maxRisk||0, cur),        cfgT('wheel_top_prize'), 'neg')}
+        ${econCard('', cfgT('wheel_breakeven'),    fmtN(econ.breakEvenParticipants||0), isRu?'участн.':'players', '')}
+      </div>
+    </div>
+  `;
+}
+
+function wheelSetTab(tab) {
+  CAI.wheel.tab = tab;
+  const el = document.getElementById('wheel-ai-content');
+  if (el) el.innerHTML = renderWheelAiContent(CS.wheel);
+  document.querySelectorAll('.tab-row .tab').forEach(t =>
+    t.classList.toggle('active', t.getAttribute('onclick').includes(`'${tab}'`))
+  );
+}
+
+function renderWheelAiContent(W) {
+  const ai = CAI.wheel;
+  if (ai.tab === 'econ') {
+    const isRu = cfgLang() === 'ru';
+    return `<div style="padding:12px 0;color:var(--text2);font-size:12px">${isRu
+      ? 'Экономика колеса показана в карточках выше. Вкладки Audit и Optimize дают AI-оценку рисков и рекомендации.'
+      : 'Wheel economics are shown in the cards above. The Audit and Optimize tabs give an AI risk review and recommendations.'}</div>`;
+  }
+  if (ai.tab === 'audit') {
+    if (ai.auditLoading) return loadingHtml(cfgT('ai_loading'));
+    if (ai.audit)        return aiCurNote('wheel') + renderAuditContent(ai.audit);
+    return `<div class="ph" style="min-height:120px"><button class="btn btn-primary" onclick="runWheelAudit()">${cfgT('run_audit')}</button></div>`;
+  }
+  if (ai.tab === 'optimize') {
+    if (ai.optimizeLoading) return loadingHtml(cfgT('ai_loading'));
+    if (ai.optimize)        return aiCurNote('wheel') + renderOptimizeContent(ai.optimize);
+    return `<div class="ph" style="min-height:120px"><button class="btn btn-primary" onclick="runWheelOptimize()">${cfgT('run_optimize')}</button></div>`;
+  }
+  if (ai.tab === 'games') return renderGamesTabContent('wheel');
+  if (ai.tab === 'competitors') return renderCompetitorTabContent('wheel');
+  return '';
+}
+
+async function runWheelAudit() {
+  const W = CS.wheel;
+  if (!W.result) return;
+  CAI.wheel.auditLoading = true;
+  document.getElementById('wheel-ai-content').innerHTML = loadingHtml(cfgT('ai_loading'));
+  try {
+    const res = await fetch('/api/wheel/audit', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ spec: W.result.spec, params: W.result.params, uiLang: cfgLang() }),
+    });
+    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.message||`HTTP ${res.status}`); }
+    CAI.wheel.audit = await res.json();
+  } catch(e) { CAI.wheel.audit = { error: e.message }; }
+  finally {
+    CAI.wheel.auditLoading = false;
+    document.getElementById('wheel-ai-content').innerHTML = renderWheelAiContent(W);
+  }
+}
+
+async function runWheelOptimize() {
+  const W = CS.wheel;
+  if (!W.result) return;
+  CAI.wheel.optimizeLoading = true;
+  document.getElementById('wheel-ai-content').innerHTML = loadingHtml(cfgT('ai_loading'));
+  try {
+    const e = W.result.econ || {};
+    const econPayload = {
+      evPerSpin:e.evPerSpin, participantsMid:e.participantsMid, spinsPerParticipant:e.spinsPerParticipant,
+      programCostMid:e.programCostMid, ggrUpliftMid:e.ggrUpliftMid, retentionValue:e.retentionValue,
+      totalValueMid:e.totalValueMid, netResultMid:e.netResultMid, roi:e.roi, costRatio:e.costRatio,
+      costPerActiveMid:e.costPerActiveMid, maxRisk:e.maxRisk, breakEvenParticipants:e.breakEvenParticipants,
+    };
+    const res = await fetch('/api/wheel/optimize', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ params: W.result.params, econ: econPayload, uiLang: cfgLang() }),
+    });
+    if (!res.ok) { const err = await res.json().catch(()=>({})); throw new Error(err.message||`HTTP ${res.status}`); }
+    CAI.wheel.optimize = await res.json();
+  } catch(e) { CAI.wheel.optimize = { error: e.message }; }
+  finally {
+    CAI.wheel.optimizeLoading = false;
+    document.getElementById('wheel-ai-content').innerHTML = renderWheelAiContent(W);
+  }
+}
+
+function cfgSaveWheel() {
+  const W = CS.wheel;
+  if (!W.result) return;
+  const geo = cfgGeo(W.geo);
+  const id  = genId();
+  const entry = {
+    id, type:'wheel', name:`Wheel · ${cfgT('preset_'+W.preset)} · ${geo.lbl} · ${new Date().toLocaleDateString()}`,
+    createdAt: new Date().toISOString(),
+    params: { ...W, result: undefined }, result: W.result,
+  };
+  saveCfgEntry(entry);
+  showToast(cfgT('saved_toast'));
 }
 
 // ══════════════════════════════════════════════════════════════════════════

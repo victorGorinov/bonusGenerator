@@ -13,6 +13,7 @@ export const ENTITIES: Record<string, string> = {
   'loyalty-programs':   'saved_loyalty_programs',
   'calendar-events':    'calendar_events',
   'calendar-templates': 'calendar_templates',
+  'competitor-comparisons': 'competitor_comparisons',
 };
 
 export function resolveTable(key: string): string {

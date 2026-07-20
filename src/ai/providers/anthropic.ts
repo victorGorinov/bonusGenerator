@@ -1,4 +1,4 @@
-import { APIError, RateLimitError, InternalServerError } from '@anthropic-ai/sdk';
+import Anthropic, { APIError, RateLimitError, InternalServerError } from '@anthropic-ai/sdk';
 import { getAIClient }     from '../client.js';
 import { AIProviderError } from '../../errors/AIProviderError.js';
 import { logger }          from '../../utils/logger.js';
@@ -24,40 +24,39 @@ function isRetryable(err: unknown): boolean {
   return false;
 }
 
-function estimateCostUsd(inputTokens: number, outputTokens: number): number {
-  // Haiku pricing: $0.80/M input, $4.00/M output
-  return (inputTokens / 1_000_000) * 0.80 + (outputTokens / 1_000_000) * 4.00;
+// Per-1M token rates by model family (input, output). Web search additionally
+// bills a per-search fee (~$10 / 1,000 searches) surfaced via usage.server_tool_use.
+function tokenRates(model: string): { input: number; output: number } {
+  if (model.includes('sonnet')) return { input: 3.00, output: 15.00 };
+  if (model.includes('opus'))   return { input: 5.00, output: 25.00 };
+  return { input: 1.00, output: 5.00 }; // haiku 4.5 default
 }
+
+function estimateCostUsd(model: string, inputTokens: number, outputTokens: number, searchReqs: number): number {
+  const r = tokenRates(model);
+  return (inputTokens / 1_000_000) * r.input
+       + (outputTokens / 1_000_000) * r.output
+       + searchReqs * 0.01; // $10 per 1,000 web searches
+}
+
+const WEB_SEARCH_MAX_ROUNDS = 5; // cap pause_turn continuations so a runaway loop can't hang the request
 
 export class AnthropicProvider implements AIProvider {
   async generate(prompt: string, opts: AIGenerateOpts = {}): Promise<string> {
     const client     = getAIClient();
     const maxRetries = opts.retries   ?? 2;
     const max_tokens = opts.maxTokens ?? 1200;
+    const model      = opts.model     ?? AI_MODEL;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       const t0 = Date.now();
       try {
-        const msg = await client.messages.create({
-          model: AI_MODEL, max_tokens,
-          messages: [{ role: 'user', content: prompt }],
-        });
-        const inTok  = msg.usage?.input_tokens  ?? 0;
-        const outTok = msg.usage?.output_tokens ?? 0;
-        logger.info({
-          event:      'ai.request',
-          model:      AI_MODEL,
-          latency_ms: Date.now() - t0,
-          in_tokens:  inTok,
-          out_tokens: outTok,
-          cost_usd:   estimateCostUsd(inTok, outTok),
-        });
-        const block = msg.content[0];
-        if (block.type !== 'text') throw new AIProviderError('Unexpected AI response type');
-        return block.text;
+        return opts.webSearch
+          ? await this.runWithWebSearch(client, model, max_tokens, prompt, opts.webSearch.maxUses ?? 5, t0)
+          : await this.runPlain(client, model, max_tokens, prompt, t0);
       } catch (err: unknown) {
         const errMsg = err instanceof Error ? err.message : String(err);
-        logger.warn({ event: 'ai.failure', model: AI_MODEL, attempt, error: errMsg });
+        logger.warn({ event: 'ai.failure', model, attempt, error: errMsg });
         if (attempt === maxRetries || !isRetryable(err)) {
           throw err instanceof AIProviderError ? err : new AIProviderError(errMsg);
         }
@@ -65,6 +64,68 @@ export class AnthropicProvider implements AIProvider {
       }
     }
     throw new AIProviderError('AI generation failed after retries');
+  }
+
+  private async runPlain(
+    client: Anthropic, model: string, max_tokens: number, prompt: string, t0: number,
+  ): Promise<string> {
+    const msg = await client.messages.create({
+      model, max_tokens,
+      messages: [{ role: 'user', content: prompt }],
+    });
+    this.logCost(model, msg, t0);
+    const block = msg.content[0];
+    if (!block || block.type !== 'text') throw new AIProviderError('Unexpected AI response type');
+    return block.text;
+  }
+
+  // Server-side web search: the model may run several searches and emit
+  // web_search_tool_result blocks; when it hits the internal tool-loop cap the
+  // response comes back with stop_reason 'pause_turn' and must be re-sent to
+  // resume. We accumulate the conversation and return the concatenated final
+  // text once the turn ends.
+  private async runWithWebSearch(
+    client: Anthropic, model: string, max_tokens: number, prompt: string, maxUses: number, t0: number,
+  ): Promise<string> {
+    const tools: Anthropic.Messages.ToolUnion[] = [
+      { type: 'web_search_20260209', name: 'web_search', max_uses: maxUses },
+    ];
+    const messages: Anthropic.MessageParam[] = [{ role: 'user', content: prompt }];
+
+    for (let round = 0; round < WEB_SEARCH_MAX_ROUNDS; round++) {
+      const msg = await client.messages.create({ model, max_tokens, messages, tools });
+      this.logCost(model, msg, t0);
+
+      if (msg.stop_reason === 'pause_turn') {
+        // Echo the assistant turn back verbatim to resume the paused search loop.
+        messages.push({ role: 'assistant', content: msg.content as unknown as Anthropic.ContentBlockParam[] });
+        continue;
+      }
+
+      const text = msg.content
+        .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+        .map((b) => b.text)
+        .join('\n')
+        .trim();
+      if (!text) throw new AIProviderError('Web-search response contained no text');
+      return text;
+    }
+    throw new AIProviderError('Web search did not complete within the round limit');
+  }
+
+  private logCost(model: string, msg: Anthropic.Message, t0: number): void {
+    const inTok      = msg.usage?.input_tokens  ?? 0;
+    const outTok     = msg.usage?.output_tokens ?? 0;
+    const searchReqs = msg.usage?.server_tool_use?.web_search_requests ?? 0;
+    logger.info({
+      event:        'ai.request',
+      model,
+      latency_ms:   Date.now() - t0,
+      in_tokens:    inTok,
+      out_tokens:   outTok,
+      web_searches: searchReqs,
+      cost_usd:     estimateCostUsd(model, inTok, outTok, searchReqs),
+    });
   }
 }
 

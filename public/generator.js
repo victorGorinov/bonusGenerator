@@ -1068,6 +1068,154 @@ function switchS4(panel, el) {
   el.classList.add('active');
   document.getElementById('s4-texts').classList.toggle('active', panel==='texts');
   document.getElementById('s4-audit').classList.toggle('active', panel==='audit');
+  const compEl = document.getElementById('s4-competitors');
+  if (compEl) compEl.classList.toggle('active', panel==='competitors');
+  if (panel === 'competitors') renderHubComp();
+}
+
+// ── COMPETITOR ANALYSIS (bonus hub) — reuses window.CompetitorAnalysis ──────────
+function _hubCompState() {
+  if (!draft._comp) draft._comp = { list: [], result: null, loading: false, searching: false };
+  return draft._comp;
+}
+function hubCompRegion() { return (draft.params && draft.params.geo) || 'de'; }
+function hubCompOwnParams() {
+  const m = draft.mechanics || {};
+  const ru = currentLang === 'ru';
+  const cur = m.cur ? ' ' + m.cur : '';
+  return {
+    matchPct:     m.pct    ? m.pct + '%'   : '',
+    maxBonus:     m.maxB   ? m.maxB + cur   : '',
+    wager:        m.wager  ? m.wager + '×'  : '',
+    minDeposit:   m.minD   ? m.minD + cur   : '',
+    // The generated mechanic has no max-win-cap field (m.maxAmt is the fixed
+    // bonus / cashback "Max Amount", NOT a max-win cap) — leave it н/д rather
+    // than feed a wrong value into the comparison table and the AI verdict.
+    maxWin:       '',
+    validityDays: m.days   ? m.days + (ru ? ' дн.' : ' d') : '',
+  };
+}
+function _hubCompCard(comp, i, defs, lang) {
+  const ai = comp.source === 'ai_search';
+  const badge = ai ? (comp.confidence === 'unconfirmed' ? t('comp_ai_unconf') : t('comp_ai')) : t('comp_manual');
+  const fields = defs.map(d => {
+    const label = lang === 'ru' ? d.ru : d.en;
+    const val = (comp.params && comp.params[d.key]) || '';
+    if (ai) return `<div class="ca-f"><span class="ca-fl">${label}</span><span class="ca-fv">${esc(val || 'н/д')}</span></div>`;
+    return `<div class="ca-f"><span class="ca-fl">${label}</span><input class="ca-fi" value="${esc(val)}" oninput="hubCompSetParam(${i},'${d.key}',this.value)"></div>`;
+  }).join('');
+  const src = ai && comp.sourceUrl ? `<a href="${esc(comp.sourceUrl)}" target="_blank" rel="noopener" class="ca-srclink">${t('comp_source')}</a>` : '';
+  return `<div class="ca-card"><div class="ca-card-head">
+    <span class="ca-card-name">${ai ? '🔍' : '✍️'} ${esc(comp.name)}</span>
+    <span class="ca-badge">${badge}</span>${src}
+    <a class="ca-x" onclick="hubCompRemove(${i})">✕</a></div>
+    <div class="ca-fields">${fields}</div></div>`;
+}
+function renderHubComp() {
+  const el = document.getElementById('s4c-content');
+  if (!el) return;
+  const CAmod = window.CompetitorAnalysis;
+  if (!CAmod) { el.innerHTML = ''; return; }
+  if (!draft._apiResult) { el.innerHTML = `<div class="ca-hint" style="padding:16px 0">${t('comp_need_gen')}</div>`; return; }
+  const c = _hubCompState();
+  const lang = currentLang === 'ru' ? 'ru' : 'en';
+  const defs = CAmod.PARAM_DEFS.bonus;
+  const own = hubCompOwnParams();
+  const ownChips = defs.map(d => `<span class="ca-own-chip"><b>${lang === 'ru' ? d.ru : d.en}:</b> ${esc(own[d.key] || '—')}</span>`).join('');
+  const cards = c.list.map((comp, i) => _hubCompCard(comp, i, defs, lang)).join('');
+  const addRow = c.list.length >= 3 ? '' : `<div class="ca-add">
+    <input id="hub-ca-name" placeholder="${esc(t('comp_name_ph'))}">
+    <button class="ca-prim" onclick="hubCompSearchAI()">${t('comp_find_ai')}</button>
+    <button onclick="hubCompAddManual()">${t('comp_add_manual')}</button>
+  </div>`;
+  let result = '';
+  if (c.loading) result = `<div class="ca-hint" style="padding:16px 0"><span class="spinner" style="display:inline-block;vertical-align:middle"></span> ${t('comp_analyzing')}</div>`;
+  else if (c.result && c.result.error) result = `<div style="color:#EF4444;padding:12px 0">${esc(c.result.error)}</div>`;
+  else if (c.result) result = `<div class="ca-run-again">
+      <button onclick="hubCompRunAnalysis()">${t('comp_rerun')}</button>
+      <button onclick="hubCompSave()">${t('comp_save')}</button></div>`
+    + CAmod.renderComparisonTable('bonus', lang, t('comp_own_bonus'), own, c.list)
+    + CAmod.renderVerdict(lang, c.result);
+  else if (c.list.length) result = `<div class="ca-run"><button class="ca-prim" onclick="hubCompRunAnalysis()">${t('comp_run')}</button></div>`;
+  else result = `<div class="ca-hint">${t('comp_add_hint')}</div>`;
+  el.innerHTML = `<div class="ca-panel">
+    <div class="ca-sec-label">${t('comp_own_label')}</div>
+    <div class="ca-own-chips">${ownChips}</div>
+    <div class="ca-sec-label">${t('comp_competitors_label')}</div>
+    ${cards}
+    ${c.searching ? `<div class="ca-hint" style="padding:12px 0"><span class="spinner" style="display:inline-block;vertical-align:middle"></span> ${t('comp_searching')}</div>` : addRow}
+    ${result}
+    <div class="ca-note">${t('comp_transparency')}</div>
+  </div>`;
+}
+function hubCompSetParam(i, key, val) { const c = _hubCompState(); if (c.list[i]) c.list[i].params[key] = val; }
+function hubCompAddManual() {
+  const c = _hubCompState();
+  if (c.list.length >= 3) { showToast(t('comp_max')); return; }
+  const el = document.getElementById('hub-ca-name');
+  const name = (el && el.value.trim()) || (currentLang === 'ru' ? 'Конкурент' : 'Competitor');
+  c.list.push({ name, source: 'manual', params: {} });
+  c.result = null; renderHubComp();
+}
+function hubCompRemove(i) { const c = _hubCompState(); c.list.splice(i, 1); c.result = null; renderHubComp(); }
+async function hubCompSearchAI() {
+  if (window.FeatureGate && !(await window.FeatureGate.ensure('competitorComparison'))) return;
+  const c = _hubCompState();
+  if (c.list.length >= 3) { showToast(t('comp_max')); return; }
+  const el = document.getElementById('hub-ca-name');
+  const name = (el && el.value.trim()) || '';
+  if (!name) { showToast(t('comp_name_req')); return; }
+  c.searching = true; renderHubComp();
+  try {
+    const res = await fetch('/api/competitor/search', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ casinoName: name, region: hubCompRegion(), promoType: 'bonus', uiLang: currentLang }),
+    });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || ('HTTP ' + res.status)); }
+    const f = await res.json();
+    c.list.push({ name: f.name, source: 'ai_search', confidence: f.confidence, sourceUrl: f.sourceUrl, params: f.params || {} });
+    c.result = null;
+    if (!f.found) showToast(t('comp_notfound'));
+  } catch (e) { showToast(e.message); }
+  finally { c.searching = false; renderHubComp(); }
+}
+async function hubCompRunAnalysis() {
+  if (window.FeatureGate && !(await window.FeatureGate.ensure('competitorComparison'))) return;
+  const c = _hubCompState();
+  if (!c.list.length) return;
+  c.loading = true; renderHubComp();
+  try {
+    const body = {
+      region: hubCompRegion(), promoType: 'bonus',
+      ownOffer: { label: t('comp_own_bonus'), params: hubCompOwnParams() },
+      competitors: c.list.map(x => ({ name: x.name, source: x.source, confidence: x.confidence, sourceUrl: x.sourceUrl, params: x.params })),
+      uiLang: currentLang,
+    };
+    const res = await fetch('/api/competitor/compare', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || ('HTTP ' + res.status)); }
+    c.result = await res.json();
+  } catch (e) { c.result = { error: e.message }; }
+  finally { c.loading = false; renderHubComp(); }
+}
+function hubCompSave() {
+  const c = _hubCompState();
+  if (!c.result || c.result.error) return;
+  const id = 'comp_' + Date.now().toString(36) + Math.round(Math.random() * 1e6).toString(36);
+  const rec = {
+    id, type: 'competitor-comparison', promoType: 'bonus',
+    createdAt: new Date().toISOString(), region: hubCompRegion(),
+    ownOffer: { label: t('comp_own_bonus'), params: hubCompOwnParams() },
+    competitors: c.list, result: c.result,
+  };
+  try {
+    const arr = JSON.parse(localStorage.getItem('cfgSavedComparisons') || '[]');
+    arr.push(rec);
+    localStorage.setItem('cfgSavedComparisons', JSON.stringify(arr));
+  } catch (e) {}
+  if (window.RetomatRepo) window.RetomatRepo.mirror('competitor-comparisons', id, rec);
+  showToast(t('comp_saved'));
 }
 let _activeCh = 'push';
 function switchCh(ch, el) {
@@ -2049,6 +2197,17 @@ const I18N = {
     s4_title:'Тексты и аудит кампании',
     s4_sub:'AI генерирует тексты для каждого канала и проводит аудит рисков',
     s4_tab_texts:'📝 Тексты', s4_tab_audit:'🔍 Аудит',
+    s4_tab_competitors:'⚔️ Конкуренты',
+    comp_need_gen:'Сначала сгенерируйте кампанию.',
+    comp_own_label:'Ваше предложение', comp_competitors_label:'Конкуренты (до 3)',
+    comp_name_ph:'Название казино', comp_find_ai:'🔍 Найти через AI', comp_add_manual:'✍️ Вручную',
+    comp_run:'⚡ Запустить AI-анализ', comp_analyzing:'Анализ конкурентности…', comp_searching:'Идёт поиск в интернете…',
+    comp_ai:'AI', comp_ai_unconf:'AI · не подтв.', comp_manual:'вручную', comp_source:'источник ↗',
+    comp_max:'Максимум 3 конкурента', comp_add_hint:'Добавьте хотя бы одного конкурента.', comp_name_req:'Введите название казино',
+    comp_notfound:'Достоверный источник не найден — помечено как не подтверждено',
+    comp_rerun:'↻ Пересчитать', comp_save:'💾 Сохранить', comp_saved:'Сравнение сохранено ✓',
+    comp_own_bonus:'Welcome-бонус',
+    comp_transparency:'⚙️ сгенерировано · 🔍 найдено AI (с источником) · ✍️ вручную. AI не выдумывает цифры — без источника помечается «н/д» и не идёт в вердикт.',
     s4_loading_texts:'AI генерирует тексты для всех 5 каналов...',
     s4_loading_audit:'AI проводит аудит кампании...',
     ai_draft_note:'✦ AI-черновик — проверьте перед отправкой. Убедитесь, что регуляторные строки соответствуют T&C вашей платформы.',
@@ -2184,6 +2343,17 @@ const I18N = {
     s4_title:'Texts & Campaign Audit',
     s4_sub:'AI generates texts for each channel and audits risks',
     s4_tab_texts:'📝 Texts', s4_tab_audit:'🔍 Audit',
+    s4_tab_competitors:'⚔️ Competitors',
+    comp_need_gen:'Generate a campaign first.',
+    comp_own_label:'Your offer', comp_competitors_label:'Competitors (up to 3)',
+    comp_name_ph:'Casino name', comp_find_ai:'🔍 Find via AI', comp_add_manual:'✍️ Manual',
+    comp_run:'⚡ Run AI analysis', comp_analyzing:'Analysing competitiveness…', comp_searching:'Searching the web…',
+    comp_ai:'AI', comp_ai_unconf:'AI · unconfirmed', comp_manual:'manual', comp_source:'source ↗',
+    comp_max:'Up to 3 competitors', comp_add_hint:'Add at least one competitor.', comp_name_req:'Enter a casino name',
+    comp_notfound:'No reliable source found — marked unconfirmed',
+    comp_rerun:'↻ Re-run', comp_save:'💾 Save', comp_saved:'Comparison saved ✓',
+    comp_own_bonus:'Welcome bonus',
+    comp_transparency:'⚙️ generated · 🔍 AI-found (with source) · ✍️ manual. The AI never invents numbers — unfound values are marked "н/д" and excluded from the verdict.',
     s4_loading_texts:'AI is generating texts for all 5 channels...',
     s4_loading_audit:'AI is auditing the campaign...',
     ai_draft_note:'AI draft — review before sending. Verify regulatory strings match your platform\'s T&Cs.',
@@ -2754,6 +2924,7 @@ function toggleGlossary() {
 let GEN_TYPE = 'bonus';
 let tgInitialized = false;
 let lyInitialized = false;
+let whInitialized = false;
 
 function genSyncTbRight() {
   if (GEN_TYPE === 'tournament') {
@@ -2771,6 +2942,8 @@ function genSwitchType(tp) {
   document.getElementById('bonus-root').style.display = tp === 'bonus' ? '' : 'none';
   document.getElementById('tg-root').style.display    = tp === 'tournament' ? '' : 'none';
   document.getElementById('ly-root').style.display    = tp === 'loyalty' ? '' : 'none';
+  const whRoot = document.getElementById('wh-root');
+  if (whRoot) whRoot.style.display = tp === 'wheel' ? '' : 'none';
 
   if (tp === 'bonus') {
     showView('offer-gen');
@@ -2782,6 +2955,10 @@ function genSwitchType(tp) {
     genSyncTbRight();
     if (!lyInitialized) { lyInitialized = true; lyInit(); }
     else { lyShowView(_view, lyDetailId); }
+  } else if (tp === 'wheel') {
+    genSyncTbRight();
+    if (!whInitialized) { whInitialized = true; whInit(); }
+    else { whShowView(_whView, whDetailId); }
   }
 }
 
@@ -2789,12 +2966,14 @@ function genSetLang(lang) {
   setUILang(lang);
   if (GEN_TYPE === 'tournament' && typeof tgSetTournLang === 'function') tgSetTournLang(lang);
   if (GEN_TYPE === 'loyalty' && typeof lySetLang === 'function') lySetLang(lang);
+  if (GEN_TYPE === 'wheel' && typeof whSetLang === 'function') whSetLang(lang);
   genSyncTbRight();
 }
 
 function genToggleGlossary() {
   if (GEN_TYPE === 'tournament' && typeof tgToggleTournGlossary === 'function') { tgToggleTournGlossary(); return; }
   if (GEN_TYPE === 'loyalty' && typeof lyToggleLoyaltyGlossary === 'function') { lyToggleLoyaltyGlossary(); return; }
+  if (GEN_TYPE === 'wheel' && typeof whToggleGlossary === 'function') { whToggleGlossary(); return; }
   toggleGlossary();
 }
 

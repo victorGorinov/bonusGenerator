@@ -9,6 +9,8 @@ import generateRoutes        from '../routes/generate.routes.js';
 import campaignRoutes        from '../routes/campaign.routes.js';
 import tournamentRoutes      from '../routes/tournament.routes.js';
 import loyaltyRoutes         from '../routes/loyalty.routes.js';
+import wheelRoutes           from '../routes/wheel.routes.js';
+import competitorRoutes      from '../routes/competitor.routes.js';
 import signupRoutes          from '../routes/signup.routes.js';
 import healthRoutes          from '../routes/health.routes.js';
 import reportRoutes          from '../routes/report.routes.js';
@@ -97,6 +99,8 @@ app.use('/api',            optionalAuth, generateRoutes);
 app.use('/api/campaign',   optionalAuth, campaignRoutes);
 app.use('/api/tournament', optionalAuth, tournamentRoutes);
 app.use('/api/loyalty',    optionalAuth, loyaltyRoutes);
+app.use('/api/wheel',      optionalAuth, wheelRoutes);
+app.use('/api/competitor', optionalAuth, competitorRoutes);
 app.use('/api/reports',    optionalAuth, reportRoutes);
 app.use('/api/games',      optionalAuth, gamesRoutes);
 

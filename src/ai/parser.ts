@@ -252,3 +252,112 @@ export function parseLoyaltyMissionsResponse(raw: string): LoyaltyMissionsRespon
   if (!result.success) throw new AIProviderError(`AI loyalty missions response failed schema validation: ${JSON.stringify(result.error.flatten())}`);
   return result.data;
 }
+
+// ── WHEEL OF FORTUNE ────────────────────────────────────────────────────────
+
+const WheelTextsResponseSchema = z.object({
+  push:     z.array(z.string()).min(1),
+  email:    z.array(z.object({ subject: z.string(), body: z.string() })).min(1),
+  sms:      z.array(z.string()).min(1),
+  telegram: z.array(z.string()).min(1),
+  popup:    z.array(z.object({ headline: z.string(), subtext: z.string(), cta: z.string() })).min(1),
+});
+
+const WheelAuditResponseSchema = z.object({
+  checks:          z.array(z.object({ label: z.string(), status: z.enum(['ok', 'warn']), note: anyToString, rule: z.string().optional() })).min(1),
+  recommendations: z.array(z.object({ text: anyToString, impact: anyToString })).min(1),
+});
+
+const WheelOptimizeResponseSchema = z.object({
+  recommendations: z.array(z.object({
+    param:   anyToString,
+    current: anyToString,
+    target:  anyToString,
+    reason:  anyToString,
+    impact:  impactNormalizer,
+  })).min(1).max(4),
+});
+
+export type WheelTextsResponse    = z.infer<typeof WheelTextsResponseSchema>;
+export type WheelAuditResponse    = z.infer<typeof WheelAuditResponseSchema>;
+export type WheelOptimizeResponse = z.infer<typeof WheelOptimizeResponseSchema>;
+
+export function parseWheelTextsResponse(raw: string): WheelTextsResponse {
+  const parsed = parseRaw(raw);
+  const result = WheelTextsResponseSchema.safeParse(parsed);
+  if (!result.success) throw new AIProviderError(`AI wheel texts response failed schema validation: ${JSON.stringify(result.error.flatten())}`);
+  return result.data;
+}
+
+export function parseWheelAuditResponse(raw: string): WheelAuditResponse {
+  const parsed = parseRaw(raw);
+  const result = WheelAuditResponseSchema.safeParse(parsed);
+  if (!result.success) throw new AIProviderError(`AI wheel audit response failed schema validation: ${JSON.stringify(result.error.flatten())}`);
+  return result.data;
+}
+
+export function parseWheelOptimizeResponse(raw: string): WheelOptimizeResponse {
+  const parsed = parseRaw(raw);
+  const result = WheelOptimizeResponseSchema.safeParse(parsed);
+  if (!result.success) throw new AIProviderError(`AI wheel optimize response failed schema validation: ${JSON.stringify(result.error.flatten())}`);
+  return result.data;
+}
+
+// ── COMPETITOR COMPARISON ─────────────────────────────────────────────────────
+
+const boolNormalizer = z.preprocess((val) => {
+  if (typeof val === 'boolean') return val;
+  if (typeof val === 'string') return val.trim().toLowerCase() === 'true';
+  return Boolean(val);
+}, z.boolean());
+
+const confidenceNormalizer = z.preprocess(
+  (val) => (typeof val === 'string' ? val.trim().toLowerCase() : val),
+  z.enum(['confirmed', 'unconfirmed']),
+);
+
+const nullableUrl = z.preprocess((val) => {
+  if (val === null || val === undefined) return null;
+  const s = String(val).trim();
+  return (s === '' || s.toLowerCase() === 'null' || s.toLowerCase() === 'н/д') ? null : s;
+}, z.string().nullable());
+
+const CompetitorSearchResponseSchema = z.object({
+  found:      boolNormalizer,
+  confidence: confidenceNormalizer,
+  sourceUrl:  nullableUrl,
+  // Values coerced to string; keys are the promo-type param keys.
+  params:     z.record(z.string(), anyToString).default({}),
+  notes:      anyToString.optional(),
+});
+
+const CompetitorCompareResponseSchema = z.object({
+  verdict:    anyToString,
+  strengths:  z.array(anyToString).min(1),
+  weaknesses: z.array(anyToString).min(1),
+  recommendations: z.array(z.object({
+    param:               anyToString,
+    current:             anyToString,
+    competitorBenchmark: anyToString,
+    suggested:           anyToString,
+    reason:              anyToString,
+    impact:              impactNormalizer,
+  })).min(1).max(6),
+});
+
+export type CompetitorSearchResponse  = z.infer<typeof CompetitorSearchResponseSchema>;
+export type CompetitorCompareResponse = z.infer<typeof CompetitorCompareResponseSchema>;
+
+export function parseCompetitorSearchResponse(raw: string): CompetitorSearchResponse {
+  const parsed = parseRaw(raw);
+  const result = CompetitorSearchResponseSchema.safeParse(parsed);
+  if (!result.success) throw new AIProviderError(`AI competitor search response failed schema validation: ${JSON.stringify(result.error.flatten())}`);
+  return result.data;
+}
+
+export function parseCompetitorCompareResponse(raw: string): CompetitorCompareResponse {
+  const parsed = parseRaw(raw);
+  const result = CompetitorCompareResponseSchema.safeParse(parsed);
+  if (!result.success) throw new AIProviderError(`AI competitor compare response failed schema validation: ${JSON.stringify(result.error.flatten())}`);
+  return result.data;
+}
