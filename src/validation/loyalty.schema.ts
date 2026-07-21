@@ -30,6 +30,11 @@ export const LoyaltyAuditSchema = z.object({
   uiLang: z.string().optional(),
 });
 
+export const LoyaltyDescriptionSchema = z.object({
+  config: z.record(z.string(), z.unknown()),
+  uiLang: z.string().optional(),
+});
+
 export const LoyaltyOptimizeSchema = z.object({
   config: z.record(z.string(), z.unknown()),
   econ:   z.record(z.string(), z.unknown()),
@@ -45,6 +50,7 @@ export const LoyaltyMissionsSchema = z.object({
 export type LoyaltyGenerateInput  = z.infer<typeof LoyaltyGenerateSchema>;
 export type LoyaltyRecalcInput    = z.infer<typeof LoyaltyRecalcSchema>;
 export type LoyaltyTextsInput     = z.infer<typeof LoyaltyTextsSchema>;
-export type LoyaltyAuditInput     = z.infer<typeof LoyaltyAuditSchema>;
+export type LoyaltyAuditInput       = z.infer<typeof LoyaltyAuditSchema>;
+export type LoyaltyDescriptionInput = z.infer<typeof LoyaltyDescriptionSchema>;
 export type LoyaltyOptimizeInput  = z.infer<typeof LoyaltyOptimizeSchema>;
 export type LoyaltyMissionsInput  = z.infer<typeof LoyaltyMissionsSchema>;

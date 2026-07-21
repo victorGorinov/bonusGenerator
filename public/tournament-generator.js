@@ -121,8 +121,11 @@ const TG = {
     guide_ready:'Setup Guide ready', guide_view_sub:'View the detailed setup guide for this tournament', view_guide:'View Guide →',
     btn_reconfig:'← Reconfigure', btn_save:'💾 Save', btn_calendar:'📅 Add to Calendar',
     btn_pdf:'⬇ PDF', btn_ai_texts:'Generate AI Texts →',
-    s4_badge:'Step 4 / 4', s4_title:'AI Texts & Compliance', s4_sub:'Generate CRM copy and compliance audit for your tournament',
+    s4_badge:'Step 4 / 4', s4_title:'AI Texts & Compliance', s4_sub:'Generate CRM copy, an offer description and a compliance audit for your tournament',
     btn_gen_texts:'🤖 Generate CRM Texts', btn_regen_texts:'↺ Regenerate Texts',
+    btn_gen_desc:'📄 Generate Description', btn_regen_desc:'↺ Regenerate Description',
+    desc_note:'Tournament terms are computed from the configuration — exact, not AI-written. AI writes the description copy only.',
+    desc_hint:'For the tournament / promo page', desc_how:'How it works', desc_tc:'Terms & Conditions', desc_copy:'Copy',
     btn_audit_lbl:'🔍 Compliance Audit', btn_reaudit:'↺ Re-run Audit',
     btn_back_spec:'← Back to Spec', btn_start_over:'Start Over',
     crm_copy:'CRM Copy', audit_title:'Compliance Audit', recommendations:'Recommendations',
@@ -185,8 +188,11 @@ const TG = {
     guide_ready:'Гайд по настройке готов', guide_view_sub:'Просмотр подробного гайда для этого турнира', view_guide:'Открыть гайд →',
     btn_reconfig:'← Переконфигурировать', btn_save:'💾 Сохранить', btn_calendar:'📅 Добавить в календарь',
     btn_pdf:'⬇ PDF', btn_ai_texts:'Сгенерировать AI тексты →',
-    s4_badge:'Шаг 4 / 4', s4_title:'AI тексты и compliance', s4_sub:'Генерация CRM-копии и аудит соответствия требованиям',
+    s4_badge:'Шаг 4 / 4', s4_title:'AI тексты и compliance', s4_sub:'Генерация CRM-копии, описания оффера и аудит соответствия требованиям',
     btn_gen_texts:'🤖 Сгенерировать CRM тексты', btn_regen_texts:'↺ Перегенерировать тексты',
+    btn_gen_desc:'📄 Сгенерировать описание', btn_regen_desc:'↺ Пересоздать описание',
+    desc_note:'Условия турнира рассчитаны из конфигурации — точные, без AI. AI пишет только текст описания.',
+    desc_hint:'Для страницы турнира / промо-страницы', desc_how:'Как это работает', desc_tc:'Правила и условия (T&C)', desc_copy:'Копировать',
     btn_audit_lbl:'🔍 Аудит соответствия', btn_reaudit:'↺ Повторный аудит',
     btn_back_spec:'← К спецификации', btn_start_over:'Начать заново',
     crm_copy:'CRM копия', audit_title:'Аудит соответствия', recommendations:'Рекомендации',
@@ -251,6 +257,7 @@ const draft = {
 let lastResult   = null;
 let lastTexts    = null;
 let lastAudit    = null;
+let lastDesc     = null;
 let lastOptimize = null;
 let activeTab    = 'push';
 let activeAudit  = false;
@@ -322,6 +329,15 @@ function renderGamesLoadingHTML() {
   return `<div class="loader" style="justify-content:center;padding:18px 0">
     <div class="spinner"></div>
     <span>Loading recommendations…</span>
+  </div>`;
+}
+
+// Games are generated on demand (button), not auto-fetched on step entry.
+function renderGamesStartHTML() {
+  const isRu = (localStorage.getItem('bonusLang') || 'en') === 'ru';
+  return `<div style="padding:6px 0">
+    <button class="btn btn-outline btn-sm" onclick="fetchGamesIfNeeded()">🎮 ${isRu ? 'Подобрать игры' : 'Recommend games'}</button>
+    <div style="font-size:.72rem;color:var(--muted);margin-top:6px">${isRu ? 'AI подберёт игры под сегмент, регион и механику турнира' : 'AI picks games for this segment, region & tournament mechanics'}</div>
   </div>`;
 }
 
@@ -420,7 +436,7 @@ function gamesSection() {
   const sub   = isRu ? 'Подходят для этого сегмента и механики' : 'Best fit for this segment & mechanics';
   const inner = _gamesData && _gamesData._key === _gamesParamsKey()
     ? renderGamesBlockHTML()
-    : renderGamesLoadingHTML();
+    : renderGamesStartHTML();
   return `<div class="card" style="margin-bottom:16px">
     <div class="card-title" style="margin-bottom:4px">${title}</div>
     <div style="font-size:.75rem;color:var(--muted);margin-bottom:12px">${sub}</div>
@@ -462,7 +478,7 @@ function renderStep() {
   else if (step === 2) c.innerHTML = renderStep2();
   else if (step === 3) c.innerHTML = renderStep3();
   else if (step === 4) c.innerHTML = renderStep4();
-  if (step === 3) setTimeout(fetchGamesIfNeeded, 0);
+  // Games are generated on demand (button in gamesSection) — no auto-fetch on step 3.
 }
 
 function setSidebarActive(id) {
@@ -1109,6 +1125,7 @@ ${gamesSection()}
 function renderStep4() {
   const hasTexts = !!lastTexts;
   const hasAudit = !!lastAudit;
+  const hasDesc  = !!lastDesc;
 
   return `
 ${wizProgressHTML(4)}
@@ -1118,12 +1135,14 @@ ${wizProgressHTML(4)}
   <div class="step-sub">${tg('s4_sub')}</div>
 </div>
 
-<div style="display:flex;gap:10px;margin-bottom:20px">
+<div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
   <button class="btn btn-primary" onclick="runTexts()" id="btn-texts">${hasTexts ? tg('btn_regen_texts') : tg('btn_gen_texts')}</button>
+  <button class="btn btn-outline" onclick="runDescription()" id="btn-desc">${hasDesc ? tg('btn_regen_desc') : tg('btn_gen_desc')}</button>
   <button class="btn btn-outline" onclick="runAudit()" id="btn-audit">${hasAudit ? tg('btn_reaudit') : tg('btn_audit_lbl')}</button>
 </div>
 
 <div id="texts-area">${hasTexts ? renderTextsHTML(lastTexts) : ''}</div>
+<div id="desc-area">${hasDesc ? renderTournDescHTML(lastDesc) : ''}</div>
 <div id="audit-area">${hasAudit ? renderAuditHTML(lastAudit) : ''}</div>
 
 <div class="nav-footer">
@@ -1285,7 +1304,7 @@ function runGenerate() {
     body:    JSON.stringify({ type: draft.type, params: draft.params }),
   })
   .then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(new Error(e.message || r.statusText))))
-  .then(data => { lastResult = data; lastTexts = null; lastAudit = null; lastOptimize = null; _tgUndoStack = null; _tgPrevEcon = null; _tgLastOptRecs = []; })
+  .then(data => { lastResult = data; lastTexts = null; lastAudit = null; lastDesc = null; lastOptimize = null; _tgUndoStack = null; _tgPrevEcon = null; _tgLastOptRecs = []; })
   .catch(err => { lastResult = { _error: err.message }; });
 
   let i = 0;
@@ -1372,6 +1391,44 @@ async function runAudit() {
     btn.textContent = '🔍 Compliance Audit';
   }
   btn.disabled = false;
+}
+
+// ── OFFER DESCRIPTION ────────────────────────────────────────────────────────
+async function runDescription() {
+  const btn  = document.getElementById('btn-desc');
+  const area = document.getElementById('desc-area');
+  if (!btn || !area) return;
+  btn.disabled = true;
+  btn.textContent = '⏳ …';
+  area.innerHTML = '<div class="loader"><div class="spinner"></div> AI is writing the tournament description…</div>';
+
+  try {
+    const resp = await fetch('/api/tournament/description', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: draft.type, params: draft.params, spec: lastResult?.spec || {}, uiLang: draft.params.lang }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ message: resp.statusText }));
+      throw new Error(err.message || resp.statusText);
+    }
+    lastDesc = await resp.json();
+    area.innerHTML = renderTournDescHTML(lastDesc);
+    btn.textContent = tg('btn_regen_desc');
+  } catch (e) {
+    area.innerHTML = `<div class="alert alert-warn">Could not generate description: ${e.message}</div>`;
+    btn.textContent = tg('btn_gen_desc');
+  }
+  btn.disabled = false;
+}
+
+function _tdLabels() {
+  return { note: tg('desc_note'), hint: tg('desc_hint'), how: tg('desc_how'), tc: tg('desc_tc'), copy: tg('desc_copy'), copyFn: 'copyTournDesc' };
+}
+function renderTournDescHTML(d) { return window.OfferDesc.render(d, _tdLabels()); }
+function copyTournDesc(btn) {
+  if (!lastDesc) return;
+  window.OfferDesc.copyText(window.OfferDesc.plainText(lastDesc, tg('desc_tc')), btn);
 }
 
 // ── AI OPTIMIZE / REVIEW ─────────────────────────────────────────────────────
@@ -2325,6 +2382,7 @@ function loadAndRegenTexts(id) {
   lastResult   = { spec: t.spec, econ: t.econ, cur: t.cur, lic: t.lic, region: t.region };
   lastTexts    = null;
   lastAudit    = null;
+  lastDesc     = null;
   draft.type   = t.type;
   draft.params = { ...t.params };
   goStep(4);

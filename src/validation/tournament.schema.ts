@@ -34,6 +34,13 @@ export const TournamentAuditSchema = z.object({
   uiLang: z.string().optional(),
 });
 
+export const TournamentDescriptionSchema = z.object({
+  type:   z.string(),
+  params: z.record(z.string(), z.unknown()),
+  spec:   z.record(z.string(), z.unknown()),
+  uiLang: z.string().optional(),
+});
+
 export const TournamentGamesSchema = z.object({
   geo:     z.string().min(2).max(3),
   segment: z.enum(['all','new','vip','dormant','depositors']).default('all'),
@@ -68,7 +75,8 @@ export const TournamentOptimizeSchema = z.object({
 });
 
 export type TournamentGenerateInput = z.infer<typeof TournamentGenerateSchema>;
-export type TournamentTextsInput    = z.infer<typeof TournamentTextsSchema>;
-export type TournamentAuditInput    = z.infer<typeof TournamentAuditSchema>;
+export type TournamentTextsInput       = z.infer<typeof TournamentTextsSchema>;
+export type TournamentAuditInput       = z.infer<typeof TournamentAuditSchema>;
+export type TournamentDescriptionInput = z.infer<typeof TournamentDescriptionSchema>;
 export type TournamentGamesInput    = z.infer<typeof TournamentGamesSchema>;
 export type TournamentOptimizeInput = z.infer<typeof TournamentOptimizeSchema>;

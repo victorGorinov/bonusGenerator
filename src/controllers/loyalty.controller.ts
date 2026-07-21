@@ -1,8 +1,8 @@
 import { asyncHandler }               from '../middleware/asyncHandler.js';
 import { AIProviderError }             from '../errors/AIProviderError.js';
-import { generateLoyaltyConfig, recalcLoyaltyConfig, generateLoyaltyTexts, auditLoyalty, optimizeLoyalty, generateLoyaltyMissions } from '../use-cases/GenerateLoyalty.js';
+import { generateLoyaltyConfig, recalcLoyaltyConfig, generateLoyaltyTexts, generateLoyaltyDescription, auditLoyalty, optimizeLoyalty, generateLoyaltyMissions } from '../use-cases/GenerateLoyalty.js';
 import type { AIProvider }             from '../ai/interface.js';
-import type { LoyaltyGenerateInput, LoyaltyRecalcInput, LoyaltyTextsInput, LoyaltyAuditInput, LoyaltyOptimizeInput, LoyaltyMissionsInput } from '../validation/loyalty.schema.js';
+import type { LoyaltyGenerateInput, LoyaltyRecalcInput, LoyaltyTextsInput, LoyaltyAuditInput, LoyaltyOptimizeInput, LoyaltyMissionsInput, LoyaltyDescriptionInput } from '../validation/loyalty.schema.js';
 
 interface Deps { ai: AIProvider }
 
@@ -24,6 +24,17 @@ export function createLoyaltyController({ ai }: Deps) {
       async (req, res) => {
         try {
           res.json(await generateLoyaltyTexts(req.body, ai));
+        } catch (err) {
+          throw err instanceof AIProviderError ? err
+            : new AIProviderError(err instanceof Error ? err.message : String(err));
+        }
+      },
+    ),
+
+    description: asyncHandler<Record<string, never>, unknown, LoyaltyDescriptionInput>(
+      async (req, res) => {
+        try {
+          res.json(await generateLoyaltyDescription(req.body, ai));
         } catch (err) {
           throw err instanceof AIProviderError ? err
             : new AIProviderError(err instanceof Error ? err.message : String(err));

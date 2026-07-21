@@ -205,6 +205,7 @@ const L = {
     tier_count_chip:     (n) => `${n} tiers`,
     tab_economics:       '📊 Economics',
     tab_texts:           '✍ Texts',
+    tab_description:     '📄 Description',
     tab_audit:           '🔍 Audit',
     tab_optimize:        '⚡ Optimize',
     impact_high:         '↑ High impact',
@@ -212,6 +213,12 @@ const L = {
     impact_low:          '↓ Low impact',
     opt_now:             'Now',
     opt_fetch_texts:     '✍ Generate CRM copy for this loyalty program',
+    opt_fetch_desc:      '📄 Generate the loyalty program description',
+    desc_note:           'Program terms are computed from the configuration — exact, not AI-written. AI writes the description copy only.',
+    desc_hint:           'For the loyalty program page',
+    desc_how:            'How it works',
+    desc_tc:             'Terms & Conditions',
+    desc_copy:           '› Copy',
     opt_fetch_audit:     '🔍 Run compliance audit',
     opt_fetch_optimize:  '⚡ Get optimization recommendations',
     opt_retry:           'Retry',
@@ -300,6 +307,7 @@ const L = {
     tier_count_chip:     (n) => `${n} тира`,
     tab_economics:       '📊 Экономика',
     tab_texts:           '✍ Тексты',
+    tab_description:     '📄 Описание',
     tab_audit:           '🔍 Аудит',
     tab_optimize:        '⚡ Оптимизация',
     impact_high:         '↑ Высокий эффект',
@@ -307,6 +315,12 @@ const L = {
     impact_low:          '↓ Низкий эффект',
     opt_now:             'Сейчас',
     opt_fetch_texts:     '✍ Сгенерировать CRM-тексты',
+    opt_fetch_desc:      '📄 Сгенерировать описание программы лояльности',
+    desc_note:           'Условия программы рассчитаны из конфигурации — точные, без AI. AI пишет только текст описания.',
+    desc_hint:           'Для страницы программы лояльности',
+    desc_how:            'Как это работает',
+    desc_tc:             'Правила и условия (T&C)',
+    desc_copy:           '› Копировать',
     opt_fetch_audit:     '🔍 Запустить аудит соответствия',
     opt_fetch_optimize:  '⚡ Получить рекомендации',
     opt_retry:           'Повторить',
@@ -1081,7 +1095,7 @@ async function generateProgram() {
   // Guests can't use Loyalty (backend requireFeature('loyalty')) — show a clear
   // sign-in prompt instead of letting the request 403 into an opaque error.
   if (window.FeatureGate && !(await window.FeatureGate.ensure('loyalty'))) return;
-  _aiTab = 'econ'; _aiTexts = null; _aiAudit = null; _aiOpt = null; _aiMissions = null;
+  _aiTab = 'econ'; _aiTexts = null; _aiDesc = null; _aiAudit = null; _aiOpt = null; _aiMissions = null;
   const isRu = getLang() === 'ru';
 
   const steps = isRu
@@ -1139,8 +1153,9 @@ async function generateProgram() {
 }
 
 // AI state for step 3 tabs
-let _aiTab    = 'econ';  // 'econ' | 'texts' | 'audit' | 'optimize'
+let _aiTab    = 'econ';  // 'econ' | 'texts' | 'desc' | 'audit' | 'optimize'
 let _aiTexts  = null;
+let _aiDesc   = null;
 let _aiAudit  = null;
 let _aiOpt    = null;
 
@@ -1171,6 +1186,7 @@ function renderStep3(data) {
   <div class="tab-row" style="margin-bottom:16px">
     <button class="tab ${_aiTab==='econ'     ?'active':''}" data-tab="econ"     onclick="switchAiTab('econ')">${lyT('tab_economics')}</button>
     <button class="tab ${_aiTab==='texts'    ?'active':''}" data-tab="texts"    onclick="switchAiTab('texts')">${lyT('tab_texts')}</button>
+    <button class="tab ${_aiTab==='desc'     ?'active':''}" data-tab="desc"     onclick="switchAiTab('desc')">${lyT('tab_description')}</button>
     <button class="tab ${_aiTab==='audit'    ?'active':''}" data-tab="audit"    onclick="switchAiTab('audit')">${lyT('tab_audit')}</button>
     <button class="tab ${_aiTab==='optimize' ?'active':''}" data-tab="optimize" onclick="switchAiTab('optimize')">${lyT('tab_optimize')}</button>
     ${(data.config.missions || []).length > 0 ? `<button class="tab ${_aiTab==='missions'?'active':''}" data-tab="missions" onclick="switchAiTab('missions')">${lyT('tab_missions')}</button>` : ''}
@@ -1213,6 +1229,10 @@ function renderAiTabBody(data, tiers, missions, missionSection) {
     if (!_aiTexts) return renderAiFetchPrompt('texts', lyT('opt_fetch_texts'));
     return renderTextsHTML(_aiTexts);
   }
+  if (_aiTab === 'desc') {
+    if (!_aiDesc) return renderAiFetchPrompt('desc', lyT('opt_fetch_desc'));
+    return renderLoyDescHTML(_aiDesc);
+  }
   if (_aiTab === 'audit') {
     if (!_aiAudit) return renderAiFetchPrompt('audit', lyT('opt_fetch_audit'));
     return renderAuditHTML(_aiAudit);
@@ -1229,13 +1249,21 @@ function renderAiTabBody(data, tiers, missions, missionSection) {
 }
 
 function renderAiFetchPrompt(tabKey, label) {
-  const iconMap = { texts: '✍', audit: '🔍', optimize: '⚡', missions: '✨' };
+  const iconMap = { texts: '✍', desc: '📄', audit: '🔍', optimize: '⚡', missions: '✨' };
   const icon = iconMap[tabKey] || '⚡';
   return `<div class="card" style="text-align:center;padding:32px 20px">
     <div style="font-size:1.8rem;margin-bottom:10px">${icon}</div>
     <div style="font-size:.9rem;font-weight:600;margin-bottom:16px">${lyEsc(label)}</div>
     <button class="btn btn-primary" onclick="fetchAI('${tabKey}')">${lyEsc(label)} →</button>
   </div>`;
+}
+
+function renderLoyDescHTML(d) {
+  return `<div class="card">${window.OfferDesc.render(d, { note: lyT('desc_note'), hint: lyT('desc_hint'), how: lyT('desc_how'), tc: lyT('desc_tc'), copy: lyT('desc_copy'), copyFn: 'lyCopyDesc' })}</div>`;
+}
+function lyCopyDesc(btn) {
+  if (!_aiDesc) return;
+  window.OfferDesc.copyText(window.OfferDesc.plainText(_aiDesc, lyT('desc_tc')), btn);
 }
 
 function renderMissionsNarrativeHTML(missions) {
@@ -1282,6 +1310,9 @@ async function fetchAI(tabKey, detailId) {
     if (tabKey === 'texts') {
       url     = '/api/loyalty/texts';
       payload = { config: source.config, econ: source.econ };
+    } else if (tabKey === 'desc') {
+      url     = '/api/loyalty/description';
+      payload = { config: source.config, uiLang: getLang() };
     } else if (tabKey === 'audit') {
       url     = '/api/loyalty/audit';
       payload = { config: source.config };
@@ -1302,6 +1333,7 @@ async function fetchAI(tabKey, detailId) {
     const data = await res.json();
 
     if (tabKey === 'texts')    _aiTexts = data;
+    if (tabKey === 'desc')     _aiDesc = data;
     if (tabKey === 'audit')    _aiAudit = data;
     if (tabKey === 'optimize') { _aiOpt = data; window._lastOptRecs = data.recommendations || []; }
     if (tabKey === 'missions') {

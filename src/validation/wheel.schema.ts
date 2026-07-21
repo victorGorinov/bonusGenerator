@@ -36,6 +36,12 @@ export const WheelAuditSchema = z.object({
   uiLang: z.string().optional(),
 });
 
+export const WheelDescriptionSchema = z.object({
+  params: z.record(z.string(), z.unknown()),
+  spec:   z.record(z.string(), z.unknown()),
+  uiLang: z.string().optional(),
+});
+
 const WheelOptimizeEconSchema = z.object({
   evPerSpin:             z.number(),
   participantsMid:       z.number(),
@@ -60,5 +66,6 @@ export const WheelOptimizeSchema = z.object({
 
 export type WheelGenerateInput = z.infer<typeof WheelGenerateSchema>;
 export type WheelTextsInput    = z.infer<typeof WheelTextsSchema>;
-export type WheelAuditInput     = z.infer<typeof WheelAuditSchema>;
+export type WheelAuditInput       = z.infer<typeof WheelAuditSchema>;
+export type WheelDescriptionInput = z.infer<typeof WheelDescriptionSchema>;
 export type WheelOptimizeInput  = z.infer<typeof WheelOptimizeSchema>;

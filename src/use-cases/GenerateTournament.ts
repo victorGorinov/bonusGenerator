@@ -1,13 +1,16 @@
 import * as tournamentService              from '../services/tournament.service.js';
 import { buildTournamentTextsPrompt }     from '../ai/prompts/tournament-texts.prompt.js';
+import { buildTournamentDescriptionPrompt } from '../ai/prompts/tournament-description.prompt.js';
 import { buildTournamentAuditPrompt }     from '../ai/prompts/tournament-audit.prompt.js';
 import { buildGamesPrompt }               from '../ai/prompts/tournament-games.prompt.js';
 import { buildTournamentOptimizePrompt }  from '../ai/prompts/tournament-optimize.prompt.js';
-import { parseTournamentTextsResponse, parseTournamentAuditResponse, parseGamesResponse, parseTournamentOptimizeResponse } from '../ai/parser.js';
+import { parseTournamentTextsResponse, parseTournamentAuditResponse, parseGamesResponse, parseTournamentOptimizeResponse, parseDescriptionResponse } from '../ai/parser.js';
+import type { OfferDescriptionResponse }  from '../ai/parser.js';
+import type { OfferTerm }                 from '../domain/campaign/offerTerms.js';
 import { recommendGames }                 from '../domain/games/recommendGames.js';
 import { tournamentBenchmarks }           from '../domain/tournament/benchmarks.js';
 import { GEO_CFG }                        from '../domain/campaign/scenarios.js';
-import type { TournamentGenerateInput, TournamentTextsInput, TournamentAuditInput, TournamentGamesInput, TournamentOptimizeInput } from '../validation/tournament.schema.js';
+import type { TournamentGenerateInput, TournamentTextsInput, TournamentAuditInput, TournamentGamesInput, TournamentOptimizeInput, TournamentDescriptionInput } from '../validation/tournament.schema.js';
 import type { AIProvider }                from '../ai/interface.js';
 
 export function generateTournament(input: TournamentGenerateInput): ReturnType<typeof tournamentService.generateTournament> {
@@ -23,6 +26,22 @@ export async function generateTournamentTexts(input: TournamentTextsInput, ai: A
   });
   const raw = await ai.generate(prompt, { maxTokens: 4096 });
   return parseTournamentTextsResponse(raw);
+}
+
+export async function generateTournamentDescription(
+  input: TournamentDescriptionInput,
+  ai: AIProvider,
+): Promise<OfferDescriptionResponse & { terms: OfferTerm[] }> {
+  const { type, params, spec, uiLang } = input;
+  const { prompt, terms } = buildTournamentDescriptionPrompt({
+    type:   String(type ?? 'slot'),
+    params: (params as Record<string, unknown>) ?? {},
+    spec:   (spec   as Record<string, unknown>) ?? {},
+    uiLang: uiLang ? String(uiLang) : undefined,
+  });
+  const raw   = await ai.generate(prompt, { maxTokens: 2000 });
+  const prose = parseDescriptionResponse(raw);
+  return { ...prose, terms };
 }
 
 export async function recommendTournamentGames(input: TournamentGamesInput, ai: AIProvider) {

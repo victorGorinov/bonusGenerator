@@ -953,13 +953,18 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
         <div class="step-sub" data-i18n="s4_sub">AI генерирует тексты для каждого канала и проводит аудит рисков</div>
         <div class="ch-tabs" id="s4tabs">
           <button class="ch-tab active" onclick="switchS4('texts',this)" data-i18n="s4_tab_texts">📝 Тексты</button>
+          <button class="ch-tab" onclick="switchS4('desc',this)" data-i18n="s4_tab_desc">📄 Описание</button>
           <button class="ch-tab" onclick="switchS4('audit',this)" data-i18n="s4_tab_audit">🔍 Аудит</button>
           <button class="ch-tab" onclick="switchS4('competitors',this)" data-i18n="s4_tab_competitors">⚔️ Конкуренты</button>
         </div>
 
         <!-- Texts -->
         <div id="s4-texts" class="ch-content active">
-          <div id="s4t-loading" style="display:flex;align-items:center;gap:12px;padding:32px 0;color:var(--muted)">
+          <div id="s4t-start" style="padding:24px 0">
+            <button class="btn btn-primary" onclick="loadTexts()" data-i18n="s4_gen_texts">📝 Сгенерировать тексты</button>
+            <div style="font-size:.75rem;color:var(--muted);margin-top:8px" data-i18n="s4_gen_texts_hint">AI напишет 3 варианта для каждого из 5 каналов</div>
+          </div>
+          <div id="s4t-loading" style="display:none;align-items:center;gap:12px;padding:32px 0;color:var(--muted)">
             <div class="spinner"></div><span data-i18n="s4_loading_texts">AI генерирует тексты для всех 5 каналов...</span>
           </div>
           <div id="s4t-content" style="display:none">
@@ -990,9 +995,26 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
           <div id="s4t-error" style="display:none;color:#EF4444;font-size:.83rem;padding:16px 0"></div>
         </div>
 
+        <!-- Offer description -->
+        <div id="s4-desc" class="ch-content">
+          <div id="s4d-start" style="padding:24px 0">
+            <button class="btn btn-primary" onclick="loadDescription()" data-i18n="s4_gen_desc">📄 Сгенерировать описание</button>
+            <div style="font-size:.75rem;color:var(--muted);margin-top:8px" data-i18n="s4_gen_desc_hint">Заголовок, описание, условия и Terms &amp; Conditions для страницы оффера</div>
+          </div>
+          <div id="s4d-loading" style="display:none;align-items:center;gap:12px;padding:32px 0;color:var(--muted)">
+            <div class="spinner"></div><span data-i18n="s4_loading_desc">AI генерирует описание оффера...</span>
+          </div>
+          <div id="s4d-content"></div>
+          <div id="s4d-error" style="display:none;color:#EF4444;font-size:.83rem;padding:16px 0"></div>
+        </div>
+
         <!-- Audit -->
         <div id="s4-audit" class="ch-content">
-          <div id="s4a-loading" style="display:flex;align-items:center;gap:12px;padding:32px 0;color:var(--muted)">
+          <div id="s4a-start" style="padding:24px 0">
+            <button class="btn btn-primary" onclick="loadAudit()" data-i18n="s4_gen_audit">🔍 Провести аудит</button>
+            <div style="font-size:.75rem;color:var(--muted);margin-top:8px" data-i18n="s4_gen_audit_hint">AI проверит кампанию на регуляторные риски</div>
+          </div>
+          <div id="s4a-loading" style="display:none;align-items:center;gap:12px;padding:32px 0;color:var(--muted)">
             <div class="spinner"></div><span data-i18n="s4_loading_audit">AI проводит аудит кампании...</span>
           </div>
           <div id="s4a-content"></div>
@@ -1152,6 +1174,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 </div>
 
 <script src="/geo-data.js"></script>
+<script src="/offer-desc.js"></script>
 <script src="/nav-utils.js"></script>
 <script src="/repo-http.js"></script>
 <script src="/feature-gate.js"></script>

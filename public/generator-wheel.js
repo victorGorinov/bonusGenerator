@@ -26,6 +26,32 @@ const WH_GEO_CUR = {
 };
 const WH_GEO_AVGDEP = { de:50, fr:45, es:40, it:45, nl:55, dk:95, uk:80, ru:5000, kz:20000, mn:100000, us:60, br:120, mx:250, co:200000, ar:20000, pe:180, cl:45000 };
 
+const WH_REGION_LABEL = {
+  eu:    { en:'Europe (EU/UK)', ru:'Европа (EU/UK)' },
+  cis:   { en:'CIS',            ru:'СНГ' },
+  mn:    { en:'Mongolia',       ru:'Монголия' },
+  sweep: { en:'USA Sweepstakes',ru:'США Sweepstakes' },
+  latam: { en:'LatAm',          ru:'Латам' },
+};
+
+// Region-grouped <optgroup> options (same grouping as the other sections),
+// bucketed by WH_GEO_REGION in first-appearance order.
+function whGeoOptionsHTML(selected) {
+  const L = whLang() === 'ru' ? 'ru' : 'en';
+  const order = [];
+  const byRegion = {};
+  for (const g of WH_GEO_OPTIONS) {
+    const r = WH_GEO_REGION[g.val] || 'other';
+    if (!byRegion[r]) { byRegion[r] = []; order.push(r); }
+    byRegion[r].push(g);
+  }
+  return order.map(r => {
+    const label = (WH_REGION_LABEL[r] || { en:r, ru:r })[L];
+    const opts = byRegion[r].map(g => `<option value="${g.val}"${g.val===selected?' selected':''}>${g.lbl}</option>`).join('');
+    return `<optgroup label="${label}">${opts}</optgroup>`;
+  }).join('');
+}
+
 const WH_SEG_COLORS = {
   free_spins:'#60A5FA', bonus_money:'#10B981', cashback:'#F59E0B',
   multiplier:'#A78BFA', jackpot:'#EF4444', physical:'#EC4899', nothing:'#64748B',
@@ -52,6 +78,9 @@ const WH = {
     ev:'EV / spin', prog_cost:'Program cost', ggr:'GGR uplift', ret:'Retention value', net:'Net result', roi:'ROI',
     per_mo:'/mo', per_spin:'per spin', prob:'Chance', segments:'Segments',
     crm:'🤖 Generate CRM texts', crm_re:'↺ Regenerate texts', crm_title:'CRM copy',
+    desc:'📄 Generate description', desc_re:'↺ Regenerate description',
+    desc_note:'Wheel terms are computed from the configuration — exact, not AI-written. AI writes the description copy only.',
+    desc_hint:'For the wheel / promo page', desc_how:'How it works', desc_tc:'Terms & Conditions', desc_copy:'› Copy',
     audit:'🔍 Compliance audit', audit_re:'↺ Re-run audit', audit_title:'Compliance review',
     save:'💾 Save', add_cal:'📅 Add to Calendar', saved_ok:'Saved ✓', cal_ok:'Added to Calendar ✓',
     recommendations:'Recommendations', writing:'AI is writing wheel copy…', auditing:'AI compliance officer is reviewing…',
@@ -75,6 +104,9 @@ const WH = {
     ev:'EV / спин', prog_cost:'Стоимость программы', ggr:'Прирост GGR', ret:'Ретеншн-ценность', net:'Чистый результат', roi:'ROI',
     per_mo:'/мес', per_spin:'за спин', prob:'Шанс', segments:'Сегменты',
     crm:'🤖 Сгенерировать CRM-тексты', crm_re:'↺ Обновить тексты', crm_title:'CRM-тексты',
+    desc:'📄 Сгенерировать описание', desc_re:'↺ Пересоздать описание',
+    desc_note:'Условия колеса рассчитаны из конфигурации — точные, без AI. AI пишет только текст описания.',
+    desc_hint:'Для страницы колеса / промо-страницы', desc_how:'Как это работает', desc_tc:'Правила и условия (T&C)', desc_copy:'› Копировать',
     audit:'🔍 Комплаенс-аудит', audit_re:'↺ Повторить аудит', audit_title:'Комплаенс-ревью',
     save:'💾 Сохранить', add_cal:'📅 В календарь', saved_ok:'Сохранено ✓', cal_ok:'Добавлено в календарь ✓',
     recommendations:'Рекомендации', writing:'AI пишет тексты для колеса…', auditing:'AI-комплаенс проверяет…',
@@ -93,6 +125,7 @@ let whStep    = 0;
 let whDraft   = null;
 let whLastResult = null;
 let whLastTexts  = null;
+let whLastDesc   = null;
 let whLastAudit  = null;
 let whActiveTab  = 'push';
 
@@ -225,7 +258,7 @@ function renderWhSetup() {
   <div class="form-row">
     <label class="form-label">${wh('market')}</label>
     <select class="form-input" onchange="whSetField('geo',this.value)">
-      ${WH_GEO_OPTIONS.map(g=>`<option value="${g.val}"${g.val===d.geo?' selected':''}>${g.lbl}</option>`).join('')}
+      ${whGeoOptionsHTML(d.geo)}
     </select>
   </div>
   <div class="form-row">
@@ -281,7 +314,7 @@ async function whGenerate() {
     });
     if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.message || resp.statusText); }
     whLastResult = await resp.json();
-    whLastTexts = null; whLastAudit = null; whActiveTab = 'push';
+    whLastTexts = null; whLastDesc = null; whLastAudit = null; whActiveTab = 'push';
     whShowView('result');
   } catch(e) {
     c.innerHTML = `<div class="alert alert-warn" style="max-width:480px;margin:40px auto">Error: ${e.message}
@@ -414,6 +447,11 @@ function renderWhResult() {
   <div id="wh-texts-area" style="margin-top:14px">${whLastTexts ? whRenderTextsHTML(whLastTexts) : ''}</div>
 </div>
 
+<div class="card" style="margin-bottom:16px">
+  <button class="btn btn-outline" id="wh-btn-desc" onclick="whRunDescription()">${wh('desc')}</button>
+  <div id="wh-desc-area" style="margin-top:14px">${whLastDesc ? whRenderWheelDescHTML(whLastDesc) : ''}</div>
+</div>
+
 <div class="card">
   <button class="btn btn-outline" id="wh-btn-audit" onclick="whRunAudit()">${wh('audit')}</button>
   <div id="wh-audit-area" style="margin-top:14px">${whLastAudit ? whRenderAuditHTML(whLastAudit) : ''}</div>
@@ -467,6 +505,35 @@ function whRenderTextsHTML(texts) {
       <div class="text-variant-body">${typeof v==='string'?v:JSON.stringify(v)}</div></div>`).join('');
   }
   return `<div class="card-title">${wh('crm_title')}</div><div class="tab-row">${tabs}</div>${body}`;
+}
+
+// ── AI: offer description ───────────────────────────────────────────────────
+function whCopyDesc(btn) {
+  if (!whLastDesc) return;
+  window.OfferDesc.copyText(window.OfferDesc.plainText(whLastDesc, wh('desc_tc')), btn);
+}
+async function whRunDescription() {
+  const btn = document.getElementById('wh-btn-desc'), area = document.getElementById('wh-desc-area');
+  if (!btn || !area || !whLastResult) return;
+  btn.disabled = true; btn.textContent = '⏳ …';
+  area.innerHTML = `<div class="loader"><div class="spinner"></div> ${wh('writing')}</div>`;
+  try {
+    const resp = await fetch('/api/wheel/description', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ params: whLastResult.params, spec: whLastResult.spec, uiLang: whLang() }),
+    });
+    if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.message || resp.statusText); }
+    whLastDesc = await resp.json();
+    area.innerHTML = whRenderWheelDescHTML(whLastDesc);
+    btn.textContent = wh('desc_re');
+  } catch(e) {
+    area.innerHTML = `<div class="alert alert-warn">${e.message}</div>`;
+    btn.textContent = wh('desc');
+  }
+  btn.disabled = false;
+}
+function whRenderWheelDescHTML(d) {
+  return window.OfferDesc.render(d, { note: wh('desc_note'), hint: wh('desc_hint'), how: wh('desc_how'), tc: wh('desc_tc'), copy: wh('desc_copy'), copyFn: 'whCopyDesc' });
 }
 
 // ── AI: compliance audit ────────────────────────────────────────────────────

@@ -23,6 +23,26 @@ function getSitecurByGeo(geo) {
   return cur;
 }
 
+// Region-grouped <optgroup> geo <select>, single-sourced from GeoData (same menu
+// as the Configurator). Rebuilt on language change; preserves the current value.
+function buildGeoSelect() {
+  const sel = document.getElementById('p-geo');
+  if (!sel || !window.GeoData) return;
+  const groups = window.GeoData.groups(currentLang === 'ru' ? 'ru' : 'en');
+  const prev = draft.params.geo || sel.value || groups[0].items[0].val;
+  sel.innerHTML = groups.map(gr =>
+    `<optgroup label="${gr.label}">` +
+    gr.items.map(g => `<option value="${g.val}">${g.lbl}</option>`).join('') +
+    `</optgroup>`
+  ).join('');
+  sel.value = prev;
+  if (!sel.value) sel.value = groups[0].items[0].val;
+  // Keep state in sync with the actual selection — if `prev` wasn't a valid
+  // option (e.g. a legacy geo), the assignment above was ignored and the select
+  // fell back to the first country; reflect that back into draft.params.geo.
+  draft.params.geo = sel.value;
+}
+
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let draft = { scenario: null, params: { vertical:'casino', segment:'mid', games:'slots', tone:'friendly', agg:'low', risk:'low', lic:'auto' } };
 
@@ -81,46 +101,29 @@ function goStep(n) {
   document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('step-'+n).classList.add('active');
   if (n === 2) {
-    // Restore step-2 DOM state from draft.params (don't call syncLangToGeo —
-    // it resets lang/lic/euPending which destroys user's edits on back-navigation).
-    const geo = document.getElementById('p-geo').value;
-    const euWrap = document.getElementById('eu-ctry-wrap');
-    if (euWrap) euWrap.style.display = geo === 'eu' ? 'block' : 'none';
-    if (geo === 'eu' && draft.params.geo && draft.params.geo !== 'eu') {
-      document.querySelectorAll('.chip[data-g="eu-ctry"]').forEach(c => {
-        c.classList.toggle('active', c.dataset.v === draft.params.geo);
-      });
-      draft.params._euPending = false;
-    }
+    // Restore step-2 DOM state from draft.params (build the geo <select> first so
+    // its options exist, then re-select the saved country).
+    buildGeoSelect();
+    if (draft.params.geo) document.getElementById('p-geo').value = draft.params.geo;
     updateRiskHint(draft.params.risk || 'low');
   }
   if (n === 3) {
     const geoSel = document.getElementById('p-geo').value;
-    if (geoSel === 'eu') {
-      if (!draft.params.geo || draft.params._euPending) {
-        alert(t('s2_eu_required') || 'Выберите страну EU / UK');
-        goStep(2);
-        return;
-      }
-      // draft.params.geo already set by pickEuCountry — leave it, but set sitecur
-      draft.params.sitecur = getSitecurByGeo(draft.params.geo) ?? 'EUR';
-    } else {
-      draft.params.geo = geoSel;
-      draft.params.sitecur = getSitecurByGeo(geoSel) ?? 'EUR';
-    }
+    draft.params.geo = geoSel;
+    draft.params.sitecur = getSitecurByGeo(geoSel) ?? 'EUR';
     draft.params.budget  = parseFloat(document.getElementById('p-budget').value) || 5000;
     draft.params.players = parseInt(document.getElementById('cg-pnum').value) || 5000;
     draft.params.lang   = document.getElementById('p-lang').value;
     document.getElementById('s3-prog').style.display='';
     document.getElementById('s3-res').style.display='none';
+    // Config is (re)generated → drop any previously generated AI content so Step 4
+    // starts fresh with Generate buttons rather than showing stale texts/audit/desc.
+    draft.texts = null; draft.audit = null; draft.description = null;
     runProgress();
   }
   if (n === 4) {
-    if (!draft.texts) {
-      loadStep4();
-    } else {
-      document.getElementById('s4next').disabled = false;
-    }
+    resetStep4Panels();
+    document.getElementById('s4next').disabled = false; // generation is on-demand — user may proceed anytime
   }
   if (n === 5) { document.getElementById('s5-export').style.display=''; document.getElementById('s5-done').style.display='none'; fillSummary(); }
 }
@@ -208,40 +211,13 @@ function selScenario(id, el) {
 const GEO_LANG = { de:'de', fr:'en', es:'es', it:'en', nl:'en', dk:'da', uk:'en', ru:'ru', kz:'ru', br:'es', mx:'es', co:'es', ar:'es', pe:'es', cl:'es', mn:'mn', us:'en', eu:'en' };
 
 function syncLangToGeo(geo) {
-  const euWrap = document.getElementById('eu-ctry-wrap');
-  if (euWrap) euWrap.style.display = geo === 'eu' ? 'block' : 'none';
-
-  if (geo === 'eu') {
-    // Reset country chip selection; actual geo set by pickEuCountry
-    document.querySelectorAll('.chip[data-g="eu-ctry"]').forEach(c => c.classList.remove('active'));
-    draft.params._euPending = true;
-    return;
-  }
-
-  draft.params._euPending = false;
+  draft.params.geo = geo;
+  draft.params.sitecur = getSitecurByGeo(geo) ?? 'EUR';
   const lang = GEO_LANG[geo] || 'en';
   const sel = document.getElementById('p-lang');
   if (sel) sel.value = lang;
   draft.params.lang = lang;
   // Reset license to auto when geo changes — geo determines the default license
-  draft.params.lic = 'auto';
-  document.querySelectorAll('.chip[data-g="lic"]').forEach(c => {
-    c.classList.toggle('active', c.dataset.v === 'auto');
-  });
-}
-
-function pickEuCountry(el) {
-  document.querySelectorAll('.chip[data-g="eu-ctry"]').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  const code = el.dataset.v;
-  draft.params.geo = code;
-  draft.params.sitecur = getSitecurByGeo(code) ?? 'EUR';
-  draft.params._euPending = false;
-  // Sync language and reset license
-  const lang = GEO_LANG[code] || 'en';
-  const sel = document.getElementById('p-lang');
-  if (sel) sel.value = lang;
-  draft.params.lang = lang;
   draft.params.lic = 'auto';
   document.querySelectorAll('.chip[data-g="lic"]').forEach(c => {
     c.classList.toggle('active', c.dataset.v === 'auto');
@@ -1002,6 +978,7 @@ function switchS4(panel, el) {
   document.querySelectorAll('#s4tabs .ch-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('s4-texts').classList.toggle('active', panel==='texts');
+  document.getElementById('s4-desc').classList.toggle('active', panel==='desc');
   document.getElementById('s4-audit').classList.toggle('active', panel==='audit');
 }
 let _activeCh = 'push';
@@ -1058,47 +1035,67 @@ function buildS4Payload() {
   };
 }
 
-function loadStep4() {
+// Set a panel to one of: 'start' (Generate button), 'content' (already generated).
+function _showS4Panel(pfx, state) {
+  const start = document.getElementById(pfx+'-start');
+  if (start) start.style.display = state === 'start' ? 'block' : 'none';
+}
+
+// On entering Step 4, show the Generate button for any AI item not yet generated,
+// or its rendered content if it was already generated for the current config.
+function resetStep4Panels() {
+  // Texts
+  if (draft.texts) { _showS4Panel('s4t', 'content'); renderTexts(draft.texts); }
+  else { _showS4Panel('s4t', 'start'); document.getElementById('s4t-content').style.display = 'none'; document.getElementById('s4t-loading').style.display = 'none'; document.getElementById('s4t-error').style.display = 'none'; }
+  // Description
+  if (draft.description) { _showS4Panel('s4d', 'content'); renderDescription(draft.description); }
+  else { _showS4Panel('s4d', 'start'); document.getElementById('s4d-content').innerHTML = ''; document.getElementById('s4d-loading').style.display = 'none'; document.getElementById('s4d-error').style.display = 'none'; }
+  // Audit
+  if (draft.audit) { _showS4Panel('s4a', 'content'); renderAudit(draft.audit); }
+  else { _showS4Panel('s4a', 'start'); document.getElementById('s4a-content').innerHTML = ''; document.getElementById('s4a-loading').style.display = 'none'; document.getElementById('s4a-error').style.display = 'none'; }
+}
+
+function loadTexts() {
+  _showS4Panel('s4t', 'content');
   document.getElementById('s4t-loading').style.display = 'flex';
   document.getElementById('s4t-content').style.display = 'none';
   document.getElementById('s4t-error').style.display = 'none';
-  document.getElementById('s4a-loading').style.display = 'flex';
-  document.getElementById('s4a-content').innerHTML = '';
-  document.getElementById('s4a-error').style.display = 'none';
-  document.getElementById('s4next').disabled = true;
 
-  const payload = buildS4Payload();
-
-  const textsP = fetch('/api/campaign/texts', {
+  fetch('/api/campaign/texts', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify(payload),
+    body: JSON.stringify(buildS4Payload()),
   })
   .then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(e)))
   .then(data => { draft.texts = data; renderTexts(data); })
   .catch(err => {
     document.getElementById('s4t-loading').style.display = 'none';
+    _showS4Panel('s4t', 'start'); // let the user retry
     const el = document.getElementById('s4t-error');
-    el.textContent = '⚠️ Ошибка генерации текстов: ' + (err?.message || err?.error || String(err));
+    el.textContent = '⚠️ ' + (currentLang==='ru'?'Ошибка генерации текстов: ':'Texts error: ') + (err?.message || err?.error || String(err));
     el.style.display = '';
   });
+}
 
-  const auditP = fetch('/api/campaign/audit', {
+function loadAudit() {
+  _showS4Panel('s4a', 'content');
+  document.getElementById('s4a-loading').style.display = 'flex';
+  document.getElementById('s4a-content').innerHTML = '';
+  document.getElementById('s4a-error').style.display = 'none';
+
+  fetch('/api/campaign/audit', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify(payload),
+    body: JSON.stringify(buildS4Payload()),
   })
   .then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(e)))
   .then(data => { data._uiLang = currentLang; draft.audit = data; renderAudit(data); })
   .catch(err => {
     document.getElementById('s4a-loading').style.display = 'none';
+    _showS4Panel('s4a', 'start'); // let the user retry
     const el = document.getElementById('s4a-error');
-    el.textContent = '⚠️ Ошибка аудита: ' + (err?.message || err?.error || String(err));
+    el.textContent = '⚠️ ' + (currentLang==='ru'?'Ошибка аудита: ':'Audit error: ') + (err?.message || err?.error || String(err));
     el.style.display = '';
-  });
-
-  Promise.allSettled([textsP, auditP]).then(() => {
-    document.getElementById('s4next').disabled = false;
   });
 }
 
@@ -1183,6 +1180,76 @@ function generateMore(channel, btn) {
 function renderAudit(data) {
   document.getElementById('s4a-loading').style.display = 'none';
   document.getElementById('s4a-content').innerHTML = auditHTML(data);
+}
+
+// ── OFFER DESCRIPTION ──────────────────────────────────────────────────────────
+let _descLoading = false;
+function loadDescription() {
+  if (_descLoading) return; // guard against double-click while a request is in flight
+  _descLoading = true;
+  _showS4Panel('s4d', 'content');
+  document.getElementById('s4d-loading').style.display = 'flex';
+  document.getElementById('s4d-content').innerHTML = '';
+  document.getElementById('s4d-error').style.display = 'none';
+
+  fetch('/api/campaign/description', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(buildS4Payload()),
+  })
+  .then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(e)))
+  .then(data => { draft.description = data; renderDescription(data); })
+  .catch(err => {
+    document.getElementById('s4d-loading').style.display = 'none';
+    _showS4Panel('s4d', 'start'); // let the user retry
+    const el = document.getElementById('s4d-error');
+    el.textContent = '⚠️ ' + (currentLang==='ru'?'Ошибка генерации описания: ':'Description error: ') + (err?.message || err?.error || String(err));
+    el.style.display = '';
+  })
+  .finally(() => { _descLoading = false; });
+}
+
+function copyDescription(btn) {
+  if (!draft.description) return;
+  const text = window.OfferDesc.plainText(draft.description, t('s4_desc_tc'));
+  window.OfferDesc.copyText(text, btn, currentLang==='ru' ? '✓ Скопировано' : '✓ Copied');
+}
+
+function renderDescription(d) {
+  document.getElementById('s4d-loading').style.display = 'none';
+  const stepsHTML = (d.howItWorks || []).map(s =>
+    `<li style="margin-bottom:6px">${esc(s)}</li>`).join('');
+  const termsHTML = (d.terms || []).map(tm =>
+    `<div class="mech-row">
+       <span class="mr-l">${esc(tm.label)}</span>
+       <span class="mr-v">${esc(tm.value)}</span>
+     </div>`).join('');
+  const tcHTML = (d.termsAndConditions || []).map(c =>
+    `<li style="margin-bottom:5px">${esc(c)}</li>`).join('');
+  document.getElementById('s4d-content').innerHTML = `
+    <div style="background:rgba(79,110,247,.08);border:1px solid rgba(79,110,247,.2);border-radius:8px;padding:9px 14px;margin-bottom:14px;font-size:.78rem;color:#a0b0ff;display:flex;align-items:center;gap:8px">
+      <span>✦</span><span data-i18n="s4_desc_note">${t('s4_desc_note')}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px">
+      <div style="font-size:.72rem;color:var(--muted)">${t('s4_desc_hint')}</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-outline btn-sm" onclick="copyDescription(this)">${t('s4_copy_btn')}</button>
+        <button class="btn btn-outline btn-sm" onclick="loadDescription()">${t('s4_regen')}</button>
+      </div>
+    </div>
+    <div style="background:var(--card,rgba(255,255,255,.03));border:1px solid var(--border);border-radius:10px;padding:18px 20px">
+      <div style="font-size:1.15rem;font-weight:700;margin-bottom:8px">${esc(d.title || '')}</div>
+      <p style="color:var(--muted);font-size:.9rem;line-height:1.5;margin:0 0 14px">${esc(d.hook || '')}</p>
+      ${stepsHTML ? `<div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:6px">${t('s4_desc_how')}</div>
+      <ol style="margin:0 0 16px;padding-left:20px;font-size:.88rem;line-height:1.45">${stepsHTML}</ol>` : ''}
+      ${termsHTML ? `<div style="font-size:.85rem;margin-bottom:8px">${esc(d.termsIntro || '')}</div>
+      <div style="margin-bottom:16px">${termsHTML}</div>` : ''}
+      ${d.cta ? `<button class="btn btn-primary btn-sm" style="pointer-events:none">${esc(d.cta)}</button>` : ''}
+      ${tcHTML ? `<div style="border-top:1px solid var(--border);margin-top:18px;padding-top:14px">
+        <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:8px">${t('s4_desc_tc')}</div>
+        <ol style="margin:0;padding-left:20px;font-size:.82rem;line-height:1.5;color:var(--muted)">${tcHTML}</ol>
+      </div>` : ''}
+    </div>`;
 }
 
 // ── STEP 5 ────────────────────────────────────────────────────────────────────
@@ -1982,11 +2049,20 @@ const I18N = {
     t3_agg_low:'Низкая', t3_agg_mid:'Средняя', t3_agg_high:'Высокая',
     t3_risk_low:'🟢 Низкий', t3_risk_mid:'🟡 Средний', t3_risk_high:'🔴 Высокий',
     chip_btype_ndb:'🎁 No Deposit', chip_btype_welcome:'💰 1-й депозит (Welcome)', chip_btype_dep2:'💰 2-й депозит', chip_btype_dep3:'🎁 3-й депозит',
-    s4_title:'Тексты и аудит кампании',
-    s4_sub:'AI генерирует тексты для каждого канала и проводит аудит рисков',
-    s4_tab_texts:'📝 Тексты', s4_tab_audit:'🔍 Аудит',
+    s4_title:'Тексты, описание и аудит',
+    s4_sub:'Сгенерируйте нужный контент по кнопке — тексты для каналов, описание оффера или аудит рисков',
+    s4_tab_texts:'📝 Тексты', s4_tab_desc:'📄 Описание', s4_tab_audit:'🔍 Аудит',
     s4_loading_texts:'AI генерирует тексты для всех 5 каналов...',
+    s4_loading_desc:'AI генерирует описание оффера...',
     s4_loading_audit:'AI проводит аудит кампании...',
+    s4_desc_note:'✦ Условия оффера рассчитаны из конфигурации — точные, без AI. AI пишет только текст описания.',
+    s4_desc_hint:'Для страницы бонуса / промо-страницы',
+    s4_desc_how:'Как это работает',
+    s4_desc_tc:'Правила и условия (T&C)',
+    s4_regen:'↺ Пересоздать',
+    s4_gen_texts:'📝 Сгенерировать тексты', s4_gen_texts_hint:'AI напишет 3 варианта для каждого из 5 каналов',
+    s4_gen_desc:'📄 Сгенерировать описание', s4_gen_desc_hint:'Заголовок, описание, условия и Terms & Conditions для страницы оффера',
+    s4_gen_audit:'🔍 Провести аудит', s4_gen_audit_hint:'AI проверит кампанию на регуляторные риски',
     ai_draft_note:'✦ AI-черновик — проверьте перед отправкой. Убедитесь, что регуляторные строки соответствуют T&C вашей платформы.',
     copy_all:'Скопировать все',
     btn_export_pdf:'⬇ PDF',
@@ -2117,11 +2193,20 @@ const I18N = {
     t3_agg_low:'Low', t3_agg_mid:'Medium', t3_agg_high:'High',
     t3_risk_low:'🟢 Low', t3_risk_mid:'🟡 Medium', t3_risk_high:'🔴 High',
     chip_btype_ndb:'🎁 No Deposit', chip_btype_welcome:'💰 1st Deposit (Welcome)', chip_btype_dep2:'💰 2nd Deposit', chip_btype_dep3:'🎁 3rd Deposit',
-    s4_title:'Texts & Campaign Audit',
-    s4_sub:'AI generates texts for each channel and audits risks',
-    s4_tab_texts:'📝 Texts', s4_tab_audit:'🔍 Audit',
+    s4_title:'Texts, Description & Audit',
+    s4_sub:'Generate what you need on demand — channel texts, the offer description, or a risk audit',
+    s4_tab_texts:'📝 Texts', s4_tab_desc:'📄 Description', s4_tab_audit:'🔍 Audit',
     s4_loading_texts:'AI is generating texts for all 5 channels...',
+    s4_loading_desc:'AI is generating the offer description...',
     s4_loading_audit:'AI is auditing the campaign...',
+    s4_desc_note:'✦ Offer terms are computed from the configuration — exact, not AI-written. AI writes the description copy only.',
+    s4_desc_hint:'For the bonus / promo landing page',
+    s4_desc_how:'How it works',
+    s4_desc_tc:'Terms & Conditions',
+    s4_regen:'↺ Regenerate',
+    s4_gen_texts:'📝 Generate texts', s4_gen_texts_hint:'AI writes 3 variants for each of the 5 channels',
+    s4_gen_desc:'📄 Generate description', s4_gen_desc_hint:'Title, copy, terms and Terms & Conditions for the offer page',
+    s4_gen_audit:'🔍 Run audit', s4_gen_audit_hint:'AI checks the campaign for regulatory risks',
     ai_draft_note:'AI draft — review before sending. Verify regulatory strings match your platform\'s T&Cs.',
     copy_all:'Copy all',
     btn_export_pdf:'⬇ PDF',
@@ -2261,6 +2346,7 @@ function setUILang(lang) {
     el.textContent = t('step_ctr').replace('{n}', el.dataset.step);
   });
   updateTopbar(currentView);
+  buildGeoSelect(); // re-localize region group labels, keep selected country
   // Re-render risk hint in the new language if step 2 is visible
   if (draft._step === 2) updateRiskHint(draft.params.risk || 'low');
   if (!['dashboard','configurator'].includes(currentView)) {

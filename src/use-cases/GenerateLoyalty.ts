@@ -3,8 +3,11 @@ import { buildLoyaltyTextsPrompt }         from '../ai/prompts/loyalty-texts.pro
 import { buildLoyaltyAuditPrompt }         from '../ai/prompts/loyalty-audit.prompt.js';
 import { buildLoyaltyOptimizePrompt }      from '../ai/prompts/loyalty-optimize.prompt.js';
 import { buildLoyaltyMissionsPrompt }      from '../ai/prompts/loyalty-missions.prompt.js';
-import { parseLoyaltyTextsResponse, parseLoyaltyAuditResponse, parseLoyaltyOptimizeResponse, parseLoyaltyMissionsResponse } from '../ai/parser.js';
-import type { LoyaltyGenerateInput, LoyaltyRecalcInput, LoyaltyTextsInput, LoyaltyAuditInput, LoyaltyOptimizeInput, LoyaltyMissionsInput } from '../validation/loyalty.schema.js';
+import { buildLoyaltyDescriptionPrompt }   from '../ai/prompts/loyalty-description.prompt.js';
+import { parseLoyaltyTextsResponse, parseLoyaltyAuditResponse, parseLoyaltyOptimizeResponse, parseLoyaltyMissionsResponse, parseDescriptionResponse } from '../ai/parser.js';
+import type { OfferDescriptionResponse }   from '../ai/parser.js';
+import type { OfferTerm }                  from '../domain/campaign/offerTerms.js';
+import type { LoyaltyGenerateInput, LoyaltyRecalcInput, LoyaltyTextsInput, LoyaltyAuditInput, LoyaltyOptimizeInput, LoyaltyMissionsInput, LoyaltyDescriptionInput } from '../validation/loyalty.schema.js';
 import type { AIProvider }                 from '../ai/interface.js';
 
 export function generateLoyaltyConfig(input: LoyaltyGenerateInput) {
@@ -31,6 +34,16 @@ export async function optimizeLoyalty(input: LoyaltyOptimizeInput, ai: AIProvide
   const prompt = buildLoyaltyOptimizePrompt({ config: input.config, econ: input.econ, uiLang: input.uiLang });
   const raw    = await ai.generate(prompt, { maxTokens: 1000 });
   return parseLoyaltyOptimizeResponse(raw);
+}
+
+export async function generateLoyaltyDescription(
+  input: LoyaltyDescriptionInput,
+  ai: AIProvider,
+): Promise<OfferDescriptionResponse & { terms: OfferTerm[] }> {
+  const { prompt, terms } = buildLoyaltyDescriptionPrompt({ config: input.config, uiLang: input.uiLang });
+  const raw   = await ai.generate(prompt, { maxTokens: 2000 });
+  const prose = parseDescriptionResponse(raw);
+  return { ...prose, terms };
 }
 
 export async function generateLoyaltyMissions(input: LoyaltyMissionsInput, ai: AIProvider): Promise<ReturnType<typeof parseLoyaltyMissionsResponse>> {

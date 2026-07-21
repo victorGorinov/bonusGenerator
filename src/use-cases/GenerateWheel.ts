@@ -1,10 +1,13 @@
 import * as wheelService            from '../services/wheel.service.js';
 import { GEO_CFG }                   from '../domain/campaign/scenarios.js';
 import { buildWheelTextsPrompt }     from '../ai/prompts/wheel-texts.prompt.js';
+import { buildWheelDescriptionPrompt } from '../ai/prompts/wheel-description.prompt.js';
 import { buildWheelAuditPrompt }     from '../ai/prompts/wheel-audit.prompt.js';
 import { buildWheelOptimizePrompt }  from '../ai/prompts/wheel-optimize.prompt.js';
-import { parseWheelTextsResponse, parseWheelAuditResponse, parseWheelOptimizeResponse } from '../ai/parser.js';
-import type { WheelGenerateInput, WheelTextsInput, WheelAuditInput, WheelOptimizeInput } from '../validation/wheel.schema.js';
+import { parseWheelTextsResponse, parseWheelAuditResponse, parseWheelOptimizeResponse, parseDescriptionResponse } from '../ai/parser.js';
+import type { OfferDescriptionResponse } from '../ai/parser.js';
+import type { OfferTerm }             from '../domain/campaign/offerTerms.js';
+import type { WheelGenerateInput, WheelTextsInput, WheelAuditInput, WheelOptimizeInput, WheelDescriptionInput } from '../validation/wheel.schema.js';
 import type { AIProvider }           from '../ai/interface.js';
 
 export function generateWheel(input: WheelGenerateInput): ReturnType<typeof wheelService.generateWheel> {
@@ -18,6 +21,20 @@ export async function generateWheelTexts(input: WheelTextsInput, ai: AIProvider)
   });
   const raw = await ai.generate(prompt, { maxTokens: 4096 });
   return parseWheelTextsResponse(raw);
+}
+
+export async function generateWheelDescription(
+  input: WheelDescriptionInput,
+  ai: AIProvider,
+): Promise<OfferDescriptionResponse & { terms: OfferTerm[] }> {
+  const { prompt, terms } = buildWheelDescriptionPrompt({
+    params: (input.params as Record<string, unknown>) ?? {},
+    spec:   (input.spec   as Record<string, unknown>) ?? {},
+    uiLang: input.uiLang ? String(input.uiLang) : undefined,
+  });
+  const raw   = await ai.generate(prompt, { maxTokens: 2000 });
+  const prose = parseDescriptionResponse(raw);
+  return { ...prose, terms };
 }
 
 export async function auditWheel(input: WheelAuditInput, ai: AIProvider): Promise<ReturnType<typeof parseWheelAuditResponse>> {

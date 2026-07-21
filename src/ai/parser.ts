@@ -20,6 +20,15 @@ const TextsResponseSchema = z.object({
   popup:    z.array(PopupVariant).min(1),
 });
 
+const OfferDescriptionResponseSchema = z.object({
+  title:               z.string(),
+  hook:                z.string(),
+  howItWorks:          z.array(z.string()).min(1),
+  termsIntro:          z.string(),
+  cta:                 z.string(),
+  termsAndConditions:  z.array(z.string()).min(1),
+});
+
 const AuditCheckSchema = z.object({
   label:  z.string(),
   status: z.enum(['ok', 'warn']),
@@ -64,9 +73,10 @@ const impactNormalizer = z.preprocess((val) => {
   return normalized;
 }, z.enum(['high', 'med', 'low']));
 
-export type TextsResponse    = z.infer<typeof TextsResponseSchema>;
-export type AuditResponse    = z.infer<typeof AuditResponseSchema>;
-export type OptimizeResponse = z.infer<typeof OptimizeResponseSchema>;
+export type TextsResponse            = z.infer<typeof TextsResponseSchema>;
+export type OfferDescriptionResponse = z.infer<typeof OfferDescriptionResponseSchema>;
+export type AuditResponse            = z.infer<typeof AuditResponseSchema>;
+export type OptimizeResponse         = z.infer<typeof OptimizeResponseSchema>;
 
 function parseRaw(raw: string): unknown {
   const sanitized = raw.replace(/```json\n?/g, '').replace(/```/g, '').trim();
@@ -83,6 +93,13 @@ export function parseTextsResponse(raw: string): TextsResponse {
   const parsed = parseRaw(raw);
   const result = TextsResponseSchema.safeParse(parsed);
   if (!result.success) throw new AIProviderError(`AI texts response failed schema validation: ${JSON.stringify(result.error.flatten())}`);
+  return result.data;
+}
+
+export function parseDescriptionResponse(raw: string): OfferDescriptionResponse {
+  const parsed = parseRaw(raw);
+  const result = OfferDescriptionResponseSchema.safeParse(parsed);
+  if (!result.success) throw new AIProviderError(`AI description response failed schema validation: ${JSON.stringify(result.error.flatten())}`);
   return result.data;
 }
 

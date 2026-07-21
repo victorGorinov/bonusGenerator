@@ -3,6 +3,7 @@ import { campaignLimiter, aiLimiter, apiLimiter } from '../middleware/rateLimite
 import { validate }                  from '../middleware/validate.js';
 import { CampaignGenerateSchema }    from '../validation/campaign.schema.js';
 import { TextsSchema }               from '../validation/texts.schema.js';
+import { DescriptionSchema }         from '../validation/description.schema.js';
 import { AuditSchema }               from '../validation/audit.schema.js';
 import { OptimizeSchema }            from '../validation/optimize.schema.js';
 import { AnalysisSchema, ActualsSchema, ExplainSchema } from '../validation/analysis.schema.js';
@@ -20,6 +21,7 @@ router.use(requireFeature('campaign'));
 
 router.post('/generate',         campaignLimiter, validate(CampaignGenerateSchema), ctrl.generate);
 router.post('/texts',            aiLimiter,       validate(TextsSchema),             ctrl.texts);
+router.post('/description',      aiLimiter,       validate(DescriptionSchema),       ctrl.description);
 router.post('/audit',            aiLimiter,       validate(AuditSchema),             ctrl.audit);
 router.post('/optimize',         aiLimiter,       validate(OptimizeSchema),          ctrl.optimize);
 router.post('/analysis',         apiLimiter,      validate(AnalysisSchema),          analyticsCtrl.analyze);
