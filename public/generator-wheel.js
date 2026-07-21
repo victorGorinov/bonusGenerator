@@ -84,6 +84,12 @@ const WH = {
     audit:'🔍 Compliance audit', audit_re:'↺ Re-run audit', audit_title:'Compliance review',
     save:'💾 Save', add_cal:'📅 Add to Calendar', saved_ok:'Saved ✓', cal_ok:'Added to Calendar ✓',
     recommendations:'Recommendations', writing:'AI is writing wheel copy…', auditing:'AI compliance officer is reviewing…',
+    optimize:'🎯 Optimize economics', optimize_re:'↺ Re-run optimization', optimize_title:'Economics optimization', optimizing:'AI is analyzing the economics…',
+    apply_recs:'⚡ Apply recommendations', balance:'⚖️ Balance to Profit', undo:'↩ Undo', target_roi:'Target ROI', apply_hint:'Run optimization first',
+    bal_already:(roi,t)=>`Already profitable: ROI ${roi}% ≥ target ${t}%`,
+    bal_ok:(roi)=>`Balanced ✓ ROI ${roi}%`,
+    bal_fail:'Target not reached — best config applied',
+    applied_ok:'Recommendations applied ✓', mods_loading:'Modules still loading, try again',
   },
   ru: {
     topbar_list:'Библиотека', topbar_setup:'Новое колесо', topbar_result:'Результат',
@@ -110,6 +116,12 @@ const WH = {
     audit:'🔍 Комплаенс-аудит', audit_re:'↺ Повторить аудит', audit_title:'Комплаенс-ревью',
     save:'💾 Сохранить', add_cal:'📅 В календарь', saved_ok:'Сохранено ✓', cal_ok:'Добавлено в календарь ✓',
     recommendations:'Рекомендации', writing:'AI пишет тексты для колеса…', auditing:'AI-комплаенс проверяет…',
+    optimize:'🎯 Оптимизация экономики', optimize_re:'↺ Обновить оптимизацию', optimize_title:'Оптимизация экономики', optimizing:'AI анализирует экономику…',
+    apply_recs:'⚡ Применить рекомендации', balance:'⚖️ Сбалансировать под прибыль', undo:'↩ Отменить', target_roi:'Целевой ROI', apply_hint:'Сначала запустите оптимизацию',
+    bal_already:(roi,t)=>`Уже прибыльно: ROI ${roi}% ≥ цели ${t}%`,
+    bal_ok:(roi)=>`Сбалансировано ✓ ROI ${roi}%`,
+    bal_fail:'Цель не достигнута — применён лучший конфиг',
+    applied_ok:'Рекомендации применены ✓', mods_loading:'Модули ещё загружаются, попробуйте снова',
   },
 };
 function whLang() { return localStorage.getItem('bonusLang') || 'en'; }
@@ -128,6 +140,10 @@ let whLastTexts  = null;
 let whLastDesc   = null;
 let whLastAudit  = null;
 let whActiveTab  = 'push';
+let whLastOpt     = null;   // full /api/wheel/optimize response
+let whLastOptRecs = [];     // recommendations array
+let whUndoStack   = null;   // snapshot before last apply/balance
+let whPrevEcon    = null;   // econ before last apply (for delta badges)
 
 // "Под регион": recommend a preset + cadence for a geo/segment, with a rationale.
 function whRegionRecommend(geo, segment) {
@@ -168,6 +184,9 @@ function whSetLang(lang) {
 function whShowView(view, id) {
   const c = document.getElementById('wh-content');
   if (!c) return;
+  // Scroll to top only on an actual view transition — re-rendering the same view
+  // in place (e.g. after Optimize / Apply / Balance) must keep the scroll position.
+  const viewChanged = _whView !== view;
   _whView = view;
   if (view === 'list') {
     whSetTopbar(wh('topbar_list'));
@@ -180,7 +199,7 @@ function whShowView(view, id) {
     c.innerHTML = renderWhResult();
   }
   if (typeof updateAllBadges === 'function') updateAllBadges();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (viewChanged) window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ── Storage ─────────────────────────────────────────────────────────────────
@@ -315,6 +334,7 @@ async function whGenerate() {
     if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.message || resp.statusText); }
     whLastResult = await resp.json();
     whLastTexts = null; whLastDesc = null; whLastAudit = null; whActiveTab = 'push';
+    whLastOpt = null; whLastOptRecs = []; whUndoStack = null; whPrevEcon = null;
     whShowView('result');
   } catch(e) {
     c.innerHTML = `<div class="alert alert-warn" style="max-width:480px;margin:40px auto">Error: ${e.message}
@@ -397,7 +417,8 @@ function renderWhResult() {
   const segs = d.spec?.segments || [];
   const net = econ.netResultMid || 0;
 
-  const card = (label, val, sub, cls) => `<div class="econ-card"><div class="ec-label">${label}</div><div class="ec-val ${cls||''}">${val}</div><div class="ec-sub">${sub||''}</div></div>`;
+  const p = whPrevEcon;
+  const card = (label, val, sub, cls, delta) => `<div class="econ-card"><div class="ec-label">${label}${delta||''}</div><div class="ec-val ${cls||''}">${val}</div><div class="ec-sub">${sub||''}</div></div>`;
 
   const legend = segs.map(s => {
     const color = WH_SEG_COLORS[s.prizeType] || '#64748B';
@@ -433,13 +454,15 @@ function renderWhResult() {
   </div>
 </div>
 
+${whActionPanelHTML(econ)}
+
 <div class="econ-grid" style="margin-bottom:16px">
-  ${card(wh('ev'), whFmt(econ.evPerSpin, cur), wh('per_spin'), '')}
-  ${card(wh('prog_cost'), whFmt(econ.programCostMid, cur), wh('per_mo'), '')}
-  ${card(wh('ggr'), whFmt(econ.ggrUpliftMid, cur), wh('per_mo'), 'pos')}
-  ${card(wh('ret'), whFmt(econ.retentionValue, cur), wh('per_mo'), 'pos')}
-  ${card(wh('net'), whFmt(net, cur), wh('per_mo'), net>=0?'pos':'neg')}
-  ${card(wh('roi'), Math.round(econ.roi||0)+'%', 'value / cost', (econ.roi||0)>=100?'pos':'neg')}
+  ${card(wh('ev'), whFmt(econ.evPerSpin, cur), wh('per_spin'), '', _whDelta(econ.evPerSpin, p&&p.evPerSpin, true, '', 2))}
+  ${card(wh('prog_cost'), whFmt(econ.programCostMid, cur), wh('per_mo'), '', _whDelta(econ.programCostMid, p&&p.programCostMid, true))}
+  ${card(wh('ggr'), whFmt(econ.ggrUpliftMid, cur), wh('per_mo'), 'pos', _whDelta(econ.ggrUpliftMid, p&&p.ggrUpliftMid, false))}
+  ${card(wh('ret'), whFmt(econ.retentionValue, cur), wh('per_mo'), 'pos', _whDelta(econ.retentionValue, p&&p.retentionValue, false))}
+  ${card(wh('net'), whFmt(net, cur), wh('per_mo'), net>=0?'pos':'neg', _whDelta(net, p&&p.netResultMid, false))}
+  ${card(wh('roi'), Math.round(econ.roi||0)+'%', 'value / cost', (econ.roi||0)>=100?'pos':'neg', _whDelta(econ.roi, p&&p.roi, false, '%'))}
 </div>
 
 <div class="card" style="margin-bottom:16px">
@@ -450,6 +473,11 @@ function renderWhResult() {
 <div class="card" style="margin-bottom:16px">
   <button class="btn btn-outline" id="wh-btn-desc" onclick="whRunDescription()">${wh('desc')}</button>
   <div id="wh-desc-area" style="margin-top:14px">${whLastDesc ? whRenderWheelDescHTML(whLastDesc) : ''}</div>
+</div>
+
+<div class="card" style="margin-bottom:16px">
+  <button class="btn btn-outline" id="wh-btn-opt" onclick="whRunOptimize()">${whLastOpt ? wh('optimize_re') : wh('optimize')}</button>
+  <div id="wh-opt-area" style="margin-top:14px">${whLastOpt ? whRenderOptHTML(whLastOpt) : ''}</div>
 </div>
 
 <div class="card">
@@ -602,6 +630,261 @@ function whAddToCalendar() {
     window.RetomatRepo?.mirror('calendar-events', entry.id, entry);
     whToast(wh('cal_ok'));
   } catch(e) {}
+}
+
+// ── ECONOMICS OPTIMIZATION (AI recommendations + deterministic balancer) ──────
+const WH_TARGET_ROI_KEY = 'wh_target_roi';
+const WH_FREQ_DOWNGRADE = { daily:'weekly', weekly:'on_deposit', on_deposit:'one_time' };
+const WH_FREQS = ['on_deposit','daily','weekly','one_time'];
+const WH_SEGS  = ['all','depositors','new','vip','dormant'];
+
+function _getWhTargetRoi() { try { return parseFloat(localStorage.getItem(WH_TARGET_ROI_KEY) || '120'); } catch { return 120; } }
+
+// Escape AI-provided text before interpolating into innerHTML (optimize recs are LLM output).
+function _whEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
+    { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]
+  ));
+}
+
+// opts: { lowerBetter, suffix, decimals } — decimals>0 for small-magnitude metrics (EV/spin).
+function _whDelta(cur, prev, lowerBetter, suffix, decimals) {
+  if (prev === undefined || prev === null || cur === undefined || cur === null) return '';
+  const diff = cur - prev;
+  const eps  = decimals ? Math.pow(10, -decimals) / 2 : 0.5;
+  if (Math.abs(diff) < eps) return '';
+  const improved = lowerBetter ? diff < 0 : diff > 0;
+  const color = improved ? '#10b981' : '#ef4444';
+  const sign  = diff > 0 ? '+' : '';
+  const num   = decimals ? diff.toFixed(decimals) : Math.round(diff).toLocaleString('en-US');
+  return `<span style="font-size:.62rem;font-weight:700;padding:1px 5px;border-radius:4px;background:${color}22;color:${color};margin-left:6px">${sign}${num}${suffix||''}</span>`;
+}
+
+// Build the cost context the way the server/econ module does (defaults when not set in the hub).
+function _whCtx() {
+  const d = whLastResult, dr = whDraft;
+  const fx = window._wheelEcon.deriveLocalFxRate(d.cur, dr.geo);
+  const rtp = d.params.rtp != null && d.params.rtp !== '' ? Number(d.params.rtp) : 0.96;
+  const betValue = d.params.betValue != null && d.params.betValue !== ''
+    ? Number(d.params.betValue) : Math.max(0.1, Math.round(0.2 * fx * 100) / 100);
+  return { avgDeposit: Number(d.params.avgDeposit), betValue,
+    wager: d.params.wager != null && d.params.wager !== '' ? Number(d.params.wager) : 30, wcr: 1.0, rtp };
+}
+
+// Local econ recompute — mirrors the server exactly (parity-tested module).
+function _whRecalcLocal(segments, frequency) {
+  const d = whLastResult, dr = whDraft;
+  return window._wheelEcon.calcWheelEconomics({
+    region: d.region, segment: dr.segment, players: dr.players,
+    avgDeposit: Number(d.params.avgDeposit), segments, frequency,
+    sitecur: d.cur, geo: dr.geo,
+    rtp:   d.params.rtp   != null && d.params.rtp   !== '' ? Number(d.params.rtp)   : undefined,
+    wager: d.params.wager != null && d.params.wager !== '' ? Number(d.params.wager) : undefined,
+  });
+}
+
+function _whSnapshot() {
+  return {
+    spec:      JSON.parse(JSON.stringify(whLastResult.spec)),
+    frequency: whDraft.frequency,
+    segment:   whDraft.segment,
+    econ:      { ...whLastResult.econ },
+    params:    { ...whLastResult.params },
+  };
+}
+
+// Lever: shift weight from the most expensive segment to the cheapest (lowers EV). Returns true if it moved.
+function _whShiftStep(segs, ctx) {
+  const totalW = segs.reduce((a, s) => a + Math.max(0, s.weight), 0) || 1;
+  const ranked = segs.map((s, i) => ({ i, c: window._wheelEcon.segmentCost(s, ctx) }));
+  const rich  = ranked.slice().sort((a, b) => b.c - a.c)[0];
+  const cheap = ranked.slice().sort((a, b) => a.c - b.c)[0];
+  if (!rich || !cheap || rich.i === cheap.i) return false;
+  if (segs[rich.i].weight <= 2) return false;
+  if (Math.max(0, segs[cheap.i].weight) / totalW >= 0.65) return false;
+  const step = Math.max(1, Math.round(totalW * 0.04));
+  // Conserve total weight: move exactly what the rich segment gives up (it can't drop below 1).
+  const moved = Math.min(step, segs[rich.i].weight - 1);
+  if (moved <= 0) return false;
+  segs[rich.i].weight  = segs[rich.i].weight - moved;
+  segs[cheap.i].weight = Math.max(0, segs[cheap.i].weight) + moved;
+  return true;
+}
+
+// Lever: trim a rich segment's prize value by 15% (floors keep it a real prize). Returns true if it trimmed.
+// `jackpotFloor` keeps the jackpot/physical (the headline prizes) from being trimmed below the biggest
+// cash bonus on the wheel. Without it the balancer — which always targets the COSTLIEST segment — guts
+// the jackpot into absurdity: a jackpot is paid at face value while bonus_money is discounted by wagering
+// (truncNormalPayout), so the jackpot is almost always the "richest" segment and gets hammered until it
+// drops below a normal bonus. The floor makes it stop at the top bonus and move on to other levers.
+function _whTrimPrize(seg, jackpotFloor) {
+  switch (seg.prizeType) {
+    case 'free_spins': { const n = Math.floor(seg.prizeValue * 0.85); if (n < seg.prizeValue && n >= 1) { seg.prizeValue = n; return true; } return false; }
+    case 'cashback':   { const v = Math.round(seg.prizeValue * 0.85 * 1000) / 1000; if (v < seg.prizeValue && v >= 0.01) { seg.prizeValue = v; return true; } return false; }
+    case 'multiplier': { const v = Math.round((1 + (seg.prizeValue - 1) * 0.85) * 100) / 100; if (v < seg.prizeValue && v > 1) { seg.prizeValue = v; return true; } return false; }
+    case 'bonus_money': { const v = Math.round(seg.prizeValue * 0.85); if (v < seg.prizeValue && v >= 1) { seg.prizeValue = v; return true; } return false; }
+    case 'jackpot':
+    case 'physical': {
+      const floor = Math.max(1, jackpotFloor || 0);
+      if (seg.prizeValue <= floor) return false;                       // already at the floor — trim something else
+      const v = Math.max(floor, Math.round(seg.prizeValue * 0.85));    // never below the top cash bonus
+      if (v < seg.prizeValue) { seg.prizeValue = v; return true; }
+      return false;
+    }
+    default: return false;
+  }
+}
+// The jackpot/physical prize must stay NOTICEABLY above the biggest cash bonus — not merely ≥ it —
+// so it still reads as the headline prize after balancing (default presets ship it at ~5× the top bonus).
+const WH_JACKPOT_MIN_MULT = 2;
+function _whTrimStep(segs, ctx) {
+  // Floor for jackpot/physical = WH_JACKPOT_MIN_MULT × the biggest cash bonus currently on the wheel
+  // (recomputed each step, since bonus_money may itself have been trimmed) → the jackpot can never fall
+  // to or below a normal bonus, and always stays clearly larger.
+  const maxBonus = segs.reduce((mx, s) => s.prizeType === 'bonus_money' ? Math.max(mx, s.prizeValue) : mx, 0);
+  const jackpotFloor = maxBonus * WH_JACKPOT_MIN_MULT;
+  const ranked = segs.map((s, i) => ({ i, c: window._wheelEcon.segmentCost(s, ctx) }))
+    .filter(x => x.c > 0.001).sort((a, b) => b.c - a.c);
+  for (const x of ranked) { if (_whTrimPrize(segs[x.i], jackpotFloor)) return true; }
+  return false;
+}
+
+// Deterministic "Balance to Profit": lower EV (weights → prize values) then, if needed, downgrade cadence.
+function whBalanceToProfit(targetRoi) {
+  if (!whLastResult || !window._wheelEcon || !window._wheelEcon.deriveLocalFxRate) { whToast(wh('mods_loading')); return; }
+  const cur0 = whLastResult.econ ? (whLastResult.econ.roi ?? 0) : 0;
+  if (cur0 >= targetRoi) { whToast(wh('bal_already')(Math.round(cur0), targetRoi)); return; }
+
+  const ctx  = _whCtx();
+  const segs = whLastResult.spec.segments.map(s => ({ ...s }));
+  let freq   = whDraft.frequency;
+  const before = _whSnapshot();
+  const roiOf = () => _whRecalcLocal(segs, freq).roi;
+
+  let guard = 0;
+  while (roiOf() < targetRoi && guard++ < 300) {
+    if (_whShiftStep(segs, ctx)) continue;   // lever A — shift weight to cheap segment
+    if (_whTrimStep(segs, ctx))  continue;   // lever B — trim rich prizes
+    if (WH_FREQ_DOWNGRADE[freq]) { freq = WH_FREQ_DOWNGRADE[freq]; continue; }  // lever C — downgrade cadence
+    break;
+  }
+  const reached = roiOf() >= targetRoi;
+  _whApplyWorking(segs, freq, whDraft.segment, before, reached, targetRoi, 'balanced');
+}
+
+// Apply the machine-applicable subset of AI recommendations (frequency/segment enums + weight/prize nudges).
+function applyWhAiRecs(recs) {
+  if (!whLastResult || !recs || !recs.length) return;
+  if (!window._wheelEcon || !window._wheelEcon.deriveLocalFxRate) { whToast(wh('mods_loading')); return; }
+  const before = _whSnapshot();
+  const ctx  = _whCtx();
+  const segs = whLastResult.spec.segments.map(s => ({ ...s }));
+  let freq = whDraft.frequency, seg = whDraft.segment;
+  // Match enum values as whole tokens, not bare substrings — otherwise 'all'
+  // matches inside common words like "small"/"overall" and mis-sets the audience.
+  const matchEnum = (list, target, fb) => {
+    const tokens = new Set(String(target).toLowerCase().split(/[^a-z_]+/).filter(Boolean));
+    return list.find(x => tokens.has(x)) || fb;
+  };
+  for (const r of recs) {
+    const param = String(r.param || '').toLowerCase();
+    if (param.includes('frequency') || param.includes('cadence')) freq = matchEnum(WH_FREQS, r.target, freq);
+    else if (param.includes('segment') || param.includes('audience')) seg = matchEnum(WH_SEGS, r.target, seg);
+    else if (param.includes('weight')) { for (let k = 0; k < 3; k++) if (!_whShiftStep(segs, ctx)) break; }
+    else if (param.includes('prize') || param.includes('value')) { for (let k = 0; k < 2; k++) if (!_whTrimStep(segs, ctx)) break; }
+    // rtp / wager are not editable in the hub wizard — skipped
+  }
+  _whApplyWorking(segs, freq, seg, before, true, _getWhTargetRoi(), 'applied');
+}
+
+// Persist a working config: push undo, re-fetch canonical econ from the server, re-render with deltas.
+async function _whApplyWorking(segs, freq, seg, before, reached, targetRoi, mode) {
+  whUndoStack = before;
+  whPrevEcon  = before.econ;
+  whDraft.frequency = freq;
+  whDraft.segment   = seg;
+  try {
+    const d = whLastResult;
+    const resp = await fetch('/api/wheel/generate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ params: { ...d.params, segment: seg, frequency: freq, segments: segs } }),
+    });
+    if (resp.ok) whLastResult = await resp.json();
+    else { const e = await resp.json().catch(() => ({})); throw new Error(e.message || resp.statusText); }
+  } catch (err) {
+    // Fall back to the local recompute so the UI still reflects the change.
+    whLastResult = { ...whLastResult, econ: _whRecalcLocal(segs, freq),
+      spec: { ...whLastResult.spec, segments: segs, frequency: freq } };
+  }
+  whLastOpt = null; whLastOptRecs = [];   // recommendations are stale after a change
+  whShowView('result');
+  const roiNow = Math.round(whLastResult.econ ? (whLastResult.econ.roi ?? 0) : 0);
+  if (mode === 'balanced') whToast(reached ? wh('bal_ok')(roiNow) : wh('bal_fail'));
+  else whToast(wh('applied_ok'));
+}
+
+function undoWhApply() {
+  if (!whUndoStack) return;
+  const u = whUndoStack;
+  whDraft.frequency = u.frequency;
+  whDraft.segment   = u.segment;
+  whLastResult = { ...whLastResult, spec: u.spec, econ: u.econ, params: u.params };
+  whPrevEcon = null; whUndoStack = null; whLastOpt = null; whLastOptRecs = [];
+  whShowView('result');
+}
+
+function whActionPanelHTML(econ) {
+  const roi    = econ ? (econ.roi ?? 0) : 0;
+  const target = _getWhTargetRoi();
+  const hasRecs = whLastOptRecs.length > 0;
+  const hasUndo = !!whUndoStack;
+  const need    = roi < target;
+  const applyBtn = `<button class="btn btn-outline btn-sm" style="white-space:nowrap" ${hasRecs ? '' : 'disabled title="' + wh('apply_hint') + '"'} onclick="applyWhAiRecs(whLastOptRecs||[])">${wh('apply_recs')}</button>`;
+  const balBtn = `<button class="btn btn-sm" style="white-space:nowrap;${need ? 'background:linear-gradient(135deg,#4f6ef7,#7c3aed);color:#fff;box-shadow:0 2px 10px rgba(79,110,247,.3)' : 'background:transparent;border:1px solid var(--border);color:var(--text)'}" onclick="whBalanceToProfit(_getWhTargetRoi())">${wh('balance')}</button>`;
+  const undoBtn = hasUndo ? `<button class="btn btn-ghost btn-sm" onclick="undoWhApply()">${wh('undo')}</button>` : '';
+  return `<div style="background:rgba(79,110,247,.06);border:1px solid rgba(79,110,247,.2);border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:7px;flex-shrink:0">
+      <label style="font-size:.72rem;font-weight:600;color:var(--muted);white-space:nowrap">${wh('target_roi')}:</label>
+      <input type="range" min="60" max="250" step="5" value="${target}" style="width:90px;accent-color:#4f6ef7"
+        oninput="this.nextElementSibling.textContent=this.value+'%';localStorage.setItem('${WH_TARGET_ROI_KEY}',this.value)"
+      ><span style="font-size:.82rem;font-weight:700;color:var(--text);min-width:40px">${target}%</span>
+    </div>
+    <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">${balBtn}${applyBtn}${undoBtn}</div>
+  </div>`;
+}
+
+async function whRunOptimize() {
+  const btn = document.getElementById('wh-btn-opt'), area = document.getElementById('wh-opt-area');
+  if (!btn || !area || !whLastResult) return;
+  btn.disabled = true; btn.textContent = '⏳ …';
+  area.innerHTML = `<div class="loader"><div class="spinner"></div> ${wh('optimizing')}</div>`;
+  try {
+    const resp = await fetch('/api/wheel/optimize', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ params: whLastResult.params, econ: whLastResult.econ, uiLang: whLang() }),
+    });
+    if (!resp.ok) { const e = await resp.json().catch(() => ({})); throw new Error(e.message || resp.statusText); }
+    whLastOpt = await resp.json();
+    whLastOptRecs = whLastOpt.recommendations || [];
+    whShowView('result');   // re-render so the "Apply recommendations" button enables + recs show
+  } catch (e) {
+    area.innerHTML = `<div class="alert alert-warn">${e.message}</div>`;
+    btn.textContent = wh('optimize'); btn.disabled = false;
+  }
+}
+
+function whRenderOptHTML(opt) {
+  const recs = (opt && opt.recommendations) || [];
+  const impactColor = { high:'#ef4444', med:'#f59e0b', low:'#10b981' };
+  return `<div class="card-title">${wh('optimize_title')}</div>
+    ${recs.map(r => `<div style="padding:10px 12px;background:var(--bg3);border-radius:8px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px">
+        <span style="font-weight:700;font-size:.82rem">${_whEsc(r.param)}</span>
+        <span style="font-size:.66rem;font-weight:700;padding:2px 8px;border-radius:6px;background:${(impactColor[r.impact]||'#64748b')}22;color:${impactColor[r.impact]||'#64748b'}">${_whEsc(r.impact)}</span>
+      </div>
+      <div style="font-size:.8rem;margin-bottom:4px"><span style="color:var(--muted)">${_whEsc(r.current)}</span> <span style="color:#a0b0ff">→ ${_whEsc(r.target)}</span></div>
+      <div style="font-size:.76rem;color:var(--muted)">${_whEsc(r.reason)}</div>
+    </div>`).join('')}`;
 }
 
 function whToggleGlossary() { if (typeof toggleGlossary === 'function') toggleGlossary(); }
