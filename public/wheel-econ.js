@@ -194,6 +194,6 @@ export function calcWheelEconomics(params) {
 if (typeof window !== 'undefined') {
   window._wheelEcon = {
     calcWheelEconomics, wheelExpectedValue, segmentCost, wheelTopPrizeCost,
-    materializeSegments, WHEEL_PRESETS,
+    materializeSegments, WHEEL_PRESETS, deriveLocalFxRate,
   };
 }
