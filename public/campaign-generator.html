@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+<!-- Beta lockdown guard: bounces guests to /login.html when BETA_LOCKDOWN is on (no-op otherwise). Must run first. -->
+<script src="/auth-guard.js"></script>
 <script src="/lang-init.js"></script>
 <style>html[data-lang="en"] [data-tr-ru]{display:none}html[data-lang="ru"] [data-tr-en]{display:none}</style>
 <meta charset="UTF-8">

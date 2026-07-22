@@ -20,6 +20,7 @@ import adminRoutes           from '../routes/admin.routes.js';
 import featuresRoutes        from '../routes/features.routes.js';
 import savedItemsRoutes      from '../routes/savedItems.routes.js';
 import { optionalAuth }      from '../middleware/optionalAuth.js';
+import { requireAuth }       from '../middleware/requireAuth.js';
 import { errorMiddleware }   from '../middleware/errors.js';
 import { requestId }        from '../middleware/requestId.js';
 import { logger }            from '../utils/logger.js';
@@ -45,12 +46,12 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       // All JS is now in external files — 'unsafe-inline' no longer needed for scriptSrc.
       // scriptSrcAttr kept for onclick="..." handlers; remove when converted to addEventListener.
-      scriptSrc:     ["'self'"],
+      scriptSrc:     ["'self'", 'https://www.googletagmanager.com'],
       scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc:      ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       fontSrc:       ["'self'", 'https://fonts.gstatic.com'],
-      imgSrc:        ["'self'", 'data:', 'blob:'],
-      connectSrc:    ["'self'"],
+      imgSrc:        ["'self'", 'data:', 'blob:', 'https://www.googletagmanager.com', 'https://*.google-analytics.com'],
+      connectSrc:    ["'self'", 'https://*.google-analytics.com', 'https://*.analytics.google.com', 'https://www.googletagmanager.com'],
       objectSrc:     ["'none'"],
       baseUri:       ["'self'"],
     },
@@ -91,18 +92,20 @@ app.use('/api',            signupRoutes);
 // Effective feature map for the caller (guest or logged-in) — drives frontend gating.
 app.use('/api',            featuresRoutes);
 
-// Generation/AI tools are open to guests — saving still only writes to the browser's
-// localStorage today (no server-side persistence until Phase 2/3), so gating these
-// behind login has no functional effect yet. optionalAuth attaches req.user when a
-// valid session cookie is present, but never rejects an anonymous request.
-app.use('/api',            optionalAuth, generateRoutes);
-app.use('/api/campaign',   optionalAuth, campaignRoutes);
-app.use('/api/tournament', optionalAuth, tournamentRoutes);
-app.use('/api/loyalty',    optionalAuth, loyaltyRoutes);
-app.use('/api/wheel',      optionalAuth, wheelRoutes);
-app.use('/api/competitor', optionalAuth, competitorRoutes);
-app.use('/api/reports',    optionalAuth, reportRoutes);
-app.use('/api/games',      optionalAuth, gamesRoutes);
+// Generation/AI tool auth. Normally optionalAuth — guests reach the tools and
+// req.user is attached when a valid session cookie is present (never rejects).
+// During the closed beta (BETA_LOCKDOWN=true) this becomes requireAuth, so every
+// tool route rejects anonymous callers with a clean 401 and the whole system is
+// gated behind login/registration. One reversible switch, no per-route edits.
+const toolAuth = ENV.BETA_LOCKDOWN ? requireAuth : optionalAuth;
+app.use('/api',            toolAuth, generateRoutes);
+app.use('/api/campaign',   toolAuth, campaignRoutes);
+app.use('/api/tournament', toolAuth, tournamentRoutes);
+app.use('/api/loyalty',    toolAuth, loyaltyRoutes);
+app.use('/api/wheel',      toolAuth, wheelRoutes);
+app.use('/api/competitor', toolAuth, competitorRoutes);
+app.use('/api/reports',    toolAuth, reportRoutes);
+app.use('/api/games',      toolAuth, gamesRoutes);
 
 // Server-side persistence (Phase 2) — hard-gated: requireAuth + requireWorkspace
 // live inside the router. Guests never reach here; they keep localStorage-only saves.

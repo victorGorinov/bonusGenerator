@@ -793,6 +793,11 @@ JWT_SECRET=          # Required — min 32 chars, e.g. `openssl rand -hex 32`
 JWT_EXPIRY=          # Default: 7d
 COOKIE_DOMAIN=       # Optional — empty locally, set in prod for the `_bt` auth cookie
 ADMIN_EMAILS=        # Optional — comma-separated emails auto-promoted to role='admin' at register/login (admin bootstrap)
+BETA_LOCKDOWN=       # Optional — 'true'/'1' locks the whole system behind login for the closed beta.
+                     #   Backend: tool routes use requireAuth (guest → 401) instead of optionalAuth.
+                     #   Frontend: public/auth-guard.js (in every app page's <head>) bounces guests to
+                     #   /login.html?from=<page> when /api/features returns betaLockdown:true. Default false
+                     #   → guest access unchanged. One reversible switch — flip to reopen after beta.
 ```
 
 **Local dev without a real DB:** the server boots and non-DB routes (health, static pages, `/api/generate` if it didn't need auth) work fine with a placeholder `DATABASE_URL` — the Pool is only touched on an actual query (register/login/me). `DATABASE_URL` and `JWT_SECRET` are still required by `EnvSchema` even so (fail-fast on missing config, per existing project convention).

@@ -15,6 +15,14 @@ const EnvSchema = z.object({
   // Comma-separated emails auto-promoted to role='admin' at register/login.
   // Bootstraps the first admin without a manual SQL UPDATE in prod.
   ADMIN_EMAILS:      z.string().default(''),
+  // Beta lockdown: when true, every tool route requires a logged-in session
+  // (requireAuth instead of optionalAuth) and the frontend guard bounces guests
+  // to /login.html. A single reversible switch for the closed beta — flip it
+  // back to false to reopen guest access without a code change.
+  // z.coerce.boolean() treats any non-empty string as true, so accept only the
+  // explicit "true"/"1" tokens and default everything else (incl. unset) to false.
+  BETA_LOCKDOWN:     z.enum(['true', 'false', '1', '0']).default('false')
+                       .transform((v) => v === 'true' || v === '1'),
   // AI cost guardrails (beta). Defaults ARE the agreed beta numbers, so the caps
   // apply even if the Vercel env vars are never set (fail-safe).
   //   AI_BUDGET_USD        — hard global kill-switch: at/over this cumulative spend
@@ -47,6 +55,7 @@ export const DATABASE_URL      = ENV.DATABASE_URL;
 export const JWT_SECRET        = ENV.JWT_SECRET;
 export const JWT_EXPIRY        = ENV.JWT_EXPIRY;
 export const COOKIE_DOMAIN     = ENV.COOKIE_DOMAIN;
+export const BETA_LOCKDOWN      = ENV.BETA_LOCKDOWN;
 
 export const AI_BUDGET_USD       = ENV.AI_BUDGET_USD;
 export const AI_BUDGET_ALERT_USD = ENV.AI_BUDGET_ALERT_USD;
