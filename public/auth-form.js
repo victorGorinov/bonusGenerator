@@ -7,23 +7,25 @@ const I18N_BASE = {
 };
 
 // Where the "×" should return to: the page the auth window was opened from.
-// Captured once and kept in sessionStorage so navigating login↔register (whose
-// referrer is the other auth page) doesn't overwrite the real origin.
+// The server sends `Referrer-Policy: no-referrer`, so document.referrer is
+// always empty — the origin is passed explicitly as a `?from=` query param by
+// the entry points (nav "Sign in", feature-gate, admin). Kept in sessionStorage
+// so navigating login↔register (which drops `from`) doesn't lose the origin.
 function resolveReturnUrl() {
   const AUTH_PATHS = ['/login.html', '/register.html'];
+  const isSafe = (path) =>
+    typeof path === 'string' &&
+    path.startsWith('/') && !path.startsWith('//') &&  // same-origin path, not a protocol-relative URL
+    !AUTH_PATHS.includes(path.split('?')[0].split('#')[0]);
   try {
-    const ref = document.referrer;
-    if (ref) {
-      const u = new URL(ref);
-      if (u.origin === window.location.origin && !AUTH_PATHS.includes(u.pathname)) {
-        const url = u.pathname + u.search + u.hash;
-        sessionStorage.setItem('auth_return', url);
-        return url;
-      }
+    const from = new URLSearchParams(window.location.search).get('from');
+    if (isSafe(from)) {
+      sessionStorage.setItem('auth_return', from);
+      return from;
     }
     const stored = sessionStorage.getItem('auth_return');
-    if (stored) return stored;
-  } catch { /* sessionStorage/URL unavailable — fall through */ }
+    if (isSafe(stored)) return stored;
+  } catch { /* sessionStorage/URLSearchParams unavailable — fall through */ }
   return '/';
 }
 
