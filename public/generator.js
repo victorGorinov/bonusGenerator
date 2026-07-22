@@ -1684,6 +1684,7 @@ function saveAdminCfg() {
 }
 function addCampaignToCalendar(opts = {}) {
   const silent = !!opts.silent; // silent = called from Save: no confirm, no toast, skip dupes
+  if (!silent) window.track && window.track('add_to_calendar', { tool: 'campaign' });
   const mechanic    = draft.mechanicType || draft.scenario?.cat || 'custom';
   const MECH_TO_TYPE = { reload:'reload', cashback:'cashback', freespins:'freespins', free_spins:'freespins', vip:'vip', reactivation:'reactivation', welcome:'reload', ndb:'freespins', dep2:'reload', dep3:'reload' };
   const type        = MECH_TO_TYPE[mechanic?.toLowerCase()] || 'custom';
@@ -3044,6 +3045,7 @@ function genSyncTbRight() {
 
 function genSwitchType(tp) {
   GEN_TYPE = tp;
+  window.trackPage && window.trackPage('/generator.html#' + tp, 'Generator — ' + tp);
   document.querySelectorAll('#gen-type-switch .type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === tp));
   document.getElementById('bonus-root').style.display = tp === 'bonus' ? '' : 'none';
   document.getElementById('tg-root').style.display    = tp === 'tournament' ? '' : 'none';

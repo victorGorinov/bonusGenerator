@@ -49,6 +49,7 @@ let draft = { scenario: null, params: { vertical:'casino', segment:'mid', games:
 // ── VIEWS ─────────────────────────────────────────────────────────────────────
 function showView(name) {
   if (typeof closeMenu === 'function') closeMenu();
+  window.trackPage && window.trackPage('/campaign-generator.html#' + name, 'Campaign — ' + name);
   currentView = name;
   ['dashboard','campaigns','offer-gen','configurator','wizard','campaign-detail'].forEach(v => {
     const el = document.getElementById('view-'+v);
@@ -1450,6 +1451,7 @@ function saveAdminCfg() {
 }
 function addCampaignToCalendar(opts = {}) {
   const silent = !!opts.silent; // silent = called from Save: no confirm, no toast, skip dupes
+  if (!silent) window.track && window.track('add_to_calendar', { tool: 'campaign' });
   const mechanic    = draft.mechanicType || draft.scenario?.cat || 'custom';
   const MECH_TO_TYPE = { reload:'reload', cashback:'cashback', freespins:'freespins', free_spins:'freespins', vip:'vip', reactivation:'reactivation', welcome:'reload', ndb:'freespins', dep2:'reload', dep3:'reload' };
   const type        = MECH_TO_TYPE[mechanic?.toLowerCase()] || 'custom';

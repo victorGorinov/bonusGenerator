@@ -613,6 +613,7 @@ function whSave() {
 
 function whAddToCalendar() {
   if (!whLastResult) return;
+  window.track && window.track('add_to_calendar', { tool: 'wheel' });
   try {
     const now = new Date(), monday = new Date(now);
     monday.setDate(now.getDate() + (now.getDay() === 0 ? 1 : 8 - now.getDay()));
