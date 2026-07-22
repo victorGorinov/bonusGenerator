@@ -646,6 +646,7 @@ function renderMainContent() {
 function cfgSwitchType(tp) {
   CS.type = tp;
   try { localStorage.setItem('cfg_type', tp); } catch(e){}
+  window.trackPage && window.trackPage('/configurator.html#' + tp, 'Configurator — ' + tp);
   cfgRender();
 }
 
@@ -3836,6 +3837,7 @@ function saveCfgEntry(entry) {
 
 function addToRCCalendar(data, opts = {}) {
   const silent = !!(opts && opts.silent); // silent = called from Save: no toast
+  if (!silent) window.track && window.track('add_to_calendar', { tool: CS && CS.type });
   try {
     // Schedule on the upcoming Mon–Sun week — same logic as the generators.
     // IMPORTANT: the calendar reads startDate/endDate (NOT start/end); the old

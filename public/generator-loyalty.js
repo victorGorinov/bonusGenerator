@@ -1632,6 +1632,7 @@ function _doAddToCalendar(campaign, opts = {}) {
 
 function addLoyaltyToCalendar() {
   if (!lastResult) return;
+  window.track && window.track('add_to_calendar', { tool: 'loyalty' });
   _doAddToCalendar(_buildCalendarEntry(lastResult, lyDraft));
 }
 
