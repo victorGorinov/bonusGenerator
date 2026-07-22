@@ -16,7 +16,7 @@ const LANG = {
     hero_sub: 'Pick a scenario and a GEO — AI selects the right bonus mechanic, writes the copy for 5 channels, checks compliance, and models the P10/P50/P90 cost. No spreadsheets, no guesswork.',
     hero_cta1: '🚀 Try Retomat Free →',
     hero_cta2: '▶ See how it works',
-    tr1: 'Ready in 2 min', tr2: 'No signup required', tr3: 'Free during beta', tr4: '17 jurisdictions',
+    tr1: 'Ready in 2 min', tr2: 'Free beta access', tr3: 'Free during beta', tr4: '17 jurisdictions',
 
     sim_title: 'Campaign simulation',
     sim_new: 'New simulation',
@@ -95,7 +95,7 @@ const LANG = {
     fs5_p: 'See how your bonus, tournament or loyalty offer stacks up against competitors in your GEO — AI finds their terms and shows where you win or lose the player.',
 
     cta_h2: 'Ready to plan your next campaign?',
-    cta_p: 'Free during beta. No credit card, no signup required — just pick a scenario and see the numbers.',
+    cta_p: 'Free during beta. No credit card — just create an account, pick a scenario, and see the numbers.',
     cta_btn: '🚀 Try Retomat Free →',
     cta_c1: '✓ No commitment',
     cta_c2: '✓ Ready in under 2 minutes',
@@ -124,7 +124,7 @@ const LANG = {
     hero_sub: 'Выберите сценарий и GEO — AI подберёт механику бонуса, напишет тексты для 5 каналов, проверит комплаенс и рассчитает стоимость P10/P50/P90. Без таблиц и догадок.',
     hero_cta1: '🚀 Попробовать бесплатно →',
     hero_cta2: '▶ Посмотреть, как это работает',
-    tr1: 'Готово за 2 минуты', tr2: 'Без регистрации', tr3: 'Бесплатно в бете', tr4: '17 юрисдикций',
+    tr1: 'Готово за 2 минуты', tr2: 'Бесплатный доступ в бете', tr3: 'Бесплатно в бете', tr4: '17 юрисдикций',
 
     sim_title: 'Симуляция кампании',
     sim_new: 'Новая симуляция',
@@ -203,7 +203,7 @@ const LANG = {
     fs5_p: 'Узнайте, как ваш бонус, турнир или программа лояльности выглядят на фоне конкурентов в вашем гео — AI находит их условия и показывает, где вы выигрываете или проигрываете игрока.',
 
     cta_h2: 'Готовы спланировать следующую кампанию?',
-    cta_p: 'Бесплатно в период беты. Без карты, без регистрации — просто выберите сценарий и посмотрите цифры.',
+    cta_p: 'Бесплатно в период беты. Без карты — просто создайте аккаунт, выберите сценарий и посмотрите цифры.',
     cta_btn: '🚀 Попробовать бесплатно →',
     cta_c1: '✓ Без обязательств',
     cta_c2: '✓ Готово меньше чем за 2 минуты',

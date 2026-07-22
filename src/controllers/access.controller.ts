@@ -2,6 +2,7 @@ import type { Pool } from 'pg';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { getUserAccessById } from '../use-cases/Auth.js';
 import { resolveFeatureAccess } from '../domain/auth/access.js';
+import { BETA_LOCKDOWN } from '../config/index.js';
 
 interface Deps { db: Pool }
 
@@ -20,6 +21,8 @@ export function createAccessController({ db }: Deps) {
         role:     row?.role ?? null,
         plan:     row?.plan ?? null,
         features: access,
+        // Frontend auth-guard bounces guests to /login.html only when this is on.
+        betaLockdown: BETA_LOCKDOWN,
       });
     }),
   };
