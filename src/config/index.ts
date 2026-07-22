@@ -15,6 +15,20 @@ const EnvSchema = z.object({
   // Comma-separated emails auto-promoted to role='admin' at register/login.
   // Bootstraps the first admin without a manual SQL UPDATE in prod.
   ADMIN_EMAILS:      z.string().default(''),
+  // AI cost guardrails (beta). Defaults ARE the agreed beta numbers, so the caps
+  // apply even if the Vercel env vars are never set (fail-safe).
+  //   AI_BUDGET_USD        — hard global kill-switch: at/over this cumulative spend
+  //                          all AI routes 503; deterministic routes keep working.
+  //   AI_BUDGET_ALERT_USD  — soft threshold: log a warning once when first crossed.
+  //   AI_USER_DAILY_LIMIT  — AI calls per user per (UTC) day.
+  //   AI_USER_TOTAL_LIMIT  — AI calls per user across the whole beta.
+  // Non-negative (not strictly positive): 0 is a valid "hard-disable" value —
+  // AI_BUDGET_USD=0 keeps the kill-switch permanently tripped (all AI 503), a
+  // 0 quota blocks every per-user call — rather than crashing startup.
+  AI_BUDGET_USD:       z.coerce.number().nonnegative().default(20),
+  AI_BUDGET_ALERT_USD: z.coerce.number().nonnegative().default(12),
+  AI_USER_DAILY_LIMIT: z.coerce.number().int().nonnegative().default(30),
+  AI_USER_TOTAL_LIMIT: z.coerce.number().int().nonnegative().default(120),
 });
 
 const _env = EnvSchema.safeParse(process.env);
@@ -33,6 +47,11 @@ export const DATABASE_URL      = ENV.DATABASE_URL;
 export const JWT_SECRET        = ENV.JWT_SECRET;
 export const JWT_EXPIRY        = ENV.JWT_EXPIRY;
 export const COOKIE_DOMAIN     = ENV.COOKIE_DOMAIN;
+
+export const AI_BUDGET_USD       = ENV.AI_BUDGET_USD;
+export const AI_BUDGET_ALERT_USD = ENV.AI_BUDGET_ALERT_USD;
+export const AI_USER_DAILY_LIMIT = ENV.AI_USER_DAILY_LIMIT;
+export const AI_USER_TOTAL_LIMIT = ENV.AI_USER_TOTAL_LIMIT;
 
 export const AI_MODEL   = 'claude-haiku-4-5-20251001' as const;
 // Live web-search calls (competitor lookup) run on a stronger model: better at

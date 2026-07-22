@@ -5,15 +5,16 @@ import { LoyaltyGenerateSchema, LoyaltyRecalcSchema, LoyaltyTextsSchema, Loyalty
 import { createLoyaltyController }     from '../controllers/loyalty.controller.js';
 import { getAIProvider }               from '../ai/registry.js';
 import { requireFeature }              from '../middleware/requireFeature.js';
+import { aiGate }                      from '../middleware/aiBudget.js';
 
 const ctrl   = createLoyaltyController({ ai: getAIProvider() });
 const router = Router();
 router.use(requireFeature('loyalty'));
 router.post('/generate', campaignLimiter, validate(LoyaltyGenerateSchema),  ctrl.generate);
 router.post('/recalc',   apiLimiter,      validate(LoyaltyRecalcSchema),    ctrl.recalc);
-router.post('/texts',    aiLimiter,       validate(LoyaltyTextsSchema),     ctrl.texts);
-router.post('/description', aiLimiter,     validate(LoyaltyDescriptionSchema), ctrl.description);
-router.post('/audit',    aiLimiter,       validate(LoyaltyAuditSchema),     ctrl.audit);
-router.post('/optimize', aiLimiter,       validate(LoyaltyOptimizeSchema),  ctrl.optimize);
-router.post('/missions', aiLimiter,       validate(LoyaltyMissionsSchema),  ctrl.missions);
+router.post('/texts',    aiLimiter, ...aiGate, validate(LoyaltyTextsSchema),     ctrl.texts);
+router.post('/description', aiLimiter, ...aiGate, validate(LoyaltyDescriptionSchema), ctrl.description);
+router.post('/audit',    aiLimiter, ...aiGate, validate(LoyaltyAuditSchema),     ctrl.audit);
+router.post('/optimize', aiLimiter, ...aiGate, validate(LoyaltyOptimizeSchema),  ctrl.optimize);
+router.post('/missions', aiLimiter, ...aiGate, validate(LoyaltyMissionsSchema),  ctrl.missions);
 export default router;
