@@ -492,6 +492,7 @@ function showSetupGuide() { showView('setup'); }
 function showView(view, id) {
   const c  = document.getElementById('content');
   const tb = document.getElementById('topbar-step');
+  window.trackPage && window.trackPage('/tournament-generator.html#' + view, 'Tournament — ' + view);
   _tgCurrentView = view;
   if (view === 'list') {
     tb.textContent = tg('topbar_list');
@@ -2014,6 +2015,7 @@ ${_gamesData && _gamesData._key === _gamesParamsKey() ? gamesSectionFromData(_ga
 // ── ADD TO RETENTION CALENDAR ─────────────────────────────────────────────────
 function addTournamentToCalendar(opts = {}) {
   const silent = !!opts.silent; // silent = called from Save: no confirm, no toast, skip dupes
+  if (!silent) window.track && window.track('add_to_calendar', { tool: 'tournament' });
   if (!lastResult) return false;
   const { spec, econ, params, cur } = lastResult;
   const DURATION_DAYS = { flash:1, daily:1, weekly:7, monthly:30, multi_round:10 };

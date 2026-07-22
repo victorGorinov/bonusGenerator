@@ -691,6 +691,7 @@ function econGridHTML(econ, prevEcon) {
 // ── VIEWS ──────────────────────────────────────────────────────────────────────
 
 function showView(name, id) {
+  window.trackPage && window.trackPage('/loyalty-generator.html#' + name, 'Loyalty — ' + name);
   _view     = name;
   _detailId = id || null;
   closeMenu();
@@ -1525,6 +1526,7 @@ function _doAddToCalendar(campaign, opts = {}) {
 
 function addLoyaltyToCalendar(opts = {}) {
   if (!lastResult) return;
+  if (!opts.silent) window.track && window.track('add_to_calendar', { tool: 'loyalty' });
   return _doAddToCalendar(_buildCalendarEntry(lastResult, draft), opts);
 }
 

@@ -26,11 +26,21 @@ describe('Security headers (CSP)', () => {
     expect(value).not.toContain("'unsafe-inline'");
   });
 
-  it('connect-src is self-only (no external API leakage)', async () => {
+  it('connect-src is self + Google Analytics only (no other external API leakage)', async () => {
     const res = await request(app).get('/');
     const csp = res.headers['content-security-policy'] ?? '';
     const match = csp.match(/connect-src\s+([^;]+)/);
     const value = match?.[1]?.trim() ?? '';
-    expect(value).toBe("'self'");
+    // 'self' plus the GA4 beacon/config endpoints — nothing else.
+    const allowed = new Set([
+      "'self'",
+      'https://*.google-analytics.com',
+      'https://*.analytics.google.com',
+      'https://www.googletagmanager.com',
+    ]);
+    expect(value).toContain("'self'");
+    for (const src of value.split(/\s+/)) {
+      expect(allowed.has(src)).toBe(true);
+    }
   });
 });
