@@ -245,7 +245,8 @@ async function _rtmRenderUserChip() {
       '<button type="button" id="rtm-logout-btn" data-i18n="nav_logout" style="background:none;border:1px solid var(--border,#1e2740);color:inherit;' +
       'border-radius:100px;padding:2px 10px;font-size:.68rem;font-weight:700;cursor:pointer;font-family:inherit">' + t.nav_logout + '</button>';
   } else {
-    chip.innerHTML = '<a href="/login.html" data-i18n="nav_signin" style="color:var(--accent,#a0b0ff);font-weight:700;text-decoration:none">' + t.nav_signin + '</a>';
+    var from = encodeURIComponent(location.pathname + location.search + location.hash);
+    chip.innerHTML = '<a href="/login.html?from=' + from + '" data-i18n="nav_signin" style="color:var(--accent,#a0b0ff);font-weight:700;text-decoration:none">' + t.nav_signin + '</a>';
   }
   host.insertBefore(chip, host.firstChild);
   var btn = document.getElementById('rtm-logout-btn');

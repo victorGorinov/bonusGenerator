@@ -215,7 +215,7 @@ async function loadUsers() {
 
 function showDenied() {
   $('adm-content').innerHTML =
-    `<div class="adm-empty">${t('denied')} <a class="adm-back" href="/login.html">${t('signin')}</a></div>`;
+    `<div class="adm-empty">${t('denied')} <a class="adm-back" href="/login.html?from=${encodeURIComponent(location.pathname + location.search + location.hash)}">${t('signin')}</a></div>`;
 }
 
 async function init() {
