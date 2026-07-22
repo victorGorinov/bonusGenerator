@@ -23,6 +23,12 @@ export const FEATURES = [
   'competitorComparison',
   'reports',
   'calendar',
+  // Umbrella flag for ALL AI-backed actions (texts/audit/optimize/description/
+  // missions/competitor). Deliberately OFF by default (guest + `free` preset) so
+  // registration alone never grants AI — access is handed out per-user from the
+  // admin panel (features.ai = true). Gated on top of each tool's own feature, so
+  // deterministic generate/recalc stay open while the AI sub-actions require a grant.
+  'ai',
 ] as const;
 
 export type Feature = (typeof FEATURES)[number];
@@ -48,13 +54,20 @@ export const GUEST_FEATURES: FeatureMap = {
   competitorComparison: false,
   reports:    false,
   calendar:   false,
+  // AI never open to guests — every AI action must be paid for; a granted account
+  // is required. (Closes the anonymous budget-burn hole.)
+  ai:         false,
 };
 
 // Tariff presets. `free` == everything-on today, so introducing plans doesn't
 // change behaviour for existing registered users (all currently get full access).
 // When real tiers ship, trim `free` and flesh out `pro`; enforcement is unchanged.
 export const FEATURE_PRESETS: Record<string, FeatureMap> = {
-  free: { ...ALL_ON },
+  // `free` == everything-on EXCEPT `ai`: registered users keep full access to the
+  // deterministic tools, but AI stays off until granted per-user (admin override).
+  // This is what makes "registration must not grant AI" true by default.
+  free: { ...ALL_ON, ai: false },
+  // Future paid tier — AI included. Not wired to billing yet.
   pro:  { ...ALL_ON },
 };
 
