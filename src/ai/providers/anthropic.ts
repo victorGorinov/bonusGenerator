@@ -2,7 +2,8 @@ import Anthropic, { APIError, RateLimitError, InternalServerError } from '@anthr
 import { getAIClient }     from '../client.js';
 import { AIProviderError } from '../../errors/AIProviderError.js';
 import { logger }          from '../../utils/logger.js';
-import { AI_MODEL }        from '../../config/index.js';
+import { AI_MODEL, AI_BUDGET_ALERT_USD, AI_BUDGET_USD } from '../../config/index.js';
+import { pgUsageStore }     from '../../domain/ai-budget/store.js';
 import type { AIProvider, AIGenerateOpts } from '../interface.js';
 
 function retryDelay(attempt: number): number {
@@ -117,6 +118,7 @@ export class AnthropicProvider implements AIProvider {
     const inTok      = msg.usage?.input_tokens  ?? 0;
     const outTok     = msg.usage?.output_tokens ?? 0;
     const searchReqs = msg.usage?.server_tool_use?.web_search_requests ?? 0;
+    const cost       = estimateCostUsd(model, inTok, outTok, searchReqs);
     logger.info({
       event:        'ai.request',
       model,
@@ -124,8 +126,22 @@ export class AnthropicProvider implements AIProvider {
       in_tokens:    inTok,
       out_tokens:   outTok,
       web_searches: searchReqs,
-      cost_usd:     estimateCostUsd(model, inTok, outTok, searchReqs),
+      cost_usd:     cost,
     });
+    // Single funnel where the real per-call cost is known — accrue it to the global
+    // AI spend that drives the kill-switch. Fire-and-forget: a recording failure must
+    // never fail an already-successful generation (it only under-counts the budget).
+    // Called once per message.create, so web-search rounds each accrue correctly.
+    pgUsageStore.recordGlobalSpend(cost, AI_BUDGET_ALERT_USD)
+      .then(({ total, crossedAlert }) => {
+        if (crossedAlert) {
+          logger.warn(
+            { event: 'ai_budget.alert', total_usd: total, alert_usd: AI_BUDGET_ALERT_USD, budget_usd: AI_BUDGET_USD },
+            `AI spend crossed the $${AI_BUDGET_ALERT_USD} alert threshold (cap $${AI_BUDGET_USD})`,
+          );
+        }
+      })
+      .catch((err) => logger.error({ event: 'ai_budget.record_failed', err }, 'AI spend recording failed'));
   }
 }
 

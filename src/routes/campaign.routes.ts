@@ -11,6 +11,7 @@ import { createCampaignController }  from '../controllers/campaign.controller.js
 import { createAnalyticsController } from '../controllers/analytics.controller.js';
 import { getAIProvider }             from '../ai/registry.js';
 import { requireFeature }            from '../middleware/requireFeature.js';
+import { aiGate }                    from '../middleware/aiBudget.js';
 
 const ctrl         = createCampaignController({ ai: getAIProvider() });
 const analyticsCtrl = createAnalyticsController();
@@ -20,12 +21,12 @@ const router       = Router();
 router.use(requireFeature('campaign'));
 
 router.post('/generate',         campaignLimiter, validate(CampaignGenerateSchema), ctrl.generate);
-router.post('/texts',            aiLimiter,       validate(TextsSchema),             ctrl.texts);
-router.post('/description',      aiLimiter,       validate(DescriptionSchema),       ctrl.description);
-router.post('/audit',            aiLimiter,       validate(AuditSchema),             ctrl.audit);
-router.post('/optimize',         aiLimiter,       validate(OptimizeSchema),          ctrl.optimize);
+router.post('/texts',            aiLimiter, ...aiGate, validate(TextsSchema),        ctrl.texts);
+router.post('/description',      aiLimiter, ...aiGate, validate(DescriptionSchema),  ctrl.description);
+router.post('/audit',            aiLimiter, ...aiGate, validate(AuditSchema),        ctrl.audit);
+router.post('/optimize',         aiLimiter, ...aiGate, validate(OptimizeSchema),     ctrl.optimize);
 router.post('/analysis',         apiLimiter,      validate(AnalysisSchema),          analyticsCtrl.analyze);
 router.post('/actuals',          apiLimiter,      validate(ActualsSchema),           analyticsCtrl.saveActuals);
-router.post('/analysis/explain', aiLimiter,       validate(ExplainSchema),           analyticsCtrl.explain);
+router.post('/analysis/explain', aiLimiter, ...aiGate, validate(ExplainSchema),      analyticsCtrl.explain);
 
 export default router;
