@@ -256,7 +256,9 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:16px 0}
 
 /* ── AUTH PAGES (login.html / register.html) ───────────────────────────── */
 .auth-body{display:flex;align-items:center;justify-content:center;min-height:100vh}
-.auth-card{width:100%;max-width:380px;background:#0f1420;border:1px solid var(--border);border-radius:14px;padding:32px}
+.auth-card{position:relative;width:100%;max-width:380px;background:#0f1420;border:1px solid var(--border);border-radius:14px;padding:32px}
+.auth-close{position:absolute;top:14px;right:14px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:var(--muted);font-size:20px;line-height:1;text-decoration:none;transition:background .15s,color .15s}
+.auth-close:hover{background:rgba(255,255,255,.06);color:#fff}
 .auth-logo{font-size:20px;font-weight:800;color:#fff;margin-bottom:4px}
 .auth-logo span{color:var(--gold)}
 .auth-sub{font-size:12px;color:var(--muted);margin-bottom:24px}
