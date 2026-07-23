@@ -19,9 +19,12 @@ const EnvSchema = z.object({
   // (requireAuth instead of optionalAuth) and the frontend guard bounces guests
   // to /login.html. A single reversible switch for the closed beta — flip it
   // back to false to reopen guest access without a code change.
-  // z.coerce.boolean() treats any non-empty string as true, so accept only the
-  // explicit "true"/"1" tokens and default everything else (incl. unset) to false.
-  BETA_LOCKDOWN:     z.enum(['true', 'false', '1', '0']).default('false')
+  // Accept ANY string and only treat the explicit "true"/"1" tokens (case-
+  // insensitive) as on — everything else, including unset, an empty string
+  // (BETA_LOCKDOWN= in Vercel), or a typo like "yes"/"TRUE", resolves to false.
+  // A prior z.enum() here would fail EnvSchema and crash the whole server at boot
+  // on an empty/mis-cased value; this can never throw.
+  BETA_LOCKDOWN:     z.string().trim().toLowerCase().default('false')
                        .transform((v) => v === 'true' || v === '1'),
   // AI cost guardrails (beta). Defaults ARE the agreed beta numbers, so the caps
   // apply even if the Vercel env vars are never set (fail-safe).
