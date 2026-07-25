@@ -2096,7 +2096,7 @@ const I18N = {
     s5_done_sub:'Акция успешно сохранена. Найдите её в разделе «Бонусные акции».',
     wpl_1:'Сценарий', wpl_2:'Параметры', wpl_3:'Генерация', wpl_4:'Тексты', wpl_5:'Экспорт',
     badge_draft:'Черновик', badge_active:'Активна', badge_done:'Завершена',
-    camp_empty:'Нет активностей. Создайте кампанию, турнир или программу лояльности!',
+    camp_empty:'Нет активностей. Создайте кампанию, турнир, программу лояльности или колесо фортуны!',
     // Wizard navigation
     btn_cancel:'← Отмена', btn_back:'← Назад', btn_next:'Далее →',
     btn_generate:'Сгенерировать ⚡',
@@ -2122,6 +2122,7 @@ const I18N = {
     qc_sport_n:'Спортивное событие', qc_sport_d:'Фрибет или бонус к матчу',
     qc_tourn_n:'Турнир / Ивент', qc_tourn_d:'Механика слот-турнира',
     qc_loyalty_n:'Программа лояльности', qc_loyalty_d:'Тиры, миссии и кешбэк для удержания игроков',
+    qc_wheel_n:'Колесо Фортуны', qc_wheel_d:'Геймификация: спины, призы и удержание',
     // Step 3
     s3_gen_title:'AI генерирует кампанию...', s3_gen_sub:'Анализируем сценарий и подбираем оптимальную механику',
     s3_title:'Механика подобрана ✓', s3_sub:'Параметры рассчитаны по региональной модели Retomat для вашего сценария',
@@ -2240,7 +2241,7 @@ const I18N = {
     s5_done_sub:'Offer saved successfully. Find it in Bonus Offers.',
     wpl_1:'Scenario', wpl_2:'Parameters', wpl_3:'Generate', wpl_4:'Texts', wpl_5:'Export',
     badge_draft:'Draft', badge_active:'Active', badge_done:'Done',
-    camp_empty:'No activities yet. Create a campaign, tournament or loyalty program!',
+    camp_empty:'No activities yet. Create a campaign, tournament, loyalty program or wheel of fortune!',
     // Wizard navigation
     btn_cancel:'← Cancel', btn_back:'← Back', btn_next:'Next →',
     btn_generate:'Generate ⚡',
@@ -2266,6 +2267,7 @@ const I18N = {
     qc_sport_n:'Sport Event', qc_sport_d:'Freebet or match bonus',
     qc_tourn_n:'Tournament / Event', qc_tourn_d:'Slot tournament mechanic',
     qc_loyalty_n:'Loyalty Program', qc_loyalty_d:'Tiers, missions and cashback to retain players',
+    qc_wheel_n:'Wheel of Fortune', qc_wheel_d:'Gamification: spins, prizes and retention',
     // Step 3
     s3_gen_title:'AI is generating campaign...', s3_gen_sub:'Analysing scenario and selecting optimal mechanics',
     s3_title:'Mechanic Selected ✓', s3_sub:'Parameters calculated using the regional Retomat model for your scenario',

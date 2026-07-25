@@ -4,7 +4,7 @@ initAuthForm({
   formId:     'login-form',
   endpoint:   '/api/auth/login',
   fields:     ['email', 'password'],
-  redirectTo: '/retention-calendar.html',
+  redirectTo: '/campaign-generator.html',
   errorMap:   { INVALID_CREDENTIALS: 'err_creds' },
   i18n: {
     en: { sub: 'Sign in to your workspace', email: 'Email', password: 'Password', signin: 'Sign in',

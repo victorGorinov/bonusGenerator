@@ -4,7 +4,7 @@ initAuthForm({
   formId:     'register-form',
   endpoint:   '/api/auth/register',
   fields:     ['name', 'email', 'password'],
-  redirectTo: '/retention-calendar.html',
+  redirectTo: '/campaign-generator.html',
   errorMap:   { EMAIL_TAKEN: 'err_taken' },
   i18n: {
     en: { sub: 'Create your workspace', name: 'Name', email: 'Email', password: 'Password (min 8 characters)',
