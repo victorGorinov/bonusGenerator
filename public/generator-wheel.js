@@ -620,7 +620,7 @@ function whAddToCalendar() {
     const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
     const entry = {
       id: whGenId(), title: `🎡 ${wh('preset_'+whDraft.preset)} · ${whDraft.geo.toUpperCase()}`,
-      type: 'bonus', segment: whDraft.segment, geo: whDraft.geo, status: 'draft',
+      type: 'wheel', segment: whDraft.segment, geo: whDraft.geo, status: 'draft',
       sourceType: 'wheel_generator',
       startDate: monday.toISOString().slice(0,10), endDate: sunday.toISOString().slice(0,10),
       econ: whLastResult.econ || {}, params: whLastResult.params || {}, cur: whLastResult.cur,
