@@ -712,9 +712,10 @@ function renderBonusBaseCard(B, geo) {
       <div class="form-row">
         <label class="form-label">${cfgT('rtp_lbl')} — <span id="rtp-disp" style="color:var(--text);font-weight:700">${B.rtp}%</span></label>
         <div class="range-wrap">
+          <span class="range-val" style="width:40px;text-align:right;color:var(--muted)">85%</span>
           <input type="range" min="85" max="99" step="0.5" value="${B.rtp}"
                  oninput="CS.bonus.rtp=+this.value;document.getElementById('rtp-disp').textContent=this.value+'%'">
-          <span class="range-val" style="width:40px">${B.rtp}%</span>
+          <span class="range-val" style="width:40px;color:var(--muted)">99%</span>
         </div>
       </div>
     </div>
@@ -1473,17 +1474,17 @@ function renderBonusBreakdownTable(B, v, cur, isRu) {
     `<td style="text-align:right;padding:7px 6px;border-bottom:1px solid rgba(255,255,255,.04);${bold?'font-weight:700;':''}${color?'color:'+color+';':''}">${val}</td>`;
 
   const L = isRu ? {
-    title:'Что происходит с деньгами бонуса', sub:'расчёт по базовым формулам',
+    title:'Что происходит с деньгами бонуса', sub:'только движение бонусных денег, без учёта реальной игры игрока',
     perPlayer:'На одного игрока', perCamp:'На всю кампанию · 3 месяца',
     bonusSizeR:'Размер бонуса', wageredR:'Обязательный оборот (бонус × вейджер)', ggrR:'Доход казино с отыгрыша',
-    payoutR:'Выплата игроку при отыгрыше', netPPR:'Прибыль казино на 1 игрока', ltv3TotalR:'Доход со всех игроков за 3 месяца',
-    scenHdr:'Сценарий', activeHdr:'Сыграли бонус', ggrHdr:'Доход казино', paidHdr:'Выплачено игрокам', netHdr:'Прибыль казино',
+    payoutR:'Выплата игроку при отыгрыше', netPPR:'Результат по бонусу на 1 игрока', ltv3TotalR:'Доход со всех игроков за 3 месяца',
+    scenHdr:'Сценарий', activeHdr:'Сыграли бонус', ggrHdr:'Доход казино', paidHdr:'Выплачено игрокам', netHdr:'Результат по бонусу',
   } : {
-    title:'What Happens to Bonus Money', sub:'calculated from first principles',
+    title:'What Happens to Bonus Money', sub:'bonus money flow only — excludes real-money play',
     perPlayer:'Per Player', perCamp:'Per Campaign · 3 months',
     bonusSizeR:'Bonus Size', wageredR:'Total Wager Required (bonus × multiplier)', ggrR:'Casino Income from Wagering',
-    payoutR:'Player Payout on Completion', netPPR:'Casino Profit per Player', ltv3TotalR:'Total Player Revenue (3 months)',
-    scenHdr:'Scenario', activeHdr:'Completed Wagering', ggrHdr:'Casino Income', paidHdr:'Paid to Players', netHdr:'Casino Profit',
+    payoutR:'Player Payout on Completion', netPPR:'Bonus P&L per Player', ltv3TotalR:'Total Player Revenue (3 months)',
+    scenHdr:'Scenario', activeHdr:'Completed Wagering', ggrHdr:'Casino Income', paidHdr:'Paid to Players', netHdr:'Bonus P&L',
   };
 
   return `
@@ -1496,7 +1497,7 @@ function renderBonusBreakdownTable(B, v, cur, isRu) {
       ${rowPP(L.wageredR,   fmtCur(bonusSize*wagerX, cur), false, null)}
       ${rowPP(L.ggrR,       fmtCur(base.ggrPerWager, cur), false, null)}
       ${rowPP(L.payoutR,    fmtCur(base.payoutPerPlayer, cur), false, null)}
-      ${rowPP(L.netPPR,     (base.netPerPlayer>=0?'+':'')+fmtCur(Math.abs(base.netPerPlayer), cur), true, netPPClr)}
+      ${rowPP(L.netPPR,     (base.netPerPlayer>=0?'+':'−')+fmtCur(Math.abs(base.netPerPlayer), cur), true, netPPClr)}
       ${rowPP(L.ltv3TotalR, fmtCur((E.ltv3||0)*pl*dispFactor('bonus'), cur), false, 'var(--success)')}
 
       <div style="font-size:11px;font-weight:600;color:var(--text2);margin:12px 0 4px">${L.perCamp}</div>
@@ -1518,7 +1519,7 @@ function renderBonusBreakdownTable(B, v, cur, isRu) {
               <td style="padding:7px 6px;border-bottom:1px solid rgba(255,255,255,.04);${s.key==='base'?'font-weight:600':''}"><span class="scenario-dot ${s.dot}"></span>${s.lbl} (${(s.conv*100).toFixed(0)}%)</td>
               ${tdR(fmtCur(s.bd.totalGgr, cur), s.key==='base', s.key==='base'?'#a0b0ff':null)}
               ${tdR(fmtCur(s.bd.totalPaid, cur), false, null)}
-              ${tdR((s.bd.netCampaign>=0?'+':'')+fmtCur(Math.abs(s.bd.netCampaign), cur), true, netClr)}
+              ${tdR((s.bd.netCampaign>=0?'+':'−')+fmtCur(Math.abs(s.bd.netCampaign), cur), true, netClr)}
             </tr>`;
           }).join('')}
         </tbody>
