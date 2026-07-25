@@ -2365,6 +2365,7 @@ const I18N = {
     qc_sport_n:'Спортивное событие', qc_sport_d:'Фрибет или бонус к матчу',
     qc_tourn_n:'Турнир / Ивент', qc_tourn_d:'Механика слот-турнира',
     qc_loyalty_n:'Программа лояльности', qc_loyalty_d:'Тиры, миссии и кешбэк для удержания игроков',
+    qc_wheel_n:'Колесо Фортуны', qc_wheel_d:'Геймификация: спины, призы и удержание',
     // Step 3
     s3_gen_title:'AI генерирует кампанию...', s3_gen_sub:'Анализируем сценарий и подбираем оптимальную механику',
     s3_title:'Механика подобрана ✓', s3_sub:'Параметры рассчитаны по региональной модели Retomat для вашего сценария',
@@ -2520,6 +2521,7 @@ const I18N = {
     qc_sport_n:'Sport Event', qc_sport_d:'Freebet or match bonus',
     qc_tourn_n:'Tournament / Event', qc_tourn_d:'Slot tournament mechanic',
     qc_loyalty_n:'Loyalty Program', qc_loyalty_d:'Tiers, missions and cashback to retain players',
+    qc_wheel_n:'Wheel of Fortune', qc_wheel_d:'Gamification: spins, prizes and retention',
     // Step 3
     s3_gen_title:'AI is generating campaign...', s3_gen_sub:'Analysing scenario and selecting optimal mechanics',
     s3_title:'Mechanic Selected ✓', s3_sub:'Parameters calculated using the regional Retomat model for your scenario',
@@ -2809,7 +2811,7 @@ function renderCampaignViews() {
 <div class="card" style="text-align:center;padding:40px 20px;margin:0;border-radius:0 0 12px 12px;border-top:none">
   <div style="font-size:2.5rem;margin-bottom:14px">📁</div>
   <div style="color:var(--muted);font-size:.88rem;margin-bottom:20px">${t('camp_empty')}</div>
-  <button class="btn btn-primary" onclick="startWizard()">⚡ ${t('dash_create')}</button>
+  <button class="btn btn-primary" onclick="startWizard()">${t('btn_new_camp')}</button>
 </div>`;
   const campRows = camps.length ? camps.map(campaignRowHTML).join('') : emptyCard;
   const all = document.getElementById('all-camp-body');
@@ -3034,13 +3036,19 @@ let lyInitialized = false;
 let whInitialized = false;
 
 function genSyncTbRight() {
+  // #tb-right is an inner span; the login/user chip lives in the parent
+  // .topbar-right wrapper, so rewriting this innerHTML no longer wipes it.
+  // Set only the type-specific button (empty for bonus — its button is owned by
+  // showView) so a stale button from the previous type doesn't linger.
+  let btn = '';
   if (GEN_TYPE === 'tournament') {
-    document.getElementById('tb-right').innerHTML =
-      `<button class="btn btn-primary btn-sm" onclick="tgShowView('generator')">${currentLang === 'ru' ? '+ Новый турнир' : '+ New Tournament'}</button>`;
+    btn = `<button class="btn btn-primary btn-sm" onclick="tgShowView('generator')">${currentLang === 'ru' ? '+ Новый турнир' : '+ New Tournament'}</button>`;
   } else if (GEN_TYPE === 'loyalty') {
-    document.getElementById('tb-right').innerHTML =
-      `<button class="btn btn-primary btn-sm" onclick="lyShowView('setup')">${currentLang === 'ru' ? '+ Новая программа' : '+ New Program'}</button>`;
+    btn = `<button class="btn btn-primary btn-sm" onclick="lyShowView('setup')">${currentLang === 'ru' ? '+ Новая программа' : '+ New Program'}</button>`;
+  } else if (GEN_TYPE === 'wheel') {
+    btn = `<button class="btn btn-primary btn-sm" onclick="whShowView('setup')">${currentLang === 'ru' ? '+ Новое колесо' : '+ New Wheel'}</button>`;
   }
+  document.getElementById('tb-right').innerHTML = btn;
 }
 
 function genSwitchType(tp) {
@@ -3099,6 +3107,14 @@ showView(getViewParam() || _hashView || 'offer-gen');
 renderScenarios();
 renderCampaignViews();
 document.querySelector('.main').classList.add('ready');
+
+// Deep-link to a specific promo type via ?type= (e.g. dashboard "Колесо Фортуны" tile → ?type=wheel).
+// Deferred to DOMContentLoaded so the sibling fork scripts (generator-wheel.js etc., loaded after
+// this classic script) have defined tgInit/lyInit/whInit before genSwitchType calls them.
+const _typeParam = new URLSearchParams(window.location.search).get('type');
+if (['tournament', 'loyalty', 'wheel'].includes(_typeParam)) {
+  document.addEventListener('DOMContentLoaded', function() { genSwitchType(_typeParam); });
+}
 
 // nav-utils hydrates the localStorage caches from the server then fires this.
 window.addEventListener('retomat:synced', function() {
