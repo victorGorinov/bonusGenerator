@@ -23,24 +23,6 @@ function readFromParam() {
   } catch { return null; }
 }
 
-// Where the "×" should return to: the page the auth window was opened from.
-// The server sends `Referrer-Policy: no-referrer`, so document.referrer is
-// always empty — the origin is passed explicitly as a `?from=` query param by
-// the entry points (nav "Sign in", feature-gate, admin). Kept in sessionStorage
-// so navigating login↔register (which drops `from`) doesn't lose the origin.
-function resolveReturnUrl() {
-  try {
-    const from = new URLSearchParams(window.location.search).get('from');
-    if (isSafe(from)) {
-      sessionStorage.setItem('auth_return', from);
-      return from;
-    }
-    const stored = sessionStorage.getItem('auth_return');
-    if (isSafe(stored)) return stored;
-  } catch { /* sessionStorage/URLSearchParams unavailable — fall through */ }
-  return '/';
-}
-
 export function initAuthForm({ formId, endpoint, fields, i18n, errorMap, redirectTo }) {
   const lang = (localStorage.getItem('bonusLang') === 'ru') ? 'ru' : 'en';
   const dict = { ...I18N_BASE[lang], ...(i18n[lang] || {}) };
@@ -62,9 +44,12 @@ export function initAuthForm({ formId, endpoint, fields, i18n, errorMap, redirec
     });
   }
 
+  // The "×" always returns to the landing page — never to the origin page (admin,
+  // a tool, etc.), which a `?from=` or a stale sessionStorage value would otherwise
+  // point it at. Post-auth redirect (below) still honours `from`.
   const closeEl = document.getElementById('auth-close');
   if (closeEl) {
-    closeEl.setAttribute('href', resolveReturnUrl());
+    closeEl.setAttribute('href', '/');
     closeEl.setAttribute('title', t(closeEl.getAttribute('data-i18n-title') || 'close'));
   }
 

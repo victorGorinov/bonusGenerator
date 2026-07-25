@@ -142,7 +142,7 @@ const TG = {
     list_title:'Tournaments', list_lib_title:'Your Tournament Library',
     list_empty:'No tournaments saved yet',
     list_empty_sub:'Generate a tournament and click "Save" to build your library.',
-    list_create:'Create a Tournament →',
+    list_create:'+ New Tournament',
     list_saved: (n) => `${n} saved`,
     list_hdr_name:'Name', list_hdr_prize:'Prize pool', list_hdr_roi:'ROI', list_hdr_date:'Date',
     list_new:'+ New Tournament',
@@ -209,7 +209,7 @@ const TG = {
     list_title:'Турниры', list_lib_title:'Библиотека турниров',
     list_empty:'Турниров пока нет',
     list_empty_sub:'Создайте турнир и нажмите «Сохранить», чтобы наполнить библиотеку.',
-    list_create:'Создать турнир →',
+    list_create:'+ Новый турнир',
     list_saved: (n) => `${n} сохранено`,
     list_hdr_name:'Название', list_hdr_prize:'Призовой фонд', list_hdr_roi:'ROI', list_hdr_date:'Дата',
     list_new:'+ Новый турнир',
@@ -2468,7 +2468,10 @@ function resolveInitialTournamentView() {
   } else if (tgHasActiveGenerator && tgStep > 0) {
     tgRenderStep();
   } else {
-    tgLoadTournaments().length > 0 ? tgShowView('list') : tgRenderStep();
+    // Always land on the library/list view (its empty state shows a
+    // "+ New Tournament" CTA) — consistent with the Loyalty/Wheel tabs, instead
+    // of jumping an empty-library user straight into the generation wizard.
+    tgShowView('list');
   }
 }
 

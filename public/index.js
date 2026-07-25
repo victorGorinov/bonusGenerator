@@ -9,6 +9,8 @@ const LANG = {
     nav_how: 'How it works',
     nav_problem: 'Why Retomat',
     nav_cta: '🚀 Try Retomat Free →',
+    nav_login: 'Log In',
+    nav_register: 'Register',
 
     badge: 'The Retention OS for iGaming',
     hero_h1a: 'Stop launching bonus campaigns blind.',
@@ -117,6 +119,8 @@ const LANG = {
     nav_how: 'Как это работает',
     nav_problem: 'Почему Retomat',
     nav_cta: '🚀 Попробовать бесплатно →',
+    nav_login: 'Войти',
+    nav_register: 'Регистрация',
 
     badge: 'Retention OS для iGaming',
     hero_h1a: 'Хватит запускать бонусные кампании вслепую.',
