@@ -97,6 +97,13 @@ function openDatePickerPopup(dateStr) {
           <div style="font-size:.78rem;color:var(--muted)">Slots, live casino, prize drops, multi-round…</div>
         </div>
       </button>
+      <button class="rc-create-card" onclick="window._rcNewWheelOnDate('${dateStr}')">
+        <span style="font-size:1.5rem">🎡</span>
+        <div>
+          <div style="font-weight:700;margin-bottom:2px">Wheel of Fortune</div>
+          <div style="font-size:.78rem;color:var(--muted)">Gamified spins, prizes, region-tuned retention…</div>
+        </div>
+      </button>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline btn-sm" onclick="window._rcCloseModal()">${t.cancel}</button>
@@ -114,6 +121,14 @@ window._rcNewTournamentOnDate = (dateStr) => {
   closeModal();
   // Pre-fill startDate via query param so TG can read it on load
   window.location.href = `/tournament-generator.html?view=generator&rcDate=${dateStr}`;
+};
+
+window._rcNewWheelOnDate = (dateStr) => {
+  closeModal();
+  // Wheel lives in the Generator hub — open it on the wheel tab (?type=wheel).
+  // The wheel setup has no explicit date field (cadence-based), so rcDate is
+  // passed for parity/future use but not consumed by the wheel flow yet.
+  window.location.href = `/generator.html?type=wheel&rcDate=${dateStr}`;
 };
 
 // ── Stats bar ─────────────────────────────────────────────────────────────────

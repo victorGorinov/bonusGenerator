@@ -1,5 +1,5 @@
 /**
- * @typedef {'reload'|'cashback'|'freespins'|'tournament'|'vip'|'reactivation'|'sportsbook'|'custom'} CampaignType
+ * @typedef {'reload'|'cashback'|'freespins'|'tournament'|'wheel'|'vip'|'reactivation'|'sportsbook'|'custom'} CampaignType
  * @typedef {'draft'|'scheduled'|'active'|'completed'|'cancelled'} CampaignStatus
  *
  * @typedef {Object} Campaign
@@ -43,6 +43,7 @@ export const TYPE_COLORS = {
   reload:       '#06B6D4',
   cashback:     '#10B981',
   freespins:    '#F97316',
+  wheel:        '#EC4899',
   vip:          '#F59E0B',
   reactivation: '#7C3AED',
   sportsbook:   '#EA580C',
@@ -54,6 +55,7 @@ export const CAMPAIGN_TYPES = [
   { val: 'cashback',     lbl: 'Cashback' },
   { val: 'freespins',    lbl: 'Free Spins' },
   { val: 'tournament',   lbl: 'Tournament' },
+  { val: 'wheel',        lbl: 'Wheel of Fortune' },
   { val: 'vip',          lbl: 'VIP' },
   { val: 'reactivation', lbl: 'Reactivation' },
   { val: 'sportsbook',   lbl: 'Sportsbook' },
