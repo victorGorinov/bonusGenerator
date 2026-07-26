@@ -18,7 +18,9 @@ const LANG = {
     hero_sub: 'Pick a scenario and a GEO — AI selects the right bonus mechanic, writes the copy for 5 channels, checks compliance, and models the P10/P50/P90 cost. No spreadsheets, no guesswork.',
     hero_cta1: '🚀 Try Retomat Free →',
     hero_cta2: '▶ See how it works',
-    tr1: 'Ready in 2 min', tr2: 'Free beta access', tr3: 'Free during beta', tr4: '17 jurisdictions',
+    hero_timesave: '⏱ From ~3 hours to under 10 minutes per campaign',
+    hero_timesave_day: '≈ 2–3 hours back in your day',
+    tr1: 'Ready in 2 min', tr2: 'No credit card', tr3: 'Free during beta', tr4: '17 jurisdictions',
 
     sim_title: 'Campaign simulation',
     sim_new: 'New simulation',
@@ -95,6 +97,8 @@ const LANG = {
     fs4_p: 'Mechanic, 5-channel copy, and cost model — generated together, ready to hand to your CRM team.',
     fs5_h: 'Benchmark against rivals',
     fs5_p: 'See how your bonus, tournament or loyalty offer stacks up against competitors in your GEO — AI finds their terms and shows where you win or lose the player.',
+    fs6_h: 'Spot abuse before launch',
+    fs6_p: 'Every bonus, tournament and loyalty offer gets a bonus-abuse risk score — we flag EV-positive wagering, cheap wager-clearing, freeroll farming and missing KYC/max-win limits before hunters find them.',
 
     cta_h2: 'Ready to plan your next campaign?',
     cta_p: 'Free during beta. No credit card — just create an account, pick a scenario, and see the numbers.',
@@ -128,7 +132,9 @@ const LANG = {
     hero_sub: 'Выберите сценарий и GEO — AI подберёт механику бонуса, напишет тексты для 5 каналов, проверит комплаенс и рассчитает стоимость P10/P50/P90. Без таблиц и догадок.',
     hero_cta1: '🚀 Попробовать бесплатно →',
     hero_cta2: '▶ Посмотреть, как это работает',
-    tr1: 'Готово за 2 минуты', tr2: 'Бесплатный доступ в бете', tr3: 'Бесплатно в бете', tr4: '17 юрисдикций',
+    hero_timesave: '⏱ С ~3 часов до менее 10 минут на кампанию',
+    hero_timesave_day: '≈ 2–3 часа в день обратно в ваш график',
+    tr1: 'Готово за 2 минуты', tr2: 'Без карты', tr3: 'Бесплатно в бете', tr4: '17 юрисдикций',
 
     sim_title: 'Симуляция кампании',
     sim_new: 'Новая симуляция',
@@ -205,6 +211,8 @@ const LANG = {
     fs4_p: 'Механика, тексты для 5 каналов и модель стоимости — генерируются вместе, готовы для CRM-команды.',
     fs5_h: 'Сравнение с конкурентами',
     fs5_p: 'Узнайте, как ваш бонус, турнир или программа лояльности выглядят на фоне конкурентов в вашем гео — AI находит их условия и показывает, где вы выигрываете или проигрываете игрока.',
+    fs6_h: 'Замечайте абьюз до запуска',
+    fs6_p: 'Каждый бонус, турнир и программа лояльности получают оценку риска бонус-абьюза — подсвечиваем EV-положительный вейджер, дешёвый отыгрыш, фарм фрироллов и отсутствие KYC/лимитов выигрыша до того, как их найдут хантеры.',
 
     cta_h2: 'Готовы спланировать следующую кампанию?',
     cta_p: 'Бесплатно в период беты. Без карты — просто создайте аккаунт, выберите сценарий и посмотрите цифры.',
