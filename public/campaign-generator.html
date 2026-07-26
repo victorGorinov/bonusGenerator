@@ -642,6 +642,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
           <div class="res-card" id="econCard" style="margin-top:14px">
             <div class="rc-title" data-i18n="rc_econ">Экономика</div>
           </div>
+          <div class="res-card" id="abuseCard" style="margin-top:14px;display:none"></div>
           <div class="wiz-foot">
             <div class="wiz-foot-l"><button class="btn btn-outline" onclick="goStep(2)" data-i18n="btn_back">← Назад</button><span class="step-ctr" data-step="3">Шаг 3 из 5</span></div>
             <div class="wiz-foot-r">
@@ -859,6 +860,8 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 <script src="/repo-http.js"></script>
 <script src="/geo-data.js"></script>
 <script src="/offer-desc.js"></script>
+<script type="module" src="/risk-vector.js"></script>
+<script type="module" src="/bonus-abuse.js"></script>
 <script src="/campaign-generator.js"></script>
 <script>
 document.addEventListener('click', function(e) {
