@@ -237,6 +237,62 @@ const CFG_I18N = {
     games_popular:'🔥 Popular', games_live:'🃏 Live Casino', games_fast:'🚀 Crash / Fast',
     games_volatility:'💥 High Volatility', games_mobile:'📱 Mobile-friendly',
     games_empty:'No games match this filter — try fewer providers.',
+    // Abuse / anti-fraud risk
+    tab_abuse:'🛡️ Abuse risk',
+    abuse_need_gen:'Generate a config first to assess bonus-abuse exposure.',
+    abuse_no_risk:'No structural abuse vectors detected on this configuration.',
+    abuse_score:'Abuse-risk score',
+    abuse_level_low:'Low', abuse_level_elevated:'Elevated', abuse_level_high:'High', abuse_level_critical:'Critical',
+    abuse_sev_info:'Note', abuse_sev_warn:'Warn', abuse_sev_high:'High', abuse_sev_critical:'Critical',
+    abuse_current:'Current', abuse_threshold:'Threshold',
+    abuse_disclaimer:'Deterministic structural check on the configuration — not a live transaction/behavioural fraud monitor. Enforce KYC, max-bet and max-win limits in your platform.',
+    // Vector titles — bonus
+    abuse_v_ev_positive:'EV-positive bonus (wager below breakeven)',
+    abuse_v_ev_thin_margin:'Thin edge — wager barely above breakeven',
+    abuse_v_low_contrib_clearing:'Low-variance games clear the wager cheaply',
+    abuse_v_over_generous:'Over-generous match on an easy wager',
+    abuse_v_cheap_farm_mind:'Bonus large vs. the min deposit that unlocks it',
+    abuse_v_no_maxwin:'No max-win (max cashout) cap modeled',
+    abuse_v_ndb_unbounded:'No-deposit bonus max win unbounded',
+    abuse_v_ndb_no_kyc:'No-deposit bonus without a KYC/verification gate',
+    abuse_v_cashback_hedge:'Cashback without velocity limits (hedge abuse)',
+    abuse_v_no_maxbet:'No max-bet-during-wagering cap modeled',
+    // Vector titles — loyalty
+    abuse_v_ev_positive_loop:'EV-positive points loop (rebate ≥ house edge)',
+    abuse_v_deposit_rebate_high:'High direct deposit rebate',
+    abuse_v_redeem_no_wager:'Redemption reachable in one deposit cycle',
+    abuse_v_tier_gaming:'Top-tier cashback high enough to hedge/farm',
+    abuse_v_mission_exploit:'Repeatable cash-bonus missions',
+    abuse_v_points_no_expiry:'Points never expire (liability build-up)',
+    // Vector titles — tournament
+    abuse_v_ev_positive_freeroll:'EV-positive freeroll (guaranteed pool, free entry)',
+    abuse_v_multiaccount_magnet:'Open freeroll — multi-accounting magnet',
+    abuse_v_turnover_grind:'Turnover/spin-count scoring is grindable',
+    abuse_v_variance_abuse:'Max-multiplier scoring + repeatable entry',
+    abuse_v_reentry_unbounded:'Unbounded re-entry on a paid tournament',
+    // Mitigations — bonus
+    abuse_mit_ev:'Raise the wager above breakeven, or cap max win — the bonus is currently EV-positive for the player.',
+    abuse_mit_contrib:'Set low-variance/table/live games to 0% wager contribution; keep clearing on slots only.',
+    abuse_mit_generous:'Lower the match % or raise the wager — a high match on an easy wager is a hunter magnet.',
+    abuse_mit_mind:'Raise the minimum deposit relative to the bonus so it cannot be farmed cheaply at scale.',
+    abuse_mit_maxwin:'Add a max-win / max-cashout cap (e.g. 5–10× bonus) to bound exposure.',
+    abuse_mit_ndb:'Cap the no-deposit bonus max win (≤10× stake) — free-money winnings must be bounded.',
+    abuse_mit_ndb_kyc:'Require registration/phone verification (KYC) before a no-deposit bonus — it is the top multi-accounting vector.',
+    abuse_mit_cashback:'Add per-period velocity limits and exclude hedged/low-risk bets from cashback.',
+    abuse_mit_maxbet:'Enforce a max bet during wagering (e.g. €5) to block variance abuse.',
+    // Mitigations — loyalty
+    abuse_mit_loy_ev:'Lower earn-on-wager or raise redeem rate — the loyalty rebate alone exceeds the house edge.',
+    abuse_mit_loy_deposit:'Reduce points-on-deposit or gate redemption behind wagering — deposit rebate is directly cashable.',
+    abuse_mit_loy_redeem:'Raise the minimum redemption threshold or require wagering — redemption is reachable in a single deposit.',
+    abuse_mit_loy_tier:'Cap top-tier cashback and exclude hedged bets — high cashback enables two-account hedging.',
+    abuse_mit_loy_mission:'Make cash-reward missions one-time or add wagering — repeatable cash is low-risk to extract.',
+    abuse_mit_loy_expiry:'Set a points expiry window to limit liability build-up and hoard-then-dump.',
+    // Mitigations — tournament
+    abuse_mit_trn_freeroll:'Small free-entry fields concentrate the guaranteed pool — gate the audience or add a token entry.',
+    abuse_mit_trn_multiacct:'Restrict the segment (verified/depositors) and add device/IP dedup for open freerolls.',
+    abuse_mit_trn_grind:'Score on net position / GGR rather than spin count or gross wins to defeat min-bet grinding.',
+    abuse_mit_trn_variance:'Cap re-entries and/or add a max bet — repeatable max-multiplier play is arbitrageable.',
+    abuse_mit_trn_reentry:'Cap re-entries on paid tournaments to prevent deep-pocket dominance and bonus-funded entries.',
     // Competitor analysis
     tab_competitors:'⚔️ Competitors',
     comp_own_label:'Your offer', comp_competitors_label:'Competitors (up to 3)',
@@ -364,6 +420,62 @@ const CFG_I18N = {
     games_popular:'🔥 Популярные', games_live:'🃏 Лайв-казино', games_fast:'🚀 Crash / Быстрые',
     games_volatility:'💥 Высокая волатильность', games_mobile:'📱 Мобильные',
     games_empty:'Нет игр под этот фильтр — попробуйте выбрать меньше провайдеров.',
+    // Риск абьюза / антифрод
+    tab_abuse:'🛡️ Риск абьюза',
+    abuse_need_gen:'Сначала сгенерируйте конфиг, чтобы оценить уязвимость к бонус-абьюзу.',
+    abuse_no_risk:'Структурных векторов абьюза на этой конфигурации не обнаружено.',
+    abuse_score:'Оценка риска абьюза',
+    abuse_level_low:'Низкий', abuse_level_elevated:'Повышенный', abuse_level_high:'Высокий', abuse_level_critical:'Критический',
+    abuse_sev_info:'Заметка', abuse_sev_warn:'Внимание', abuse_sev_high:'Высокий', abuse_sev_critical:'Критично',
+    abuse_current:'Текущее', abuse_threshold:'Порог',
+    abuse_disclaimer:'Детерминированная структурная проверка конфигурации — не онлайн-мониторинг транзакций/поведенческого фрода. KYC, лимиты макс-ставки и макс-выигрыша обеспечивайте на своей платформе.',
+    // Названия векторов — бонус
+    abuse_v_ev_positive:'EV-положительный бонус (вейджер ниже breakeven)',
+    abuse_v_ev_thin_margin:'Тонкая маржа — вейджер едва выше breakeven',
+    abuse_v_low_contrib_clearing:'Низковолатильные игры дёшево отыгрывают вейджер',
+    abuse_v_over_generous:'Слишком щедрый матч при лёгком вейджере',
+    abuse_v_cheap_farm_mind:'Бонус велик относительно мин. депозита для его получения',
+    abuse_v_no_maxwin:'Нет капа макс-выигрыша (max cashout)',
+    abuse_v_ndb_unbounded:'Макс-выигрыш бездепа не ограничен',
+    abuse_v_ndb_no_kyc:'Бездеп без KYC/верификации',
+    abuse_v_cashback_hedge:'Кэшбэк без velocity-лимитов (хедж-абьюз)',
+    abuse_v_no_maxbet:'Нет капа макс-ставки во время отыгрыша',
+    // Названия векторов — лояльность
+    abuse_v_ev_positive_loop:'EV-положительный луп очков (ребейт ≥ эджа)',
+    abuse_v_deposit_rebate_high:'Высокий прямой ребейт на депозит',
+    abuse_v_redeem_no_wager:'Вывод очков достижим за один депозит-цикл',
+    abuse_v_tier_gaming:'Кэшбэк топ-тира высок для хеджа/фарма',
+    abuse_v_mission_exploit:'Повторяемые миссии с кэш-наградой',
+    abuse_v_points_no_expiry:'Очки не сгорают (накопление обязательств)',
+    // Названия векторов — турнир
+    abuse_v_ev_positive_freeroll:'EV-положительный фриролл (гарант-пул, бесплатный вход)',
+    abuse_v_multiaccount_magnet:'Открытый фриролл — магнит для мультиаккаунтов',
+    abuse_v_turnover_grind:'Скоринг по обороту/спинам легко накрутить',
+    abuse_v_variance_abuse:'Скоринг по макс-множителю + повторный вход',
+    abuse_v_reentry_unbounded:'Неограниченный ре-энтри на платном турнире',
+    // Митигации — бонус
+    abuse_mit_ev:'Поднимите вейджер выше breakeven или ограничьте макс-выигрыш — сейчас бонус EV-положителен для игрока.',
+    abuse_mit_contrib:'Задайте низковолатильным/table/live играм 0% вклада в отыгрыш; отыгрыш — только на слотах.',
+    abuse_mit_generous:'Снизьте матч % или поднимите вейджер — высокий матч при лёгком вейджере притягивает хантеров.',
+    abuse_mit_mind:'Поднимите мин. депозит относительно бонуса, чтобы его нельзя было дёшево фармить в масштабе.',
+    abuse_mit_maxwin:'Добавьте кап макс-выигрыша / max cashout (напр. 5–10× бонуса), чтобы ограничить экспозицию.',
+    abuse_mit_ndb:'Ограничьте макс-выигрыш бездепа (≤10× ставки) — выигрыш с «бесплатных денег» должен быть ограничен.',
+    abuse_mit_ndb_kyc:'Требуйте регистрацию/верификацию телефона (KYC) до бездепа — это главный вектор мультиаккаунтинга.',
+    abuse_mit_cashback:'Добавьте velocity-лимиты по периодам и исключите хеджевые/низкориск ставки из кэшбэка.',
+    abuse_mit_maxbet:'Введите макс-ставку во время отыгрыша (напр. €5), чтобы блокировать variance-абьюз.',
+    // Митигации — лояльность
+    abuse_mit_loy_ev:'Снизьте начисление за оборот или поднимите redeem rate — ребейт лояльности превышает эдж казино.',
+    abuse_mit_loy_deposit:'Уменьшите очки за депозит или закройте вывод вейджером — ребейт на депозит выводится напрямую.',
+    abuse_mit_loy_redeem:'Поднимите мин. порог вывода или требуйте отыгрыш — вывод достижим за один депозит.',
+    abuse_mit_loy_tier:'Ограничьте кэшбэк топ-тира и исключите хеджевые ставки — высокий кэшбэк даёт хедж двумя аккаунтами.',
+    abuse_mit_loy_mission:'Сделайте кэш-миссии одноразовыми или добавьте вейджер — повторяемый кэш легко извлекать.',
+    abuse_mit_loy_expiry:'Задайте срок сгорания очков, чтобы ограничить накопление обязательств и «накопил-и-вывел».',
+    // Митигации — турнир
+    abuse_mit_trn_freeroll:'Малое поле при бесплатном входе концентрирует гарант-пул — ограничьте аудиторию или добавьте символический вход.',
+    abuse_mit_trn_multiacct:'Ограничьте сегмент (верифиц./депозиторы) и добавьте дедуп по устройству/IP для открытых фрироллов.',
+    abuse_mit_trn_grind:'Скорьте по нетто-позиции / GGR, а не по числу спинов или сумме выигрышей — против накрутки мин-ставками.',
+    abuse_mit_trn_variance:'Ограничьте ре-энтри и/или добавьте макс-ставку — повторяемая игра на макс-множитель арбитражится.',
+    abuse_mit_trn_reentry:'Ограничьте ре-энтри на платных турнирах против доминирования «глубоких карманов» и входов на бонусные деньги.',
     // Анализ конкурентов
     tab_competitors:'⚔️ Конкуренты',
     comp_own_label:'Ваше предложение', comp_competitors_label:'Конкуренты (до 3)',
@@ -1303,7 +1415,7 @@ function renderBonusResults(B) {
 
   const tabs = `
     <div class="tab-row">
-      ${['econ','audit','optimize','games','competitors'].map(tab => `
+      ${['econ','audit','optimize','abuse','games','competitors'].map(tab => `
         <button class="tab${ai.tab===tab?' active':''}" onclick="bonusSetTab('${tab}')">${cfgT('tab_'+tab)}</button>
       `).join('')}
     </div>
@@ -1771,6 +1883,7 @@ function renderBonusAiContent(B) {
       <button class="btn btn-primary" onclick="runBonusOptimize()">${cfgT('run_optimize')}</button>
     </div>`;
   }
+  if (ai.tab === 'abuse') return renderAbuseTabContent('bonus');
   if (ai.tab === 'games') return renderGamesTabContent('bonus');
   if (ai.tab === 'competitors') return renderCompetitorTabContent('bonus');
   return '';
@@ -1919,6 +2032,72 @@ function renderGamesResult(data) {
     ${renderGameSection(cfgT('games_volatility'), s.highVolatility)}
     ${renderGameSection(cfgT('games_mobile'), s.mobileFriendly)}
   `;
+}
+
+// ── Abuse / anti-fraud risk tab (deterministic, no API) ─────────────────────
+// Reads the current CS state per promo type and runs the matching client-mirror
+// engine (window.Retomat{Bonus,Loyalty,Tournament}Abuse). Same shared RiskVector shape.
+function abuseAssess(type) {
+  if (type === 'bonus') {
+    const B = CS.bonus, cfg = B.config;
+    if (!cfg || !window.RetomatBonusAbuse) return null;
+    const activeTypes = Object.keys(B.active || {}).filter(k => B.active[k]);
+    return window.RetomatBonusAbuse.assessBonusAbuse(
+      { r: cfg.r, econ: cfg.econ, welcome: cfg.welcome, ndb: cfg.ndb, cashback: cfg.cashback, contrib: cfg.contrib },
+      { activeTypes },
+    );
+  }
+  if (type === 'tournament') {
+    const d = CS.tournament.result;
+    if (!d || !window.RetomatTournamentAbuse) return null;
+    return window.RetomatTournamentAbuse.assessTournamentAbuse(d.params || {}, d.econ || {});
+  }
+  if (type === 'loyalty') {
+    const d = CS.loyalty.result;
+    if (!d || !d.config || !window.RetomatLoyaltyAbuse) return null;
+    const c = d.config;
+    return window.RetomatLoyaltyAbuse.assessLoyaltyAbuse({
+      earnRedeem: c.earnRedeem, tiers: c.tiers, missions: c.missions, hasMissions: c.hasMissions, avgdep: c.avgdep,
+    });
+  }
+  return null;
+}
+
+const ABUSE_LEVEL_COLOR = { low:'#16a34a', elevated:'#d97706', high:'#ea580c', critical:'#dc2626' };
+const ABUSE_SEV_COLOR   = { info:'#64748b', warn:'#d97706', high:'#ea580c', critical:'#dc2626' };
+
+function renderAbuseVectorRow(v) {
+  const color = ABUSE_SEV_COLOR[v.severity] || '#64748b';
+  const title = cfgT('abuse_v_' + v.key);
+  const detail = (v.current != null && v.threshold != null)
+    ? `<span style="font:600 11px/1 ui-monospace,monospace;color:var(--muted)">${cfgT('abuse_current')} ${v.current} · ${cfgT('abuse_threshold')} ${v.threshold}</span>` : '';
+  return `<div style="display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--border)">
+    <span style="flex:0 0 auto;align-self:flex-start;font:700 10px/1 system-ui;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:${color};padding:4px 7px;border-radius:5px">${cfgT('abuse_sev_'+v.severity)}</span>
+    <div style="flex:1 1 auto;min-width:0">
+      <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline">
+        <span style="font-weight:600;color:var(--text)">${title}</span>${detail}
+      </div>
+      <div style="color:var(--muted);font-size:12.5px;margin-top:3px">${cfgT(v.mitigationKey)}</div>
+    </div>
+  </div>`;
+}
+
+function renderAbuseTabContent(type) {
+  const a = abuseAssess(type);
+  if (!a) return `<div class="ph" style="min-height:120px">${cfgT('abuse_need_gen')}</div>`;
+  const lc = ABUSE_LEVEL_COLOR[a.level] || '#64748b';
+  const header = `<div style="display:flex;align-items:center;gap:14px;margin-bottom:6px">
+    <div style="flex:0 0 auto;width:66px;height:66px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:800 22px/1 system-ui;color:#fff;background:${lc}">${a.score}</div>
+    <div>
+      <div style="font-size:12px;color:var(--muted)">${cfgT('abuse_score')}</div>
+      <div style="font-weight:700;font-size:16px;color:${lc}">${cfgT('abuse_level_'+a.level)}</div>
+    </div>
+  </div>`;
+  const body = a.vectors.length
+    ? a.vectors.map(renderAbuseVectorRow).join('')
+    : `<div style="padding:14px 0;color:#16a34a;font-weight:600">✓ ${cfgT('abuse_no_risk')}</div>`;
+  return `${header}<div style="margin-top:8px">${body}</div>
+    <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border);color:var(--muted);font-size:11.5px;line-height:1.5">${cfgT('abuse_disclaimer')}</div>`;
 }
 
 function renderGamesTabContent(type) {
@@ -2461,7 +2640,7 @@ function renderTournamentResults(T) {
 
   const tabs = `
     <div class="tab-row">
-      ${['econ','audit','optimize','games','competitors'].map(tab=>`
+      ${['econ','audit','optimize','abuse','games','competitors'].map(tab=>`
         <button class="tab${ai.tab===tab?' active':''}" onclick="tournSetTab('${tab}')">${cfgT('tab_'+tab)}</button>
       `).join('')}
     </div>
@@ -2585,6 +2764,7 @@ function renderTournAiContent(T) {
       <button class="btn btn-primary" onclick="runTournOptimize()">${cfgT('run_optimize')}</button>
     </div>`;
   }
+  if (ai.tab === 'abuse') return renderAbuseTabContent('tournament');
   if (ai.tab === 'games') return renderGamesTabContent('tournament');
   if (ai.tab === 'competitors') return renderCompetitorTabContent('tournament');
   return '';
@@ -2897,7 +3077,7 @@ function renderLoyaltyResults(LY) {
   const hasMissions = LY.mode !== 'tiers';
   const tabs = `
     <div class="tab-row">
-      ${['econ','audit','optimize', ...(hasMissions?['missions']:[]), 'games','competitors'].map(tab=>`
+      ${['econ','audit','optimize', ...(hasMissions?['missions']:[]), 'abuse','games','competitors'].map(tab=>`
         <button class="tab${ai.tab===tab?' active':''}" onclick="loyalSetTab('${tab}')">${cfgT('tab_'+tab)}</button>
       `).join('')}
     </div>
@@ -3076,6 +3256,7 @@ function renderLoyaltyAiContent(LY) {
       <button class="btn btn-primary" onclick="runLoyaltyMissions()">${cfgT('run_missions')}</button>
     </div>`;
   }
+  if (ai.tab === 'abuse') return renderAbuseTabContent('loyalty');
   if (ai.tab === 'games') return renderGamesTabContent('loyalty');
   if (ai.tab === 'competitors') return renderCompetitorTabContent('loyalty');
   return '';
