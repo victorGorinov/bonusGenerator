@@ -795,6 +795,62 @@ function renderMechanicResults(data) {
       `<div class="rc-title">${t('rc_econ')}</div>
        <div style="color:#EF4444;font-size:.82rem;padding:8px 0">⚠️ Econ render error: ${ex?.message || ex}</div>`;
   }
+
+  // Abuse / anti-fraud risk badge (compact, deterministic)
+  renderAbuseBadge(data);
+}
+
+// Self-contained bilingual strings for the compact abuse badge (kept out of the main t() dict).
+const _ABUSE_GEN_I18N = {
+  en: {
+    title:'🛡️ Abuse-risk exposure', score:'Risk score', more:'more', details:'Open the Configurator for the full breakdown & mitigations.',
+    no_risk:'No structural abuse vectors detected.',
+    lvl_low:'Low', lvl_elevated:'Elevated', lvl_high:'High', lvl_critical:'Critical',
+    ev_positive:'EV-positive bonus (wager below breakeven)', ev_thin_margin:'Thin edge — wager barely above breakeven',
+    low_contrib_clearing:'Low-variance games clear the wager cheaply', over_generous:'Over-generous match on an easy wager',
+    cheap_farm_mind:'Bonus large vs. the min deposit', no_maxwin:'No max-win cap modeled',
+    ndb_unbounded:'No-deposit bonus max win unbounded', ndb_no_kyc:'No-deposit bonus without a KYC gate',
+    cashback_hedge:'Cashback without velocity limits', no_maxbet:'No max-bet-during-wagering cap modeled',
+  },
+  ru: {
+    title:'🛡️ Уязвимость к абьюзу', score:'Оценка риска', more:'ещё', details:'Полный разбор и митигации — в Конфигураторе.',
+    no_risk:'Структурных векторов абьюза не обнаружено.',
+    lvl_low:'Низкий', lvl_elevated:'Повышенный', lvl_high:'Высокий', lvl_critical:'Критический',
+    ev_positive:'EV-положительный бонус (вейджер ниже breakeven)', ev_thin_margin:'Тонкая маржа — вейджер едва выше breakeven',
+    low_contrib_clearing:'Низковолатильные игры дёшево отыгрывают вейджер', over_generous:'Слишком щедрый матч при лёгком вейджере',
+    cheap_farm_mind:'Бонус велик относительно мин. депозита', no_maxwin:'Нет капа макс-выигрыша',
+    ndb_unbounded:'Макс-выигрыш бездепа не ограничен', ndb_no_kyc:'Бездеп без KYC',
+    cashback_hedge:'Кэшбэк без velocity-лимитов', no_maxbet:'Нет капа макс-ставки при отыгрыше',
+  },
+};
+
+function renderAbuseBadge(data) {
+  const card = document.getElementById('abuseCard');
+  if (!card) return;
+  if (!window.RetomatBonusAbuse || !data || !data.econ) { card.style.display = 'none'; return; }
+  const sm = data.selectedMechanics || {};
+  const a = window.RetomatBonusAbuse.assessBonusAbuse(
+    { r: data.r, econ: data.econ, welcome: sm.welcome, ndb: sm.ndb, cashback: sm.cashback, contrib: data.contrib },
+    { activeTypes: data.requestedTypes || [data.mechanicType] },
+  );
+  const L = _ABUSE_GEN_I18N[currentLang === 'ru' ? 'ru' : 'en'];
+  const levelColor = { low:'#16a34a', elevated:'#d97706', high:'#ea580c', critical:'#dc2626' }[a.level] || '#64748b';
+  // Show only the actionable (non-info) vectors in the compact badge; info notes live in the Configurator.
+  const shown = a.vectors.filter(v => v.severity !== 'info').slice(0, 2);
+  const extra = a.vectors.filter(v => v.severity !== 'info').length - shown.length;
+  const rows = shown.length
+    ? shown.map(v => `<div class="mech-row"><span class="mr-l" style="white-space:normal">${L[v.key] || v.key}</span></div>`).join('')
+      + (extra > 0 ? `<div class="mech-row" style="border-bottom:none"><span class="mr-l" style="color:var(--muted)">+${extra} ${L.more}</span></div>` : '')
+    : `<div class="mech-row" style="border-bottom:none"><span class="mr-l" style="color:#16a34a">✓ ${L.no_risk}</span></div>`;
+  card.style.display = '';
+  card.innerHTML = `<div class="rc-title">${L.title}</div>
+    <div style="display:flex;align-items:center;gap:12px;margin:6px 0 4px">
+      <div style="flex:0 0 auto;width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:800 18px/1 system-ui;color:#fff;background:${levelColor}">${a.score}</div>
+      <div><div style="font-size:.72rem;color:var(--muted)">${L.score}</div>
+      <div style="font-weight:700;color:${levelColor}">${L['lvl_'+a.level]}</div></div>
+    </div>
+    ${rows}
+    <div style="color:var(--muted);font-size:.72rem;margin-top:8px">${L.details}</div>`;
 }
 
 function localizedAlts(data) {
