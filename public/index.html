@@ -124,8 +124,11 @@
   .hero h1 { margin-bottom: 22px; }
   .hero-sub { font-size: 1.05rem; color: var(--muted); max-width: 500px; margin-bottom: 34px; }
   .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 36px; }
-  .trust-strip { display: flex; gap: 20px; flex-wrap: wrap; }
-  .trust-item { display: flex; align-items: center; gap: 7px; font-size: .82rem; color: var(--muted); font-weight: 500; }
+  .hero-timesave { margin-top: 20px; font-size: .95rem; font-weight: 700; color: #6d28d9; letter-spacing: -.01em; }
+  .hero-timesave-sub { margin-top: 4px; font-size: .82rem; font-weight: 500; color: var(--muted); }
+  .trust-strip { display: flex; gap: 18px; flex-wrap: nowrap; margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--border); }
+  .trust-item { display: flex; align-items: center; gap: 7px; font-size: .82rem; color: var(--muted); font-weight: 500; white-space: nowrap; }
+  @media (max-width: 680px) { .trust-strip { flex-wrap: wrap; } }
 
   /* ── HERO VISUAL: campaign simulation card ── */
   .hero-visual { flex: 0 0 480px; max-width: 480px; }
@@ -244,7 +247,7 @@
   @media (max-width: 680px) { .steps { flex-direction: column; gap: 28px; } .steps::before { display: none; } }
 
   /* ── FEATURE STRIP ── */
-  .feat-strip-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 28px; margin-top: 44px; }
+  .feat-strip-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; margin-top: 44px; }
   .feat-strip-item { display: flex; flex-direction: column; gap: 10px; }
   .feat-strip-icon {
     width: 44px; height: 44px; border-radius: 12px; background: var(--accent-soft);
@@ -304,6 +307,11 @@
     .final-cta { padding: 40px 24px; }
     .sticky-cta { display: block; }
     .section { padding: 64px 0; }
+    /* Register lives in the sticky bottom CTA on mobile — drop it from the nav so
+       lang toggle + Log In fit without the Register button overflowing the viewport. */
+    .nav-right { gap: 10px; }
+    .nav-right .btn-primary { display: none; }
+    .nav-right .btn { padding: 8px 14px; font-size: .82rem; }
   }
 
   /* Reveal animation — gated behind a JS-added class so content is never
@@ -375,9 +383,11 @@
           <a href="register.html" class="btn btn-primary btn-lg" data-i18n="hero_cta1">🚀 Try Retomat Free →</a>
           <a href="#how" class="btn btn-outline btn-lg" data-i18n="hero_cta2">▶ See how it works</a>
         </div>
+        <div class="hero-timesave" data-i18n="hero_timesave">⏱ From ~3 hours to under 10 minutes per campaign</div>
+        <div class="hero-timesave-sub" data-i18n="hero_timesave_day">≈ 2–3 hours back in your day</div>
         <div class="trust-strip">
           <div class="trust-item">⚡ <span data-i18n="tr1">Ready in 2 min</span></div>
-          <div class="trust-item">🔒 <span data-i18n="tr2">No signup required</span></div>
+          <div class="trust-item">🔒 <span data-i18n="tr2">No credit card</span></div>
           <div class="trust-item">✅ <span data-i18n="tr3">Free during beta</span></div>
           <div class="trust-item">🌍 <span data-i18n="tr4">17 jurisdictions</span></div>
         </div>
@@ -655,6 +665,11 @@
         <div class="feat-strip-icon">🔍</div>
         <h3 data-i18n="fs5_h">Benchmark against rivals</h3>
         <p data-i18n="fs5_p">See how your bonus, tournament or loyalty offer stacks up against competitors in your GEO — AI finds their terms and shows where you win or lose the player.</p>
+      </div>
+      <div class="feat-strip-item reveal">
+        <div class="feat-strip-icon">🛡️</div>
+        <h3 data-i18n="fs6_h">Spot abuse before launch</h3>
+        <p data-i18n="fs6_p">Every bonus, tournament and loyalty offer gets a bonus-abuse risk score — we flag EV-positive wagering, cheap wager-clearing, freeroll farming and missing KYC/max-win limits before hunters find them.</p>
       </div>
     </div>
   </div>
