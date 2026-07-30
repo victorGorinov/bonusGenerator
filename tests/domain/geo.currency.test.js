@@ -32,6 +32,51 @@ describe('geo-data — list integrity', () => {
     expect(de.cur).toBe('EUR');
     expect(de.local).toBe('EUR');
   });
+  it('has all 3 MENA countries + the UAE in the GCC', () => {
+    const mena = GeoData.all.filter(g => g.region === 'mena').map(g => g.val).sort();
+    expect(mena).toEqual(['iq', 'ly', 'sy']);
+    expect(GeoData.all.filter(g => g.region === 'gcc').map(g => g.val)).toEqual(['ae']);
+  });
+  it('MENA/GCC use the LatAm model: USD backend, local display currency', () => {
+    for (const [val, local] of [['iq', 'IQD'], ['ly', 'LYD'], ['sy', 'SYP'], ['ae', 'AED']]) {
+      const g = GeoData.of(val);
+      expect(g.cur, val).toBe('USD');
+      expect(g.local, val).toBe(local);
+      // No local licensing path exists in any of these markets.
+      expect(g.lic, val).toBe('none');
+      // A display rate must exist, else curFactor silently collapses to 1.
+      expect(g.localRate, val).toBeGreaterThan(0);
+    }
+  });
+  it('every geo resolves a rate for both its backend and display currency', () => {
+    for (const g of GeoData.all) {
+      expect(GeoData.rates[g.cur], `${g.val}/${g.cur}`).toBeGreaterThan(0);
+      expect(GeoData.rates[g.local], `${g.val}/${g.local}`).toBeGreaterThan(0);
+    }
+  });
+  it('every region in the list has a label in both locales', () => {
+    for (const g of GeoData.all) {
+      expect(GeoData.regionLabels[g.region], g.region).toBeTruthy();
+      expect(GeoData.regionLabels[g.region].en, g.region).toBeTruthy();
+      expect(GeoData.regionLabels[g.region].ru, g.region).toBeTruthy();
+    }
+  });
+});
+
+describe('geo-data — MENA/GCC currency factor', () => {
+  it('AED is pegged: USD → AED ×3.6725', () => {
+    const ae = GeoData.of('ae');
+    expect(GeoData.curFactor(ae, 'local')).toBeCloseTo(3.6725);
+    expect(GeoData.dispCur(ae, 'local')).toBe('AED');
+    expect(GeoData.curFactor(ae, 'usd')).toBe(1);
+  });
+  it('SYP high-denomination display does not distort the USD backend value', () => {
+    const sy = GeoData.of('sy');
+    expect(GeoData.curFactor(sy, 'local')).toBeCloseTo(13000);
+    // Round-trip: a value typed in the display currency converts back to the USD base.
+    expect(GeoData.avgdepToBase(GeoData.avgdepToDisp(sy, 'local'), sy, 'local'))
+      .toBeCloseTo(sy.avgdep);
+  });
 });
 
 describe('geo-data — currency factor', () => {

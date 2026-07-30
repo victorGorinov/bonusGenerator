@@ -402,7 +402,9 @@ Single-step fields (`costRatio`, `sP50`, etc.) are preserved for backward compat
 | `crypto` | `crypto.ts` | Global crypto |
 | `sweep` | `sweep.ts` | US sweepstakes |
 | `mn` | `mn.ts` | Mongolia |
-| `latam` | `latam.ts` | MX, BR |
+| `latam` | `latam.ts` | MX, BR, CO, AR, PE, CL |
+| `mena` | `mena.ts` | IQ, LY, SY |
+| `gcc` | `gcc.ts` | AE |
 
 Country → geo/license (`GEO_CFG` in `src/domain/campaign/scenarios.ts`):
 ```
@@ -412,9 +414,16 @@ us → sweep, none, USD
 LatAm (all sitecur=USD in backend — see currency-layer note below):
   br → latam, bets_br    mx → latam, segob    co → latam, coljuegos
   pe → latam, mincetur   ar → latam, none     cl → latam, none
+MENA / GCC (all sitecur=USD in backend — same display-layer model as LatAm):
+  iq → mena, none        ly → mena, none      sy → mena, none
+  ae → gcc, none
 ```
 
 **LatAm split (2026-07-19)** — LatAm broken into 6 countries mirroring EU's per-country model. `latam.ts` now has a `licenses:{}` block (like EU's `ukgc`/`dga`): regulated markets carry their own license (`bets_br` Brazil/SPA, `segob` Mexico, `coljuegos` Colombia, `mincetur` Peru — each with `reg` strings + welcome/wager overrides, **all amounts in USD**); Argentina (provincial) and Chile (grey market) use the offshore Curaçao default (`none`). New license keys added to the `lic` enums in `generate`/`campaign`/`tournament` schemas + `reg_*` i18n in `app.js` (4 langs). Backend computes **all LatAm in USD** — a single shared `LATAM` geo object can't hold 6 currency scales (BRL ×5.5 … COP ×4100), so local currency is a **display layer**, never a backend re-scale.
+
+**MENA / GCC split (2026-07-30)** — four Middle East / North Africa markets added as **two** regions, not one. Gambling is prohibited and unlicensed in all four, so every country resolves to `lic:'none'` (offshore Curaçao/Anjouan) and **no new `lic` enum keys were needed**; the prohibition warning is surfaced instead through `regulatoryNote(license, mechanic, region?)`, whose new optional 3rd argument is consulted only when the license carries no note of its own → `reg_warn_mena` / `reg_warn_gcc` (rendered hard/red by `cfgLicenseBanner`).
+
+Two regions rather than one because **`arpu`/`bpct`/`cac` are read at region level in `buildConfig`** (`const { arpu, bpct, cac } = geo` — a license block cannot override them, the same limitation LatAm lives with). UAE ARPU is ~4× Iraq's, so a shared object would have understated the UAE and overstated Syria. `mena` = 14 ARPU / wW 45 / small NDB (no KYC infrastructure, high multi-account risk) / live-light mix / reload Wed; `gcc` = 55 ARPU / wW 35 / live-heavy mix (`mix[1]` 0.25 — Gulf audiences skew to live tables) / **reload Friday** (Gulf weekend is Fri–Sat). Per-country deposit spread (Syria $12 ↔ UAE $150 mid) lives in `GEO_CFG.avgdep`/`avgdepUSD` — unlike LatAm these are set explicitly, the 40/100/500 default is ~12× too wide here. `mena` is in `LOW_DENOM_REGIONS` (high minBet is a real barrier); `gcc` is not. **arpu/cac/avgdep are a market-picture estimate, not verified operator data** — same caveat as `catalog.json`. UAE note: the GCGRA (2023) licenses land-based integrated resorts + the national lottery **only**; online casino is outside its scope, hence `lic:'none'`. Backend computes in USD; IQD/LYD/SYP/AED are display-only (SYP ×13000 would otherwise hit the `truncNormalPayout` underflow path). `catalog.json` tagged: `mena` = crash + cheap-entry mobile headline slots, `gcc` = all live/table + headline slots. Tests: `buildConfig.test.js` (MENA/GCC blocks + snapshots), `geo.currency.test.js`, `bonus.benchmarks.parity.test.js` (region matrix + region-keyed notes).
 
 **Currency layer (display-only, `public/geo-data.js`)** — single source of truth for the geo list (replaces the ~6 duplicated dicts). Each geo has `cur` (backend currency, sent as sitecur — LatAm=USD), `rate` (units of cur/USD), `local`+`localRate` (region display currency). A currency toggle in the unified Configurator (Bonus/Tournament/Loyalty tabs) picks the display currency — **region-local by default, USD optional** — via `GeoData.convertConfigCurrency()`/`convertCosts()` applied to the API responses at pure-render boundaries (`renderBonusResults`, `updateBonusCostDisplay`, econ tabs) and to money input fields (avgdep/prize/overrides). USD econ benchmarks (arpu/cac/ltv3) and ratios are never converted. Loyalty is currency-agnostic (always USD backend) → its factor uses base=1, not geo.rate (see `dispBaseRate()`). Loyalty tab now uses a country selector grouped by region (`cfgGeoOptions`), deriving region from the country. Standalone generators (campaign/tournament + `generator*.js` twins) got the 4 new countries added to their geo dicts (additive; no currency toggle there — the Configurator is the primary tool). Tests: `tests/domain/geo.currency.test.js` (converter + factor + list integrity), `buildConfig.test.js` (per-license LatAm snapshots).
 

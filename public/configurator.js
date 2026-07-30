@@ -174,6 +174,8 @@ const CFG_I18N = {
     reg_note_ukgc:'⚖ UKGC cap: wager on all bonuses ≤ 10× (effective 19 Jan 2026).',
     reg_note_dga:'⚖ Denmark (DGA) cap: wager ≤ 10× and bonus amount ≤ DKK 1000 for any bonus.',
     reg_note_coljuegos:'ℹ Colombia (Coljuegos, Res. 20250022644): total bonuses capped at 1.6% of GGR/month — plan budget, not wager.',
+    reg_warn_mena:'🚫 Gambling is prohibited by law in Iraq, Libya and Syria — there is no local licensing path. These parameters model an OFFSHORE operation (Curaçao/Anjouan) with no in-country registration. Expect crypto/e-wallet rails, no card processing, and elevated multi-account risk. Verify legal exposure before launch.',
+    reg_warn_gcc:'🚫 Online gambling is not licensed in the UAE. The GCGRA (since 2023) licenses land-based integrated resorts and the national lottery ONLY — online casino falls outside its scope and advertising is prohibited. These parameters model an OFFSHORE operation. Verify legal exposure before launch.',
     pct_lbl:'Rate', count_lbl:'Spins', value_lbl:'Spin value', cb_wager_lbl:'Wager ×',
     calculate:'⚡ Calculate', recalculate:'↻ Recalculate',
     // econ
@@ -311,6 +313,7 @@ const CFG_I18N = {
     // regions
     reg_eu:'Europe (EU/UK)', reg_cis:'CIS', reg_mn:'Mongolia',
     reg_latam:'LatAm', reg_sweep:'USA Sweep', reg_crypto:'Crypto / Global',
+    reg_mena:'MENA (grey)', reg_gcc:'Gulf (GCC)',
   },
   ru: {
     title: 'Конфигуратор',
@@ -360,6 +363,8 @@ const CFG_I18N = {
     reg_note_ukgc:'⚖ Лимит UKGC: вейджер на все бонусы ≤ 10× (действует с 19.01.2026).',
     reg_note_dga:'⚖ Лимит Дании (DGA): вейджер ≤ 10× и сумма бонуса ≤ DKK 1000 на любой бонус.',
     reg_note_coljuegos:'ℹ Колумбия (Coljuegos, Res. 20250022644): суммарные бонусы ограничены 1.6% GGR/мес — планируйте бюджет, а не вейджер.',
+    reg_warn_mena:'🚫 В Ираке, Ливии и Сирии азартные игры запрещены законом, локальной лицензии не существует. Эти параметры моделируют ОФШОРНУЮ работу (Curaçao/Anjouan) без регистрации в стране. Рассчитывайте на крипто/e-wallet, а не карты, и на повышенный риск мультиаккаунтов. Оцените юридические риски до запуска.',
+    reg_warn_gcc:'🚫 Онлайн-гемблинг в ОАЭ не лицензируется. GCGRA (с 2023) выдаёт лицензии ТОЛЬКО наземным интегрированным курортам и национальной лотерее — онлайн-казино вне её периметра, реклама запрещена. Эти параметры моделируют ОФШОРНУЮ работу. Оцените юридические риски до запуска.',
     amount_lbl:'Сумма', max_cash_lbl:'Макс. выплата',
     pct_lbl:'Процент', count_lbl:'Спинов', value_lbl:'Цена спина', cb_wager_lbl:'Вейджер ×',
     calculate:'⚡ Рассчитать', recalculate:'↻ Пересчитать',
@@ -492,6 +497,7 @@ const CFG_I18N = {
     saved_toast:'Конфигурация сохранена ✓', calendar_toast:'Добавлено в Retention Calendar ✓',
     reg_eu:'Европа (EU/UK)', reg_cis:'СНГ', reg_mn:'Монголия',
     reg_latam:'LatAm', reg_sweep:'США Sweep', reg_crypto:'Крипто / Global',
+    reg_mena:'MENA (грей)', reg_gcc:'Залив (GCC)',
   }
 };
 
@@ -1110,11 +1116,14 @@ function cfgRegBanner(mechanic) {
 function cfgLicenseBanner() {
   const RB = window.RetomatBenchmarks;
   if (!RB) return '';
-  const { license } = cfgBonusRL();
+  const { region, license } = cfgBonusRL();
   if (license === 'bets_br') return ''; // BR notes are mechanic-specific (see cfgRegBanner)
-  const key = RB.regulatoryNote(license, 'welcome');
+  // MENA/GCC carry no license of their own (every country there is lic='none'), so the
+  // prohibition warning is resolved from the region instead — and rendered hard (red).
+  const key = RB.regulatoryNote(license, 'welcome', region);
   if (!key) return '';
-  return `<div class="mech-reg">${cfgT(key)}</div>`;
+  const hard = key.startsWith('reg_warn_');
+  return `<div class="mech-reg${hard ? ' mech-reg-hard' : ''}">${cfgT(key)}</div>`;
 }
 
 function toggleMech(key) {

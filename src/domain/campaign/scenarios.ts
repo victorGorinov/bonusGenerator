@@ -38,6 +38,23 @@ export const GEO_CFG: Record<string, {
   ar: { region:'latam', lic:'none',      sitecur:'USD', depcur:'USD' },
   pe: { region:'latam', lic:'mincetur',  sitecur:'USD', depcur:'USD' },
   cl: { region:'latam', lic:'none',      sitecur:'USD', depcur:'USD' },
+  // MENA / GCC — same USD-backend + local-display model as LatAm (see config/geo/mena.ts).
+  // No local licensing path exists in any of these markets, so lic is always 'none'
+  // (offshore Curaçao/Anjouan). Unlike LatAm these DO carry per-country avgdep: the
+  // spread between Syria and the UAE is ~12×, far too wide for the 40/100/500 default.
+  // sitecur is USD, so avgdep === avgdepUSD (deriveLocalFxRate correctly returns 1).
+  iq: { region:'mena',  lic:'none',      sitecur:'USD', depcur:'USD',
+        avgdep:    { new: 10, mid: 25,  vip: 120 },
+        avgdepUSD: { new: 10, mid: 25,  vip: 120 } },
+  ly: { region:'mena',  lic:'none',      sitecur:'USD', depcur:'USD',
+        avgdep:    { new: 8,  mid: 20,  vip: 100 },
+        avgdepUSD: { new: 8,  mid: 20,  vip: 100 } },
+  sy: { region:'mena',  lic:'none',      sitecur:'USD', depcur:'USD',
+        avgdep:    { new: 5,  mid: 12,  vip: 60  },
+        avgdepUSD: { new: 5,  mid: 12,  vip: 60  } },
+  ae: { region:'gcc',   lic:'none',      sitecur:'USD', depcur:'USD',
+        avgdep:    { new: 60, mid: 150, vip: 800 },
+        avgdepUSD: { new: 60, mid: 150, vip: 800 } },
 };
 
 export const TONE_DESC: Record<string, string> = {
@@ -46,7 +63,7 @@ export const TONE_DESC: Record<string, string> = {
   aggressive: 'urgent, bold, FOMO-driven',
 };
 
-export const LANG_NAME: Record<string, string> = { da:'Danish', de:'German', en:'English', ru:'Russian', es:'Spanish', mn:'Mongolian' };
+export const LANG_NAME: Record<string, string> = { da:'Danish', de:'German', en:'English', ru:'Russian', es:'Spanish', mn:'Mongolian', ar:'Arabic' };
 export const SEG_DESC:  Record<string, string>  = { new:'new players (first-timers)', mid:'regular players', vip:'VIP high-value players' };
 
 export const SCENARIO_MSG: Record<string, [string, string]> = {

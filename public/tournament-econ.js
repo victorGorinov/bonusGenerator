@@ -4,7 +4,7 @@
  */
 
 const ARPU_BY_REGION = {
-  eu: 65, cis: 22, mn: 12, sweep: 30, crypto: 80, latam: 18,
+  eu: 65, cis: 22, mn: 12, sweep: 30, crypto: 80, latam: 18, mena: 14, gcc: 55,
 };
 
 const STABLE_USD_TO_LOCAL = {
@@ -133,7 +133,8 @@ export function recalcTournamentEconLocal(params) {
     ru:'cis', kz:'cis',
     mn:'mn',
     us:'sweep',
-    mx:'latam', br:'latam',
+    br:'latam', mx:'latam', co:'latam', ar:'latam', pe:'latam', cl:'latam',
+    iq:'mena', ly:'mena', sy:'mena', ae:'gcc',
   };
   const region = GEO_TO_REGION[p.geo] ?? 'eu';
 
@@ -141,7 +142,9 @@ export function recalcTournamentEconLocal(params) {
     de:'EUR', fr:'EUR', es:'EUR', it:'EUR', nl:'EUR',
     dk:'DKK', uk:'GBP',
     ru:'RUB', kz:'KZT', mn:'MNT',
-    us:'USD', mx:'USD', br:'USD',
+    us:'USD',
+    br:'USD', mx:'USD', co:'USD', ar:'USD', pe:'USD', cl:'USD',
+    iq:'USD', ly:'USD', sy:'USD', ae:'USD',
   };
   const sitecur = GEO_TO_CUR[p.geo] ?? 'USD';
 

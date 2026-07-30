@@ -178,6 +178,9 @@ export function buildConfig(params: BuildConfigParams): Record<string, unknown> 
   const sc      = sitecur;
   const GEO_DEFAULT_LICENSE: Record<string, string> = {
     eu: 'mga', cis: 'none', crypto: 'none', sweep: 'none', mn: 'none', latam: 'none',
+    // MENA/GCC have no local licensing path — 'none' keeps geo.reg (the market-specific
+    // prohibition strings) instead of letting a GLOBAL_LICENSE_OVERRIDES entry win.
+    mena: 'none', gcc: 'none',
   };
   const license = lic || GEO_DEFAULT_LICENSE[r] || 'mga';
   const rt      = Number(rtp)     || 96;

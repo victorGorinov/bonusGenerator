@@ -15,7 +15,7 @@ export function deriveLocalFxRate(sitecur: string, geo?: string): number {
 }
 
 export const ARPU_BY_REGION: Record<string, number> = {
-  eu: 65, cis: 22, mn: 12, sweep: 30, crypto: 80, latam: 18,
+  eu: 65, cis: 22, mn: 12, sweep: 30, crypto: 80, latam: 18, mena: 14, gcc: 55,
 };
 
 // Financial FX rates for currencies without GEO_CFG.avgdepUSD.
@@ -38,6 +38,13 @@ const STABLE_USD_TO_LOCAL: Record<string, number> = {
   ARS:  1050,
   PEN:  3.75,
   CLP:  950,
+  // MENA / GCC display currencies (per geo-data.js RATES — keep in sync). The backend
+  // never computes in these (sitecur is USD), they are here so a caller that explicitly
+  // passes one still gets a sane rate instead of falling through to 1.
+  IQD:  1310,
+  LYD:  4.85,
+  SYP:  13000,
+  AED:  3.6725,
   BTC:  0.000015,
   ETH:  0.00042,
 };
