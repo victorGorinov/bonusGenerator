@@ -40,6 +40,8 @@ const WELCOME_WAGER_BY_REGION: Record<string, BenchBand> = {
   latam:  { min: 25, rec: 40, max: 50 }, // offshore Curaçao base (AR/CL grey market)
   mn:     { min: 25, rec: 35, max: 45 },
   sweep:  { min: 1,  rec: 1,  max: 5  }, // US sweeps: ~1x playthrough
+  mena:   { min: 30, rec: 45, max: 55 }, // IQ/LY/SY grey: no cap, high abuse exposure
+  gcc:    { min: 25, rec: 35, max: 45 }, // AE: affluent audience, punitive wagers don't convert
 };
 
 // ── Geo-independent market-norm bands ─────────────────────────────────────────
@@ -113,8 +115,12 @@ export function classifyValue(value: number, bench: ParamBenchmark): BandState {
 /**
  * Regulatory note for a mechanic under a license (for banners).
  * Returns an i18n key or null.
+ *
+ * `region` is optional and only consulted when the license carries no note of its own:
+ * MENA and the GCC have no local licensing path at all (every country there resolves to
+ * lic='none'), so their prohibition warning has to key off the region instead.
  */
-export function regulatoryNote(license: string, mechanic: string): string | null {
+export function regulatoryNote(license: string, mechanic: string, region?: string): string | null {
   if (license === 'bets_br') {
     if (mechanic === 'welcome') return 'reg_warn_br_welcome'; // hard: prohibited
     if (mechanic === 'ndb' || mechanic === 'reload') return 'reg_warn_br_soft'; // soft: check local
@@ -123,5 +129,7 @@ export function regulatoryNote(license: string, mechanic: string): string | null
   if (license === 'ukgc') return 'reg_note_ukgc';
   if (license === 'dga') return 'reg_note_dga';
   if (license === 'coljuegos') return 'reg_note_coljuegos';
+  if (region === 'mena') return 'reg_warn_mena';
+  if (region === 'gcc')  return 'reg_warn_gcc';
   return null;
 }

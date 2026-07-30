@@ -6,7 +6,7 @@ import * as srv from '../../src/config/benchmarks/bonusBenchmarks.js';
 import * as cli from '../../public/bonus-benchmarks.js';
 
 const PARAMS   = ['w_wager', 'rl_wager', 'ndb_wager', 'w_pct', 'rl_pct', 'w_maxB'];
-const REGIONS  = ['eu', 'cis', 'crypto', 'latam', 'mn', 'sweep'];
+const REGIONS  = ['eu', 'cis', 'crypto', 'latam', 'mn', 'sweep', 'mena', 'gcc'];
 const LICENSES = ['mga', 'ukgc', 'dga', 'none', 'bets_br', 'segob', 'coljuegos', 'mincetur'];
 const MECHANICS = ['welcome', 'ndb', 'reload', 'dep2'];
 
@@ -42,11 +42,13 @@ describe('bonus-benchmarks.js parity with bonusBenchmarks.ts', () => {
     }
   });
 
-  it('regulatoryNote matches across license × mechanic', () => {
+  it('regulatoryNote matches across license × mechanic × region', () => {
     for (const license of LICENSES) {
       for (const mechanic of MECHANICS) {
-        expect(cli.regulatoryNote(license, mechanic), `${license}/${mechanic}`)
-          .toBe(srv.regulatoryNote(license, mechanic));
+        for (const region of [undefined, ...REGIONS]) {
+          expect(cli.regulatoryNote(license, mechanic, region), `${license}/${mechanic}/${region}`)
+            .toBe(srv.regulatoryNote(license, mechanic, region));
+        }
       }
     }
   });
@@ -64,5 +66,15 @@ describe('bonus-benchmarks.js parity with bonusBenchmarks.ts', () => {
     expect(srv.getBenchmark('w_wager', 'latam', 'coljuegos').band.rec).toBe(30);
     // NDB wager rec adjusted to 35
     expect(srv.getBenchmark('ndb_wager', 'eu', 'mga').band.rec).toBe(35);
+    // MENA/GCC have no license of their own — the prohibition warning keys off the region.
+    expect(srv.regulatoryNote('none', 'welcome', 'mena')).toBe('reg_warn_mena');
+    expect(srv.regulatoryNote('none', 'welcome', 'gcc')).toBe('reg_warn_gcc');
+    // …and a real license note still wins over the region fallback.
+    expect(srv.regulatoryNote('ukgc', 'welcome', 'mena')).toBe('reg_note_ukgc');
+    // No region passed → unchanged legacy behaviour (no note for lic='none').
+    expect(srv.regulatoryNote('none', 'welcome')).toBeNull();
+    // MENA runs the widest wager band (no cap, high abuse exposure); GCC sits at EU level.
+    expect(srv.getBenchmark('w_wager', 'mena', 'none').band.rec).toBe(45);
+    expect(srv.getBenchmark('w_wager', 'gcc', 'none').band.rec).toBe(35);
   });
 });

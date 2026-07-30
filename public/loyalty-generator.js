@@ -5,6 +5,8 @@ const REGIONS = [
   { val: 'cis',    lbl: '🇷🇺 CIS (RU/KZ)' },
   { val: 'mn',     lbl: '🇲🇳 Mongolia' },
   { val: 'latam',  lbl: '🌎 LatAm (MX/BR)' },
+  { val: 'mena',   lbl: '🌍 MENA (IQ/LY/SY)' },
+  { val: 'gcc',    lbl: '🇦🇪 Gulf / GCC (AE)' },
   { val: 'sweep',  lbl: '🇺🇸 USA Sweepstakes' },
   { val: 'crypto', lbl: '🌐 Crypto / Global' },
 ];

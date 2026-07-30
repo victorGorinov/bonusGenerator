@@ -23,7 +23,7 @@ function truncNormalPayout(B, W, adjWCR, adjRTP) {
 }
 
 // ── FX / ARPU / segment tables (mirror of tournament/calcEconomics.ts) ──────
-const ARPU_BY_REGION = { eu: 65, cis: 22, mn: 12, sweep: 30, crypto: 80, latam: 18 };
+const ARPU_BY_REGION = { eu: 65, cis: 22, mn: 12, sweep: 30, crypto: 80, latam: 18, mena: 14, gcc: 55 };
 const STABLE_USD_TO_LOCAL = {
   USD: 1.00, USDT: 1.00, SC: 1.00, EUR: 0.92, GBP: 0.79, DKK: 7.37,
   RUB: 90.9, KZT: 500, MNT: 3448, BRL: 5.5, MXN: 18.5, COP: 4100,
