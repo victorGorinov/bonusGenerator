@@ -9,6 +9,9 @@ const sw  = { ...base, region: 'sweep',  sitecur: 'USD', depcur: 'USD', avgdep: 
 const cry = { ...base, region: 'crypto', sitecur: 'ETH', depcur: 'ETH', avgdep: 100 };
 const mn  = { ...base, region: 'mn',     sitecur: 'MNT', depcur: 'MNT', avgdep: 100 };
 const lat = { ...base, region: 'latam',  sitecur: 'USD', depcur: 'USD', avgdep: 100 };
+// MENA/GCC compute in USD like LatAm — the local currency is a display layer only.
+const mena = { ...base, region: 'mena',  sitecur: 'USD', depcur: 'USD', avgdep:  25 };
+const gcc  = { ...base, region: 'gcc',   sitecur: 'USD', depcur: 'USD', avgdep: 150 };
 
 // ── EU / MGA ──────────────────────────────────────────────────────────────────
 
@@ -209,6 +212,49 @@ describe('buildConfig — snapshots', () => {
   it('Crypto snapshot', () => expect(buildConfig(cry)).toMatchSnapshot());
   it('DK/DGA snapshot', () => expect(buildConfig({ ...eu, lic: 'dga', sitecur: 'DKK', depcur: 'DKK', avgdep: 700 })).toMatchSnapshot());
   it('MN snapshot',     () => expect(buildConfig({ ...mn, avgdep: 100000 })).toMatchSnapshot());
+  it('MENA/IQ snapshot', () => expect(buildConfig(mena)).toMatchSnapshot());
+  it('GCC/AE snapshot',  () => expect(buildConfig(gcc)).toMatchSnapshot());
+});
+
+// ── MENA / GCC ────────────────────────────────────────────────────────────────
+
+describe('buildConfig — MENA (Iraq/Libya/Syria, grey)', () => {
+  const cfg = buildConfig(mena);
+
+  it('computes in USD (local currency is display-only)', () => expect(cfg.cur).toBe('USD'));
+  it('costRatio > 0',                    () => expect(cfg.econ.costRatio).toBeGreaterThan(0));
+  it('welcome wager 45x — no regulatory cap, high abuse exposure',
+                                         () => expect(cfg.wager.wW).toBe(45));
+  it('NDB kept small (multi-account risk)', () => expect(cfg.ndb.amt).toBeLessThanOrEqual(5));
+  it('NDB requires verification',        () => expect(cfg.ndb.trigger).toBe('v_reg_verify'));
+  it('carries its own prohibition reg strings, not a global-license set', () => {
+    expect(cfg.reg).toEqual(['reg_mena_1', 'reg_mena_2', 'reg_mena_3']);
+  });
+  it('scenario costs are all > 0 (no payout underflow)', () => {
+    expect(cfg.econ.sP10.cost).toBeGreaterThan(0);
+    expect(cfg.econ.sP50.cost).toBeGreaterThan(0);
+    expect(cfg.econ.sP90.cost).toBeGreaterThan(0);
+  });
+});
+
+describe('buildConfig — GCC (UAE)', () => {
+  const cfg = buildConfig(gcc);
+
+  it('computes in USD (AED is display-only)', () => expect(cfg.cur).toBe('USD'));
+  it('welcome wager 35x — affluent audience, punitive wagers do not convert',
+                                         () => expect(cfg.wager.wW).toBe(35));
+  it('reload lands on Friday (Gulf weekend is Fri–Sat)',
+                                         () => expect(cfg.reload.day).toBe('v_day_fri'));
+  it('welcome maxB well above MENA',     () => {
+    expect(cfg.welcome.maxB).toBeGreaterThan(buildConfig(mena).welcome.maxB);
+  });
+  it('carries its own reg strings',      () => {
+    expect(cfg.reg).toEqual(['reg_gcc_1', 'reg_gcc_2', 'reg_gcc_3']);
+  });
+  it('ARPU is ~4x MENA (why they are separate regions)', () => {
+    expect(cfg.econ.arpu).toBe(55);
+    expect(buildConfig(mena).econ.arpu).toBe(14);
+  });
 });
 
 // ── Payout fallback (large-denomination currencies) ───────────────────────────

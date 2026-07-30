@@ -26,6 +26,9 @@
     EUR: 0.92, GBP: 0.79, DKK: 6.9,
     RUB: 90, KZT: 480, MNT: 3450,
     BRL: 5.5, MXN: 18.5, COP: 4100, ARS: 1050, PEN: 3.75, CLP: 950,
+    // MENA / GCC display currencies. AED is pegged (3.6725); IQD/LYD/SYP are
+    // approximate and move — revisit alongside the rest of this table.
+    IQD: 1310, LYD: 4.85, SYP: 13000, AED: 3.6725,
   };
 
   // val, flag, en, ru, region, lic, cur (backend), local (display), lang, avgdep (in `cur`)
@@ -48,6 +51,12 @@
     { val:'ar', flag:'🇦🇷', en:'Argentina',   ru:'Аргентина',   region:'latam', lic:'none',      cur:'USD', local:'ARS', lang:'es', avgdep:30 },
     { val:'pe', flag:'🇵🇪', en:'Peru',        ru:'Перу',        region:'latam', lic:'mincetur',  cur:'USD', local:'PEN', lang:'es', avgdep:30 },
     { val:'cl', flag:'🇨🇱', en:'Chile',       ru:'Чили',        region:'latam', lic:'none',      cur:'USD', local:'CLP', lang:'es', avgdep:30 },
+    // MENA / GCC — same USD-backend + local-display model as LatAm. No local licensing
+    // path exists in any of these markets, so lic is always 'none' (offshore).
+    { val:'iq', flag:'🇮🇶', en:'Iraq',        ru:'Ирак',        region:'mena',  lic:'none',      cur:'USD', local:'IQD', lang:'ar', avgdep:25 },
+    { val:'ly', flag:'🇱🇾', en:'Libya',       ru:'Ливия',       region:'mena',  lic:'none',      cur:'USD', local:'LYD', lang:'ar', avgdep:20 },
+    { val:'sy', flag:'🇸🇾', en:'Syria',       ru:'Сирия',       region:'mena',  lic:'none',      cur:'USD', local:'SYP', lang:'ar', avgdep:12 },
+    { val:'ae', flag:'🇦🇪', en:'UAE',         ru:'ОАЭ',         region:'gcc',   lic:'none',      cur:'USD', local:'AED', lang:'ar', avgdep:150 },
   ];
 
   const REGION_LABELS = {
@@ -56,6 +65,8 @@
     mn:    { en:'Mongolia',       ru:'Монголия' },
     latam: { en:'LatAm',          ru:'Латам' },
     sweep: { en:'USA Sweepstakes',ru:'США Sweepstakes' },
+    mena:  { en:'MENA (grey)',    ru:'MENA (грей)' },
+    gcc:   { en:'Gulf (GCC)',     ru:'Залив (GCC)' },
   };
 
   const GEO_DATA = RAW.map(g => ({

@@ -17,6 +17,8 @@ function regionCurrency(region: string): string {
     latam:  'USD',
     sweep:  'USD',
     crypto: 'USD',
+    mena:   'USD',
+    gcc:    'USD',
   };
   return MAP[region] ?? 'USD';
 }

@@ -13,18 +13,22 @@ const WH_GEO_OPTIONS = [
   { val:'mx', lbl:'🇲🇽 Mexico (USD)' },  { val:'co', lbl:'🇨🇴 Colombia (USD)' },
   { val:'ar', lbl:'🇦🇷 Argentina (USD)' }, { val:'pe', lbl:'🇵🇪 Peru (USD)' },
   { val:'cl', lbl:'🇨🇱 Chile (USD)' },
+  { val:'iq', lbl:'🇮🇶 Iraq (USD)' },  { val:'ly', lbl:'🇱🇾 Libya (USD)' },
+  { val:'sy', lbl:'🇸🇾 Syria (USD)' }, { val:'ae', lbl:'🇦🇪 UAE (USD)' },
 ];
 
 const WH_GEO_REGION = {
   de:'eu', fr:'eu', es:'eu', it:'eu', nl:'eu', dk:'eu', uk:'eu',
   ru:'cis', kz:'cis', mn:'mn', us:'sweep',
   br:'latam', mx:'latam', co:'latam', ar:'latam', pe:'latam', cl:'latam',
+  iq:'mena', ly:'mena', sy:'mena', ae:'gcc',
 };
 const WH_GEO_CUR = {
   de:'EUR', fr:'EUR', es:'EUR', it:'EUR', nl:'EUR', dk:'DKK', uk:'GBP',
   ru:'RUB', kz:'KZT', mn:'MNT', us:'USD', br:'USD', mx:'USD', co:'USD', ar:'USD', pe:'USD', cl:'USD',
+  iq:'USD', ly:'USD', sy:'USD', ae:'USD',
 };
-const WH_GEO_AVGDEP = { de:50, fr:45, es:40, it:45, nl:55, dk:95, uk:80, ru:5000, kz:20000, mn:100000, us:60, br:120, mx:250, co:200000, ar:20000, pe:180, cl:45000 };
+const WH_GEO_AVGDEP = { de:50, fr:45, es:40, it:45, nl:55, dk:95, uk:80, ru:5000, kz:20000, mn:100000, us:60, br:120, mx:250, co:200000, ar:20000, pe:180, cl:45000, iq:25, ly:20, sy:12, ae:150 };
 
 const WH_REGION_LABEL = {
   eu:    { en:'Europe (EU/UK)', ru:'Европа (EU/UK)' },
@@ -32,6 +36,8 @@ const WH_REGION_LABEL = {
   mn:    { en:'Mongolia',       ru:'Монголия' },
   sweep: { en:'USA Sweepstakes',ru:'США Sweepstakes' },
   latam: { en:'LatAm',          ru:'Латам' },
+  mena:  { en:'MENA (grey)',    ru:'MENA (грей)' },
+  gcc:   { en:'Gulf (GCC)',     ru:'Залив (GCC)' },
 };
 
 // Region-grouped <optgroup> options (same grouping as the other sections),
@@ -154,6 +160,17 @@ function whRegionRecommend(geo, segment) {
     return { preset:'daily', frequency:'daily', note: isRu ? 'Реактивация: ежедневное колесо возвращает спящих игроков.' : 'Reactivation: a daily wheel brings dormant players back.' };
   if (geo === 'br')
     return { preset:'daily', frequency:'daily', note: isRu ? '🇧🇷 Бразилия: приветственные бонусы запрещены (Закон 14.790) — используем ежедневное колесо, не welcome.' : '🇧🇷 Brazil: welcome bonuses are prohibited (Law 14.790) — use a daily wheel, not a welcome one.' };
+  // MENA — grey markets on crypto/e-wallet rails: a daily low-value wheel builds the
+  // habit without exposing a large welcome prize to multi-account farming.
+  if (geo === 'iq' || geo === 'ly' || geo === 'sy')
+    return { preset:'daily', frequency:'daily', note: isRu ? '🌍 Грей-рынок (запрет + офшор): ежедневное колесо с небольшими призами безопаснее крупного welcome — ниже риск мультиаккаунтов.' : '🌍 Grey market (prohibited + offshore): a daily wheel with small prizes is safer than a large welcome one — lower multi-account risk.' };
+  // UAE — high ARPU, but advertising is prohibited, so spend goes into retaining the
+  // existing base. Stays segment-aware: recommending the VIP preset to someone who
+  // picked "new players" would contradict their own input.
+  if (geo === 'ae')
+    return segment === 'new'
+      ? { preset:'welcome', frequency:'on_deposit', note: isRu ? '🇦🇪 ОАЭ: welcome-колесо на первый депозит, но реклама запрещена — рассчитывайте на органику и реферальный трафик, не на закупку.' : '🇦🇪 UAE: a first-deposit welcome wheel, but advertising is prohibited — plan for organic and referral traffic, not paid acquisition.' }
+      : { preset:'vip', frequency:'weekly', note: isRu ? '🇦🇪 ОАЭ: высокий ARPU, но реклама запрещена — еженедельное VIP-колесо работает на удержание, а не на привлечение.' : '🇦🇪 UAE: high ARPU but advertising is prohibited — a weekly VIP wheel works for retention, not acquisition.' };
   return { preset:'welcome', frequency:'on_deposit', note: isRu ? 'Привлечение: welcome-колесо за первый депозит максимизирует конверсию.' : 'Acquisition: a first-deposit welcome wheel maximizes conversion.' };
 }
 

@@ -16,6 +16,10 @@ const GEO_OPTIONS = [
   { val:'ar', lbl:'🇦🇷 Argentina (USD)' },
   { val:'pe', lbl:'🇵🇪 Peru (USD)' },
   { val:'cl', lbl:'🇨🇱 Chile (USD)' },
+  { val:'iq', lbl:'🇮🇶 Iraq (USD)' },
+  { val:'ly', lbl:'🇱🇾 Libya (USD)' },
+  { val:'sy', lbl:'🇸🇾 Syria (USD)' },
+  { val:'ae', lbl:'🇦🇪 UAE (USD)' },
 ];
 
 const TOURNAMENT_TYPES = [
@@ -542,6 +546,7 @@ const GEO_TO_REGION_UI = {
   de:'eu', fr:'eu', es:'eu', it:'eu', nl:'eu', dk:'eu', uk:'eu',
   ru:'cis', kz:'cis', mn:'mn', us:'sweep',
   br:'latam', mx:'latam', co:'latam', ar:'latam', pe:'latam', cl:'latam',
+  iq:'mena', ly:'mena', sy:'mena', ae:'gcc',
 };
 // Default display currency per geo = the region-local currency (LatAm now local,
 // not USD — matches geo-data.js `local`; the toggle switches local ↔ USD).
@@ -549,12 +554,14 @@ const GEO_TO_CUR_UI = {
   de:'EUR', fr:'EUR', es:'EUR', it:'EUR', nl:'EUR', dk:'DKK', uk:'GBP',
   ru:'RUB', kz:'KZT', mn:'MNT', us:'USD',
   br:'BRL', mx:'MXN', co:'COP', ar:'ARS', pe:'PEN', cl:'CLP',
+  iq:'IQD', ly:'LYD', sy:'SYP', ae:'AED',
 };
 // local units per 1 USD — mirrors deriveLocalFxRate() backend logic
 const GEO_FX_RATE_UI = {
   de:0.92, fr:0.92, es:0.92, it:0.92, nl:0.92, dk:7.37, uk:0.79,
   ru:90.9,  kz:500,  mn:3448, us:1.00,
   br:5.5, mx:18.5, co:4100, ar:1050, pe:3.75, cl:950,
+  iq:1310, ly:4.85, sy:13000, ae:3.6725,
 };
 // Derived from GEO_TO_CUR_UI + GEO_FX_RATE_UI — first geo that uses each currency wins
 const CUR_FX_RATE_UI = Object.fromEntries(
@@ -563,7 +570,7 @@ const CUR_FX_RATE_UI = Object.fromEntries(
     return acc;
   }, [])
 );
-const ARPU_USD_BY_REGION_UI  = { eu:65, cis:22, mn:12, sweep:30, latam:18 };
+const ARPU_USD_BY_REGION_UI  = { eu:65, cis:22, mn:12, sweep:30, latam:18, mena:14, gcc:55 };
 const ENGAGEMENT_LIFT_UI     = { flash:1.40, daily:1.50, weekly:1.80, monthly:2.20, multi_round:2.00 };
 const PARTICIPATION_MID_UI   = { flash:0.06, daily:0.08, weekly:0.11, monthly:0.14, multi_round:0.10 };
 const DURATION_DAYS_UI       = { flash:0.03, daily:1,    weekly:7,    monthly:30,   multi_round:10   };
@@ -837,6 +844,7 @@ ${tgWizProgressHTML(2)}
         <option value="da"${p.lang==='da'?' selected':''}>Danish</option>
         <option value="es"${p.lang==='es'?' selected':''}>Spanish</option>
         <option value="mn"${p.lang==='mn'?' selected':''}>Mongolian</option>
+        <option value="ar"${p.lang==='ar'?' selected':''}>Arabic</option>
       </select>
     </div>
     <div class="form-row" style="margin:0">
