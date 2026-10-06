@@ -1,5 +1,16 @@
 import { initAuthForm } from '/auth-form.js';
 
+// Testing-only: clicking "Log In" with no credentials typed logs in as a fixed
+// test account instead of requiring manual entry. Fields left blank fall back
+// to this account; anything the user typed is left untouched.
+const TEST_ACCOUNT = { email: 'test3@test.com', password: 'Test12345!' };
+document.getElementById('login-form').addEventListener('submit', () => {
+  const emailEl = document.getElementById('f-email');
+  const passEl = document.getElementById('f-password');
+  if (!emailEl.value.trim()) emailEl.value = TEST_ACCOUNT.email;
+  if (!passEl.value) passEl.value = TEST_ACCOUNT.password;
+});
+
 initAuthForm({
   formId:     'login-form',
   endpoint:   '/api/auth/login',
