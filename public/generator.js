@@ -164,7 +164,7 @@ function showView(name) {
       (name==='offer-gen'    && href.includes('view=offer-gen')) ||
       (name==='wizard'       && href.includes('view=wizard')) ||
       (name==='detail'       && onclick.includes("'campaigns'")) ||
-      href.includes('/generator.html')
+      (name!=='dashboard'    && href.includes('/generator.html'))
     );
   });
   if (name === 'campaigns' || name === 'offer-gen') renderCampaignViews();
@@ -1832,7 +1832,8 @@ function openDetail(id) {
   document.getElementById('tb-right').innerHTML   =
     `<button class="btn btn-primary btn-sm" onclick="startWizard()">${t('btn_new_camp')}</button>`;
   document.querySelectorAll('.nav-item:not(.off)').forEach(el => {
-    el.classList.toggle('active', (el.getAttribute('onclick')||'').includes("'campaigns'"));
+    el.classList.toggle('active', (el.getAttribute('onclick')||'').includes("'campaigns'") ||
+      (el.getAttribute('href')||'').includes('/generator.html'));
   });
   renderDetailTab('overview', c);
 }
