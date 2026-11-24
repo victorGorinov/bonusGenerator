@@ -8,6 +8,9 @@ export interface AIGenerateOpts {
   // enabled and the model's final text (after any tool-use / pause_turn rounds)
   // is returned. maxUses caps how many searches the model may run.
   webSearch?: { maxUses?: number };
+  // Wall-clock budget for the whole call (all web-search rounds included).
+  // Defaults to AI_TIMEOUT, or AI_SEARCH_TIMEOUT when webSearch is set.
+  timeoutMs?: number;
 }
 
 export interface AIProvider {

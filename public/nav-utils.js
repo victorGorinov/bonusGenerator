@@ -220,6 +220,14 @@ async function _rtmLogout() {
 }
 window._rtmLogout = _rtmLogout;
 
+// Escape user-controlled text before it goes into the chip's innerHTML (name/email
+// come from the account and are otherwise self-XSS vectors).
+function _rtmEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
 async function _rtmRenderUserChip() {
   if (!window.RetomatRepo) return;
   var user = null;
@@ -240,8 +248,10 @@ async function _rtmRenderUserChip() {
       : '';
     chip.innerHTML =
       adminLink +
-      '<span title="' + (user.email || '') + '" style="font-weight:600;color:var(--text,#e8eaf0)">' +
-      (user.name || user.email || 'Account') + '</span>' +
+      // Name doubles as the link to Profile & Brands — the brand defaults every
+      // tool prefills from live there.
+      '<a href="/profile.html" title="' + _rtmEsc(user.email || '') + '" style="font-weight:600;color:var(--text,#e8eaf0);text-decoration:none">' +
+      _rtmEsc(user.name || user.email || 'Account') + '</a>' +
       '<button type="button" id="rtm-logout-btn" data-i18n="nav_logout" style="background:none;border:1px solid var(--border,#1e2740);color:inherit;' +
       'border-radius:100px;padding:2px 10px;font-size:.68rem;font-weight:700;cursor:pointer;font-family:inherit">' + t.nav_logout + '</button>';
   } else {

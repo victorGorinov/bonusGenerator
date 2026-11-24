@@ -20,6 +20,8 @@ const CONFIGS = [
   { params: { region: 'mn',    sitecur: 'MNT', depcur: 'MNT', players: 500,  avgdep: 50000, plat: 'mobile', rtp: 96, lic: 'none' }, overrides: {} },
   // 6. EU/MGA with wager override
   { params: { region: 'eu',    sitecur: 'EUR', depcur: 'EUR', players: 5000, avgdep: 100, plat: 'both', rtp: 96, lic: 'mga'  }, overrides: { ov_w_wager: 50, ov_w_pct: 75 } },
+  // 7. Sweepstakes — no wager (wagerX=0), exercises the face-value cost path (reviewer F3)
+  { params: { region: 'sweep', sitecur: 'USD', depcur: 'USD', players: 5000, avgdep: 20,  plat: 'both', rtp: 96, lic: 'none' }, overrides: {} },
 ];
 
 describe('bonus-cost.js parity with server recalcCosts', () => {

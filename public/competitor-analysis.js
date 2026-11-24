@@ -93,12 +93,12 @@ export function classifyCell(dir, ownVal, compVal) {
 export function buildRows(promoType, lang, ownParams, competitors) {
   const defs = PARAM_DEFS[promoType] || [];
   return defs.map((d) => {
-    const own = fmt(ownParams?.[d.key]);
+    const own = fmt(ownParams?.[d.key], lang);
     const cells = (competitors || []).map((c) => {
       const raw = c.params?.[d.key];
       return {
         name: c.name,
-        val:  fmt(raw),
+        val:  fmt(raw, lang),
         cls:  classifyCell(d.dir, ownParams?.[d.key], raw),
         source: c.source,
         confidence: c.confidence,
@@ -108,9 +108,15 @@ export function buildRows(promoType, lang, ownParams, competitors) {
   });
 }
 
-function fmt(v) {
-  if (v === null || v === undefined || v === '') return 'н/д';
-  return String(v);
+// Missing / not-found values render as a localized placeholder — the AI is told
+// to return "" for anything it could not source, and older records may carry
+// the literal 'н/д' it used to emit.
+const ND = { ru: 'н/д', en: 'n/a' };
+function nd(lang) { return lang === 'ru' ? ND.ru : ND.en; }
+function fmt(v, lang) {
+  const s = v === null || v === undefined ? '' : String(v).trim();
+  if (s === '' || s === 'н/д' || s.toLowerCase() === 'n/a' || s === '—') return nd(lang);
+  return s;
 }
 
 // ── i18n ──────────────────────────────────────────────────────────────────────
@@ -129,7 +135,7 @@ const I18N = {
     max: 'Up to 3 competitors', addHint: 'Add at least one competitor.', nameReq: 'Enter a casino name',
     notfound: 'No reliable source found — marked unconfirmed', rerun: '↺ Re-run', save: '💾 Save',
     saved: 'Comparison saved ✓', needGen: 'Generate the promo first.',
-    transparency: '⚙️ generated · 🔍 AI-found (with source) · ✍️ manual. The AI never invents numbers — unfound values are marked "н/д" and excluded from the verdict.',
+    transparency: '⚙️ generated · 🔍 AI-found (with source) · ✍️ manual. The AI never invents numbers — unfound values are marked "n/a" and excluded from the verdict.',
   },
   ru: {
     param: 'Параметр', you: 'Retomat (вы)', gen: '⚙️ сгенерировано', aiSrc: '🔍 AI-поиск', manSrc: '✍️ вручную',
@@ -153,6 +159,12 @@ function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
   ));
+}
+
+// The source URL is AI-supplied (web search) — only trust http(s) so a `javascript:`
+// or `data:` scheme can't ride into the href. Returns '' for anything else.
+function safeHref(u) {
+  return /^https?:\/\//i.test(String(u ?? '').trim()) ? String(u).trim() : '';
 }
 
 function pill(cls, t) {
@@ -234,10 +246,11 @@ function renderCard(promoType, lang, comp, i, fnPrefix) {
   const fields = defs.map((d) => {
     const label = lang === 'ru' ? d.ru : d.en;
     const val = (comp.params && comp.params[d.key]) || '';
-    if (ai) return `<div class="ca-f"><span class="ca-fl">${label}</span><span class="ca-fv">${esc(val || 'н/д')}</span></div>`;
+    if (ai) return `<div class="ca-f"><span class="ca-fl">${label}</span><span class="ca-fv">${esc(fmt(val, lang))}</span></div>`;
     return `<div class="ca-f"><span class="ca-fl">${label}</span><input class="ca-fi" value="${esc(val)}" oninput="${fnPrefix}SetParam(${i},'${d.key}',this.value)"></div>`;
   }).join('');
-  const src = ai && comp.sourceUrl ? `<a href="${esc(comp.sourceUrl)}" target="_blank" rel="noopener" class="ca-srclink">${t.srcLink}</a>` : '';
+  const srcHref = ai ? safeHref(comp.sourceUrl) : '';
+  const src = srcHref ? `<a href="${esc(srcHref)}" target="_blank" rel="noopener" class="ca-srclink">${t.srcLink}</a>` : '';
   return `<div class="ca-card"><div class="ca-card-head"><span class="ca-card-name">${ai ? '🔍' : '✍️'} ${esc(comp.name)}</span><span class="ca-badge">${badge}</span>${src}<a class="ca-x" onclick="${fnPrefix}Remove(${i})">✕</a></div><div class="ca-fields">${fields}</div></div>`;
 }
 

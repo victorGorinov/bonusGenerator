@@ -378,3 +378,51 @@ export function parseCompetitorCompareResponse(raw: string): CompetitorCompareRe
   if (!result.success) throw new AIProviderError(`AI competitor compare response failed schema validation: ${JSON.stringify(result.error.flatten())}`);
   return result.data;
 }
+
+// ── ASSISTANT (NL → campaign params) ────────────────────────────────────────
+// Lenient on params (strings pass through) — authoritative enum/geo/scenario
+// validation + regulatory clamping happens in src/use-cases/InterpretPrompt.ts,
+// not here. The parser only guarantees the envelope shape.
+
+const intentNormalizer = z.preprocess(
+  (val) => (typeof val === 'string' ? val.trim().toLowerCase() : val),
+  z.enum(['prescriptive', 'goal', 'problem']),
+).catch('prescriptive');
+
+const InterpretParamsSchema = z.object({
+  geo:        z.string().optional(),
+  segment:    z.string().optional(),
+  vertical:   z.string().optional(),
+  games:      z.string().optional(),
+  bonusTypes: z.array(z.string()).optional(),
+  lic:        z.string().optional(),
+  agg:        z.string().optional(),
+  risk:       z.string().optional(),
+  players:    z.union([z.number(), z.string()]).optional(),
+  budget:     z.union([z.number(), z.string()]).optional(),
+  lang:       z.string().optional(),
+  tone:       z.string().optional(),
+}).passthrough().catch({});
+
+const InterpretResponseSchema = z.object({
+  intent:     intentNormalizer,
+  scenario:   z.object({
+    id:  z.string(),
+    lbl: z.string().optional(),
+    cat: z.string().optional(),
+  }).nullable().optional().catch(null),
+  params:     InterpretParamsSchema.default({}),
+  inferred:   z.array(z.string()).default([]).catch([]),
+  missing:    z.array(z.string()).default([]).catch([]),
+  notes:      z.array(z.string()).default([]).catch([]),
+  confidence: z.coerce.number().min(0).max(1).default(0.5).catch(0.5),
+});
+
+export type InterpretResponse = z.infer<typeof InterpretResponseSchema>;
+
+export function parseInterpretResponse(raw: string): InterpretResponse {
+  const parsed = parseRaw(raw);
+  const result = InterpretResponseSchema.safeParse(parsed);
+  if (!result.success) throw new AIProviderError(`AI interpret response failed schema validation: ${JSON.stringify(result.error.flatten())}`);
+  return result.data;
+}

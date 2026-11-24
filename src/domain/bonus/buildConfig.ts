@@ -1,4 +1,5 @@
 import { truncNormalPayout }          from './payout.js';
+import { currencyScale }              from '../shared/fx.js';
 import { GEO }                        from '../../config/geo/index.js';
 import { GLOBAL_LICENSE_OVERRIDES }   from '../../config/geo/global-licenses.js';
 import { CHAIN_PROGRESSION }          from './chainModel.js';
@@ -226,21 +227,20 @@ export function buildConfig(params: BuildConfigParams): Record<string, unknown> 
   const wSc       = (welcome['sc'] as number)  || 50;
   const bonusSize = r === 'sweep' ? wSc : Math.min(dep * wPct / 100, wMaxB);
   const wagerX    = (r === 'sweep' || wager['model'] === 'none') ? 0 : wager['wW'] as number;
+  const fxScale   = currencyScale(sc);
   const breakeven_wager = +(mixedWCR / (1 - mixedRTP)).toFixed(1);
   const over_breakeven  = wagerX > breakeven_wager;
 
   const calcScenario = (conv: number, dWCR: number, dRTP: number) => {
     const adjWCR = Math.max(0.01, mixedWCR + dWCR);
     const adjRTP = Math.min(0.999, Math.max(0.5, mixedRTP + dRTP));
-    const payoutStat = truncNormalPayout(bonusSize, wagerX, adjWCR, adjRTP);
-    // For large-denomination currencies (RUB, KZT, MNT) z = mu/sigma falls in the range
-    // -20 to -39 where _Phi(z) underflows to exactly 0 while _phi(z) remains representable,
-    // leaving a spurious tiny positive payoutStat (e.g. 1.8e-200). The check payoutStat > 0
-    // would be true but cost rounds to 0. Use a relative threshold: payoutStat < 1 ppm of
-    // bonusSize is a numerical artifact — fall back to the deterministic breakeven estimate.
-    const adjBe  = adjWCR / (1 - adjRTP);
-    const adjEff = wagerX > 0 ? Math.min(1, adjBe / Math.max(adjBe, wagerX)) : 1;
-    const payout = payoutStat > bonusSize * 1e-6 ? payoutStat : bonusSize * adjEff;
+    // No playthrough (sweepstakes) → the cost IS the face value handed out.
+    // Otherwise `fxScale` normalises the bonus into bet-sized units before the
+    // Truncated-Normal model runs — without it the payout ratio depended on the
+    // currency's denomination and collapsed to zero for RUB/KZT/MNT (domain/shared/fx.ts).
+    const payout = wagerX <= 0
+      ? bonusSize
+      : truncNormalPayout(bonusSize, wagerX, adjWCR, adjRTP, fxScale);
     const cost   = Math.round(payout * conv * pl);
     return { conv, wcr: +adjWCR.toFixed(3), rtp: +adjRTP.toFixed(3), turnover: Math.round(bonusSize * wagerX / adjWCR), payout: +payout.toFixed(2), cost };
   };
@@ -277,10 +277,7 @@ export function buildConfig(params: BuildConfigParams): Record<string, unknown> 
 
   const calcChainCost = (bSize: number, wx: number, cohort: number): number => {
     if (bSize <= 0 || wx <= 0 || pl <= 0) return 0;
-    const adjBe  = mixedWCR / (1 - mixedRTP);
-    const adjEff = wx > 0 ? Math.min(1, adjBe / Math.max(adjBe, wx)) : 1;
-    const payoutStat = truncNormalPayout(bSize, wx, mixedWCR, mixedRTP);
-    const payout = payoutStat > bSize * 1e-6 ? payoutStat : bSize * adjEff;
+    const payout = truncNormalPayout(bSize, wx, mixedWCR, mixedRTP, fxScale);
     return Math.round(payout * 0.20 * cohort * pl);
   };
 

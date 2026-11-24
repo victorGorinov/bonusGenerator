@@ -71,7 +71,12 @@ export const AI_MODEL   = 'claude-haiku-4-5-20251001' as const;
 // dynamic-filtering web_search tool. Only the /api/competitor/search path uses
 // it; everything else stays on the cheaper Haiku AI_MODEL.
 export const AI_SEARCH_MODEL = 'claude-sonnet-5' as const;
-export const AI_TIMEOUT = 30_000;
+// Per-request wall-clock budget handed to the SDK. Plain calls are a single
+// round-trip; a web-search call may run several tool rounds, so it gets its own
+// (larger) budget which is a DEADLINE ACROSS ALL ROUNDS, not per round — without
+// it a search request could hang for many minutes (observed: 540s).
+export const AI_TIMEOUT        = 30_000;
+export const AI_SEARCH_TIMEOUT = 120_000; // measured: ~40-90s for 2 searches
 
 // Normalized via the shared normalizeEmail() (same transform auth.schema.ts
 // applies), so a listed address matches regardless of the casing it was

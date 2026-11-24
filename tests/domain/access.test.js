@@ -20,18 +20,17 @@ describe('resolveFeatureAccess — layered access model', () => {
     for (const f of FEATURES) expect(acc[f]).toBe(true);
   });
 
-  it('registered user on free plan with no overrides → full plan preset EXCEPT ai', () => {
+  it('registered user on free plan with no overrides → full plan preset (ai ON during beta)', () => {
     const acc = resolveFeatureAccess(base);
-    for (const f of FEATURES) {
-      // free == all-on today, EXCEPT `ai`, which registration must never grant.
-      expect(acc[f]).toBe(f !== 'ai');
-    }
-    expect(acc.ai).toBe(false);
+    // BETA: free == everything-on, AI included, so testers get the AI tools without a grant.
+    for (const f of FEATURES) expect(acc[f]).toBe(true);
+    expect(acc.ai).toBe(true);
   });
 
-  it('ai is granted only via a per-user override (not by registration)', () => {
-    expect(resolveFeatureAccess(base).ai).toBe(false);
+  it('ai is inherited from the free plan (beta) and can be revoked per-user', () => {
+    expect(resolveFeatureAccess(base).ai).toBe(true);
     expect(resolveFeatureAccess({ ...base, features: { ai: true } }).ai).toBe(true);
+    expect(resolveFeatureAccess({ ...base, features: { ai: false } }).ai).toBe(false);
   });
 
   it('admin gets ai on even with no override (short-circuit ALL_ON)', () => {
@@ -45,9 +44,9 @@ describe('resolveFeatureAccess — layered access model', () => {
     expect(acc.bonus).toBe(true); // untouched → inherits plan
   });
 
-  it('unknown plan falls back to the default preset (free → all-on except ai)', () => {
+  it('unknown plan falls back to the default preset (free → all-on, ai included in beta)', () => {
     const acc = resolveFeatureAccess({ ...base, plan: 'nonexistent' });
-    for (const f of FEATURES) expect(acc[f]).toBe(f !== 'ai');
+    for (const f of FEATURES) expect(acc[f]).toBe(true);
   });
 
   it('unknown / non-boolean override keys are ignored', () => {

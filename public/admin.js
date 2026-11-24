@@ -5,7 +5,7 @@ const T = {
   en: {
     title:'Admin', sub:'Users & feature access', back:'Back', loading:'Loading…',
     denied:'Admin access required.', signin:'Sign in',
-    th_user:'User', th_role:'Role', th_status:'Status', th_plan:'Plan', th_features:'Features', th_actions:'',
+    th_user:'User', th_role:'Role', th_status:'Status', th_plan:'Plan', th_limits:'Brands', th_features:'Features', th_actions:'',
     save:'Save', del:'Delete', saved:'Saved', deleted:'User deleted',
     confirmDel:'Delete this user and their workspace? This cannot be undone.',
     empty:'No users found.', you:'you',
@@ -14,7 +14,7 @@ const T = {
   ru: {
     title:'Админка', sub:'Пользователи и доступ к функциям', back:'Назад', loading:'Загрузка…',
     denied:'Требуется доступ администратора.', signin:'Войти',
-    th_user:'Пользователь', th_role:'Роль', th_status:'Статус', th_plan:'Тариф', th_features:'Функции', th_actions:'',
+    th_user:'Пользователь', th_role:'Роль', th_status:'Статус', th_plan:'Тариф', th_limits:'Бренды', th_features:'Функции', th_actions:'',
     save:'Сохранить', del:'Удалить', saved:'Сохранено', deleted:'Пользователь удалён',
     confirmDel:'Удалить пользователя и его workspace? Действие необратимо.',
     empty:'Пользователи не найдены.', you:'вы',
@@ -67,12 +67,40 @@ function pruneOverrides(draft) {
   return out;
 }
 
+// Numeric quotas — the same preset ⊕ override model as features, so the same
+// three helpers (effective / prune / draft) mirrored for numbers.
+// Backend twin: resolveLimits() in src/domain/auth/access.ts.
+function limitPreset(draft) {
+  return (META.limitPresets && (META.limitPresets[draft.plan] || META.limitPresets.free)) || {};
+}
+function effectiveLimit(draft, key) {
+  if (draft.status === 'disabled') return 0;
+  if (draft.role === 'admin') return -1;                  // -1 renders as ∞
+  const ov = draft.limits[key];
+  if (typeof ov === 'number' && Number.isFinite(ov) && ov >= 0) return ov;
+  const base = limitPreset(draft)[key];
+  return typeof base === 'number' ? base : 0;
+}
+function pruneLimits(draft) {
+  const base = limitPreset(draft);
+  const out = {};
+  for (const l of (META.limits || [])) {
+    const ov = draft.limits[l];
+    if (typeof ov === 'number' && Number.isFinite(ov) && ov >= 0 && ov !== base[l]) out[l] = ov;
+  }
+  return out;
+}
+
 function newDraft(u) {
   const overrides = {};
   for (const f of META.features) {
     if (u.features && typeof u.features[f] === 'boolean') overrides[f] = u.features[f];
   }
-  return { role: u.role, status: u.status, plan: u.plan, overrides };
+  const limits = {};
+  for (const l of (META.limits || [])) {
+    if (u.limits && typeof u.limits[l] === 'number') limits[l] = u.limits[l];
+  }
+  return { role: u.role, status: u.status, plan: u.plan, overrides, limits };
 }
 
 function applyStaticText() {
@@ -94,7 +122,7 @@ function renderRows(users) {
   table.className = 'adm-table';
   table.innerHTML = `<thead><tr>
     <th>${t('th_user')}</th><th>${t('th_role')}</th><th>${t('th_status')}</th>
-    <th>${t('th_plan')}</th><th>${t('th_features')}</th><th></th>
+    <th>${t('th_plan')}</th><th>${t('th_limits')}</th><th>${t('th_features')}</th><th></th>
   </tr></thead><tbody></tbody>`;
   const tbody = table.querySelector('tbody');
 
@@ -109,6 +137,7 @@ function renderRow(u) {
   // would, so a stored override that merely equals the plan preset doesn't read as
   // an unsaved change on load (compare pruned-vs-pruned, not pruned-vs-raw).
   const initialPruned = JSON.stringify(pruneOverrides(draft));
+  const initialLimits = JSON.stringify(pruneLimits(draft));
   const isSelf = ME && ME.userId === u.id;
   const tr = document.createElement('tr');
 
@@ -119,14 +148,14 @@ function renderRow(u) {
   tr.innerHTML = `
     <td class="adm-user"><b>${esc(u.name)}${isSelf ? ` · <span>${t('you')}</span>` : ''}</b>
       <span>${esc(u.email)}</span><span>${created}</span>${roleBadge}${disBadge}</td>
-    <td></td><td></td><td></td>
+    <td></td><td></td><td></td><td class="adm-limits"></td>
     <td><div class="adm-feats"></div></td>
     <td><div class="adm-actions">
       <button class="adm-btn gold js-save" disabled>${t('save')}</button>
       <button class="adm-btn danger js-del">${t('del')}</button>
     </div></td>`;
 
-  const [ , roleTd, statusTd, planTd ] = tr.children;
+  const [ , roleTd, statusTd, planTd, limitsTd ] = tr.children;
   const roleSel   = mkSelect([['user', t('role_user')], ['admin', t('role_admin')]], draft.role, isSelf);
   const statusSel = mkSelect([['active', t('st_active')], ['disabled', t('st_disabled')]], draft.status, isSelf);
   const planSel   = mkSelect(META.plans.map((p) => [p, p]), draft.plan, false);
@@ -135,6 +164,29 @@ function renderRow(u) {
   const featsWrap = tr.querySelector('.adm-feats');
   const saveBtn   = tr.querySelector('.js-save');
   const delBtn    = tr.querySelector('.js-del');
+
+  // Brand quota input. Empty box = "inherit the plan"; admin/disabled rows are
+  // locked because their effective quota is decided by role/status, not by a number.
+  function paintLimits() {
+    limitsTd.innerHTML = '';
+    const locked = draft.role === 'admin' || draft.status === 'disabled';
+    for (const l of (META.limits || [])) {
+      const inp = document.createElement('input');
+      inp.type = 'number'; inp.min = '0'; inp.max = '1000';
+      inp.className = 'adm-sel';
+      inp.style.width = '72px';
+      const eff = effectiveLimit(draft, l);
+      inp.value = typeof draft.limits[l] === 'number' ? draft.limits[l] : '';
+      inp.placeholder = locked ? (eff < 0 ? '∞' : String(eff)) : String(eff);
+      inp.disabled = locked;
+      inp.addEventListener('input', () => {
+        if (inp.value === '') delete draft.limits[l];
+        else draft.limits[l] = Math.max(0, parseInt(inp.value, 10) || 0);
+        markDirty();
+      });
+      limitsTd.appendChild(inp);
+    }
+  }
 
   function paintFeatures() {
     const eff = effective(draft);
@@ -155,19 +207,23 @@ function renderRow(u) {
   function markDirty() {
     const dirty =
       draft.role !== u.role || draft.status !== u.status || draft.plan !== u.plan ||
-      JSON.stringify(pruneOverrides(draft)) !== initialPruned;
+      JSON.stringify(pruneOverrides(draft)) !== initialPruned ||
+      JSON.stringify(pruneLimits(draft)) !== initialLimits;
     saveBtn.disabled = !dirty;
     tr.classList.toggle('adm-dirty', dirty);
   }
 
-  roleSel.addEventListener('change', () => { draft.role = roleSel.value; paintFeatures(); markDirty(); });
-  statusSel.addEventListener('change', () => { draft.status = statusSel.value; paintFeatures(); markDirty(); });
-  planSel.addEventListener('change', () => { draft.plan = planSel.value; paintFeatures(); markDirty(); });
+  roleSel.addEventListener('change', () => { draft.role = roleSel.value; paintFeatures(); paintLimits(); markDirty(); });
+  statusSel.addEventListener('change', () => { draft.status = statusSel.value; paintFeatures(); paintLimits(); markDirty(); });
+  planSel.addEventListener('change', () => { draft.plan = planSel.value; paintFeatures(); paintLimits(); markDirty(); });
 
   saveBtn.addEventListener('click', async () => {
     saveBtn.disabled = true;
     try {
-      const body = { role: draft.role, status: draft.status, plan: draft.plan, features: pruneOverrides(draft) };
+      const body = {
+        role: draft.role, status: draft.status, plan: draft.plan,
+        features: pruneOverrides(draft), limits: pruneLimits(draft),
+      };
       const { user } = await api(`/api/admin/users/${u.id}`, { method:'PATCH', body: JSON.stringify(body) });
       Object.assign(u, user);
       tr.replaceWith(renderRow(u));
@@ -185,6 +241,7 @@ function renderRow(u) {
   });
 
   paintFeatures();
+  paintLimits();
   return tr;
 }
 

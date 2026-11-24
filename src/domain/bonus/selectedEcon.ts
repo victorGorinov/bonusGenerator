@@ -1,5 +1,6 @@
 import { truncNormalPayout } from './payout.js';
 import { CHAIN_PROGRESSION }  from './chainModel.js';
+import { currencyScale }      from '../shared/fx.js';
 
 // ── Calibration constants (confirmed 2026-06-03) ─────────────────────────────
 // Free-spin → cash value factor (same as buildConfig _sv).
@@ -36,16 +37,23 @@ function num(v: unknown, fallback = 0): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
-// Expected payout for a single bonus under a scenario, with the same
-// large-denomination fallback used in buildConfig.calcScenario.
-function scenarioPayout(bSize: number, wx: number, mixedWCR: number, mixedRTP: number, dWCR: number, dRTP: number): number {
-  if (bSize <= 0 || wx <= 0) return 0;
+/**
+ * Expected payout for a single bonus under a scenario, mirroring buildConfig.calcScenario.
+ *
+ * `noWager` covers the sweepstakes model, where there is no playthrough at all: the
+ * casino's cost is simply the face value handed out. Without it every sweep mechanic
+ * reported a cost of 0 (wx === 0 short-circuits the wagering model), which disagreed
+ * with buildConfig's own `econ.sP50.cost`.
+ */
+function scenarioPayout(
+  bSize: number, wx: number, mixedWCR: number, mixedRTP: number,
+  dWCR: number, dRTP: number, fxScale: number, noWager: boolean,
+): number {
+  if (bSize <= 0) return 0;
+  if (wx <= 0) return noWager ? bSize : 0;
   const adjWCR = Math.max(0.01, mixedWCR + dWCR);
   const adjRTP = Math.min(0.999, Math.max(0.5, mixedRTP + dRTP));
-  const payoutStat = truncNormalPayout(bSize, wx, adjWCR, adjRTP);
-  const adjBe  = adjWCR / (1 - adjRTP);
-  const adjEff = wx > 0 ? Math.min(1, adjBe / Math.max(adjBe, wx)) : 1;
-  return payoutStat > bSize * 1e-6 ? payoutStat : bSize * adjEff;
+  return truncNormalPayout(bSize, wx, adjWCR, adjRTP, fxScale);
 }
 
 interface MechSpec {
@@ -76,6 +84,8 @@ export function computeSelectedEcon(cfg: Record<string, unknown>, selectedTypes:
   const wager  = (cfg['wager'] as Record<string, unknown>) ?? {};
   const wN     = num(wager['wN'], 50);
   const wR     = num(wager['wR'], 30);
+  const fxScale = currencyScale(cfg['cur'] as string | undefined);
+  const noWager = String(wager['model'] ?? '') === 'none';
 
   // ── Per-mechanic bonus sizes (replicate buildConfig) ──
   const ndb = (cfg['ndb'] as Record<string, unknown>) ?? {};
@@ -137,7 +147,7 @@ export function computeSelectedEcon(cfg: Record<string, unknown>, selectedTypes:
       if (spec.cashback) {
         cost = Math.round(spec.cashback.pct * spec.cashback.expMonthlyLoss * CB_CLAIM_RATE * s.cbScale * pl);
       } else {
-        const payout = scenarioPayout(spec.bSize, spec.wx, mixedWCR, mixedRTP, s.dWCR, s.dRTP);
+        const payout = scenarioPayout(spec.bSize, spec.wx, mixedWCR, mixedRTP, s.dWCR, s.dRTP, fxScale, noWager);
         cost = Math.round(payout * spec.cohort(s.conv) * pl);
       }
       row[s.key] = cost;

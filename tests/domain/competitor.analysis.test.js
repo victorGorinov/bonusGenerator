@@ -94,4 +94,19 @@ describe('buildRows', () => {
       expect(rows.length).toBe(PARAM_DEFS[type].length);
     }
   });
+
+  it('localizes the not-found placeholder instead of always printing н/д', () => {
+    const comp = [{ name: 'NoData', source: 'ai_search', params: { matchPct: '', wager: 'н/д' } }];
+    const ru = buildRows('bonus', 'ru', { maxWin: '' }, comp);
+    const en = buildRows('bonus', 'en', { maxWin: '' }, comp);
+
+    expect(ru.find((r) => r.key === 'maxWin').own).toBe('н/д');
+    expect(en.find((r) => r.key === 'maxWin').own).toBe('n/a');
+    // A legacy record that stored the literal 'н/д' still reads as n/a in EN.
+    expect(ru.find((r) => r.key === 'wager').cells[0].val).toBe('н/д');
+    expect(en.find((r) => r.key === 'wager').cells[0].val).toBe('n/a');
+    expect(en.find((r) => r.key === 'matchPct').cells[0].val).toBe('n/a');
+    // Placeholders stay non-comparable, whichever language rendered them.
+    expect(en.find((r) => r.key === 'wager').cells[0].cls).toBe('na');
+  });
 });

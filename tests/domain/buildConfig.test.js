@@ -205,11 +205,22 @@ describe('buildConfig — Gibraltar (global license)', () => {
 
 // ── Snapshots ─────────────────────────────────────────────────────────────────
 
+// avgdep is expressed in the SITE currency, so a snapshot fixture has to use a deposit
+// that is realistic for that currency — the payout model is scale-sensitive by design
+// (see domain/shared/fx.ts). The shared `cis`/`cry` fixtures carry avgdep 100, which is
+// ≈$1.10 in RUB and ≈$238 000 in ETH; both sit far outside any real configuration and
+// produce a degenerate snapshot (payout pinned to the full bonus / to zero). The
+// structural assertions above still use them as-is; only the economic snapshots below
+// substitute a realistic deposit.
 describe('buildConfig — snapshots', () => {
-  it('CIS snapshot',    () => expect(buildConfig(cis)).toMatchSnapshot());
+  it('CIS snapshot',    () => expect(buildConfig({ ...cis, avgdep: 3000 })).toMatchSnapshot());
   it('EU/MGA snapshot', () => expect(buildConfig({ ...eu, lic: 'mga' })).toMatchSnapshot());
   it('Sweep snapshot',  () => expect(buildConfig(sw)).toMatchSnapshot());
-  it('Crypto snapshot', () => expect(buildConfig(cry)).toMatchSnapshot());
+  // USDT, not the fixture's ETH: crypto.ts states its bonus caps (maxBMin 1000 /
+  // maxBMax 5000) as bare numbers on a USD scale, so an ETH-denominated run resolves to
+  // a "minimum bonus of 1000 ETH" and the economics degenerate. The product only ever
+  // computes this region in USDT — snapshot what it actually ships.
+  it('Crypto snapshot', () => expect(buildConfig({ ...cry, sitecur: 'USDT', depcur: 'USDT', avgdep: 100 })).toMatchSnapshot());
   it('DK/DGA snapshot', () => expect(buildConfig({ ...eu, lic: 'dga', sitecur: 'DKK', depcur: 'DKK', avgdep: 700 })).toMatchSnapshot());
   it('MN snapshot',     () => expect(buildConfig({ ...mn, avgdep: 100000 })).toMatchSnapshot());
   it('MENA/IQ snapshot', () => expect(buildConfig(mena)).toMatchSnapshot());

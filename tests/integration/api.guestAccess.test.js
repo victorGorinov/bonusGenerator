@@ -63,6 +63,14 @@ describe('Guest access — hybrid feature gating (real app, no auth cookie)', ()
     expect(res.body.code).toBe('FEATURE_FORBIDDEN');
   });
 
+  it('POST /api/assistant/interpret (AI) is BLOCKED for guests — ai grant required (403)', async () => {
+    // The NL assistant is an AI action gated by aiGate (requireFeature('ai')),
+    // off for guests → 403 before any AI call.
+    const res = await request(app).post('/api/assistant/interpret').send({ prompt: 'welcome bonus for germany' });
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('FEATURE_FORBIDDEN');
+  });
+
   it('POST /api/reports/summary is BLOCKED for guests (403 before validation)', async () => {
     // requireFeature('reports') is router-level → runs before validate(schema),
     // so a guest gets 403 even with an empty body.
