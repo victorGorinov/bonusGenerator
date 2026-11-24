@@ -166,8 +166,13 @@ function whRegionRecommend(geo, segment) {
   // habit without exposing a large welcome prize to multi-account farming.
   if (geo === 'iq' || geo === 'ly' || geo === 'sy')
     return { preset:'daily', frequency:'daily', note: isRu ? '🌍 Грей-рынок (запрет + офшор): ежедневное колесо с небольшими призами безопаснее крупного welcome — ниже риск мультиаккаунтов.' : '🌍 Grey market (prohibited + offshore): a daily wheel with small prizes is safer than a large welcome one — lower multi-account risk.' };
+  // UAE — high ARPU, but advertising is prohibited, so spend goes into retaining the
+  // existing base. Stays segment-aware: recommending the VIP preset to someone who
+  // picked "new players" would contradict their own input.
   if (geo === 'ae')
-    return { preset:'vip', frequency:'weekly', note: isRu ? '🇦🇪 ОАЭ: высокий ARPU, но реклама запрещена — еженедельное VIP-колесо работает на удержание, а не на привлечение.' : '🇦🇪 UAE: high ARPU but advertising is prohibited — a weekly VIP wheel works for retention, not acquisition.' };
+    return segment === 'new'
+      ? { preset:'welcome', frequency:'on_deposit', note: isRu ? '🇦🇪 ОАЭ: welcome-колесо на первый депозит, но реклама запрещена — рассчитывайте на органику и реферальный трафик, не на закупку.' : '🇦🇪 UAE: a first-deposit welcome wheel, but advertising is prohibited — plan for organic and referral traffic, not paid acquisition.' }
+      : { preset:'vip', frequency:'weekly', note: isRu ? '🇦🇪 ОАЭ: высокий ARPU, но реклама запрещена — еженедельное VIP-колесо работает на удержание, а не на привлечение.' : '🇦🇪 UAE: high ARPU but advertising is prohibited — a weekly VIP wheel works for retention, not acquisition.' };
   return { preset:'welcome', frequency:'on_deposit', note: isRu ? 'Привлечение: welcome-колесо за первый депозит максимизирует конверсию.' : 'Acquisition: a first-deposit welcome wheel maximizes conversion.' };
 }
 
