@@ -25,13 +25,35 @@ function _erf(x) {
 }
 function _phi(z) { return Math.exp(-0.5 * z * z) / Math.sqrt(2 * Math.PI); }
 function _Phi(z) { return 0.5 * (1 + _erf(z / Math.SQRT2)); }
-function _truncNormalPayout(B, W, adjWCR, adjRTP) {
+// Units of site currency per 1 USD — mirror of src/domain/shared/fx.ts. Used as a
+// NUMERICAL SCALE by the payout model (mu ∝ B, sigma ∝ √B, so a raw site-currency
+// amount made the payout ratio depend on the currency's denomination). Financial
+// rates — deliberately separate from the DISPLAY rates in geo-data.js.
+const _USD_TO_LOCAL = {
+  USD: 1.00, USDT: 1.00, SC: 1.00,
+  EUR: 0.92, GBP: 0.79, DKK: 7.37,
+  RUB: 90.9, KZT: 500, MNT: 3448,
+  BRL: 5.5, MXN: 18.5, COP: 4100, ARS: 1050, PEN: 3.75, CLP: 950,
+  IQD: 1310, LYD: 4.85, SYP: 13000, AED: 3.6725,
+  BTC: 0.000015, ETH: 0.00042,
+};
+
+function _currencyScale(cur) {
+  const rate = _USD_TO_LOCAL[String(cur == null ? '' : cur).toUpperCase()];
+  return Number.isFinite(rate) && rate > 0 ? rate : 1;
+}
+
+function _truncNormalPayout(B, W, adjWCR, adjRTP, scale = 1) {
   if (B <= 0 || W <= 0) return 0;
+  const s     = Number.isFinite(scale) && scale > 0 ? scale : 1;
+  const b     = B / s;
   const be    = adjWCR / (1 - adjRTP);
-  const mu    = B * (1 - W / be);
-  const sigma = Math.sqrt(W * B / adjWCR);
+  const mu    = b * (1 - W / be);
+  const sigma = Math.sqrt(W * b / adjWCR);
+  if (!(sigma > 0)) return 0;
   const z     = mu / sigma;
-  return Math.max(0, mu * _Phi(z) + sigma * _phi(z));
+  // Clamped to B — see src/domain/bonus/payout.ts.
+  return Math.min(B, Math.max(0, mu * _Phi(z) + sigma * _phi(z)) * s);
 }
 
 function _num(v, fallback) {
@@ -39,14 +61,14 @@ function _num(v, fallback) {
   return Number.isFinite(n) ? n : (fallback || 0);
 }
 
-function _scenarioPayout(bSize, wx, mixedWCR, mixedRTP, dWCR, dRTP) {
-  if (bSize <= 0 || wx <= 0) return 0;
+// `noWager` covers the sweepstakes model (no playthrough at all): the cost is simply
+// the face value handed out, matching buildConfig's own econ.sP50.cost.
+function _scenarioPayout(bSize, wx, mixedWCR, mixedRTP, dWCR, dRTP, fxScale, noWager) {
+  if (bSize <= 0) return 0;
+  if (wx <= 0) return noWager ? bSize : 0;
   const adjWCR = Math.max(0.01, mixedWCR + dWCR);
   const adjRTP = Math.min(0.999, Math.max(0.5, mixedRTP + dRTP));
-  const payoutStat = _truncNormalPayout(bSize, wx, adjWCR, adjRTP);
-  const adjBe  = adjWCR / (1 - adjRTP);
-  const adjEff = wx > 0 ? Math.min(1, adjBe / Math.max(adjBe, wx)) : 1;
-  return payoutStat > bSize * 1e-6 ? payoutStat : bSize * adjEff;
+  return _truncNormalPayout(bSize, wx, adjWCR, adjRTP, fxScale);
 }
 
 export function computeSelectedEcon(cfg, selectedTypes) {
@@ -61,6 +83,8 @@ export function computeSelectedEcon(cfg, selectedTypes) {
   const wager = cfg.wager || {};
   const wN    = _num(wager.wN, 50);
   const wR    = _num(wager.wR, 30);
+  const fxScale = _currencyScale(cfg.cur);
+  const noWager = String(wager.model || '') === 'none';
 
   const ndb = cfg.ndb || {};
   const ndbType = String(ndb.type || '');
@@ -121,7 +145,7 @@ export function computeSelectedEcon(cfg, selectedTypes) {
       if (spec.cashback) {
         cost = Math.round(spec.cashback.pct * spec.cashback.expMonthlyLoss * CB_CLAIM_RATE * s.cbScale * pl);
       } else {
-        const payout = _scenarioPayout(spec.bSize, spec.wx, mixedWCR, mixedRTP, s.dWCR, s.dRTP);
+        const payout = _scenarioPayout(spec.bSize, spec.wx, mixedWCR, mixedRTP, s.dWCR, s.dRTP, fxScale, noWager);
         cost = Math.round(payout * spec.cohort(s.conv) * pl);
       }
       row[s.key] = cost;

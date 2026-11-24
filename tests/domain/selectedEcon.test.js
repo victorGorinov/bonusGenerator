@@ -76,3 +76,30 @@ describe('computeSelectedEcon', () => {
     expect(d3.sP50).toBeGreaterThanOrEqual(0);
   });
 });
+
+// ── Sweepstakes ──────────────────────────────────────────────────────────────
+//
+// The sweep model has no playthrough at all (wager.model === 'none', wagerX === 0),
+// which used to short-circuit the wagering branch and report a welcome cost of 0 —
+// disagreeing with buildConfig's own econ.sP50.cost for the very same config.
+describe('computeSelectedEcon — sweepstakes (no wagering)', () => {
+  const SW = buildConfig({ region: 'sweep', sitecur: 'USD', depcur: 'USD', players: 1000, avgdep: 30, plat: 'both', rtp: 96 });
+
+  it('welcome costs its face value, not zero', () => {
+    const r = computeSelectedEcon(SW, ['welcome']);
+    expect(r.sP50.cost).toBeGreaterThan(0);
+    expect(r.sP50.cost).toBe(SW.econ.sP50.cost);
+  });
+
+  it('agrees with buildConfig across all three scenarios', () => {
+    const r = computeSelectedEcon(SW, ['welcome']);
+    expect(r.sP10.cost).toBe(SW.econ.sP10.cost);
+    expect(r.sP90.cost).toBe(SW.econ.sP90.cost);
+  });
+
+  it('a wagered geo still reports zero for a mechanic with no wager', () => {
+    // Guard against the no-wager branch leaking into normal configs.
+    const r = computeSelectedEcon(EU, ['welcome']);
+    expect(r.sP50.cost).toBeLessThan(EU.econ.bonusSize * 5000);
+  });
+});

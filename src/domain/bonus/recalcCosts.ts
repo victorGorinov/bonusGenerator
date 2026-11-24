@@ -1,5 +1,6 @@
-import { truncNormalPayout } from './payout.js';
+import { truncNormalPayout, truncNormalPayoutCapped } from './payout.js';
 import { CHAIN_PROGRESSION } from './chainModel.js';
+import { currencyScale }     from '../shared/fx.js';
 
 type BonusCfg = Record<string, unknown>;
 
@@ -25,7 +26,8 @@ export function recalcCosts(cfg: BonusCfg, overrides: Record<string, unknown>): 
     const v = parseFloat(String(ov[key]));
     return (isNaN(v) || v < 0) ? def : v;
   };
-  const spinV = fsSpec ? fsSpec['val'] : 0.10;
+  const spinV   = fsSpec ? fsSpec['val'] : 0.10;
+  const fxScale = currencyScale(cfg['cur'] as string | undefined);
 
   // eligibility factor: fraction of players whose deposit >= minD
   // minD <= dep → 1.0 (most players qualify); minD > dep → dep/minD (linear penalty)
@@ -33,17 +35,18 @@ export function recalcCosts(cfg: BonusCfg, overrides: Record<string, unknown>): 
     minD <= 0 || minD <= dep ? 1.0 : Math.min(1.0, Math.max(0.1, dep / minD));
 
   function svCost(bonusSize: number, wagerX: number, conv: number, dWCR: number, dRTP: number, maxWin = 0, minD = 0): number {
-    if (bonusSize <= 0 || wagerX <= 0) return 0;
+    if (!(bonusSize > 0)) return 0; // also catches NaN (a mechanic with no size in a sweep cfg)
+    // No playthrough (sweepstakes, wagerX=0): the cost IS the face value handed out —
+    // mirror buildConfig's calcScenario so generate and a slider-triggered /api/recalc
+    // agree on sweep cost (this path used to return 0 while generate returned face value).
+    if (wagerX <= 0) return Math.round(bonusSize * conv * elig(minD) * pl);
     const adjWCR = Math.max(0.01, econ['mixedWCR'] + (dWCR || 0));
     const adjRTP = Math.min(0.999, Math.max(0.5, econ['mixedRTP'] + (dRTP || 0)));
-    const rawPayout = truncNormalPayout(bonusSize, wagerX, adjWCR, adjRTP);
-    // Payout fallback for large-denomination currencies (MNT/RUB/KZT): truncNormalPayout
-    // underflows to ~1e-200 when wagerX >> breakeven, making Math.round() return 0.
-    // Mirror the same fallback used in buildConfig.ts calcScenario.
-    const adjBe  = adjWCR / (1 - adjRTP);
-    const adjEff = wagerX > 0 ? Math.min(1, adjBe / Math.max(adjBe, wagerX)) : 1;
-    const payoutFinal = rawPayout > bonusSize * 1e-6 ? rawPayout : bonusSize * adjEff;
-    const payout = (maxWin > 0) ? Math.min(payoutFinal, maxWin) : payoutFinal;
+    // A max-win cap truncates the upper tail of the payout distribution — it is applied
+    // INSIDE the expectation, not to the averaged result (see payout.ts for why).
+    const payout = maxWin > 0
+      ? truncNormalPayoutCapped(bonusSize, wagerX, adjWCR, adjRTP, maxWin, fxScale)
+      : truncNormalPayout(bonusSize, wagerX, adjWCR, adjRTP, fxScale);
     return Math.round(payout * conv * elig(minD) * pl);
   }
 
@@ -53,7 +56,11 @@ export function recalcCosts(cfg: BonusCfg, overrides: Record<string, unknown>): 
   const w_fs     = gv('w_fs',     (welcome['fs']   as number) || 0);
   const w_minD   = gv('w_minD',   (welcome['minD'] as number) || 0);
   const w_maxWin = gv('w_maxWin', 0);
-  const w_bonus  = Math.min(dep * w_pct / 100, w_maxB) + w_fs * spinV;
+  // Sweepstakes welcome carries no pct/maxB (its shape is { type:'sweep', sc }), so the
+  // deposit-match formula would be NaN — use the face coin value (sc) it hands out.
+  const w_bonus  = welcome['type'] === 'sweep'
+    ? ((welcome['sc'] as number) || 0) + w_fs * spinV
+    : Math.min(dep * w_pct / 100, w_maxB) + w_fs * spinV;
   const c_w_p10  = svCost(w_bonus, w_wager, 0.10, -0.02, -0.005, w_maxWin, w_minD);
   const c_w_p50  = svCost(w_bonus, w_wager, 0.20,  0,     0,     w_maxWin, w_minD);
   const c_w_p90  = svCost(w_bonus, w_wager, 0.40, +0.02, +0.003, w_maxWin, w_minD);

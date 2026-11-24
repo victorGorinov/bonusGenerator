@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Beta lockdown guard: bounces guests to /login.html when BETA_LOCKDOWN is on (no-op otherwise). Must run first. -->
+<script src="/auth-guard.js"></script>
+<script src="/lang-init.js"></script>
+<style>html[data-lang="en"] [data-tr-ru]{display:none}html[data-lang="ru"] [data-tr-en]{display:none}</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile — Retomat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+:root{--bg:#0a0d14;--bg2:#0f1420;--bg3:#141926;--card:#161c2d;--border:#1e2740;--accent:#4f6ef7;--accent2:#7c3aed;--text:#e8eaf0;--muted:#8892a4;--success:#10b981;--warn:#f59e0b;--sidebar-w:220px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%;background:#0a0d14}
+body{height:100%;font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);font-size:14px;display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar-w);min-height:100vh;background:#1E1B4B;border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50}
+.sb-logo{padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px;cursor:pointer}
+.sb-logo-img{height:28px;width:auto;display:block;flex-shrink:0}
+.sb-nav{flex:1;padding:10px 0;overflow-y:auto}
+.nav-lbl{padding:8px 16px 3px;font-size:.65rem;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.08em}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;color:rgba(255,255,255,.5);font-size:.83rem;font-weight:500;position:relative;transition:background .15s,color .15s;text-decoration:none;border:none;background:none;width:100%;font-family:inherit}
+.nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
+.nav-item.active{background:rgba(79,110,247,.25);color:#a0b0ff}
+.nav-item.active::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
+.nav-item.off{opacity:.38;cursor:default;pointer-events:none}
+.nav-badge{margin-left:auto;background:rgba(79,110,247,.3);color:#a0b0ff;font-size:.6rem;padding:1px 5px;border-radius:100px;font-weight:700}
+.nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.sb-foot{padding:12px 16px;border-top:1px solid rgba(255,255,255,.06)}
+.sb-back{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.4);font-size:.78rem;text-decoration:none;transition:color .15s}
+.sb-back:hover{color:#fff}
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh;opacity:0;transition:opacity .15s}
+.main.ready{opacity:1}
+.topbar{height:64px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:10px;position:sticky;top:0;z-index:40}
+.topbar-title{font-weight:600;font-size:.92rem}
+.topbar-sep,.topbar-sub{color:var(--muted);font-size:.8rem}
+.topbar-right{margin-left:auto;display:flex;align-items:center}
+.lang-toggle{display:flex;background:var(--bg2);border:1px solid var(--border);border-radius:100px;padding:2px;gap:1px;flex-shrink:0}
+.lt-btn{padding:3px 10px;border-radius:100px;font-size:.68rem;font-weight:700;cursor:pointer;border:none;background:none;color:var(--muted);font-family:inherit;transition:all .15s;letter-spacing:.05em}
+.lt-btn.active{background:var(--accent);color:#fff}
+.content{flex:1;padding:26px 30px;max-width:960px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:8px;font-size:.83rem;font-weight:600;cursor:pointer;border:none;transition:all .2s;font-family:inherit;text-decoration:none}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 2px 12px rgba(79,110,247,.3)}
+.btn-primary:hover{transform:translateY(-1px)}
+.btn-outline{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+.btn-ghost{background:transparent;color:var(--muted);border:none}
+.btn-ghost:hover{color:var(--text)}
+.btn-sm{padding:5px 11px;font-size:.76rem}
+.btn-danger{background:transparent;color:#ef4444;border:1px solid rgba(239,68,68,.35)}
+.btn-danger:hover{background:rgba(239,68,68,.1)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+.card-title{font-weight:600;font-size:.88rem;margin-bottom:4px;color:#a0b0ff}
+.card-sub{font-size:.76rem;color:var(--muted);margin-bottom:14px;line-height:1.5}
+.sec-title{font-size:1.05rem;font-weight:700;margin:22px 0 10px}
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.form-row{margin-bottom:0}
+.form-label{display:block;font-size:.72rem;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+.form-input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;transition:border-color .2s}
+.form-input:focus{border-color:var(--accent)}
+select.form-input{cursor:pointer}
+.form-hint{font-size:.68rem;color:var(--muted);margin-top:4px}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{padding:5px 13px;border-radius:100px;border:1px solid var(--border);font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s;color:var(--muted);background:transparent;font-family:inherit}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip.on{background:rgba(79,110,247,.2);border-color:rgba(79,110,247,.6);color:#a0b0ff}
+.brand-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;background:var(--bg3)}
+.brand-row.active{border-color:rgba(79,110,247,.6);background:rgba(79,110,247,.06)}
+.brand-name{font-weight:600;font-size:.86rem}
+.brand-meta{font-size:.72rem;color:var(--muted);margin-top:2px}
+.brand-actions{margin-left:auto;display:flex;gap:6px;flex-shrink:0}
+.pill{font-size:.62rem;padding:2px 8px;border-radius:100px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.pill-default{background:rgba(16,185,129,.15);color:#34d399}
+.pill-local{background:rgba(245,158,11,.15);color:#fbbf24}
+.quota{font-size:.75rem;color:var(--muted)}
+.quota b{color:var(--text)}
+.upsell{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:14px 16px;font-size:.8rem;line-height:1.6}
+.upsell b{color:#fbbf24}
+.empty{text-align:center;padding:34px 20px;color:var(--muted);font-size:.84rem}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 20px;font-size:.82rem;box-shadow:0 4px 24px rgba(0,0,0,.4);z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+@media(max-width:700px){.form-grid{grid-template-columns:1fr}.content{padding:16px 14px}}
+</style>
+<script src="/analytics.js"></script>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sb-logo" onclick="window.location.href='/'">
+    <svg class="sb-logo-img" viewBox="0 0 620 140" xmlns="http://www.w3.org/2000/svg" aria-label="Retomat"><defs><linearGradient id="rg2" x1="0" y1="0" x2="140" y2="140" gradientUnits="userSpaceOnUse"><stop stop-color="#8B5CF6"/><stop offset="1" stop-color="#3B82F6"/></linearGradient></defs><g transform="translate(20,20)"><path d="M20 0 H70 C100 0 122 20 122 48 C122 70 108 86 84 93 L118 120 H82 L56 100 L26 120 H0 L34 88 V20 C34 8 42 0 54 0 Z" fill="url(#rg2)"/><path d="M54 24 H70 C84 24 94 33 94 45 C94 58 84 66 70 66 H54 V24 Z" fill="#0B1020"/><path d="M34 88 L58 70 H84 L50 100 L26 120 H0 L34 88 Z" fill="#0B1020" opacity="0.9"/></g><text x="176" y="108" font-family="Inter,Arial,sans-serif" font-size="94" font-weight="700" letter-spacing="-3" fill="#F8FAFC">Retomat</text><rect x="182" y="122" width="330" height="8" rx="4" fill="url(#rg2)" opacity="0.95"/></svg>
+  </div>
+  <nav class="sb-nav">
+    <div class="nav-lbl"><span data-tr-en>Main</span><span data-tr-ru>Главное</span></div>
+    <a href="/campaign-generator.html" class="nav-item"><span class="nav-icon">📊</span><span data-tr-en>Dashboard</span><span data-tr-ru>Дашборд</span></a>
+    <a href="/retention-calendar.html" class="nav-item"><span class="nav-icon">📅</span><span data-tr-en>Retention Calendar</span><span data-tr-ru>Календарь</span></a>
+    <div class="nav-lbl" style="margin-top:6px"><span data-tr-en>Tools</span><span data-tr-ru>Инструменты</span></div>
+    <a href="/configurator.html" class="nav-item"><span class="nav-icon">⚙️</span><span data-tr-en>Configurator</span><span data-tr-ru>Конфигуратор</span></a>
+    <a href="/generator.html" class="nav-item"><span class="nav-icon">🧩</span><span data-tr-en>Generator</span><span data-tr-ru>Генератор</span></a>
+    <div class="nav-lbl" style="margin-top:6px"><span data-tr-en>Analytics</span><span data-tr-ru>Аналитика</span></div>
+    <a href="/reports.html" class="nav-item"><span class="nav-icon">📋</span><span data-tr-en>Reports</span><span data-tr-ru>Отчёты</span></a>
+    <div class="nav-lbl" style="margin-top:6px"><span data-tr-en>Account</span><span data-tr-ru>Аккаунт</span></div>
+    <a href="/profile.html" class="nav-item active"><span class="nav-icon">👤</span><span data-tr-en>Profile &amp; Brands</span><span data-tr-ru>Профиль и бренды</span></a>
+  </nav>
+  <div class="sb-foot">
+    <a href="/" class="sb-back"><span data-tr-en>← Back to home</span><span data-tr-ru>← На главную</span></a>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <span class="topbar-title"><span data-tr-en>Profile &amp; Brands</span><span data-tr-ru>Профиль и бренды</span></span>
+    <span class="topbar-sep">/</span>
+    <span class="topbar-sub" id="topbar-sub"></span>
+    <div class="topbar-right"></div>
+    <div class="lang-toggle">
+      <button class="lt-btn" id="lt-ru" onclick="setProfileLang('ru')">RU</button>
+      <button class="lt-btn" id="lt-en" onclick="setProfileLang('en')">EN</button>
+    </div>
+  </div>
+  <div class="content" id="content"></div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script src="/geo-data.js"></script>
+<script src="/nav-utils.js"></script>
+<script src="/repo-http.js"></script>
+<script src="/brand-context.js"></script>
+<script src="/profile.js"></script>
+</body>
+</html>

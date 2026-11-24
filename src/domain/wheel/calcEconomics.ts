@@ -95,6 +95,7 @@ export function calcWheelEconomics(params: {
     wager: params.wager ?? 30,
     wcr:   params.wcr ?? 1.0,
     rtp,
+    scale: fxRate,
   };
 
   const evPerSpin    = wheelExpectedValue(params.segments, ctx);

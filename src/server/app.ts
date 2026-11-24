@@ -15,10 +15,12 @@ import signupRoutes          from '../routes/signup.routes.js';
 import healthRoutes          from '../routes/health.routes.js';
 import reportRoutes          from '../routes/report.routes.js';
 import gamesRoutes           from '../routes/games.routes.js';
+import assistantRoutes       from '../routes/assistant.routes.js';
 import authRoutes            from '../routes/auth.routes.js';
 import adminRoutes           from '../routes/admin.routes.js';
 import featuresRoutes        from '../routes/features.routes.js';
 import savedItemsRoutes      from '../routes/savedItems.routes.js';
+import brandsRoutes          from '../routes/brands.routes.js';
 import { optionalAuth }      from '../middleware/optionalAuth.js';
 import { requireAuth }       from '../middleware/requireAuth.js';
 import { errorMiddleware }   from '../middleware/errors.js';
@@ -106,10 +108,15 @@ app.use('/api/wheel',      toolAuth, wheelRoutes);
 app.use('/api/competitor', toolAuth, competitorRoutes);
 app.use('/api/reports',    toolAuth, reportRoutes);
 app.use('/api/games',      toolAuth, gamesRoutes);
+app.use('/api/assistant',  toolAuth, assistantRoutes);
 
 // Server-side persistence (Phase 2) — hard-gated: requireAuth + requireWorkspace
 // live inside the router. Guests never reach here; they keep localStorage-only saves.
 app.use('/api/saved',      savedItemsRoutes);
+
+// Brand profiles + account profile — same hard gate (requireAuth + requireWorkspace
+// inside the router). Guests keep a single browser-local brand instead.
+app.use('/api/brands',     brandsRoutes);
 
 // Admin — hard-gated: requireAdmin (role from DB) lives inside the router.
 app.use('/api/admin',      adminRoutes);

@@ -95,6 +95,7 @@ const TG = {
     wiz_type:'Type', wiz_params:'Parameters', wiz_economics:'Economics', wiz_texts:'Texts & Audit',
     step_of: (n) => `Step ${n} of 4`,
     topbar_list:'Tournaments', topbar_setup:'Setup Guide', topbar_gen:'Tournament Generator',
+    brand_applied:'Fields pre-filled from the brand — edit any of them freely',
     s1_badge:'Step 1 / 4', s1_title:'Select Tournament Type', s1_sub:'Choose the game type for your tournament', s1_next:'Configure Parameters →',
     s2_badge:'Step 2 / 4', s2_title:'Tournament Parameters', s2_sub:'Configure geo, mechanics, and prize pool',
     geo_title:'Geography & Audience', geo_market:'Market / GEO', geo_currency:'Currency', geo_segment:'Segment',
@@ -162,6 +163,7 @@ const TG = {
     wiz_type:'Тип', wiz_params:'Параметры', wiz_economics:'Экономика', wiz_texts:'Тексты и аудит',
     step_of: (n) => `Шаг ${n} из 4`,
     topbar_list:'Турниры', topbar_setup:'Гайд по настройке', topbar_gen:'Генератор турниров',
+    brand_applied:'Поля заполнены из бренда — любое можно изменить',
     s1_badge:'Шаг 1 / 4', s1_title:'Выбор типа турнира', s1_sub:'Выберите тип игр для вашего турнира', s1_next:'Настроить параметры →',
     s2_badge:'Шаг 2 / 4', s2_title:'Параметры турнира', s2_sub:'Гео, механика и призовой фонд',
     geo_title:'География и аудитория', geo_market:'Рынок / GEO', geo_currency:'Валюта', geo_segment:'Сегмент',
@@ -476,6 +478,28 @@ function goStep(n) {
   renderStep();
 }
 
+// ── BRAND PREFILL ────────────────────────────────────────────────────────────
+// Only geo + player base come from the brand: the tournament segment vocabulary
+// (all/dormant/depositors) doesn't match the brand's new|mid|vip.
+const TG_BRAND_MAP = { geo: 'geo', totalPlayers: 'players' };
+
+function tgApplyBrand(opts) {
+  if (!window.BrandContext) return { applied: [] };
+  const res = window.BrandContext.apply('tournament', draft.params, TG_BRAND_MAP, opts);
+  if (res.applied.includes('geo')) {
+    draft.params.currency = GEO_TO_CUR_UI[draft.params.geo] || 'EUR';  // same fallback as the geo <select> handler, so brand-pick and manual pick agree
+    draft.params._prizeAutoSet = true;   // let the prize recommendation follow the new market
+  }
+  return res;
+}
+
+function tgBrandBarHTML() {
+  if (!window.BrandContext) return '';
+  const note = window.BrandContext.active()
+    ? `<span style="font-size:.7rem;color:var(--muted)">${tg('brand_applied')}</span>` : '';
+  return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">${window.BrandContext.selectorHTML()}${note}</div>`;
+}
+
 function renderStep() {
   const c = document.getElementById('content');
   if      (step === 1) c.innerHTML = renderStep1();
@@ -639,6 +663,7 @@ function renderStep1() {
   const typeDescs = tg('type_descs');
   return `
 ${wizProgressHTML(1)}
+${tgBrandBarHTML()}
 <div class="step-header">
   <div class="step-badge">${tg('s1_badge')}</div>
   <div class="step-title">${tg('s1_title')}</div>
@@ -2069,6 +2094,7 @@ function addTournamentToCalendar(opts = {}) {
     }
     const now = new Date().toISOString();
     const rec = { ...campaign, id: 'tg_' + Date.now(), createdAt: now, updatedAt: now };
+    window.BrandContext?.stamp(rec);   // calendar events carry the brand too
     camps.push(rec);
     localStorage.setItem('rc_campaigns', JSON.stringify(camps));
     window.RetomatRepo?.mirror('calendar-events', rec.id, rec);
@@ -2110,6 +2136,7 @@ function saveTournament() {
     games:     (_gamesData && _gamesData._key === _gamesParamsKey()) ? _gamesData.result : null,
     createdAt: new Date().toISOString(),
   };
+  window.BrandContext?.stamp(entry);
   list.unshift(entry);
   saveTournaments(list);
   window.RetomatRepo?.mirror('tournaments', entry.id, entry);
@@ -2417,6 +2444,17 @@ updateAllBadges();
 setTournLang(localStorage.getItem('bonusLang') || 'en');
 resolveInitialTournamentView();
 document.querySelector('.main').classList.add('ready');
+
+// Brand prefill: seed from the cached list now, re-seed once the server list lands.
+if (window.BrandContext) {
+  // Re-render ONLY while the wizard owns #content — the list/detail views share
+  // the same container and renderStep() would clobber them.
+  const _tgRerender = () => { if (_tgCurrentView === 'generator' && step > 0) renderStep(); };
+  tgApplyBrand();
+  window.BrandContext.load().then(() => { tgApplyBrand(); _tgRerender(); });
+  window.addEventListener('retomat:brand-changed', () => { tgApplyBrand({ confirm: true }); _tgRerender(); });
+  window.addEventListener('retomat:brands-changed', _tgRerender);
+}
 
 // nav-utils runs the migrate+hydrate sync for logged-in users and fires this
 // event once the localStorage cache reflects the server; refresh the list then.

@@ -21,13 +21,53 @@ function _Phi(z) {
   return 0.5 * (1 + _erf(z / Math.SQRT2));
 }
 
-function _truncNormalPayout(B, W, adjWCR, adjRTP) {
+// ── Currency scale (mirror of src/domain/shared/fx.ts) ──────────────────────
+// Units of site currency per 1 USD. The payout model needs this as a NUMERICAL
+// SCALE: mu grows linearly with B while sigma grows as √B, so a raw site-currency
+// amount made the payout ratio depend on the currency's denomination. Financial
+// rates — deliberately separate from the DISPLAY rates in geo-data.js.
+const _USD_TO_LOCAL = {
+  USD: 1.00, USDT: 1.00, SC: 1.00,
+  EUR: 0.92, GBP: 0.79, DKK: 7.37,
+  RUB: 90.9, KZT: 500, MNT: 3448,
+  BRL: 5.5, MXN: 18.5, COP: 4100, ARS: 1050, PEN: 3.75, CLP: 950,
+  IQD: 1310, LYD: 4.85, SYP: 13000, AED: 3.6725,
+  BTC: 0.000015, ETH: 0.00042,
+};
+
+function _currencyScale(cur) {
+  const rate = _USD_TO_LOCAL[String(cur == null ? '' : cur).toUpperCase()];
+  return Number.isFinite(rate) && rate > 0 ? rate : 1;
+}
+
+function _payoutParams(B, W, adjWCR, adjRTP, scale) {
+  const s  = Number.isFinite(scale) && scale > 0 ? scale : 1;
+  const b  = B / s;
+  const be = adjWCR / (1 - adjRTP);
+  return { s, mu: b * (1 - W / be), sigma: Math.sqrt(W * b / adjWCR) };
+}
+
+function _truncNormalPayout(B, W, adjWCR, adjRTP, scale = 1) {
   if (B <= 0 || W <= 0) return 0;
-  const be    = adjWCR / (1 - adjRTP);
-  const mu    = B * (1 - W / be);
-  const sigma = Math.sqrt(W * B / adjWCR);
-  const z     = mu / sigma;
-  return Math.max(0, mu * _Phi(z) + sigma * _phi(z));
+  const { s, mu, sigma } = _payoutParams(B, W, adjWCR, adjRTP, scale);
+  if (!(sigma > 0)) return 0;
+  const z = mu / sigma;
+  // Clamped to B — see src/domain/bonus/payout.ts.
+  return Math.min(B, Math.max(0, mu * _Phi(z) + sigma * _phi(z)) * s);
+}
+
+// E[min(max(X,0), C)] = E[X⁺] − E[(X−C)⁺] — a max-win cap truncates the tail, so it
+// must be applied inside the expectation, not to the already-averaged payout.
+function _truncNormalPayoutCapped(B, W, adjWCR, adjRTP, maxWin, scale = 1) {
+  if (B <= 0 || W <= 0) return 0;
+  if (!(maxWin > 0)) return _truncNormalPayout(B, W, adjWCR, adjRTP, scale);
+  const { s, mu, sigma } = _payoutParams(B, W, adjWCR, adjRTP, scale);
+  if (!(sigma > 0)) return 0;
+  const c  = maxWin / s;
+  const e0 = mu * _Phi(mu / sigma) + sigma * _phi(mu / sigma);
+  const zc = (mu - c) / sigma;
+  const ec = (mu - c) * _Phi(zc) + sigma * _phi(zc);
+  return Math.min(B, Math.max(0, Math.min(e0 - ec, c)) * s);
 }
 
 // ── recalcCostsLocal (port of recalcCosts.ts) ────────────────────────────────
@@ -59,32 +99,39 @@ export function recalcCostsLocal(cfg, overrides) {
     return (isNaN(v) || v < 0) ? def : v;
   };
 
-  const spinV = fsSpec ? fsSpec.val : 0.10;
+  const spinV   = fsSpec ? fsSpec.val : 0.10;
+  const fxScale = _currencyScale(cfg.cur);
 
   const elig = (minD) =>
     minD <= 0 || minD <= dep ? 1.0 : Math.min(1.0, Math.max(0.1, dep / minD));
 
   function svCost(bonusSize, wagerX, conv, dWCR, dRTP, maxWin = 0, minD = 0) {
-    if (bonusSize <= 0 || wagerX <= 0) return 0;
+    if (!(bonusSize > 0)) return 0; // also catches NaN (a mechanic with no size in a sweep cfg)
+    // No playthrough (sweepstakes, wagerX=0): cost IS the face value handed out —
+    // mirror buildConfig so generate and /api/recalc agree on sweep cost (parity
+    // with src/domain/bonus/recalcCosts.ts svCost).
+    if (wagerX <= 0) return Math.round(bonusSize * conv * elig(minD) * pl);
     const adjWCR = Math.max(0.01, (econ.mixedWCR || 0) + (dWCR || 0));
     const adjRTP = Math.min(0.999, Math.max(0.5, (econ.mixedRTP || 0.96) + (dRTP || 0)));
-    const rawPayout = _truncNormalPayout(bonusSize, wagerX, adjWCR, adjRTP);
-    // Payout fallback for large-denomination currencies (MNT/RUB/KZT): truncNormalPayout
-    // underflows to ~1e-200 when wagerX >> breakeven, making Math.round() return 0.
-    const adjBe  = adjWCR / (1 - adjRTP);
-    const adjEff = wagerX > 0 ? Math.min(1, adjBe / Math.max(adjBe, wagerX)) : 1;
-    const payoutFinal = rawPayout > bonusSize * 1e-6 ? rawPayout : bonusSize * adjEff;
-    const payout = (maxWin > 0) ? Math.min(payoutFinal, maxWin) : payoutFinal;
+    const payout = maxWin > 0
+      ? _truncNormalPayoutCapped(bonusSize, wagerX, adjWCR, adjRTP, maxWin, fxScale)
+      : _truncNormalPayout(bonusSize, wagerX, adjWCR, adjRTP, fxScale);
     return Math.round(payout * conv * elig(minD) * pl);
   }
 
   const w_pct    = gv('ov_w_pct',    welcome.pct  || 100);
-  const w_wager  = gv('ov_w_wager',  econ.wagerX  || 30);
+  // Keep 0 for no-wager (sweepstakes) configs — `|| 30` would turn it into 30 and
+  // skip the face-value path, diverging from the server (which reads econ.wagerX raw).
+  const w_wager  = gv('ov_w_wager',  typeof econ.wagerX === 'number' ? econ.wagerX : 30);
   const w_maxB   = gv('ov_w_maxB',   welcome.maxB || 0);
   const w_fs     = gv('ov_w_fs',     welcome.fs   || 0);
   const w_minD   = gv('ov_w_minD',   welcome.minD || 0);
   const w_maxWin = gv('ov_w_maxWin', 0);
-  const w_bonus  = Math.min(dep * w_pct / 100, w_maxB) + w_fs * spinV;
+  // Sweepstakes welcome carries no pct/maxB (shape { type:'sweep', sc }) → use the
+  // face coin value it hands out (parity with backend recalcCosts.ts).
+  const w_bonus  = welcome.type === 'sweep'
+    ? (welcome.sc || 0) + w_fs * spinV
+    : Math.min(dep * w_pct / 100, w_maxB) + w_fs * spinV;
   const c_w_p10  = svCost(w_bonus, w_wager, 0.10, -0.02, -0.005, w_maxWin, w_minD);
   const c_w_p50  = svCost(w_bonus, w_wager, 0.20,  0,     0,     w_maxWin, w_minD);
   const c_w_p90  = svCost(w_bonus, w_wager, 0.40, +0.02, +0.003, w_maxWin, w_minD);

@@ -13,7 +13,9 @@ export interface AuthUser {
 
 // Identity (AuthUser) + the access columns the app gates on. Returned by
 // getUserAccessById for /api/auth/me, /api/features, and the enforcement middleware.
-export interface UserWithAccess extends AuthUser, AccessRow {}
+export interface UserWithAccess extends AuthUser, AccessRow {
+  profile?: Record<string, unknown> | null;  // account profile JSONB (company/role/timezone)
+}
 
 export async function registerUser(db: Pool, input: RegisterInput): Promise<AuthUser> {
   const existing = await db.query('SELECT id FROM users WHERE email = $1', [input.email]);
@@ -100,7 +102,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 export async function getUserAccessById(db: Pool, id: string): Promise<UserWithAccess | null> {
   if (!UUID_RE.test(id)) return null;
   const res = await db.query<UserWithAccess>(
-    'SELECT id, name, email, role, status, plan, features FROM users WHERE id = $1',
+    'SELECT id, name, email, role, status, plan, features, limits, profile FROM users WHERE id = $1',
     [id],
   );
   return res.rows[0] ?? null;

@@ -72,6 +72,7 @@ const WH = {
     list_empty_sub:'Pick a market and audience — we suggest the best wheel layout for it.',
     list_create:'+ New Wheel', list_new:'+ New Wheel',
     hdr_name:'Name', hdr_preset:'Preset', hdr_roi:'ROI', hdr_date:'Date',
+    brand_applied:'Fields pre-filled from the brand — edit any of them freely',
     s1_badge:'Step 1 / 2', s1_title:'Wheel setup', s1_sub:'Choose a market and audience — we recommend a wheel tuned to it',
     market:'Market / GEO', segment:'Audience', preset:'Wheel type', freq:'Spin cadence', players:'Total players',
     rec_title:'Recommended for this region', regen:'↺ Regenerate',
@@ -104,6 +105,7 @@ const WH = {
     list_empty_sub:'Выберите рынок и аудиторию — предложим оптимальную раскладку колеса.',
     list_create:'+ Новое колесо', list_new:'+ Новое колесо',
     hdr_name:'Название', hdr_preset:'Пресет', hdr_roi:'ROI', hdr_date:'Дата',
+    brand_applied:'Поля заполнены из бренда — любое можно изменить',
     s1_badge:'Шаг 1 / 2', s1_title:'Настройка колеса', s1_sub:'Выберите рынок и аудиторию — рекомендуем колесо под них',
     market:'Рынок / GEO', segment:'Аудитория', preset:'Тип колеса', freq:'Частота спинов', players:'Всего игроков',
     rec_title:'Рекомендация под регион', regen:'↺ Пересобрать',
@@ -186,6 +188,22 @@ function whSetTopbar(sub) {
 function whInit() {
   updateAllBadges();
   whSetLang(whLang());
+  // A brand pick while the setup screen is open re-seeds geo/players from it.
+  if (window.BrandContext) {
+    window.addEventListener('retomat:brand-changed', function () {
+      if (_whView !== 'setup' || !whDraft) return;
+      const b = window.BrandContext.data();
+      if (b.geo) whDraft.geo = b.geo;
+      if (b.players) whDraft.players = b.players;
+      const rec = whRegionRecommend(whDraft.geo, whDraft.segment);
+      whDraft.preset = rec.preset;
+      whDraft.frequency = rec.frequency;
+      whShowView('setup');
+    });
+    window.addEventListener('retomat:brands-changed', function () {
+      if (_whView === 'setup') whShowView('setup');
+    });
+  }
   window.addEventListener('retomat:synced', function() {
     if (typeof GEN_TYPE !== 'undefined' && GEN_TYPE === 'wheel') { updateAllBadges(); if (_whView === 'list') whShowView('list'); }
   });
@@ -267,15 +285,31 @@ function whDelete(id) { whStore(whLoad().filter(w => w.id !== id)); if (typeof u
 
 // ── Setup wizard ────────────────────────────────────────────────────────────
 function whStartWizard() {
-  const geo = 'de', segment = 'new';
+  // Brand defaults seed the wizard's starting point; the region recommendation
+  // (preset + cadence) is then derived from them exactly as for a manual pick,
+  // and every field stays editable on the setup screen.
+  const b = (window.BrandContext && window.BrandContext.data()) || {};
+  const geo = b.geo || 'de';
+  const segment = 'new';                 // wheel segments differ from the brand's new|mid|vip
   const rec = whRegionRecommend(geo, segment);
-  whDraft = { geo, segment, players: 5000, preset: rec.preset, frequency: rec.frequency };
+  whDraft = {
+    geo, segment,
+    players: b.players || 5000,
+    preset: rec.preset, frequency: rec.frequency,
+  };
   whStep = 1;
   whShowView('setup');
 }
 
 function whChip(group, val, cur, label) {
   return `<div class="chip${cur===val?' on':''}" onclick="whSetField('${group}','${val}')">${label}</div>`;
+}
+
+function whBrandBarHTML() {
+  if (!window.BrandContext) return '';
+  const note = window.BrandContext.active()
+    ? `<span style="font-size:.7rem;color:var(--muted)">${wh('brand_applied')}</span>` : '';
+  return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">${window.BrandContext.selectorHTML()}${note}</div>`;
 }
 
 function renderWhSetup() {
@@ -285,6 +319,7 @@ function renderWhSetup() {
   const presets = [['welcome','preset_welcome'],['daily','preset_daily'],['vip','preset_vip']];
   const freqs = [['on_deposit','freq_on_deposit'],['daily','freq_daily'],['weekly','freq_weekly'],['one_time','freq_one_time']];
   return `
+${whBrandBarHTML()}
 <div class="step-header">
   <div class="step-badge">🎡 ${wh('s1_badge')}</div>
   <div class="step-title">${wh('s1_title')}</div>
@@ -622,6 +657,7 @@ function whSave() {
   const id = whGenId();
   const rec = { id, name: `Wheel · ${wh('preset_'+whDraft.preset)} · ${whDraft.geo.toUpperCase()}`,
     createdAt: new Date().toISOString(), params: whLastResult.params, result: whLastResult };
+  window.BrandContext?.stamp(rec);
   const list = whLoad(); list.unshift(rec); whStore(list.slice(0, 50));
   window.RetomatRepo?.mirror('configs', id, { ...rec, type:'wheel' });
   if (typeof updateAllBadges === 'function') updateAllBadges();
@@ -644,6 +680,7 @@ function whAddToCalendar() {
       createdAt: new Date().toISOString(),
     };
     const camps = JSON.parse(localStorage.getItem('rc_campaigns') || '[]');
+    window.BrandContext?.stamp(entry);   // calendar events carry the brand too
     camps.push(entry); localStorage.setItem('rc_campaigns', JSON.stringify(camps));
     window.RetomatRepo?.mirror('calendar-events', entry.id, entry);
     whToast(wh('cal_ok'));

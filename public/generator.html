@@ -702,6 +702,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
       <div class="section-hd">
         <div class="section-title" data-i18n="dash_recent">Последние активности</div>
       </div>
+      <div id="brand-filter-dash"></div>
       <div class="ctable">
         <div class="ct-hd">
           <span data-i18n="tbl_name">Название</span><span data-i18n="tbl_type">Тип</span>
@@ -719,6 +720,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
           <div class="dash-sub" data-i18n="camps_sub">Все созданные кампании</div>
         </div>
       </div>
+      <div id="brand-filter-offer-gen"></div>
       <div class="ctable">
         <div class="ct-hd" id="offer-gen-hd">
           <span data-i18n="tbl_name">Name</span><span data-i18n="tbl_type">Type</span>
@@ -736,6 +738,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
           <div class="dash-sub" data-i18n="camps_sub">Все созданные кампании</div>
         </div>
       </div>
+      <div id="brand-filter-campaigns"></div>
       <div class="ctable">
         <div class="ct-hd" id="all-camp-hd">
           <span data-i18n="tbl_name">Name</span><span data-i18n="tbl_type">Type</span>
@@ -785,6 +788,8 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
       <div class="step-panel" id="step-2">
         <div class="step-title" data-i18n="s2_title">Параметры кампании</div>
         <div class="step-sub" data-i18n="s2_sub">Настройте аудиторию, бюджет и тон коммуникации</div>
+        <!-- Brand picker: seeds geo/segment/players from the saved brand (brand-context.js). -->
+        <div id="cg-brand-bar" style="margin:10px 0 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"></div>
         <div class="params-grid">
           <div class="fg">
             <div class="fl" data-i18n="s2_geo">Гео / Страна</div>
@@ -1126,6 +1131,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
         <button class="dtab" onclick="switchDTab('mechanic',this)" data-i18n="det_tab_mech">Механика</button>
         <button class="dtab" onclick="switchDTab('texts',this)" data-i18n="det_tab_texts">Тексты</button>
         <button class="dtab" onclick="switchDTab('audit',this)" data-i18n="det_tab_audit">Аудит</button>
+        <button class="dtab" onclick="switchDTab('competitors',this)" data-i18n="det_tab_comp">⚔️ Конкуренты</button>
         <button class="dtab" onclick="switchDTab('export',this)" data-i18n="det_tab_export">Экспорт</button>
         <button class="dtab" onclick="switchDTab('analytics',this)" data-i18n="det_tab_analytics">📊 Факт</button>
       </div>
@@ -1179,16 +1185,20 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 <script src="/offer-desc.js"></script>
 <script src="/nav-utils.js"></script>
 <script src="/repo-http.js"></script>
+<script src="/brand-context.js"></script>
 <script src="/feature-gate.js"></script>
 <script type="module" src="/balance-solver.js"></script>
 <script type="module" src="/tournament-econ.js"></script>
 <script type="module" src="/loyalty-econ.js"></script>
 <script type="module" src="/wheel-econ.js"></script>
 <script type="module" src="/competitor-analysis.js"></script>
+<script type="module" src="/risk-vector.js"></script>
+<script type="module" src="/bonus-abuse.js"></script>
 <script src="/generator.js"></script>
 <script src="/generator-tournament.js"></script>
 <script src="/generator-loyalty.js"></script>
 <script src="/generator-wheel.js"></script>
+<script src="/assistant.js"></script>
 <script>
 document.addEventListener('click', function(e) {
   const a = e.target.closest('a[href]');
