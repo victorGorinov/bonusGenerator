@@ -20,7 +20,7 @@ export function campaignExplanation(scenarioId: string, mechanicType: string, cf
   const wRange = wBench ? `${wBench.band.min}–${wBench.band.max}×` : null;
 
   if (isEn) {
-    const regMap: Record<string, string> = { eu:`EU/${licStr}`, cis:'CIS', crypto:'Crypto', mn:'Mongolia', latam:'LatAm', sweep:'USA Sweep' };
+    const regMap: Record<string, string> = { eu:`EU/${licStr}`, cis:'CIS', crypto:'Crypto', mn:'Mongolia', latam:'LatAm', sweep:'USA Sweep', mena:'MENA', gcc:'Gulf (GCC)' };
     const regStr = regMap[r] || r;
     if (requestedTypes.length > 1) {
       const lblMap: Record<string, string> = { welcome:'1st Deposit', ndb:'Welcome', reload:'Reload', dep2:'2nd Deposit', dep3:'3rd Deposit', cashback:'Cashback' };
@@ -48,7 +48,7 @@ export function campaignExplanation(scenarioId: string, mechanicType: string, cf
     return [m1, m2, `Parameters adapted for ${regStr} region and licensing requirements`, wStr];
   }
 
-  const regMapRu: Record<string, string> = { eu:`EU/${licStr}`, cis:'СНГ', crypto:'Crypto', mn:'Монголия', latam:'LatAm', sweep:'USA Sweep' };
+  const regMapRu: Record<string, string> = { eu:`EU/${licStr}`, cis:'СНГ', crypto:'Crypto', mn:'Монголия', latam:'LatAm', sweep:'USA Sweep', mena:'MENA', gcc:'Залив (GCC)' };
   const regStr = regMapRu[r] || r;
   if (requestedTypes.length > 1) {
     const lblMap: Record<string, string> = { welcome:'1-й депозит', ndb:'Welcome', reload:'Reload', dep2:'2-й депозит', dep3:'3-й депозит', cashback:'Cashback' };

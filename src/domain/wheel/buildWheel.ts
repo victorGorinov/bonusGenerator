@@ -21,6 +21,8 @@ export interface WheelCostContext {
   wager:      number;   // wagering multiplier applied to bonus_money / multiplier prizes
   wcr:        number;   // wager contribution ratio (slots ≈ 1.0)
   rtp:        number;   // 0–1
+  /** Units of site currency per 1 USD — normalises amounts for the payout model. */
+  scale?:     number;
 }
 
 /**
@@ -31,11 +33,11 @@ export interface WheelCostContext {
 export function segmentCost(seg: WheelSegment, ctx: WheelCostContext): number {
   switch (seg.prizeType) {
     case 'bonus_money':
-      return truncNormalPayout(seg.prizeValue, ctx.wager, ctx.wcr, ctx.rtp);
+      return truncNormalPayout(seg.prizeValue, ctx.wager, ctx.wcr, ctx.rtp, ctx.scale ?? 1);
     case 'multiplier': {
       // Deposit multiplier → extra bonus money of (mult − 1) × avgDeposit, wagered.
       const extra = Math.max(0, (seg.prizeValue - 1)) * ctx.avgDeposit;
-      return truncNormalPayout(extra, ctx.wager, ctx.wcr, ctx.rtp);
+      return truncNormalPayout(extra, ctx.wager, ctx.wcr, ctx.rtp, ctx.scale ?? 1);
     }
     case 'free_spins':
       // Expected payout handed to the player ≈ spins × bet × RTP.

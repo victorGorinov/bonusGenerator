@@ -31,6 +31,8 @@ const REGION_NAME: Record<string, string> = {
   sweep:  'US Sweepstakes',
   mn:     'Mongolia',
   latam:  'Latin America',
+  mena:   'MENA — Iraq / Libya / Syria (grey market)',
+  gcc:    'Gulf / GCC — United Arab Emirates',
 };
 
 const SEGMENT_NAME: Record<string, string> = {

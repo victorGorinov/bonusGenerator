@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const GenerateSchema = z.object({
-  region:  z.enum(['cis', 'eu', 'crypto', 'sweep', 'mn', 'latam']),
+  region:  z.enum(['cis', 'eu', 'crypto', 'sweep', 'mn', 'latam', 'mena', 'gcc']),
   players: z.coerce.number().int().min(100).max(200_000),
   sitecur: z.string().min(2).max(10),
   depcur:  z.string().min(2).max(10),

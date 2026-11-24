@@ -126,6 +126,8 @@ function cfgSetLang(lang) {
 const CFG_I18N = {
   en: {
     title: 'Configurator',
+    // brand prefill (see BRAND CONTEXT block)
+    brand_applied:'Fields pre-filled from the brand — edit any of them freely',
     type_bonus:'🎁 Bonus', type_tourn:'🏆 Tournament', type_loyal:'⭐ Loyalty', type_wheel:'🎡 Wheel',
     // wheel
     wheel_setup:'Wheel Setup', wheel_visual:'Wheel & Segments', wheel_preset:'Preset',
@@ -174,6 +176,8 @@ const CFG_I18N = {
     reg_note_ukgc:'⚖ UKGC cap: wager on all bonuses ≤ 10× (effective 19 Jan 2026).',
     reg_note_dga:'⚖ Denmark (DGA) cap: wager ≤ 10× and bonus amount ≤ DKK 1000 for any bonus.',
     reg_note_coljuegos:'ℹ Colombia (Coljuegos, Res. 20250022644): total bonuses capped at 1.6% of GGR/month — plan budget, not wager.',
+    reg_warn_mena:'🚫 Gambling is prohibited by law in Iraq, Libya and Syria — there is no local licensing path. These parameters model an OFFSHORE operation (Curaçao/Anjouan) with no in-country registration. Expect crypto/e-wallet rails, no card processing, and elevated multi-account risk. Verify legal exposure before launch.',
+    reg_warn_gcc:'🚫 Online gambling is not licensed in the UAE. The GCGRA (since 2023) licenses land-based integrated resorts and the national lottery ONLY — online casino falls outside its scope and advertising is prohibited. These parameters model an OFFSHORE operation. Verify legal exposure before launch.',
     pct_lbl:'Rate', count_lbl:'Spins', value_lbl:'Spin value', cb_wager_lbl:'Wager ×',
     calculate:'⚡ Calculate', recalculate:'↻ Recalculate',
     // econ
@@ -304,16 +308,19 @@ const CFG_I18N = {
     comp_add_hint:'Add at least one competitor to run the analysis.',
     comp_name_req:'Enter a casino name first', comp_notfound:'No reliable public source found — marked unconfirmed',
     comp_own_bonus:'Welcome bonus', comp_own_tournament:'Tournament', comp_own_loyalty:'Loyalty program', comp_own_wheel:'Wheel of Fortune',
-    comp_transparency:'⚙️ generated · 🔍 AI-found (with source) · ✍️ manual. The AI never invents numbers — values it cannot confirm are marked "н/д" and excluded from the verdict.',
+    comp_transparency:'⚙️ generated · 🔍 AI-found (with source) · ✍️ manual. The AI never invents numbers — values it cannot confirm are marked "n/a" and excluded from the verdict.',
     // actions
     save_btn:'💾 Save', calendar_btn:'📅 Add to Calendar',
     saved_toast:'Configuration saved ✓', calendar_toast:'Added to Retention Calendar ✓',
     // regions
     reg_eu:'Europe (EU/UK)', reg_cis:'CIS', reg_mn:'Mongolia',
     reg_latam:'LatAm', reg_sweep:'USA Sweep', reg_crypto:'Crypto / Global',
+    reg_mena:'MENA (grey)', reg_gcc:'Gulf (GCC)',
   },
   ru: {
     title: 'Конфигуратор',
+    // brand prefill (see BRAND CONTEXT block)
+    brand_applied:'Поля заполнены из бренда — любое можно изменить',
     type_bonus:'🎁 Бонусы', type_tourn:'🏆 Турниры', type_loyal:'⭐ Лояльность', type_wheel:'🎡 Колесо',
     // wheel
     wheel_setup:'Настройка колеса', wheel_visual:'Колесо и сегменты', wheel_preset:'Пресет',
@@ -360,6 +367,8 @@ const CFG_I18N = {
     reg_note_ukgc:'⚖ Лимит UKGC: вейджер на все бонусы ≤ 10× (действует с 19.01.2026).',
     reg_note_dga:'⚖ Лимит Дании (DGA): вейджер ≤ 10× и сумма бонуса ≤ DKK 1000 на любой бонус.',
     reg_note_coljuegos:'ℹ Колумбия (Coljuegos, Res. 20250022644): суммарные бонусы ограничены 1.6% GGR/мес — планируйте бюджет, а не вейджер.',
+    reg_warn_mena:'🚫 В Ираке, Ливии и Сирии азартные игры запрещены законом, локальной лицензии не существует. Эти параметры моделируют ОФШОРНУЮ работу (Curaçao/Anjouan) без регистрации в стране. Рассчитывайте на крипто/e-wallet, а не карты, и на повышенный риск мультиаккаунтов. Оцените юридические риски до запуска.',
+    reg_warn_gcc:'🚫 Онлайн-гемблинг в ОАЭ не лицензируется. GCGRA (с 2023) выдаёт лицензии ТОЛЬКО наземным интегрированным курортам и национальной лотерее — онлайн-казино вне её периметра, реклама запрещена. Эти параметры моделируют ОФШОРНУЮ работу. Оцените юридические риски до запуска.',
     amount_lbl:'Сумма', max_cash_lbl:'Макс. выплата',
     pct_lbl:'Процент', count_lbl:'Спинов', value_lbl:'Цена спина', cb_wager_lbl:'Вейджер ×',
     calculate:'⚡ Рассчитать', recalculate:'↻ Пересчитать',
@@ -492,6 +501,7 @@ const CFG_I18N = {
     saved_toast:'Конфигурация сохранена ✓', calendar_toast:'Добавлено в Retention Calendar ✓',
     reg_eu:'Европа (EU/UK)', reg_cis:'СНГ', reg_mn:'Монголия',
     reg_latam:'LatAm', reg_sweep:'США Sweep', reg_crypto:'Крипто / Global',
+    reg_mena:'MENA (грей)', reg_gcc:'Залив (GCC)',
   }
 };
 
@@ -723,6 +733,80 @@ function ratioVerdict(r) {
   return 'high';
 }
 
+// ══════════════════════════════════════════════════════════════════════════
+// BRAND CONTEXT — prefill from the user's saved brand
+// ══════════════════════════════════════════════════════════════════════════
+//
+// Picking a brand seeds the base inputs of EVERY promo type; each field stays
+// editable afterwards. BrandContext.apply() only refreshes fields the user
+// hasn't touched since the last apply — the same "user input always wins" rule
+// that governs B.ov.
+//
+// Segment is mapped for bonus/loyalty only: tournament and wheel use a different
+// vocabulary (all/dormant/depositors), so a brand's new|mid|vip would be invalid.
+
+const BRAND_MAPS = {
+  bonus:      { geo:'geo', curMode:'curMode', players:'players', segment:'segment', plat:'plat', rtp:'rtp' },
+  tournament: { geo:'geo', curMode:'curMode', totalPlayers:'players' },
+  loyalty:    { geo:'geo', curMode:'curMode', segment:'segment', players:'players', avgdep:'avgdep', arpu:'arpu' },
+  wheel:      { geo:'geo', curMode:'curMode', players:'players', avgDeposit:'avgdep', rtp:'rtp' },
+};
+
+function cfgApplyBrandTo(type, opts) {
+  const BC = window.BrandContext;
+  if (!BC) return { applied: [] };
+  const res = BC.apply(type, CS[type], BRAND_MAPS[type], opts);
+  if (!res.applied.length) return res;
+
+  // Derived state the plain field copy can't know about.
+  if (type === 'bonus' && res.applied.includes('geo')) {
+    const geo = cfgGeo(CS.bonus.geo);
+    const scaleFactor = geo.avgdep / 50;   // same rescale bonusSetGeo() does
+    CS.bonus.ov.w_maxB  = Math.round(200 * scaleFactor);
+    CS.bonus.ov.ndb_amt = Math.round(10  * scaleFactor);
+    CS.bonus.ov.d2_maxB = Math.round(100 * scaleFactor);
+    CS.bonus.ov.d3_maxB = Math.round(50  * scaleFactor);
+    CS.bonus.ov.rl_maxB = Math.round(100 * scaleFactor);
+    CS.bonus.config = null;                // cached result no longer matches the inputs
+  }
+  if (type === 'loyalty' && res.applied.includes('geo')) {
+    CS.loyalty.region = CS.loyalty.geo === 'crypto' ? 'crypto' : cfgGeo(CS.loyalty.geo).region;
+  }
+  if (type === 'wheel' && res.applied.includes('geo')) {
+    CS.wheel._segKey = null;               // force segment re-materialization at the new scale
+  }
+  return res;
+}
+
+// Connected providers are operator-level, so they follow the brand rather than
+// the promo type. An empty list on the brand means "not specified" — the user's
+// own localStorage selection is kept.
+function cfgApplyBrandProviders() {
+  const BC = window.BrandContext;
+  const list = BC && BC.data().providers;
+  if (!Array.isArray(list) || !list.length) return;
+  cfgConnectedProviders = list.slice();
+  try { localStorage.setItem('cfg_providers', JSON.stringify(cfgConnectedProviders)); } catch(e){}
+}
+
+/** Seed every type at page load (states are at their defaults, nothing to protect). */
+function cfgApplyBrandAll(opts) {
+  ['bonus','tournament','loyalty','wheel'].forEach(tp => cfgApplyBrandTo(tp, opts));
+  cfgApplyBrandProviders();
+}
+
+function renderBrandBar() {
+  const BC = window.BrandContext;
+  if (!BC) return '';
+  const active = BC.active();
+  const note = active
+    ? `<span style="font-size:.7rem;color:var(--muted)">${cfgT('brand_applied')}</span>`
+    : '';
+  return `<div class="brand-bar" style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+    ${BC.selectorHTML()}${note}
+  </div>`;
+}
+
 // ── MAIN RENDER ────────────────────────────────────────────────────────────
 
 function cfgRender() {
@@ -735,7 +819,7 @@ function cfgRender() {
     CS.type === 'tournament' ? cfgT('type_tourn') :
     CS.type === 'wheel' ? cfgT('type_wheel') : cfgT('type_loyal');
   const content = document.getElementById('content');
-  content.innerHTML = renderTypeSwitch() + renderMainContent();
+  content.innerHTML = renderBrandBar() + renderTypeSwitch() + renderMainContent();
   bindEvents();
 }
 
@@ -1110,11 +1194,14 @@ function cfgRegBanner(mechanic) {
 function cfgLicenseBanner() {
   const RB = window.RetomatBenchmarks;
   if (!RB) return '';
-  const { license } = cfgBonusRL();
+  const { region, license } = cfgBonusRL();
   if (license === 'bets_br') return ''; // BR notes are mechanic-specific (see cfgRegBanner)
-  const key = RB.regulatoryNote(license, 'welcome');
+  // MENA/GCC carry no license of their own (every country there is lic='none'), so the
+  // prohibition warning is resolved from the region instead — and rendered hard (red).
+  const key = RB.regulatoryNote(license, 'welcome', region);
   if (!key) return '';
-  return `<div class="mech-reg">${cfgT(key)}</div>`;
+  const hard = key.startsWith('reg_warn_');
+  return `<div class="mech-reg${hard ? ' mech-reg-hard' : ''}">${cfgT(key)}</div>`;
 }
 
 function toggleMech(key) {
@@ -2230,7 +2317,7 @@ function _renderCompCard(type, comp, i, defs, lang) {
   const fields = defs.map(d => {
     const label = lang === 'ru' ? d.ru : d.en;
     const val = comp.params?.[d.key] ?? '';
-    if (ai) return `<div class="ca-f"><span class="ca-fl">${label}</span><span class="ca-fv">${_compEsc(val || 'н/д')}</span></div>`;
+    if (ai) return `<div class="ca-f"><span class="ca-fl">${label}</span><span class="ca-fv">${_compEsc(val || (lang === 'ru' ? 'н/д' : 'n/a'))}</span></div>`;
     return `<div class="ca-f"><span class="ca-fl">${label}</span><input class="inp ca-fi" value="${_compEsc(val)}" oninput="compSetParam('${type}',${i},'${d.key}',this.value)"></div>`;
   }).join('');
   const src = ai && comp.sourceUrl ? `<a href="${_compEsc(comp.sourceUrl)}" target="_blank" rel="noopener" class="ca-srclink">${cfgT('comp_source')}</a>` : '';
@@ -3965,7 +4052,7 @@ function cfgSaveTournament() {
   showToast(cfgT('saved_toast'));
   // Also save to savedTournaments for badge count
   try {
-    const tourRec = { id, name: entry.name, createdAt: entry.createdAt, ...T.result };
+    const tourRec = { id, name: entry.name, createdAt: entry.createdAt, brandId: entry.brandId, brandName: entry.brandName, ...T.result };
     const arr = JSON.parse(localStorage.getItem('savedTournaments') || '[]');
     arr.push(tourRec);
     localStorage.setItem('savedTournaments', JSON.stringify(arr));
@@ -3990,6 +4077,7 @@ function cfgSaveLoyalty() {
   // feeds Reports/Forecast (mirror to server too, else hydrate would drop it).
   try {
     const loyRec = { id, name: entry.name, createdAt: entry.createdAt,
+      brandId: entry.brandId, brandName: entry.brandName,
       params: { region: LY.region, segment: LY.segment }, result: LY.result };
     const arr = JSON.parse(localStorage.getItem('savedLoyaltyPrograms') || '[]');
     arr.push(loyRec);
@@ -4010,6 +4098,8 @@ function cfgSaveLoyalty() {
 
 function saveCfgEntry(entry) {
   try {
+    // Every saved artefact carries the brand it was created under (see brand-context.js).
+    window.BrandContext?.stamp(entry);
     const arr = JSON.parse(localStorage.getItem('cfgSaved') || '[]');
     arr.unshift(entry);
     localStorage.setItem('cfgSaved', JSON.stringify(arr.slice(0,50)));
@@ -4059,6 +4149,7 @@ function addToRCCalendar(data, opts = {}) {
       cur: data.cur,
       createdAt: new Date().toISOString(),
     };
+    window.BrandContext?.stamp(entry);
     camps.push(entry);
     localStorage.setItem('rc_campaigns', JSON.stringify(camps));
     window.RetomatRepo?.mirror('calendar-events', entry.id, entry);
@@ -4085,5 +4176,22 @@ function addToRCCalendar(data, opts = {}) {
   // first pass if the module wasn't ready). Harmless: init state is idempotent.
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => cfgRender(), { once: true });
+  }
+
+  // Brand prefill. At load every CS state is still at its defaults, so seeding
+  // is unconditional; the server list arrives a moment later (BrandContext.load)
+  // and re-seeds + re-renders once.
+  if (window.BrandContext) {
+    cfgApplyBrandAll();
+    window.BrandContext.load().then(() => { cfgApplyBrandAll(); cfgRender(); });
+    // An explicit pick is a deliberate action: overwrite, but ask first if the
+    // user has hand-edited any of the fields this brand owns.
+    window.addEventListener('retomat:brand-changed', () => {
+      ['bonus','tournament','loyalty','wheel'].forEach(tp =>
+        cfgApplyBrandTo(tp, { confirm: tp === CS.type }));
+      cfgApplyBrandProviders();
+      cfgRender();
+    });
+    window.addEventListener('retomat:brands-changed', () => cfgRender());
   }
 })();

@@ -11,7 +11,7 @@ export interface Game {
   mechanic:    Mechanic;
   volatility:  Volatility;
   rtp:         number;
-  regions:     string[];   // eu | cis | crypto | sweep | mn | latam
+  regions:     string[];   // eu | cis | crypto | sweep | mn | latam | mena | gcc
   segments:    string[];   // all | new | mid | vip | dormant | depositors
   mobile:      boolean;
   minBetTier:  MinBetTier;

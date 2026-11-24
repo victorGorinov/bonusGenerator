@@ -5,6 +5,8 @@ const REGIONS = [
   { val: 'cis',    lbl: '🇷🇺 CIS (RU/KZ)' },
   { val: 'mn',     lbl: '🇲🇳 Mongolia' },
   { val: 'latam',  lbl: '🌎 LatAm (MX/BR)' },
+  { val: 'mena',   lbl: '🌍 MENA (IQ/LY/SY)' },
+  { val: 'gcc',    lbl: '🇦🇪 Gulf / GCC (AE)' },
   { val: 'sweep',  lbl: '🇺🇸 USA Sweepstakes' },
   { val: 'crypto', lbl: '🌐 Crypto / Global' },
 ];
@@ -158,6 +160,7 @@ const L = {
     program_name: name => name,
     mode:         'Mode', region: 'Region', segment: 'Segment', players: 'Players',
     avgdep:       'Avg Deposit (USD)', arpu: 'ARPU (USD/mo)',
+    brand_applied:'Fields pre-filled from the brand — edit any of them freely',
     step1_title:  'Basics', step1_sub: 'Choose the loyalty model, market, and audience',
     step2_title:  'Program Design', step2_sub: 'Configure tiers, earn rates, and missions',
     step3_title:  'Results', step3_sub: 'Economics model and tier structure',
@@ -260,6 +263,7 @@ const L = {
     program_name: name => name,
     mode:         'Режим', region: 'Регион', segment: 'Сегмент', players: 'Игроки',
     avgdep:       'Средний депозит (USD)', arpu: 'ARPU (USD/мес)',
+    brand_applied:'Поля заполнены из бренда — любое можно изменить',
     step1_title:  'Основные параметры', step1_sub: 'Модель, рынок и аудитория',
     step2_title:  'Дизайн программы', step2_sub: 'Тиры, начисление очков, миссии',
     step3_title:  'Результаты', step3_sub: 'Экономическая модель и структура тиров',
@@ -909,6 +913,38 @@ function wizProgressHTML(current) {
   </div>`;
 }
 
+// ── BRAND PREFILL ────────────────────────────────────────────────────────────
+// Mirrors loyalty-generator.js: the brand's COUNTRY maps down to the loyalty
+// region cluster; segment/players/avgdep/arpu copy across directly.
+const LY_BRAND_MAP = {
+  region:  function (d) { return d.geo ? lyRegionOfGeo(d.geo) : undefined; },
+  segment: 'segment',
+  players: 'players',
+  avgdep:  'avgdep',
+  arpu:    'arpu',
+};
+const LY_GEO_REGION_FALLBACK = {
+  de:'eu', fr:'eu', es:'eu', it:'eu', nl:'eu', dk:'eu', uk:'eu',
+  ru:'cis', kz:'cis', mn:'mn', us:'sweep',
+  br:'latam', mx:'latam', co:'latam', ar:'latam', pe:'latam', cl:'latam',
+  iq:'mena', ly:'mena', sy:'mena', ae:'gcc',
+};
+function lyRegionOfGeo(geo) {
+  const g = window.GeoData && window.GeoData.of ? window.GeoData.of(geo) : null;
+  const region = (g && g.region) || LY_GEO_REGION_FALLBACK[geo];
+  return REGIONS.some(r => r.val === region) ? region : undefined;
+}
+function lyApplyBrand(opts) {
+  if (!window.BrandContext) return { applied: [] };
+  return window.BrandContext.apply('loyalty', lyDraft, LY_BRAND_MAP, opts);
+}
+function lyBrandBarHTML() {
+  if (!window.BrandContext) return '';
+  const note = window.BrandContext.active()
+    ? `<span style="font-size:.7rem;color:var(--muted)">${lyT('brand_applied')}</span>` : '';
+  return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">${window.BrandContext.selectorHTML()}${note}</div>`;
+}
+
 function renderStep1() {
   lySetTopbar(lyT('step1_topbar', lyT('step1_title')));
 
@@ -926,6 +962,7 @@ function renderStep1() {
 
   document.getElementById('ly-content').innerHTML = `
   ${wizProgressHTML(1)}
+  ${lyBrandBarHTML()}
   <div class="step-header">
     <div class="step-title">${lyT('step1_title')}</div>
     <div class="step-sub">${lyT('step1_sub')}</div>
@@ -1560,6 +1597,7 @@ function saveCurrentProgram() {
   const name = autoName(lyDraft.mode, lyDraft.region, lyDraft.segment);
   const now  = new Date().toISOString();
   const entry = { id: genId(), name, result: lastResult, params: { ...lyDraft }, createdAt: now, updatedAt: now };
+  window.BrandContext?.stamp(entry);
   programs.push(entry);
   savePrograms(programs);
   window.RetomatRepo?.mirror('loyalty-programs', entry.id, entry);
@@ -1621,6 +1659,7 @@ function _doAddToCalendar(campaign, opts = {}) {
     }
     const now = new Date().toISOString();
     const rec = { ...campaign, id: 'ly_' + Date.now(), savedId: opts.savedId || null, createdAt: now, updatedAt: now };
+    window.BrandContext?.stamp(rec);   // calendar events carry the brand too
     camps.push(rec);
     localStorage.setItem('rc_campaigns', JSON.stringify(camps));
     window.RetomatRepo?.mirror('calendar-events', rec.id, rec);
@@ -1664,6 +1703,15 @@ function lyInit() {
     updateAllBadges();
     if (_view === 'list') render();
   });
+
+  // Brand prefill — re-render only while the setup wizard owns the container.
+  if (window.BrandContext) {
+    const rerender = function () { if (_view === 'setup') render(); };
+    lyApplyBrand();
+    window.BrandContext.load().then(function () { lyApplyBrand(); rerender(); });
+    window.addEventListener('retomat:brand-changed', function () { lyApplyBrand({ confirm: true }); rerender(); });
+    window.addEventListener('retomat:brands-changed', rerender);
+  }
 }
 
 function lyToggleLoyaltyGlossary() {

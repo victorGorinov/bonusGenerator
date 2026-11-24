@@ -53,13 +53,14 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │   │   ├── hashPassword.ts      # bcrypt hash + verify
 │   │   │   └── jwt.ts               # signAuthToken/verifyAuthToken — payload { sub, name, email }
 │   │   ├── shared/
+│   │   │   ├── fx.ts                # USD_TO_LOCAL + currencyScale() — financial FX rates. Two consumers: tournament/wheel ARPU conversion AND the bonus payout model's numerical scale. NOT the display rates in public/geo-data.js
 │   │   │   ├── Segment.ts           # 'new'|'mid'|'vip' + isSegment()
 │   │   │   ├── Region.ts            # 'eu'|'cis'|... + isRegion()
 │   │   │   └── Currency.ts          # CurrencyCode type + isCurrencyCode()
 │   │   ├── bonus/
 │   │   │   ├── buildConfig.ts       # Pure: params → full bonus config
 │   │   │   ├── recalcCosts.ts       # Pure: cfg + overrides → { costs, ratio, maxRisk }; accepts minD/maxWin per mechanic
-│   │   │   ├── payout.ts            # truncNormalPayout: statistical cost model
+│   │   │   ├── payout.ts            # truncNormalPayout / truncNormalPayoutCapped: statistical cost model (currency-scale aware)
 │   │   │   └── chainModel.ts        # CHAIN_PROGRESSION = { dep2: 0.45, dep3: 0.25 }
 │   │   ├── campaign/
 │   │   │   ├── scenarios.ts         # GEO_CFG, LANG_NAME, SEG_DESC, SCENARIO_MSG
@@ -96,6 +97,8 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │       └── tournament-optimize.prompt.ts  # buildTournamentOptimizePrompt() — realism + recs
 │   ├── use-cases/
 │   │   ├── Auth.ts                  # registerUser(db,input)/loginUser(db,input)/getUserById(db,id) — DB injected as first arg
+│   │   ├── Brands.ts                # list/create/update/delete brands; create enforces the plan quota inside a tx
+│   │   ├── Profile.ts               # getProfile/updateProfile — users.profile JSONB (name column + merged blob)
 │   │   ├── GenerateBonusConfig.ts   # generateBonusConfig(), recalcBonusConfig()
 │   │   ├── GenerateCampaign.ts      # generateCampaign(), texts, audit, optimize (inject AIProvider)
 │   │   ├── GenerateTournament.ts    # generateTournament(), texts, audit, optimize (inject AIProvider); recommendTournamentGames() — tournament-specific (type/scoring gate + AI rationale)
@@ -118,6 +121,7 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │   └── analytics.service.ts     # compareCampaign() thin wrapper
 │   ├── routes/                      # Wire deps at startup: createXxxController({ ai: getAIProvider() })
 │   │   ├── auth.routes.ts           # /api/auth/register + /login (authLimiter) + /logout + /me (requireAuth)
+│   │   ├── brands.routes.ts         # /api/brands CRUD + /api/brands/profile (requireAuth + requireWorkspace)
 │   │   ├── generate.routes.ts
 │   │   ├── campaign.routes.ts
 │   │   ├── tournament.routes.ts
@@ -135,6 +139,8 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │   │   ├── validate.ts              # validate(schema) — Zod parse, throws ValidationError
 │   │   └── errors.ts                # errorMiddleware — AppError/ValidationError/AIProviderError → HTTP
 │   ├── validation/                  # All schemas export z.infer<> types
+│   │   ├── brand.schema.ts          # BrandDataSchema (strict whitelist of tool inputs) + Create/Update
+│   │   ├── profile.schema.ts        # ProfileUpdateSchema — account fields only, never access
 │   │   ├── auth.schema.ts           # RegisterSchema + LoginSchema — email is trim().toLowerCase()'d before .email() so register/login key off the same normalized address (users.email UNIQUE is case-sensitive)
 │   │   ├── generate.schema.ts       # GenerateSchema + GenerateInput
 │   │   ├── recalc.schema.ts         # RecalcSchema + RecalcInput
@@ -152,6 +158,8 @@ Entry point: `server.ts` → `src/server/app.ts` → Express.
 │       ├── ValidationError.ts       # 400
 │       └── AIProviderError.ts       # 502
 ├── public/                          # Static files served by Express
+│   ├── profile.html / profile.js    # Profile & Brands — account fields + brand CRUD + quota state
+│   ├── brand-context.js             # window.BrandContext — brand cache/CRUD + the picker + apply() prefill contract
 │   ├── login.html / login.js        # POST /api/auth/login; redirects to /retention-calendar.html on success. Reachable via
 │   │                                 # nav/direct link only — nothing on the site force-redirects here (see Security below).
 │   ├── register.html / register.js  # POST /api/auth/register
@@ -277,7 +285,7 @@ Zod `EnvSchema` runs at startup. If `ANTHROPIC_API_KEY` or `RESEND_API_KEY` is m
 
 ### AI retry — `src/ai/providers/anthropic.ts`
 
-Exponential backoff with full jitter. Only retryable errors (429, 5xx, network) trigger retry; 400 errors do not. Logs `cost_usd` per call (Haiku pricing: $0.80/M input, $4.00/M output).
+Exponential backoff with full jitter. Only retryable errors (429, 5xx, network) trigger retry; 400 errors do not. Logs `cost_usd` per call via `tokenRates(model)` — Haiku 4.5 $1.00/M input + $5.00/M output, Sonnet $3/$15, Opus $5/$25 — **plus $0.01 per web search** (`usage.server_tool_use`), which is what makes `competitorComparison` the costliest action in the product.
 
 ---
 
@@ -291,7 +299,7 @@ Exponential backoff with full jitter. Only retryable errors (429, 5xx, network) 
 | POST | `/api/auth/login` | authLimiter 5/min | LoginSchema | `createAuthController().login` — verifies password, sets cookie |
 | POST | `/api/auth/logout` | — | — | `createAuthController().logout` — clears cookie |
 | GET | `/api/auth/me` | — | — (requireAuth) | `createAuthController().me` — returns `{ user{id,name,email,role}, features }` |
-| GET | `/api/features` | — | — (optionalAuth) | `createAccessController().features` — `{ authenticated, role, plan, features }` effective for caller (guest or user) |
+| GET | `/api/features` | — | — (optionalAuth) | `createAccessController().features` — `{ authenticated, role, plan, features, limits }` effective for caller (guest or user); `limits.brands` = -1 means unlimited |
 | GET | `/api/admin/meta` | 30/min + requireAdmin | — | `createAdminController().meta` — `{ features, plans, presets }` for the admin UI |
 | GET | `/api/admin/users` | 30/min + requireAdmin | AdminListQuerySchema (query) | `.list` — `?q=&limit=&offset=` |
 | GET | `/api/admin/users/:id` | ↑ | — | `.get` |
@@ -318,8 +326,12 @@ Exponential backoff with full jitter. Only retryable errors (429, 5xx, network) 
 | POST | `/api/loyalty/optimize` | 15/min | LoyaltyOptimizeSchema | `createLoyaltyController().optimize` |
 | POST | `/api/loyalty/missions` | 15/min | LoyaltyMissionsSchema | `createLoyaltyController().missions` |
 | POST | `/api/games/recommend` | 30/min (apiLimiter) | GamesRecommendSchema | `createGamesController().recommend` — deterministic, no AI call |
+| POST | `/api/assistant/interpret` | aiLimiter 15/min + aiGate | AssistantInterpretSchema | `createAssistantController().interpret` — NL → campaign params (Phase 1 of the AI Assistant chat); mounted `/api/assistant` with `toolAuth` |
 | GET/POST | `/api/saved/:entity` | 30/min (apiLimiter) + requireAuth + requireWorkspace | SaveItemSchema (POST) | `createSavedItemsController().list/save` — upsert by client id |
 | DELETE | `/api/saved/:entity/:id` | ↑ | — | `.remove` — delete by client id. entity ∈ configs\|campaigns\|tournaments\|loyalty-programs\|calendar-events\|calendar-templates |
+| GET/POST | `/api/brands` | savedLimiter + requireAuth + requireActiveUser + requireWorkspace | BrandCreateSchema (POST) | `createBrandsController().list/create` — list returns `{ brands, limit, used }`; create enforces the plan brand quota (403 `BRAND_LIMIT_REACHED`) |
+| PATCH/DELETE | `/api/brands/:id` | ↑ | BrandUpdateSchema (PATCH) | `.update/.remove` — rename / re-parametrise / set default; delete moves the default flag on |
+| GET/PATCH | `/api/brands/profile` | ↑ | ProfileUpdateSchema (PATCH) | `.profile/.saveProfile` — account profile (name/company/position/timezone) |
 | POST | `/api/campaign/actuals` | 30/min | ActualsSchema | `createAnalyticsController().saveActuals` |
 | POST | `/api/campaign/analysis` | 30/min | AnalysisSchema | `createAnalyticsController().analyze` |
 | POST | `/api/campaign/analysis/explain` | 15/min | ExplainSchema | `createAnalyticsController().explain` |
@@ -345,7 +357,7 @@ Active licenses: `mga` (EU default), `ukgc` (UK), `dga` (Denmark), `none` (CIS/l
 
 **CIS note** — `reload.maxBMax` is `Infinity`; ceiling enforced via `maxBMulti: 1.5` (1.5× avgdep).
 
-**Payout fallback** — `truncNormalPayout` underflows for large-denomination currencies (RUB/KZT/MNT). Fix: if `payoutStat < bonusSize × 1e-6`, use deterministic breakeven-efficiency estimate instead.
+**Currency-scale normalisation (fixed 2026-08-03)** — `truncNormalPayout` models the post-wagering balance with `mu ∝ B` but `sigma ∝ √B`, which is only dimensionally consistent when `B` is expressed in units of one average bet. Passing a raw site-currency amount made the payout RATIO depend on the currency's denomination: the same economic bonus returned 17.4 % in EUR, 20.2 % in GBP and ~0 % in RUB/KZT/MNT (z fell to −20…−39, `_Phi(z)` underflowed). All call sites now pass `currencyScale(sitecur)` from `src/domain/shared/fx.ts`, making the ratio identical in every currency. The old `payoutStat < bonusSize × 1e-6 → bonusSize × adjEff` fallback is **gone** — it papered over the symptom and returned ~68 % of face value where the statistical model says ~16 %. The result is clamped to `B` (an uncapped normal has unbounded upside, so a bonus tiny relative to one bet could otherwise exceed its own face value). **No-wager (sweepstakes) configs are handled explicitly**: `wagerX === 0` → payout = face value, which the removed fallback used to supply implicitly.
 
 ### `computeSelectedEcon(cfg, selectedTypes)` — `src/domain/bonus/selectedEcon.ts`
 
@@ -359,6 +371,8 @@ Returns `{ costs: { w_p10, w_p50, w_p90, ndb, rl, d2, d3, fs, total }, ratio, ma
 All cost values are TOTAL (already multiplied by `pl`). `ratio = w_p50 / (pl × dep)`.
 
 **`minD` / `maxWin` overrides** — each mechanic accepts per-call overrides for minimum deposit and max win cap. Passed as `overrides.w_minD`, `overrides.w_maxWin`, `overrides.d2_minD`, etc. Used by the unified configurator to reflect user-edited field values without a full `buildConfig` round-trip.
+
+**Max-win cap semantics (fixed 2026-08-03)** — a cap truncates the upper TAIL, so it is applied inside the expectation via `truncNormalPayoutCapped` (closed form: `E[min(X⁺,C)] = E[X⁺] − E[(X−C)⁺]`). The previous code clamped the already-averaged payout (`min(E[X⁺], C)`); since caps are quoted as a multiple of the bonus while the mean payout is a fraction of it, **every realistic cap was a silent no-op** — e.g. UK `w_maxWin` at £45/£90/£135/£225 all left the cost unchanged.
 
 ### `calcTournamentEconomics()` — `src/domain/tournament/calcEconomics.ts`
 
@@ -402,7 +416,9 @@ Single-step fields (`costRatio`, `sP50`, etc.) are preserved for backward compat
 | `crypto` | `crypto.ts` | Global crypto |
 | `sweep` | `sweep.ts` | US sweepstakes |
 | `mn` | `mn.ts` | Mongolia |
-| `latam` | `latam.ts` | MX, BR |
+| `latam` | `latam.ts` | MX, BR, CO, AR, PE, CL |
+| `mena` | `mena.ts` | IQ, LY, SY |
+| `gcc` | `gcc.ts` | AE |
 
 Country → geo/license (`GEO_CFG` in `src/domain/campaign/scenarios.ts`):
 ```
@@ -412,9 +428,16 @@ us → sweep, none, USD
 LatAm (all sitecur=USD in backend — see currency-layer note below):
   br → latam, bets_br    mx → latam, segob    co → latam, coljuegos
   pe → latam, mincetur   ar → latam, none     cl → latam, none
+MENA / GCC (all sitecur=USD in backend — same display-layer model as LatAm):
+  iq → mena, none        ly → mena, none      sy → mena, none
+  ae → gcc, none
 ```
 
 **LatAm split (2026-07-19)** — LatAm broken into 6 countries mirroring EU's per-country model. `latam.ts` now has a `licenses:{}` block (like EU's `ukgc`/`dga`): regulated markets carry their own license (`bets_br` Brazil/SPA, `segob` Mexico, `coljuegos` Colombia, `mincetur` Peru — each with `reg` strings + welcome/wager overrides, **all amounts in USD**); Argentina (provincial) and Chile (grey market) use the offshore Curaçao default (`none`). New license keys added to the `lic` enums in `generate`/`campaign`/`tournament` schemas + `reg_*` i18n in `app.js` (4 langs). Backend computes **all LatAm in USD** — a single shared `LATAM` geo object can't hold 6 currency scales (BRL ×5.5 … COP ×4100), so local currency is a **display layer**, never a backend re-scale.
+
+**MENA / GCC split (2026-07-30)** — four Middle East / North Africa markets added as **two** regions, not one. Gambling is prohibited and unlicensed in all four, so every country resolves to `lic:'none'` (offshore Curaçao/Anjouan) and **no new `lic` enum keys were needed**; the prohibition warning is surfaced instead through `regulatoryNote(license, mechanic, region?)`, whose new optional 3rd argument is consulted only when the license carries no note of its own → `reg_warn_mena` / `reg_warn_gcc` (rendered hard/red by `cfgLicenseBanner`).
+
+Two regions rather than one because **`arpu`/`bpct`/`cac` are read at region level in `buildConfig`** (`const { arpu, bpct, cac } = geo` — a license block cannot override them, the same limitation LatAm lives with). UAE ARPU is ~4× Iraq's, so a shared object would have understated the UAE and overstated Syria. `mena` = 14 ARPU / wW 45 / small NDB (no KYC infrastructure, high multi-account risk) / live-light mix / reload Wed; `gcc` = 55 ARPU / wW 35 / live-heavy mix (`mix[1]` 0.25 — Gulf audiences skew to live tables) / **reload Friday** (Gulf weekend is Fri–Sat). Per-country deposit spread (Syria $12 ↔ UAE $150 mid) lives in `GEO_CFG.avgdep`/`avgdepUSD` — unlike LatAm these are set explicitly, the 40/100/500 default is ~12× too wide here. `mena` is in `LOW_DENOM_REGIONS` (high minBet is a real barrier); `gcc` is not. **arpu/cac/avgdep are a market-picture estimate, not verified operator data** — same caveat as `catalog.json`. UAE note: the GCGRA (2023) licenses land-based integrated resorts + the national lottery **only**; online casino is outside its scope, hence `lic:'none'`. Backend computes in USD; IQD/LYD/SYP/AED are display-only (SYP ×13000 would otherwise hit the `truncNormalPayout` underflow path). `catalog.json` tagged: `mena` = crash + cheap-entry mobile headline slots, `gcc` = all live/table + headline slots. Tests: `buildConfig.test.js` (MENA/GCC blocks + snapshots), `geo.currency.test.js`, `bonus.benchmarks.parity.test.js` (region matrix + region-keyed notes).
 
 **Currency layer (display-only, `public/geo-data.js`)** — single source of truth for the geo list (replaces the ~6 duplicated dicts). Each geo has `cur` (backend currency, sent as sitecur — LatAm=USD), `rate` (units of cur/USD), `local`+`localRate` (region display currency). A currency toggle in the unified Configurator (Bonus/Tournament/Loyalty tabs) picks the display currency — **region-local by default, USD optional** — via `GeoData.convertConfigCurrency()`/`convertCosts()` applied to the API responses at pure-render boundaries (`renderBonusResults`, `updateBonusCostDisplay`, econ tabs) and to money input fields (avgdep/prize/overrides). USD econ benchmarks (arpu/cac/ltv3) and ratios are never converted. Loyalty is currency-agnostic (always USD backend) → its factor uses base=1, not geo.rate (see `dispBaseRate()`). Loyalty tab now uses a country selector grouped by region (`cfgGeoOptions`), deriving region from the country. Standalone generators (campaign/tournament + `generator*.js` twins) got the 4 new countries added to their geo dicts (additive; no currency toggle there — the Configurator is the primary tool). Tests: `tests/domain/geo.currency.test.js` (converter + factor + list integrity), `buildConfig.test.js` (per-license LatAm snapshots).
 
@@ -428,7 +451,7 @@ LatAm (all sitecur=USD in backend — see currency-layer note below):
 
 **Retry:** exp backoff + full jitter, max 2 retries; only 429/5xx/network errors retried.
 
-**Cost logging:** `cost_usd` logged per call (input × $0.80/M + output × $4.00/M).
+**Cost logging:** `cost_usd` logged per call = input × $1.00/M + output × $5.00/M (Haiku 4.5) + web searches × $0.01. Average text/audit/optimize call ≈ **$0.01**; a full campaign with all AI ≈ **$0.04**. Rates live in `tokenRates()` — update there, not here. Commercial impact: `PRICING.md`.
 
 **Audit `rule` field:** each audit check includes a `rule` string citing the specific regulation. Field is optional in schema for backward compat.
 
@@ -437,9 +460,24 @@ LatAm (all sitecur=USD in backend — see currency-layer note below):
 - `AuditResponseSchema`: `{ checks[5]{label,status,note,rule?}, recommendations[2-4]{text,impact} }`
 - `OptimizeResponseSchema`: `{ recommendations[1-5]{factor,param,current,target,reason,impact} }`
 - `TournamentOptimizeResponseSchema`: `{ realism:{verdict,summary,checks[3-6]{metric,forecast,benchmark,verdict,note}}, recommendations[1-3]{param,current,target,reason,impact} }`
+- `InterpretResponseSchema`: `{ intent, scenario?{id,lbl?,cat?}, params{geo?,segment?,…}, inferred[], missing[], notes[], confidence }` — **lenient on params** (strings pass through); authoritative enum/geo/scenario validation + the BR welcome clamp happen in `src/use-cases/InterpretPrompt.ts` (`refineInterpretation`), not the parser
 - `LoyaltyMissionsResponseSchema`: `{ missions[]{id, narrative, tierEffect?} }` — **id only, no name**; join with `config.missions` by id to get name/objective/reward
 
 ---
+
+## AI Assistant chat — NL → campaign (Phase 1, 2026-11-23)
+
+Natural-language front door to the Campaign Generator: the operator describes a campaign or a desired outcome, and a docked chat panel pre-fills the wizard. Spec + plan: `tasks/ai-assistant-chat-spec.md`. **Principle:** the AI only translates words into the campaign-engine params that already exist — it never computes economics. All numbers come from `/api/campaign/generate` (buildConfig); the chat is a thin intent layer.
+
+**Backend** (interpret-only; generation is the existing `/api/campaign/generate`):
+- `src/ai/prompts/assistant-interpret.prompt.ts` — `buildInterpretPrompt({prompt,geoKeys,scenarioIds,uiLang})`. Strict JSON contract, valid-enum lists, "never output campaign numbers" + BR welcome-prohibition hints, 2 few-shot examples. ~700-token budget.
+- `src/ai/parser.ts` — `InterpretResponseSchema` + `parseInterpretResponse` (lenient envelope; `.catch` defaults so a flaky model never 500s the route).
+- `src/use-cases/InterpretPrompt.ts` — `interpretPrompt(input, ai)` + the pure, exported `refineInterpretation(raw, uiLang)`: validates every enum against the authoritative lists (geo from `GEO_CFG`, scenario from `SCENARIO_MSG`, the rest mirror `campaign.schema.ts`), drops off-list values (incl. `lang`, allowlisted to **en/ru** — the only locales the app's i18n knows; anything else is dead data downstream), clamps `players` to [100,200000]. **Two scenario-default fills** run when the operator names a scenario without stating these: (a) `bonusTypes` ← `SCENARIO_DEFAULT_MECHANICS` (server mirror of the frontend `BTYPE_PRESETS`, incl. the `inactive_3/7/30` reactivation family) so the **whole campaign** is built, not a single bonus; (b) `segment` ← `SCENARIO_DEFAULT_SEGMENT` (mirror of `SEGMENT_PRESETS`, e.g. `vip_retention`→`vip`, `first_launch`→`new`) instead of letting `campaign.service` silently default to `mid`. Both fills run **BEFORE** the **BR welcome→reload regulatory clamp** (+note) — so a prohibited welcome in a filled BR package is stripped — and each filled key is marked in `inferred[]`. An explicitly-stated mechanic/segment is never overwritten. Then **recomputes the critical `missing` set** (geo always; segment-or-scenario; players only for intent `goal`) rather than trusting the model; `inferred[]` is otherwise filtered to keys actually set.
+- `src/controllers/assistant.controller.ts` · `src/validation/assistant.schema.ts` (`{prompt≤2000, uiLang?, context?}`) · `src/routes/assistant.routes.ts` (`POST /api/assistant/interpret`, `aiLimiter` + `...aiGate` → guests/`free` get 403 `FEATURE_FORBIDDEN`, counts 1 AI call in quota). Mounted `/api/assistant` with `toolAuth` in `src/server/app.ts`.
+
+**Frontend** — `public/assistant.js` (classic script loaded after `campaign-generator.js`, so it shares its globals: `draft`, `currentLang`, `t`, `startWizard`, `selScenario`, `goStep`, `showView`, `syncLangToGeo`, `updateRiskHint`, `syncCGPlayers`, `buildGeoSelect`). Self-injects a fixed launcher (compact circular ✨ icon anchored mid-right, clear of the wizard's bottom Next/Generate button) + right-side drawer (no HTML change beyond the `<script>` tag). Flow: input → `/api/assistant/interpret` → if `missing` non-empty, **structured clarification** (segment/players chips, geo `<select>` cloned from the wizard's own `#p-geo` — no 2nd AI call) → else `/api/campaign/generate` → preview card (mechanics + P50/ROI/MaxRisk from `econ` + abuse chip via `window.RetomatBonusAbuse.assessBonusAbuse` + regulatory `notes` banners + `inferred` line) → **Apply** pre-fills wizard step 2 (`startWizard` → `selScenario` → `paintStep2` repaints geo/lang/budget/players/segment/agg/risk/bonusTypes into draft+DOM, user-edit-safe). Gated client-side by `FeatureGate.ensure('ai')` (guest → sign-in overlay). Self-contained EN/RU dict (`_AS_I18N`-style), relabels on `bonusLang` change. Loaded on **both** `campaign-generator.html` and the hub `generator.html` (the hub's Bonus tab is a `generator.js` fork sharing the same globals/DOM; `apply` calls `genSwitchType('bonus')` first and falls back to `genPickGeo` where `syncLangToGeo` is absent). A Configurator handoff (`params → CS`) is still Phase 2.
+
+**Tests:** `tests/ai/assistant.parse.test.js` (envelope + defaults + malformed), `tests/domain/assistant.interpret.test.js` (enum validation, BR clamp EN/RU, critical-missing recompute, inferred filter, whole-campaign package fill incl. `inactive_*`, scenario-implied segment fill, lang allowlist, mock-provider round-trip), `tests/integration/api.assistant.test.js` (200 shape + 400 validation), plus a guest-403 case in `api.guestAccess.test.js`. **Not Phase 1 (→ Phase 2/3):** Configurator handoff (`params→CS`), numeric-target solver (`solveToTarget`), multi-turn refinement, tool-calling agent, Tournament/Loyalty/Wheel as chat targets. See the spec's "Зафиксированные решения Phase 1".
 
 ## Frontend
 
@@ -836,7 +874,9 @@ BETA_LOCKDOWN=       # Optional — 'true'/'1' locks the whole system behind log
 4. …the plan preset `FEATURE_PRESETS[plan]`
 5. guest (no row) → `GUEST_FEATURES`
 
-`FEATURES = bonus, campaign, tournament, loyalty, games, reports, calendar`. `GUEST_FEATURES` = bonus/campaign/tournament/games on, loyalty/reports/calendar off. `FEATURE_PRESETS.free` = all-on today (registered users unchanged); `pro` is a placeholder — **this is the tariff-plan seam**: adding a tier = add a preset row + a plan option in the admin UI, no enforcement/route/schema changes. Per-user `features` stays an OVERRIDE layer (absent key = inherit plan), so changing a user's plan moves their access wherever no explicit override is set.
+`FEATURES = bonus, campaign, tournament, loyalty, wheel, games, competitorComparison, reports, calendar, ai`. `GUEST_FEATURES` = bonus/campaign/tournament/wheel/games on; loyalty/reports/calendar/competitorComparison/**ai** off. `ai` is an **umbrella flag over every AI-backed action** (texts/audit/optimize/description/missions/competitor), off for guests (`GUEST_FEATURES`). **BETA (temporary, flipped 2026-11-24):** the `free` preset has `ai` **ON** by default, so every registered beta account can use the AI tools without a per-user grant; a per-user `features:{ai:false}` override still revokes it individually, and the one-line revert to gate AI behind a grant again is `free: { ...ALL_ON, ai: false }` in `src/config/features.ts` (guests are unaffected — `GUEST_FEATURES.ai` stays `false`). It gates *on top of* each tool's own feature, so deterministic generate/recalc stay open while the AI sub-actions require this flag. `FEATURE_PRESETS.free` = all-on (**incl. `ai` during the beta**); `pro` = all-on. **This is the tariff-plan seam**: adding a tier = add a preset row + a plan option in the admin UI, no enforcement/route/schema changes. Per-user `features` stays an OVERRIDE layer (absent key = inherit plan), so changing a user's plan moves their access wherever no explicit override is set.
+
+**Commercial tariff grid → `PRICING.md`** (single source of truth for prices, COGS, unit economics). Summary: Free $0 · **Starter $49** (1 brand, 1 seat, 100 AI calls/mo) · **Growth $249** (3 brands, unlimited AI, competitor, reports) · **Agency $599** (10 brands, multi-workspace) · Platform/white-label from $2 000. Value metric is **brands (workspaces), not seats** — bonus budget scales with brands, not logins. Gross margin 95–98% (deterministic math dominates; average AI call ≈ $0.01 at Haiku 4.5 $1/$5 per MTok). The grid maps onto the seam above without enforcement changes; what's missing is metering — see **Pending work → Тарифы и биллинг**.
 
 **Enforcement (from DB, never the JWT — so changes apply within seconds):**
 - `requireFeature(feature)` (`src/middleware/requireFeature.ts`) — on each tool route. Guest → `GUEST_FEATURES` (no DB hit). Logged-in → `getUserAccessById`, behind a **5s bounded TTL cache** (`ACCESS_TTL_MS`) so the Configurator's per-slider `/api/recalc` burst doesn't re-read the row every call; admin changes still apply within the TTL. Failure handling avoids elevation: `row === null` (deleted user / malformed token `sub` — `getUserAccessById` returns null for a non-UUID id instead of throwing) → treat as guest (safe, no overrides possible); a **thrown** lookup error (transient DB) → **fail closed** 503 `SERVICE_UNAVAILABLE` (a restrictive per-user override could otherwise be bypassed). → 403 `FEATURE_FORBIDDEN`.
@@ -857,7 +897,9 @@ BETA_LOCKDOWN=       # Optional — 'true'/'1' locks the whole system behind log
 
 **Tests**: `access.test.js` (resolve precedence), `accessResolve.disabled.test.js` (uuid-tolerant lookup), `adminUsers.test.js` (guards via a fake Pool+client — no real DB), `api.guestAccess.test.js` (hybrid gating: guest 200 for bonus/campaign/tournament/games, 403 for loyalty/reports, `/api/features` shape, admin 401), `api.disabledUser.test.js` (live-DB: disabled account blocked at login/me/saved/tool routes).
 
-**Not done (future):** billing/subscriptions (Stripe, `plan_expires_at`, status webhooks), an editable `plans` DB table (presets live in code for now), and a plan selector wired to real tiers — all deferred; the seam above absorbs them without schema/enforcement changes.
+**Not done (future):** billing/subscriptions (Stripe, `plan_expires_at`, status webhooks), an editable `plans` DB table (presets live in code for now), a plan selector wired to the real tiers in `PRICING.md`, **per-account AI quota metering**, and **multi-workspace (brand) limits** — all deferred; the seam above absorbs them without schema/enforcement changes. See **Pending work → Тарифы и биллинг** for the ordered list.
+
+**Known gap (not a hole, but not enforced either):** anonymous AI budget-burn is closed (`ai: false` for guests). **During the beta `free` has `ai` ON**, so every registered account can call AI — the `aiBudget` per-user daily/total cap + global $ kill-switch still apply, but there is no per-plan monthly quota yet (only `aiLimiter` 15/min per IP on top). The Starter tier's "100 AI calls/mo" is currently a verbal agreement, not code. `competitorComparison` is the costliest action (live web search, priced per search, not per token) and its real COGS is **unmeasured** — treat it as the most expensive operation in the product until it is.
 
 ---
 
@@ -995,6 +1037,69 @@ Deterministic, no-AI structural check that flags how exploitable a promo config 
 
 ---
 
+## Competitor analysis
+
+Shared browser module `public/competitor-analysis.js` (`window.CompetitorAnalysis` + ESM export for the unit test): `PARAM_DEFS` per promo type, pure `parseNum`/`classifyCell`/`buildRows`, renderers `renderComparisonTable`/`renderVerdict`/`renderPanel`, and `wire()` (a full state-machine host for the Generator twins). Styles in `public/competitor-analysis.css`. Backend: `POST /api/competitor/search` (live web search on `AI_SEARCH_MODEL`, `maxUses:3`) + `/compare` (verdict, no search) — the whole router is behind `requireFeature('competitorComparison')` + `aiGate`, closed to guests. **The priciest path in the product** (billed per web search).
+
+**Surfaces:**
+- Wizard **Step 4** — `configurator.js` and the hub `generator.js` (`renderHubComp`, `hubComp*` handlers). Re-runnable there; "Save" writes `cfgSavedComparisons` + mirrors `competitor-comparisons`.
+- **Saved-campaign detail → ⚔️ Конкуренты tab** (added 2026-07-26) — in both twins `generator.js` / `campaign-generator.js` (`renderDetailComp` + `dcComp*` handlers, `det_tab_comp` i18n, `.dtab` button in both HTMLs). **One-shot per campaign**: the result is stored on the campaign record as `c.competitor = { region, ownOffer{label,params}, competitors[], result, createdAt }` (via `putCampaigns` + `RetomatRepo.mirror('campaigns', …)`, plus archived as a standalone `competitor-comparisons` record with `campaignId`). Once `c.competitor.result` exists the tab renders read-only — no re-run, no save button — because each run costs real web-search money. A failed call stores nothing, so a retry is still possible. Own-offer params come from the saved `c.mechanic` (`maxWin` deliberately left blank — the mechanic has no max-win-cap field). The pre-run panel reuses `CompetitorAnalysis.renderPanel` with `fnPrefix:'dcComp'`, so handler names are a contract with that module.
+- `campaign-generator.html` had none of this before; it now loads `competitor-analysis.css`, `feature-gate.js` and `competitor-analysis.js` like `generator.html` does.
+
+---
+
+## Brand profiles (user profile → tool prefill)
+
+**Added 2026-07-27.** A **brand** stores the inputs every tool asks for over and over
+(geo, display currency, segment, platform, player base, avg deposit, ARPU, RTP,
+connected providers). Picking a brand in any input form seeds those fields **as
+defaults** — every field stays editable. The tariff differentiates by **brand
+quota**, not by access: the profile itself is open to every registered user.
+
+**Data model** — migration `006_brands.sql` (apply via `tsx scripts/migrate.ts src/db/migrations/006_brands.sql`):
+- `brands {id, workspace_id, name, is_default, data JSONB, created_at, updated_at}`, per-workspace like the 002 saved-items tables. Two partial/expression indexes carry the invariants: `UNIQUE(workspace_id, lower(name))` (a picker must never show two identical rows) and `UNIQUE(workspace_id) WHERE is_default` (**at most one default, enforced by the DB**, not by application ordering).
+- `users.profile JSONB` — account profile (company/position/timezone). Separate from `features`/`limits` so a profile edit can never touch access control.
+- `users.limits JSONB` — per-user NUMERIC overrides, e.g. `{"brands": 5}`.
+
+Brands are deliberately **not** part of the generic `SavedItems` `{client_id, data}` layer: they're quota-limited and need a create-time guard, so they get their own use-case (`src/use-cases/Brands.ts`).
+
+**Numeric limits layer** (`src/config/features.ts` + `domain/auth/access.ts`) — the numeric twin of the feature map, same precedence: `disabled → 0` · `admin → UNLIMITED` · per-user `users.limits` override · `PLAN_LIMITS[plan]` · guest → `GUEST_LIMITS`. A malformed override (negative/NaN/non-numeric JSONB) is ignored so it can never widen a quota. `Infinity` has no JSON form, so the wire encodes unlimited as **-1** (`limitsForWire`); the frontend treats `< 0` as "no cap".
+
+`PLAN_LIMITS` mirrors the brand row of the `PRICING.md` §2 grid: **free 1 · starter 1 · growth 3 · agency 10 · platform 50** (contract-level; the real number is a per-user override), `pro` 3 (legacy key). Guests get 0 server-side brands but **one browser-local brand** so the prefill is demoable before signup — it migrates into the account on first authenticated load (`rtm_brands_migrated_v1`, same one-shot pattern as saved items).
+
+**Same change also brought the PRICING.md tiers into `FEATURE_PRESETS`**: `starter`/`growth`/`agency`/`platform` presets now exist alongside `free`/`pro`. **`free` is deliberately still everything-on-except-AI**, not the trimmed PRICING Free row — every beta account is on `free` and trimming it would revoke Loyalty/Calendar/Reports from live testers mid-beta. Flipping it is a one-line change when billing ships.
+
+**Backend** — `Brands.ts` (list/create/update/delete), `Profile.ts`, `brands.controller.ts`, `brands.routes.ts` (mounted `/api/brands`, same hard gate as `/api/saved`). The quota check and the INSERT run in **one transaction with the workspace's rows locked `FOR UPDATE`** — two concurrent creates on a 1-brand plan would otherwise both pass an unlocked count (the same read-then-write race the last-admin guard fixes). Unique-violations become 409 `BRAND_NAME_TAKEN`; a non-UUID `:id` answers 404 instead of letting Postgres throw. Deleting the default moves the flag to the oldest remaining brand in the same transaction.
+
+**Frontend** — `public/brand-context.js` (`window.BrandContext`), loaded on every tool page next to `repo-http.js`:
+- localStorage `rtm_brands` is the working cache (tools render synchronously from it); the server is the source of truth for logged-in users. Active brand in `rtm_brand_active`, shared across pages.
+- `selectorHTML()` renders the picker used **in every input form** (inline `onchange` → survives the tools' innerHTML re-renders; CSP allows `scriptSrcAttr`). Events `retomat:brand-changed` / `retomat:brands-changed`.
+- **`apply(scope, target, map, opts)` is the prefill contract**: it only refreshes fields whose current value still equals what this scope last applied — i.e. **a field the user edited by hand is never silently overwritten** (same discipline as `B.ov`). An explicit brand pick passes `{confirm:true}` and asks before overwriting edited fields. A map value may be a **function** for derived fields (loyalty's `region`, computed from the brand's country).
+
+**Where the picker appears** (each with its own map, since the tools' field names and segment vocabularies differ):
+
+| Surface | Mapped from the brand |
+|---|---|
+| Configurator — Bonus | geo, curMode, players, segment, plat, rtp (+ rescales `ov` maxB/ndb_amt like `bonusSetGeo`) |
+| Configurator — Tournament | geo, curMode, totalPlayers |
+| Configurator — Loyalty | geo (→ region), curMode, segment, players, avgdep, arpu |
+| Configurator — Wheel | geo, curMode, players, avgDeposit, rtp |
+| Campaign Generator + hub `generator.js` (step 2) | geo, segment, players (DOM-driven → `cgBrandPullDom`/`cgBrandSyncDom`) |
+| Tournament Generator + hub fork (step 1) | geo (+ currency), totalPlayers |
+| Loyalty Generator + hub fork (step 1) | geo→region, segment, players, avgdep, arpu |
+| Wheel hub fork (setup) | geo, players (region recommendation re-derived) |
+| all types | `providers` → `cfg_providers` (operator-level, shared) |
+
+Tournament/wheel deliberately **don't** take the brand's segment: their vocabulary (`all/dormant/depositors`) isn't the brand's `new|mid|vip`.
+
+**Profile page** — `public/profile.html` + `profile.js`: account block (name/company/position/timezone + read-only plan) and brand CRUD with the quota state ("2 of 3") and an upgrade note when the quota is used up. Guests see the same UI backed by the single local brand. Reachable from the header user chip (nav-utils) and the sidebar.
+
+**Admin** — the users table gained a **Brands** column: a numeric input storing a per-user `limits.brands` override (empty = inherit the plan), pruned-vs-preset on save exactly like the feature overrides; `/api/admin/meta` now returns `limits` + `limitPresets`.
+
+**Tests**: `tests/domain/access.limits.test.js` (precedence, malformed overrides, wire encoding, the PRICING grid) + `tests/domain/brands.test.js` (quota guard incl. the `FOR UPDATE` ordering, first-brand default, unique-name → 409, default-flag hand-off, schema whitelist) — 38 tests.
+
+**Not done**: multi-workspace (a brand is still per the user's single workspace — see Pending work → Тарифы и биллинг #3), no per-brand saved-item scoping (campaigns/tournaments aren't filtered by brand yet), no brand logo upload.
+
 ## Pending work
 
 **P0 (auth — `AUTH_IMPLEMENTATION_PLAN.md`, Phases 1–4 DONE 2026-07-07):**
@@ -1002,6 +1107,18 @@ Deterministic, no-AI structural check that flags how exploitable a promo config 
 - ~~Phase 2/3/4 (server-side persistence + frontend repo-layers + migration)~~ — done 2026-07-07 (see Completed log + "Server-side persistence" section below).
 - Landing→app login/register interstitial with a "continue as guest" choice — designed but still deferred; the account/guest split is now functionally real (accounts persist to Postgres, guests to localStorage), so this can be revisited. Current UX choice: transparent localStorage fallback for guests, no forced redirect (nav-utils shows a "Sign in" link / user chip instead).
 - Remaining polish: `saved_configs` has no read UI yet (write-only mirror — Configurator never listed cfgSaved); per-workspace `connectedProviders` (still localStorage `cfg_providers`); optional server-side conflict/merge if the same account edits on two devices offline (last-write-wins today via client-id upsert).
+
+**P0 (тарифы и биллинг) — новое 2026-07-26, план цен в `PRICING.md`:**
+
+Порядок именно такой: сначала **метринг** (без него тариф — устная договорённость), потом **лимиты брендов** (без них Growth/Agency неотличимы от Starter), и только потом биллинг.
+
+1. **Квота AI-вызовов на аккаунт.** Сейчас `ai` — булев флаг: либо всё, либо ничего. Starter'у нужно «100 вызовов/мес». Минимальная реализация: счётчик в новой таблице `ai_usage {workspace_id, period, calls}` (инкремент в `requireFeature`/AI-контроллерах), лимит из пресета плана (`FEATURE_PRESETS[plan].aiQuota`), при превышении → 402/403 с кодом `QUOTA_EXCEEDED` и понятным фронтовым оверлеем (по образцу `public/feature-gate.js`). Плюс дневной предохранитель поверх месячного, чтобы утёкшая сессия не сожгла квоту за час.
+2. **Измерить реальный COGS `competitorComparison`.** Он использует live web search (тарификация за поиск, не за токены) — единственная операция, чья себестоимость на порядок выше среднего вызова ($0.01) и до сих пор **не замерена**. Залогировать `cost_usd` по образцу `AnthropicProvider`, снять 20–30 реальных вызовов, только потом решать, входит ли он в безлимит Growth или считается отдельной квотой.
+3. **Лимит брендов (workspace).** Метрика ценности в `PRICING.md` — бренды, а не места. Сегодня 1 workspace на пользователя (`requireWorkspace`, кэш 1:1). Нужно: несколько workspace на аккаунт, переключатель в UI, лимит из пресета (`maxWorkspaces`: Starter 1 / Growth 3 / Agency 10). Это же — предусловие для B2B2B-сделок с платформами (единственный путь к 10×, см. `PRICING.md` §5).
+4. **Пресеты под реальные тарифы.** Заменить `free`/`pro` на `free`/`starter`/`growth`/`agency`/`platform` с полями квот; добавить селектор плана в `public/admin.html`. Enforcement не меняется — seam уже есть.
+5. **Биллинг (Stripe).** `plan_expires_at`, webhooks на смену статуса, self-serve чекаут. Осознанно последним: до валидации цен на живых сделках биллинг — преждевременная работа.
+
+Не делать сейчас: помегабайтную/потокенную оплату AI. Себестоимость вызова $0.01 — метрить её ради экономии бессмысленно, это трение без выгоды. Ограничивать надо брендами и квотой вызовов, а не токенами.
 
 **P1 (tests):**
 - Add DK snapshot to `buildConfig.test.js`
@@ -1033,6 +1150,7 @@ Deterministic, no-AI structural check that flags how exploitable a promo config 
 
 ## Completed work log
 
+- ~~**AI Assistant chat — NL → campaign (Phase 1)**~~ — done 2026-11-23, from the operator-chat idea (describe a campaign/outcome in words → ready draft). Thin intent layer over the existing campaign engine (AI picks params, never computes economics): new `POST /api/assistant/interpret` (prompt → `refineInterpretation` → validated params + `missing`/`inferred`/`notes`), docked chat panel `public/assistant.js` in the Campaign Generator (structured clarification, preview with econ+abuse+regulatory, Apply → pre-fills wizard step 2). BR welcome→reload clamp + critical-missing recompute server-side; gated by `aiGate` (guests 403) + `FeatureGate('ai')`. 25 new tests (parse/refine/API/guest-403), 925 total green; typecheck + lint clean. Verified live: launcher + drawer render in the dark theme, guest send correctly hits the sign-in-required overlay. See **AI Assistant chat** section + `tasks/ai-assistant-chat-spec.md`. Decisions locked: panel lives in Campaign Generator (not Configurator — handoff is Phase 2), clarification via structured controls, simplified goal mode (numeric-target solver is Phase 2).
 - ~~**Abuse-risk / anti-fraud audit (Bonus/Tournament/Loyalty)**~~ — done 2026-07-26, from expert feedback (a promo config should surface how farmable it is, not just its economics). Deterministic, no-AI structural engine mirroring the benchmarks-explainability layer: shared `RiskVector`/`scoreVectors` (`src/domain/shared/RiskVector.ts` + mirror `public/risk-vector.js`) with **level floored to the single most-severe vector** (a lone `critical` at score 55 no longer under-reports as `high`); three per-type engines `src/domain/{bonus,loyalty,tournament}/abuseRisk.ts` with browser mirrors `public/{bonus,loyalty,tournament}-abuse.js` (parity-tested). Anchors: bonus `wagerX vs breakeven_wager`, loyalty `earnRateWager/redeemRate vs 3% house edge`, tournament prize-EV per free entry + field size. UI: **🛡️ Abuse risk** tab in the unified Configurator for all 3 types (score + severity chips + mitigations, EN/RU in `CFG_I18N`) + a compact risk badge in the Campaign Generator (`renderAbuseBadge`, own `_ABUSE_GEN_I18N`). Client-side only (no route imports the engines). Tests: 33 new (core + parity), 820 total green; typecheck + lint clean. Reviewed (independent adversarial pass) → fixed 2 self-found defects before ship: the score→level under-report (above) and a `redeem_no_wager` current/threshold swap. Shipped to prod (`main` dcc2adc) + stage via surgical cherry-pick (branches had 3-way diverged). See **Abuse-risk / anti-fraud audit** section. Phase 2 (AI narrative on top of the deterministic findings) is planned — see Pending P2. **Same push also fixed the F1 optimize recommendation** inverting the wager↔breakeven comparison (`src/ai/prompts/optimize.prompt.ts`): the wager row now states the relation explicitly (server-computed BELOW/ABOVE via `wagerX < beW`) + a corrected F1 formula note + an anti-inversion instruction (RU+EN) — the model was writing "wager 20× exceeds breakeven 21.2×".
 - ~~**Offer Description (customer-facing page copy + T&C) — all promo types**~~ — done 2026-07-21, repurposing the AI text feature toward acquisition/on-site copy (expert feedback: 5-channel CRM copy is undifferentiated; the moat is the structured config). New **hybrid** output type: a deterministic **terms block** (exact params rendered straight from the config — never the AI) + AI **prose** (title/hook/how-it-works/CTA) + AI **Terms & Conditions** (6–10 clauses, license-aware, anchored to the exact terms). Response reuses the generic `OfferDescriptionResponseSchema`/`parseDescriptionResponse` (`title,hook,howItWorks[],termsIntro,cta,termsAndConditions[]`); the use-case merges deterministic `terms[]` in. Per-type deterministic terms builders: `src/domain/{campaign/offerTerms.ts, tournament/offerTerms.ts, loyalty/offerTerms.ts, wheel/offerTerms.ts}` (all return `OfferTerm{label,value}`, EN/RU labels). Per-type prompts `src/ai/prompts/{description,tournament-description,loyalty-description,wheel-description}.prompt.ts` (2000-token budget). Routes `POST /api/{campaign,tournament,loyalty,wheel}/description` (aiLimiter + existing `requireFeature`). **Frontend:** Bonus — new 📄 Описание sub-tab in Step 4 (`campaign-generator.js` + hub `generator.js`); Tournament — Description button in Step 4 (`tournament-generator.js` + `generator-tournament.js`); Loyalty — Description AI-tab (`loyalty-generator.js` + `generator-loyalty.js`); Wheel — Description card in result view (`generator-wheel.js`). Each: generate-on-click, terms table + prose + T&C list, copy button (+ regen). The client render+copy is a single shared module `public/offer-desc.js` (`window.OfferDesc.render/plainText/copyText`, loaded on campaign-/generator/tournament-/loyalty-generator pages) — the copy button calls a named per-fork global (`copyTournDesc`/`tgCopyDesc`/`copyLoyDesc`/`lyCopyDesc`/`whCopyDesc`/`copyDescription`) that reads the fork's own stored description; **no data is ever inlined into an onclick attribute** (fixes an earlier bug where apostrophes/quotes in AI copy broke the single-quoted onclick / could inject markup). Tests: `{,tournament.,loyalty.,wheel.}offerTerms.test.js` + `api.{campaign,tournament,loyalty,wheel}.description.test.js` (771 total green). Verified live (campaign DE/UK, tournament BR-prize_drop, wheel VIP; loyalty is guest-gated → covered by integration test). **Same change also made Step-4 AI generation button-triggered instead of auto** (Bonus texts/audit no longer auto-fire on step entry; Tournament **Games** gated behind a "Recommend games" button in both forks — was auto-fetched on step-3 entry; Loyalty/Wheel were already button-driven).
 - ~~**Wheel of Fortune — Generator hub tab (region-tuned wizard)**~~ — done 2026-07-20. New 🎡 Wheel tab in the unified Generator hub (`generator.html`), alongside Bonus/Tournament/Loyalty. New fork `public/generator-wheel.js` (globals prefixed `wh*`, mirrors the tournament/loyalty fork pattern: `wh-root`/`wh-content` container, `whInit`/`whShowView`/`whSetLang`/`whToggleGlossary`, lazy-init from `genSwitchType`). Flow: **library (saved wheels) → setup wizard → result**. Setup is **region-tuned** — `whRegionRecommend(geo, segment)` auto-picks preset + cadence with a rationale note (VIP→weekly vip-wheel; dormant→daily reactivation; 🇧🇷 BR→daily, flags welcome-bonus prohibition; else welcome/on_deposit acquisition); changing geo/segment re-applies it. Result: SVG wheel + segment legend + 6 econ cards (client `window._wheelEcon` + server `/api/wheel/generate`) + **AI CRM texts** (`/api/wheel/texts`, channel tabs push/email/sms/telegram/popup) + **compliance audit** (`/api/wheel/audit`) + Save (`savedWheels` localStorage + `configs` mirror) + Add-to-Calendar (`rc_campaigns` + `calendar-events` mirror). Wired in `generator.js` (`genSwitchType`/`genSetLang`/`genToggleGlossary` + `whInitialized`), `generator.html` (type-switch button, `wh-root`, `#wh-root` scoped CSS block, `wheel-econ.js`+`generator-wheel.js` script tags). Also fixed the Configurator wheel segment table (money prizes edited in raw site currency — no display-factor division that zeroed crypto/high-divisor amounts; inline unit suffix; fixed `table-layout` colgroup). Verified live (hub + region generate BR/DE).

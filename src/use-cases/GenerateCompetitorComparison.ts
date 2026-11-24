@@ -11,13 +11,19 @@ import type { AIProvider } from '../ai/interface.js';
 // than invented numbers.
 export async function searchCompetitorBonus(input: CompetitorSearchInput, ai: AIProvider) {
   const prompt = buildCompetitorSearchPrompt(input);
-  // max_uses capped at 3: the real cost driver is web-search input tokens (each
-  // search pulls page content into context — ~85k tokens at 5 uses), not output.
-  // 3 searches finds a casino's headline bonus reliably at ~$0.20/call vs ~$0.38.
+  // max_uses capped at 2: the real cost driver is web-search input tokens (each
+  // search pulls page content into context — ~100k tokens at 3 uses, ~$0.35 and
+  // several minutes per call), not output. 2 searches still finds a casino's
+  // headline offer, and the prompt tells the model to answer with what it has.
+  // maxTokens 3000 (was 1200): the answer used to be truncated mid-JSON, which
+  // surfaced as a 502 "AI returned malformed JSON" on every single call.
+  // retries 1: a second attempt means another paid search — the failures we saw
+  // were deterministic (truncation), not transient.
   const raw = await ai.generate(prompt, {
     model:     AI_SEARCH_MODEL,
-    maxTokens: 1200,
-    webSearch: { maxUses: 3 },
+    maxTokens: 3000,
+    retries:   1,
+    webSearch: { maxUses: 2 },
   });
   const parsed = parseCompetitorSearchResponse(raw);
   return {
@@ -32,6 +38,9 @@ export async function searchCompetitorBonus(input: CompetitorSearchInput, ai: AI
 // the verdict + recommendations, on the cheaper default model.
 export async function compareCompetitorOffers(input: CompetitorCompareInput, ai: AIProvider) {
   const prompt = buildCompetitorComparePrompt(input);
-  const raw = await ai.generate(prompt, { maxTokens: 1400 });
+  // 2400, not 1400: the verdict carries a summary + strengths + weaknesses + up to
+  // 6 recommendations for up to 3 competitors — 1400 truncated the JSON mid-object
+  // and surfaced as a 502 "malformed JSON" whenever the payload was rich.
+  const raw = await ai.generate(prompt, { maxTokens: 2400 });
   return parseCompetitorCompareResponse(raw);
 }

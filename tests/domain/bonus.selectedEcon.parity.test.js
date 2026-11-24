@@ -9,6 +9,8 @@ const CONFIGS = [
   { region: 'eu',  sitecur: 'GBP', depcur: 'GBP', players: 2000, avgdep: 80,    plat: 'both',   rtp: 96, lic: 'ukgc' },
   { region: 'cis', sitecur: 'RUB', depcur: 'RUB', players: 3000, avgdep: 5000,  plat: 'mobile', rtp: 95, lic: 'none' },
   { region: 'mn',  sitecur: 'MNT', depcur: 'MNT', players: 500,  avgdep: 50000, plat: 'mobile', rtp: 96, lic: 'none' },
+  // No-wager model — mirrors must agree on the sweepstakes branch too.
+  { region: 'sweep', sitecur: 'USD', depcur: 'USD', players: 1000, avgdep: 30,  plat: 'both',   rtp: 96, lic: 'none' },
 ];
 
 const SELECTIONS = [

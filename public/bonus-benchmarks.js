@@ -18,6 +18,8 @@ const WELCOME_WAGER_BY_REGION = {
   latam:  { min: 25, rec: 40, max: 50 },
   mn:     { min: 25, rec: 35, max: 45 },
   sweep:  { min: 1,  rec: 1,  max: 5  },
+  mena:   { min: 30, rec: 45, max: 55 },
+  gcc:    { min: 25, rec: 35, max: 45 },
 };
 const GLOBAL = {
   w_pct:     { band: { min: 50,  rec: 100, max: 200 }, unit: '%',   whyKey: 'bench_why_w_pct' },
@@ -64,7 +66,7 @@ export function classifyValue(value, bench) {
   return 'on';
 }
 
-export function regulatoryNote(license, mechanic) {
+export function regulatoryNote(license, mechanic, region) {
   if (license === 'bets_br') {
     if (mechanic === 'welcome') return 'reg_warn_br_welcome';
     if (mechanic === 'ndb' || mechanic === 'reload') return 'reg_warn_br_soft';
@@ -73,6 +75,8 @@ export function regulatoryNote(license, mechanic) {
   if (license === 'ukgc') return 'reg_note_ukgc';
   if (license === 'dga') return 'reg_note_dga';
   if (license === 'coljuegos') return 'reg_note_coljuegos';
+  if (region === 'mena') return 'reg_warn_mena';
+  if (region === 'gcc')  return 'reg_warn_gcc';
   return null;
 }
 

@@ -79,9 +79,15 @@ describe('recalcCosts — sweep region', () => {
     avgdep: 20, players: 5000, plat: 'both', rtp: 96,
   });
 
-  it('all costs = 0 (no wager)', () => {
+  // No playthrough → the cost IS the face value handed out, and /api/recalc must
+  // agree with generate (buildConfig). Previously recalc returned 0 here while
+  // generate returned face value (reviewer finding F3).
+  it('welcome cost = face value handed out, matching generate (buildConfig)', () => {
     const result = recalcCosts(sweepCfg, {});
-    expect(result.costs.w_p50).toBe(0);
-    expect(result.costs.total).toBe(0);
+    expect(result.costs.w_p50).toBe(sweepCfg.econ.sP50.cost);
+    expect(result.costs.w_p50).toBeGreaterThan(0);
+    expect(result.maxRisk).toBe(sweepCfg.econ.maxRisk);
+    // the other mechanics are unused in a plain sweep cfg → no spurious NaN cost
+    expect(result.costs.total).toBe(result.costs.w_p50);
   });
 });

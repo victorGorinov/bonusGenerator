@@ -5,7 +5,7 @@ import { GEO_CFG } from '../campaign/scenarios.js';
 // resolved region (not the raw geo) so it fires for both country-code call
 // sites (ru/kz → 'cis', mn → 'mn') and region-level ones (loyalty/CRM, which
 // pass a region such as 'cis' directly as geo).
-const LOW_DENOM_REGIONS = new Set(['cis', 'mn']);
+const LOW_DENOM_REGIONS = new Set(['cis', 'mn', 'mena']);
 
 const W_REGION  = 10;
 const W_SEGMENT = 8;

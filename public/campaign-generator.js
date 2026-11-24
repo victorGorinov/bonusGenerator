@@ -12,7 +12,7 @@ const SCENARIOS = [
 function getProgSteps() {
   return [t('prog_1'),t('prog_2'),t('prog_3'),t('prog_4'),t('prog_5')];
 }
-const GEO_LBL   = {eu:'🇪🇺 EU / UK',de:'🇩🇪 Germany',fr:'🇫🇷 France',es:'🇪🇸 Spain',it:'🇮🇹 Italy',nl:'🇳🇱 Netherlands',dk:'🇩🇰 Denmark',uk:'🇬🇧 UK',ru:'🌐 Russia',kz:'🇰🇿 Kazakhstan',br:'🇧🇷 Brazil',mx:'🇲🇽 Mexico',co:'🇨🇴 Colombia',ar:'🇦🇷 Argentina',pe:'🇵🇪 Peru',cl:'🇨🇱 Chile',mn:'🇲🇳 Mongolia',us:'🇺🇸 USA'};
+const GEO_LBL   = {eu:'🇪🇺 EU / UK',de:'🇩🇪 Germany',fr:'🇫🇷 France',es:'🇪🇸 Spain',it:'🇮🇹 Italy',nl:'🇳🇱 Netherlands',dk:'🇩🇰 Denmark',uk:'🇬🇧 UK',ru:'🌐 Russia',kz:'🇰🇿 Kazakhstan',br:'🇧🇷 Brazil',mx:'🇲🇽 Mexico',co:'🇨🇴 Colombia',ar:'🇦🇷 Argentina',pe:'🇵🇪 Peru',cl:'🇨🇱 Chile',iq:'🇮🇶 Iraq',ly:'🇱🇾 Libya',sy:'🇸🇾 Syria',ae:'🇦🇪 UAE',mn:'🇲🇳 Mongolia',us:'🇺🇸 USA'};
 const SEG_LBL   = {new:'Новые',mid:'Средние',vip:'VIP'};
 const GEO_CURRENCY = {de:'EUR',fr:'EUR',es:'EUR',it:'EUR',nl:'EUR',dk:'DKK',uk:'GBP',ru:'RUB',kz:'KZT',br:'USD',mx:'USD',co:'USD',ar:'USD',pe:'USD',cl:'USD',mn:'MNT',us:'USD'};
 
@@ -105,6 +105,9 @@ function goStep(n) {
     // Restore step-2 DOM state from draft.params (build the geo <select> first so
     // its options exist, then re-select the saved country).
     buildGeoSelect();
+    cgApplyBrand();          // seed anything the brand knows and the user hasn't touched
+    cgRenderBrandBar();
+    cgBrandSyncDom();
     if (draft.params.geo) document.getElementById('p-geo').value = draft.params.geo;
     updateRiskHint(draft.params.risk || 'low');
   }
@@ -223,6 +226,58 @@ function syncLangToGeo(geo) {
   document.querySelectorAll('.chip[data-g="lic"]').forEach(c => {
     c.classList.toggle('active', c.dataset.v === 'auto');
   });
+}
+
+// ── BRAND PREFILL ─────────────────────────────────────────────────────────────
+// The wizard's step-2 inputs are DOM-driven, so the brand seeds draft.params and
+// step 2 paints itself from there (cgBrandSyncDom). Fields the user has edited
+// since the last apply are kept — BrandContext.apply() decides that.
+
+const CG_BRAND_MAP = { geo:'geo', segment:'segment', players:'players' };
+
+function cgApplyBrand(opts) {
+  if (!window.BrandContext) return { applied: [] };
+  return window.BrandContext.apply('campaign', draft.params, CG_BRAND_MAP, opts);
+}
+
+/** Push draft.params back into the step-2 controls (geo select, chips, players). */
+function cgBrandSyncDom() {
+  const geoEl = document.getElementById('p-geo');
+  if (geoEl && draft.params.geo) geoEl.value = draft.params.geo;
+  const pnum = document.getElementById('cg-pnum');
+  if (pnum && draft.params.players) {
+    pnum.value = draft.params.players;
+    // Players is a slider + number + label triple — go through the page's own
+    // sync so all three agree (writing the input alone leaves a stale slider).
+    if (typeof syncCGPlayers === 'function') syncCGPlayers('num');
+  }
+  if (draft.params.segment) {
+    document.querySelectorAll('.chip[data-g="segment"]').forEach(c =>
+      c.classList.toggle('active', c.dataset.v === draft.params.segment));
+  }
+}
+
+/**
+ * Pull the live step-2 controls back into draft.params BEFORE re-applying a
+ * brand. Without this, a manual edit that hasn't been committed to draft yet
+ * (players is only read at step 3) would look untouched and be overwritten
+ * silently.
+ */
+function cgBrandPullDom() {
+  const geoEl = document.getElementById('p-geo');
+  if (geoEl && geoEl.value) draft.params.geo = geoEl.value;
+  const pnum = document.getElementById('cg-pnum');
+  if (pnum && pnum.value) draft.params.players = parseInt(pnum.value, 10) || draft.params.players;
+  const seg = document.querySelector('.chip[data-g="segment"].active');
+  if (seg) draft.params.segment = seg.dataset.v;
+}
+
+function cgRenderBrandBar() {
+  const host = document.getElementById('cg-brand-bar');
+  if (!host || !window.BrandContext) return;
+  const note = window.BrandContext.active()
+    ? `<span style="font-size:.7rem;color:var(--muted,#8892a4)">${t('brand_applied')}</span>` : '';
+  host.innerHTML = window.BrandContext.selectorHTML() + note;
 }
 
 function pickChip(el) {
@@ -754,25 +809,11 @@ function renderMechanicResults(data) {
   renderAltCard(localizedAlts(data), data);
 
   // Econ card
-  // Repair econ costs if server returned 0 for high-denomination currencies (RUB/KZT/MNT).
-  // truncNormalPayout breaks for large B (z ~ √B → -∞). Fall back to bonusSize × wagerEff,
-  // identical to the server-side fix in buildConfig.ts calcScenario.
-  const _rawE = data.econ;
-  const E = (() => {
-    if (!_rawE || _rawE.sP10?.cost > 0) return _rawE;
-    const { bonusSize, wagerX, breakeven_wager, pl } = _rawE || {};
-    if (!bonusSize || !pl) return _rawE;
-    const eff = (wagerX > 0)
-      ? Math.min(1, breakeven_wager / Math.max(breakeven_wager, wagerX))
-      : 1;
-    const payout = bonusSize * eff;
-    return {
-      ..._rawE,
-      sP10: { ...(_rawE.sP10||{}), cost: Math.round(payout * 0.10 * pl), conv: _rawE.sP10?.conv ?? 0.10 },
-      sP50: { ...(_rawE.sP50||{}), cost: Math.round(payout * 0.20 * pl), conv: _rawE.sP50?.conv ?? 0.20 },
-      sP90: { ...(_rawE.sP90||{}), cost: Math.round(payout * 0.40 * pl), conv: _rawE.sP90?.conv ?? 0.40 },
-    };
-  })();
+  // No client-side repair of the server econ: the payout model is currency-scale
+  // invariant now (src/domain/shared/fx.ts), so RUB/KZT/MNT no longer come back as 0.
+  // The old fallback here substituted bonusSize × wagerEff — a much higher estimate than
+  // the statistical model — so leaving it in would silently inflate any legitimate zero.
+  const E = data.econ;
   const cur = data.cur;
   try {
     if (!E?.sP10?.cost) {
@@ -1377,7 +1418,7 @@ function generateAdminConfig() {
   const line = '─'.repeat(54);
   const now  = new Date().toISOString().slice(0,10);
 
-  const GEO_NAME = {eu:'EU / UK',de:'Germany',fr:'France',es:'Spain',it:'Italy',nl:'Netherlands',dk:'Denmark',uk:'United Kingdom',ru:'Russia',kz:'Kazakhstan',br:'Brazil',mx:'Mexico',co:'Colombia',ar:'Argentina',pe:'Peru',cl:'Chile',mn:'Mongolia',us:'USA (Sweep)'};
+  const GEO_NAME = {eu:'EU / UK',de:'Germany',fr:'France',es:'Spain',it:'Italy',nl:'Netherlands',dk:'Denmark',uk:'United Kingdom',ru:'Russia',kz:'Kazakhstan',br:'Brazil',mx:'Mexico',co:'Colombia',ar:'Argentina',pe:'Peru',cl:'Chile',iq:'Iraq',ly:'Libya',sy:'Syria',ae:'UAE',mn:'Mongolia',us:'USA (Sweep)'};
   const SEG_NAME = {new:'New players',mid:'Regular players',vip:'VIP'};
   const LBL = {welcome:'1ST_DEPOSIT',ndb:'WELCOME_NODEP',reload:'RELOAD',dep2:'2ND_DEPOSIT',dep3:'3RD_DEPOSIT',cashback:'CASHBACK'};
   const VERDICT = {verdict_cheap:'WEAK (raise match % or lower wager)',verdict_ok:'OPTIMAL',verdict_warn:'HIGH LOAD — review wager/maxB',verdict_high:'LOSS-MAKING — urgent fix required'};
@@ -1547,6 +1588,7 @@ function addCampaignToCalendar(opts = {}) {
     }
     const now = new Date().toISOString();
     const rec = { ...campaign, id: 'cg_' + Date.now(), createdAt: now, updatedAt: now };
+    window.BrandContext?.stamp(rec);   // calendar events carry the brand too
     camps.push(rec);
     localStorage.setItem('rc_campaigns', JSON.stringify(camps));
     window.RetomatRepo?.mirror('calendar-events', rec.id, rec);
@@ -1594,6 +1636,7 @@ function addDetailToCalendar() {
     }
     const now = new Date().toISOString();
     const rec = { ...entry, id: 'cg_' + Date.now(), createdAt: now, updatedAt: now };
+    window.BrandContext?.stamp(rec);   // calendar events carry the brand too
     camps.push(rec);
     localStorage.setItem('rc_campaigns', JSON.stringify(camps));
     window.RetomatRepo?.mirror('calendar-events', rec.id, rec);
@@ -1681,6 +1724,7 @@ function renderDetailTab(tab, c) {
     else if (tab === 'mechanic') body.innerHTML = renderDetailMechanic(c);
     else if (tab === 'texts')  { renderDetailTexts(c, body); }
     else if (tab === 'audit')  { renderDetailAudit(c, body); }
+    else if (tab === 'competitors') { renderDetailComp(c, body); }
     else if (tab === 'export')     body.innerHTML = renderDetailExport(c);
     else if (tab === 'analytics')  body.innerHTML = renderDetailAnalytics(c);
   } catch (e) {
@@ -1843,6 +1887,184 @@ function renderDetailAudit(c, body) {
   }
   body.innerHTML = c.audit ? auditHTML(c.audit) : `<p style="color:var(--muted);font-size:.87rem">${t('det_no_audit')}</p>`;
 }
+
+// ── DETAIL: COMPETITOR ANALYSIS (one-shot per campaign) ───────────────────────
+// A saved campaign carries its comparison on its own record (`c.competitor`).
+// It can be generated exactly ONCE: competitor analysis is the priciest AI path
+// in the product (live web search, billed per search), so once a result is
+// stored the tab renders read-only — no re-run, no save button. A failed call
+// stores nothing, so the user can retry until one succeeds.
+let _dcComp = null; // pre-run draft only: { id, list, loading, searching }
+
+function _dcCompState(id) {
+  if (!_dcComp || _dcComp.id !== id) _dcComp = { id, list: [], loading: false, searching: false };
+  return _dcComp;
+}
+function _dcCompLang()   { return currentLang === 'ru' ? 'ru' : 'en'; }
+function _dcCompStr()    { return window.CompetitorAnalysis.strings(_dcCompLang()); }
+function _dcCompRegion(c) { return (c.params && c.params.geo) || 'de'; }
+
+// Own-offer params from the SAVED mechanic (same mapping as the Step-4 panel).
+// maxWin stays empty on purpose — the generated mechanic has no max-win cap
+// field (m.maxAmt is the fixed bonus amount, not a win cap).
+function _dcCompOwnParams(c) {
+  const m   = c.mechanic || {};
+  const ru  = currentLang === 'ru';
+  const cur = m.cur ? ' ' + m.cur : '';
+  const days = m.validDays || m.days;
+  return {
+    matchPct:     m.pct   ? m.pct + '%'  : '',
+    maxBonus:     m.maxB  ? m.maxB + cur : '',
+    wager:        (m.wager != null && c.mechanicType !== 'cashback') ? m.wager + '×' : '',
+    minDeposit:   m.minD  ? m.minD + cur : '',
+    maxWin:       '',
+    validityDays: days ? days + (ru ? ' дн.' : ' d') : '',
+  };
+}
+
+function _dcCompRender() {
+  const c    = getCampaigns().find(x => x.id === _detailId);
+  const body = document.getElementById('det-body');
+  if (c && body) renderDetailComp(c, body);
+}
+
+function renderDetailComp(c, body) {
+  const CAmod = window.CompetitorAnalysis;
+  const isRu  = currentLang === 'ru';
+  if (!CAmod) {
+    body.innerHTML = `<p style="color:var(--muted);font-size:.87rem">${isRu ? 'Модуль анализа не загружен.' : 'Analysis module not loaded.'}</p>`;
+    return;
+  }
+  if (!c.mechanic) {
+    body.innerHTML = `<p style="color:var(--muted);font-size:.87rem">${t('det_no_data')}</p>`;
+    return;
+  }
+  const lang = _dcCompLang();
+  const own  = _dcCompOwnParams(c);
+
+  // Locked view — the analysis exists, so it is read-only forever.
+  if (c.competitor && c.competitor.result) {
+    const s    = c.competitor;
+    const when = s.createdAt ? new Date(s.createdAt).toLocaleDateString(isRu ? 'ru-RU' : 'en-GB') : '';
+    body.innerHTML = `<div class="ca-panel">
+      <div class="ca-note" style="margin:0 0 14px">${isRu ? 'Анализ выполнен' : 'Analysis generated'}${when ? ' · ' + esc(when) : ''} · ${isRu ? 'разовая операция, пересчёт недоступен' : 'one-time operation, cannot be re-run'}</div>
+      ${CAmod.renderComparisonTable('bonus', lang, (s.ownOffer && s.ownOffer.label) || c.name, (s.ownOffer && s.ownOffer.params) || own, s.competitors || [])}
+      ${CAmod.renderVerdict(lang, s.result)}
+    </div>`;
+    return;
+  }
+
+  const st = _dcCompState(c.id);
+  body.innerHTML = CAmod.renderPanel({
+    promoType: 'bonus', lang, ownLabel: c.name, ownParams: own,
+    list: st.list, result: null, loading: st.loading, searching: st.searching,
+    fnPrefix: 'dcComp', nameInputId: 'dc-ca-name',
+  }) + `<div class="ca-note" style="color:var(--warn,#f59e0b)">${isRu
+    ? '⚠️ Анализ запускается один раз: результат сохраняется в кампании, пересчитать его нельзя.'
+    : '⚠️ The analysis runs once: the result is stored on the campaign and cannot be re-generated.'}</div>`;
+}
+
+function dcCompSetParam(i, key, val) {
+  const st = _dcCompState(_detailId);
+  if (st.list[i]) st.list[i].params[key] = val;
+}
+
+function dcCompAddManual() {
+  const st = _dcCompState(_detailId);
+  if (st.list.length >= 3) { showToast(_dcCompStr().max); return; }
+  const el   = document.getElementById('dc-ca-name');
+  const name = (el && el.value.trim()) || (currentLang === 'ru' ? 'Конкурент' : 'Competitor');
+  st.list.push({ name, source: 'manual', params: {} });
+  _dcCompRender();
+}
+
+function dcCompRemove(i) {
+  const st = _dcCompState(_detailId);
+  st.list.splice(i, 1);
+  _dcCompRender();
+}
+
+async function dcCompSearchAI() {
+  if (window.FeatureGate && !(await window.FeatureGate.ensure('competitorComparison'))) return;
+  const st = _dcCompState(_detailId);
+  if (st.list.length >= 3) { showToast(_dcCompStr().max); return; }
+  const c = getCampaigns().find(x => x.id === _detailId);
+  if (!c) return;
+  const el   = document.getElementById('dc-ca-name');
+  const name = (el && el.value.trim()) || '';
+  if (!name) { showToast(_dcCompStr().nameReq); return; }
+  st.searching = true; _dcCompRender();
+  try {
+    const res = await fetch('/api/competitor/search', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ casinoName: name, region: _dcCompRegion(c), promoType: 'bonus', uiLang: currentLang }),
+    });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || ('HTTP ' + res.status)); }
+    const f = await res.json();
+    st.list.push({ name: f.name, source: 'ai_search', confidence: f.confidence, sourceUrl: f.sourceUrl, params: f.params || {} });
+    if (!f.found) showToast(_dcCompStr().notfound);
+  } catch (e) { showToast(e.message); }
+  finally { st.searching = false; _dcCompRender(); }
+}
+
+async function dcCompRun() {
+  if (window.FeatureGate && !(await window.FeatureGate.ensure('competitorComparison'))) return;
+  const c = getCampaigns().find(x => x.id === _detailId);
+  if (!c || (c.competitor && c.competitor.result)) return; // already generated — never twice
+  const st = _dcCompState(c.id);
+  if (!st.list.length || st.loading) return;
+  const own = _dcCompOwnParams(c);
+  st.loading = true; _dcCompRender();
+  try {
+    const res = await fetch('/api/competitor/compare', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        region: _dcCompRegion(c), promoType: 'bonus',
+        ownOffer: { label: c.name, params: own },
+        competitors: st.list.map(x => ({ name: x.name, source: x.source, confidence: x.confidence, sourceUrl: x.sourceUrl, params: x.params })),
+        uiLang: currentLang,
+      }),
+    });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || ('HTTP ' + res.status)); }
+    const result = await res.json();
+    const rec = {
+      region: _dcCompRegion(c), ownOffer: { label: c.name, params: own },
+      competitors: st.list, result, createdAt: new Date().toISOString(),
+    };
+    const next    = getCampaigns().map(x => x.id === c.id ? { ...x, competitor: rec } : x);
+    putCampaigns(next);
+    const updated = next.find(x => x.id === c.id);
+    if (updated && window.RetomatRepo) window.RetomatRepo.mirror('campaigns', c.id, updated);
+    _dcCompArchive(c, rec);
+    _dcComp = null; // draft consumed — the tab now renders the locked view
+  } catch (e) {
+    showToast(e.message);
+  } finally {
+    if (_dcComp) _dcComp.loading = false;
+    _dcCompRender();
+  }
+}
+
+// The comparison is also archived as a standalone record (same shape the Step-4
+// "Save" writes), so it lands in cfgSavedComparisons / the server mirror too.
+function _dcCompArchive(c, rec) {
+  const id = 'comp_' + Date.now().toString(36) + Math.round(Math.random() * 1e6).toString(36);
+  const full = {
+    id, type: 'competitor-comparison', promoType: 'bonus', campaignId: c.id,
+    createdAt: rec.createdAt, region: rec.region,
+    ownOffer: rec.ownOffer, competitors: rec.competitors, result: rec.result,
+  };
+  try {
+    const arr = JSON.parse(localStorage.getItem('cfgSavedComparisons') || '[]');
+    arr.push(full);
+    localStorage.setItem('cfgSavedComparisons', JSON.stringify(arr));
+  } catch (e) {}
+  if (window.RetomatRepo) window.RetomatRepo.mirror('competitor-comparisons', id, full);
+}
+
+// renderPanel wires a Save button only in its result branch, which this host
+// never reaches (a result is persisted immediately and locks the tab).
+function dcCompSave() {}
 
 function saveActuals() {
   const c = getCampaigns().find(x => x.id === _detailId);
@@ -2095,6 +2317,7 @@ const I18N = {
     s1_title:'Выберите сценарий кампании',
     s1_sub:'Сценарий определяет тип аудитории и логику бонусного предложения',
     s2_title:'Параметры кампании', s2_sub:'Настройте аудиторию, бюджет и тон коммуникации',
+    brand_applied:'Поля заполнены из бренда — любое можно изменить',
     s2_geo:'Гео / Страна', s2_eu_pick:'Выберите страну', s2_eu_required:'Пожалуйста, выберите страну EU / UK', s2_vertical:'Вертикаль', s2_segment:'Сегмент игроков',
     s2_games:'Предпочтительные игры', s2_budget:'Бюджет кампании (€)', s2_lang:'Язык коммуникации',
     s2_players:'Игроков / месяц',
@@ -2212,7 +2435,7 @@ const I18N = {
     sc_cashback:'Cashback кампания', sc_custom:'Кастомный сценарий',
     // Detail view
     det_back:'← Акции', det_dup:'⎘ Дублировать', det_edit:'✏ Редактировать', det_cal:'📅 Открыть в календаре',
-    det_tab_ov:'Обзор', det_tab_mech:'Механика', det_tab_texts:'Тексты', det_tab_audit:'Аудит', det_tab_export:'Экспорт', det_tab_analytics:'📊 Факт',
+    det_tab_ov:'Обзор', det_tab_mech:'Механика', det_tab_texts:'Тексты', det_tab_audit:'Аудит', det_tab_comp:'⚔️ Конкуренты', det_tab_export:'Экспорт', det_tab_analytics:'📊 Факт',
     det_ov_scenario:'Сценарий', det_ov_geo:'Регион', det_ov_segment:'Сегмент',
     det_ov_budget:'Бюджет', det_ov_tone:'Тон', det_ov_lang:'Язык текстов',
     det_ov_status:'Статус', det_ov_created:'Создана',
@@ -2240,6 +2463,7 @@ const I18N = {
     s1_title:'Select Campaign Scenario',
     s1_sub:'The scenario defines the audience type and bonus offer logic',
     s2_title:'Campaign Parameters', s2_sub:'Configure audience, budget and communication tone',
+    brand_applied:'Fields pre-filled from the brand — edit any of them freely',
     s2_geo:'Geo / Country', s2_eu_pick:'Select country', s2_eu_required:'Please select an EU / UK country', s2_vertical:'Vertical', s2_segment:'Player Segment',
     s2_games:'Preferred Games', s2_budget:'Campaign Budget (€)', s2_lang:'Communication Language',
     s2_players:'Players / month',
@@ -2357,7 +2581,7 @@ const I18N = {
     sc_cashback:'Cashback Campaign', sc_custom:'Custom Scenario',
     // Detail view
     det_back:'← Offers', det_dup:'⎘ Duplicate', det_edit:'✏ Edit', det_cal:'📅 Open in Calendar',
-    det_tab_ov:'Overview', det_tab_mech:'Mechanics', det_tab_texts:'Texts', det_tab_audit:'Audit', det_tab_export:'Export', det_tab_analytics:'📊 Actuals',
+    det_tab_ov:'Overview', det_tab_mech:'Mechanics', det_tab_texts:'Texts', det_tab_audit:'Audit', det_tab_comp:'⚔️ Competitors', det_tab_export:'Export', det_tab_analytics:'📊 Actuals',
     det_ov_scenario:'Scenario', det_ov_geo:'Region', det_ov_segment:'Segment',
     det_ov_budget:'Budget', det_ov_tone:'Tone', det_ov_lang:'Text Language',
     det_ov_status:'Status', det_ov_created:'Created',
@@ -2468,6 +2692,8 @@ function saveCampaign() {
     explanationEn: draft.explanationEn || null,
     alternatives:  draft.alternatives  || null,
   };
+  // Tag with the brand this campaign was built under — the libraries filter on it.
+  window.BrandContext?.stamp(rec);
   camps.unshift(rec);
   putCampaigns(camps);
   window.RetomatRepo?.mirror('campaigns', rec.id, rec);
@@ -2529,8 +2755,9 @@ function campaignRowHTML(c) {
   const lang = c.params?.lang ? c.params.lang.toUpperCase() : '';
   // mechanic (Launch/Reload/…) lives in the subtitle; Тип column shows the category.
   const meta = [mech || c.type, geo, lang].filter(Boolean).join(' · ');
+  const brandTag = window.BrandContext ? window.BrandContext.tagHTML(c) : '';
   return `<div class="ct-row clickable" onclick="openDetail('${c.id}')">
-    <div><div class="ct-name">${esc(c.name)}</div><div class="ct-meta">${esc(meta)}</div></div>
+    <div><div class="ct-name">${esc(c.name)} ${brandTag}</div><div class="ct-meta">${esc(meta)}</div></div>
     <div class="ct-cell">${catBadge('bonus')}</div>
     <div>${statusBadge(c.status)}</div>
     <div class="ct-cell">${fmtDate(c.date)}</div>
@@ -2584,9 +2811,26 @@ function loyaltyRowHTML(p) {
 }
 
 function renderCampaignViews() {
-  const camps     = getCampaigns();
-  const tourns    = getTournaments();
-  const loyalties = getLoyaltyPrograms();
+  // Brand filter: the raw lists stay intact (badges/counts use them); only what
+  // the libraries display is narrowed. Default is "all brands", so records saved
+  // before brands existed never silently disappear.
+  const allCamps     = getCampaigns();
+  const allTourns    = getTournaments();
+  const allLoyalties = getLoyaltyPrograms();
+  const bf = window.BrandContext;
+  const camps     = bf ? bf.filterList(allCamps)     : allCamps;
+  const tourns    = bf ? bf.filterList(allTourns)    : allTourns;
+  const loyalties = bf ? bf.filterList(allLoyalties) : allLoyalties;
+  if (bf) {
+    // One bar per library surface; counts come from the unfiltered lists.
+    const paint = (elId, counts) => {
+      const el = document.getElementById(elId);
+      if (el) el.innerHTML = bf.filterBarHTML(counts);
+    };
+    paint('brand-filter-dash', [...allCamps, ...allTourns, ...allLoyalties]);
+    paint('brand-filter-offer-gen', allCamps);
+    paint('brand-filter-campaigns', allCamps);
+  }
 
   // Dashboard: all saved items merged, sorted by date desc
   const dash = document.getElementById('dash-camp-body');
@@ -2851,6 +3095,23 @@ document.querySelector('.main').classList.add('ready');
 window.addEventListener('retomat:synced', () => {
   updateAllBadges();
   renderCampaignViews();
+});
+
+// Brand list arrived from the server → refresh the picker (and re-seed if the
+// user is sitting on step 2 with untouched fields).
+window.addEventListener('retomat:brands-changed', () => {
+  if (draft && draft._step === 2) { cgApplyBrand(); cgBrandSyncDom(); }
+  cgRenderBrandBar();
+});
+
+// Explicit pick: pull whatever is on screen into the draft first, then apply —
+// confirming before overwriting fields the user edited by hand.
+window.addEventListener('retomat:brand-changed', () => {
+  if (!draft || draft._step !== 2) return;
+  cgBrandPullDom();
+  cgApplyBrand({ confirm: true });
+  cgBrandSyncDom();
+  cgRenderBrandBar();
 });
 // Old page-specific onboarding replaced by the global Retomat welcome popup
 // (showRetomatWelcome in nav-utils.js, gated by 'retomat_welcome_done').

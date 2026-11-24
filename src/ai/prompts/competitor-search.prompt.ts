@@ -13,19 +13,17 @@ export function buildCompetitorSearchPrompt(input: CompetitorSearchInput): strin
   const { casinoName, region, promoType, uiLang } = input;
   const lang   = LANG_NAME[uiLang ?? ''] || 'English';
   const params = COMPARE_PARAMS[promoType];
-  const paramLines = params.map((p) => `  "${p.key}": "<${p.hint}, or 'н/д' if not found>"`).join(',\n');
+  const paramLines = params.map((p) => `  "${p.key}": "<${p.hint}, or "" if not found>"`).join(',\n');
 
-  return `You are a market-research assistant for an iGaming CRM tool. Use web search to find the CURRENT, publicly advertised ${PROMO_LABEL[promoType]} offered by the online casino "${casinoName}" for the ${region.toUpperCase()} market.
+  return `Find the CURRENT, publicly advertised ${PROMO_LABEL[promoType]} of the online casino "${casinoName}" for the ${region.toUpperCase()} market. Prefer the operator's own promotions/terms page; a reputable casino-review page is acceptable.
 
-Search the operator's own site and reputable casino-review/aggregator pages. Prefer the operator's official promotions/terms page as the source.
+RULES:
+- Run AT MOST 2 web searches, then answer with what you have. Do not keep searching for missing fields.
+- NEVER invent, guess or estimate a number. Unfound fields are "" (empty string) — that is the expected outcome, not a failure.
+- No source at all → found=false, confidence="unconfirmed", sourceUrl=null, every param "".
+- confidence="confirmed" only when the values come from one clearly identifiable page (put its URL in sourceUrl).
 
-CRITICAL RULES — accuracy over completeness:
-- NEVER invent, guess, or estimate numbers. If you cannot find a reliable public source for this operator's current offer, return found=false, confidence="unconfirmed", sourceUrl=null, and set every param value to "н/д".
-- If you find partial data, fill only the params you actually saw a source for; leave the rest "н/д".
-- confidence="confirmed" ONLY when the values come from a clearly identifiable source (return its URL in sourceUrl). Otherwise "unconfirmed".
-- Offers change often — report what the source shows now.
-
-Return ONLY valid JSON, no markdown, in this exact shape (write "notes" in ${lang}):
+OUTPUT: raw JSON only — no markdown fences, no commentary, no citations, nothing before or after the object. Keep it short; it must fit well within the token limit.
 {
   "found": true,
   "confidence": "confirmed",
@@ -33,6 +31,6 @@ Return ONLY valid JSON, no markdown, in this exact shape (write "notes" in ${lan
   "params": {
 ${paramLines}
   },
-  "notes": "<one short caveat in ${lang}, e.g. what was/wasn't found; under 140 chars>"
+  "notes": "<one caveat in ${lang}, under 100 chars>"
 }`;
 }

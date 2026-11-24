@@ -5,6 +5,8 @@ const REGIONS = [
   { val: 'cis',    lbl: '🇷🇺 CIS (RU/KZ)' },
   { val: 'mn',     lbl: '🇲🇳 Mongolia' },
   { val: 'latam',  lbl: '🌎 LatAm (MX/BR)' },
+  { val: 'mena',   lbl: '🌍 MENA (IQ/LY/SY)' },
+  { val: 'gcc',    lbl: '🇦🇪 Gulf / GCC (AE)' },
   { val: 'sweep',  lbl: '🇺🇸 USA Sweepstakes' },
   { val: 'crypto', lbl: '🌐 Crypto / Global' },
 ];
@@ -98,6 +100,7 @@ const L = {
     program_name: name => name,
     mode:         'Mode', region: 'Region', segment: 'Segment', players: 'Players',
     avgdep:       'Avg Deposit (USD)', arpu: 'ARPU (USD/mo)',
+    brand_applied:'Fields pre-filled from the brand — edit any of them freely',
     step1_title:  'Basics', step1_sub: 'Choose the loyalty model, market, and audience',
     step2_title:  'Program Design', step2_sub: 'Configure tiers, earn rates, and missions',
     step3_title:  'Results', step3_sub: 'Economics model and tier structure',
@@ -200,6 +203,7 @@ const L = {
     program_name: name => name,
     mode:         'Режим', region: 'Регион', segment: 'Сегмент', players: 'Игроки',
     avgdep:       'Средний депозит (USD)', arpu: 'ARPU (USD/мес)',
+    brand_applied:'Поля заполнены из бренда — любое можно изменить',
     step1_title:  'Основные параметры', step1_sub: 'Модель, рынок и аудитория',
     step2_title:  'Дизайн программы', step2_sub: 'Тиры, начисление очков, миссии',
     step3_title:  'Результаты', step3_sub: 'Экономическая модель и структура тиров',
@@ -813,6 +817,44 @@ function wizProgressHTML(current) {
   </div>`;
 }
 
+// ── BRAND PREFILL ────────────────────────────────────────────────────────────
+// The loyalty draft is region-level, so the brand's COUNTRY is mapped down to
+// its region cluster. Segment/players/avgdep/arpu copy across directly.
+const LY_BRAND_MAP = {
+  region:  function (d) { return d.geo ? lyRegionOfGeo(d.geo) : undefined; },
+  segment: 'segment',
+  players: 'players',
+  avgdep:  'avgdep',
+  arpu:    'arpu',
+};
+
+// Country → region cluster. GeoData is the single source of truth when present;
+// the small fallback keeps the prefill working on pages that don't load it.
+const LY_GEO_REGION_FALLBACK = {
+  de:'eu', fr:'eu', es:'eu', it:'eu', nl:'eu', dk:'eu', uk:'eu',
+  ru:'cis', kz:'cis', mn:'mn', us:'sweep',
+  br:'latam', mx:'latam', co:'latam', ar:'latam', pe:'latam', cl:'latam',
+  iq:'mena', ly:'mena', sy:'mena', ae:'gcc',
+};
+function lyRegionOfGeo(geo) {
+  const g = window.GeoData && window.GeoData.of ? window.GeoData.of(geo) : null;
+  const region = (g && g.region) || LY_GEO_REGION_FALLBACK[geo];
+  // Only regions the loyalty region <select> actually offers.
+  return REGIONS.some(r => r.val === region) ? region : undefined;
+}
+
+function lyApplyBrand(opts) {
+  if (!window.BrandContext) return { applied: [] };
+  return window.BrandContext.apply('loyalty', draft, LY_BRAND_MAP, opts);
+}
+
+function lyBrandBarHTML() {
+  if (!window.BrandContext) return '';
+  const note = window.BrandContext.active()
+    ? `<span style="font-size:.7rem;color:var(--muted)">${t('brand_applied')}</span>` : '';
+  return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">${window.BrandContext.selectorHTML()}${note}</div>`;
+}
+
 function renderStep1() {
   document.getElementById('topbar-step').textContent = t('step1_topbar', t('step1_title'));
 
@@ -834,6 +876,7 @@ function renderStep1() {
 
   document.getElementById('content').innerHTML = `
   ${wizProgressHTML(1)}
+  ${lyBrandBarHTML()}
   <div class="step-header">
     <div class="step-title">${t('step1_title')}</div>
     <div class="step-sub">${t('step1_sub')}</div>
@@ -1455,6 +1498,7 @@ function saveCurrentProgram() {
   const name = autoName(draft.mode, draft.region, draft.segment);
   const now  = new Date().toISOString();
   const entry = { id: genId(), name, result: lastResult, params: { ...draft }, createdAt: now, updatedAt: now };
+  window.BrandContext?.stamp(entry);
   programs.push(entry);
   savePrograms(programs);
   window.RetomatRepo?.mirror('loyalty-programs', entry.id, entry);
@@ -1515,6 +1559,7 @@ function _doAddToCalendar(campaign, opts = {}) {
     }
     const now = new Date().toISOString();
     const rec = { ...campaign, id: 'ly_' + Date.now(), savedId: opts.savedId || null, createdAt: now, updatedAt: now };
+    window.BrandContext?.stamp(rec);   // calendar events carry the brand too
     camps.push(rec);
     localStorage.setItem('rc_campaigns', JSON.stringify(camps));
     window.RetomatRepo?.mirror('calendar-events', rec.id, rec);
@@ -1561,6 +1606,16 @@ function addDetailToCalendar(id) {
     updateAllBadges();
     if (_view === 'list') render();
   });
+
+  // Brand prefill. Re-render only while the setup wizard owns #content — the
+  // list/detail views share the container.
+  if (window.BrandContext) {
+    const _lyRerender = () => { if (_view === 'setup') render(); };
+    lyApplyBrand();
+    window.BrandContext.load().then(() => { lyApplyBrand(); _lyRerender(); });
+    window.addEventListener('retomat:brand-changed', () => { lyApplyBrand({ confirm: true }); _lyRerender(); });
+    window.addEventListener('retomat:brands-changed', _lyRerender);
+  }
 })();
 
 function toggleLoyaltyGlossary() {

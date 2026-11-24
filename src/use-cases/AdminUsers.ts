@@ -10,12 +10,13 @@ export interface AdminUserView {
   status:        string;
   plan:          string;
   features:      Record<string, boolean>;
+  limits:        Record<string, number>;
   created_at:    string;
   last_login_at: string | null;
 }
 
 const VIEW_COLS =
-  'id, email, name, role, status, plan, features, created_at, last_login_at';
+  'id, email, name, role, status, plan, features, limits, created_at, last_login_at';
 
 // Escape LIKE/ILIKE metacharacters so a search for "a_b" or "100%" is treated as
 // a literal, not a wildcard pattern (paired with ESCAPE '\' in the query).
@@ -120,6 +121,7 @@ export async function updateUser(
     if (patch.status   !== undefined) { sets.push(`status = $${i++}`);   values.push(patch.status); }
     if (patch.plan     !== undefined) { sets.push(`plan = $${i++}`);     values.push(patch.plan); }
     if (patch.features !== undefined) { sets.push(`features = $${i++}`); values.push(JSON.stringify(patch.features)); }
+    if (patch.limits   !== undefined) { sets.push(`limits = $${i++}`);   values.push(JSON.stringify(patch.limits)); }
     values.push(id);
 
     const res = await client.query<AdminUserView>(

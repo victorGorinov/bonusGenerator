@@ -13,17 +13,21 @@ function _erf(x) {
 }
 function _phi(z) { return Math.exp(-0.5 * z * z) / Math.sqrt(2 * Math.PI); }
 function _Phi(z) { return 0.5 * (1 + _erf(z / Math.SQRT2)); }
-function truncNormalPayout(B, W, adjWCR, adjRTP) {
+function truncNormalPayout(B, W, adjWCR, adjRTP, scale = 1) {
   if (B <= 0 || W <= 0) return 0;
+  const s     = Number.isFinite(scale) && scale > 0 ? scale : 1;
+  const b     = B / s;
   const be    = adjWCR / (1 - adjRTP);
-  const mu    = B * (1 - W / be);
-  const sigma = Math.sqrt(W * B / adjWCR);
+  const mu    = b * (1 - W / be);
+  const sigma = Math.sqrt(W * b / adjWCR);
+  if (!(sigma > 0)) return 0;
   const z     = mu / sigma;
-  return Math.max(0, mu * _Phi(z) + sigma * _phi(z));
+  // Clamped to B — see src/domain/bonus/payout.ts.
+  return Math.min(B, Math.max(0, mu * _Phi(z) + sigma * _phi(z)) * s);
 }
 
 // ── FX / ARPU / segment tables (mirror of tournament/calcEconomics.ts) ──────
-const ARPU_BY_REGION = { eu: 65, cis: 22, mn: 12, sweep: 30, crypto: 80, latam: 18 };
+const ARPU_BY_REGION = { eu: 65, cis: 22, mn: 12, sweep: 30, crypto: 80, latam: 18, mena: 14, gcc: 55 };
 const STABLE_USD_TO_LOCAL = {
   USD: 1.00, USDT: 1.00, SC: 1.00, EUR: 0.92, GBP: 0.79, DKK: 7.37,
   RUB: 90.9, KZT: 500, MNT: 3448, BRL: 5.5, MXN: 18.5, COP: 4100,
@@ -109,10 +113,10 @@ export function materializeSegments(presetKey, avgDeposit) {
 export function segmentCost(seg, ctx) {
   switch (seg.prizeType) {
     case 'bonus_money':
-      return truncNormalPayout(seg.prizeValue, ctx.wager, ctx.wcr, ctx.rtp);
+      return truncNormalPayout(seg.prizeValue, ctx.wager, ctx.wcr, ctx.rtp, ctx.scale ?? 1);
     case 'multiplier': {
       const extra = Math.max(0, (seg.prizeValue - 1)) * ctx.avgDeposit;
-      return truncNormalPayout(extra, ctx.wager, ctx.wcr, ctx.rtp);
+      return truncNormalPayout(extra, ctx.wager, ctx.wcr, ctx.rtp, ctx.scale ?? 1);
     }
     case 'free_spins': return seg.prizeValue * ctx.betValue * ctx.rtp;
     case 'cashback':   return seg.prizeValue * ctx.avgDeposit;
@@ -144,7 +148,7 @@ export function calcWheelEconomics(params) {
   const betValue = params.betValue ?? Math.max(0.1, Math.round(0.2 * fxRate * 100) / 100);
   const ctx = {
     avgDeposit: params.avgDeposit, betValue,
-    wager: params.wager ?? 30, wcr: params.wcr ?? 1.0, rtp,
+    wager: params.wager ?? 30, wcr: params.wcr ?? 1.0, rtp, scale: fxRate,
   };
 
   const evPerSpin    = wheelExpectedValue(params.segments, ctx);

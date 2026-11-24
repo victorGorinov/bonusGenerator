@@ -29,6 +29,8 @@ const ROI_BENCHMARKS: Record<string, { lo: number; hi: number }> = {
   sweep:  { lo: -30,  hi: 120 },
   crypto: { lo:  -5,  hi: 250 },
   latam:  { lo: -20,  hi: 160 },
+  mena:   { lo: -25,  hi: 170 },  // cheap traffic, but weak rails + abuse drag the floor down
+  gcc:    { lo: -15,  hi: 180 },
 };
 
 // Normal cost-per-active-player range in USD.
@@ -40,6 +42,8 @@ const COST_PER_ACTIVE_USD: Record<string, { lo: number; hi: number }> = {
   sweep:  { lo: 0.50, hi: 30.0 },
   crypto: { lo: 1.00, hi: 50.0 },
   latam:  { lo: 0.20, hi: 10.0 },
+  mena:   { lo: 0.10, hi:  8.0 },
+  gcc:    { lo: 1.00, hi: 40.0 },
 };
 
 export interface TournamentBenchmarks {

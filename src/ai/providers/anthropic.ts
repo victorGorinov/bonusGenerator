@@ -2,7 +2,7 @@ import Anthropic, { APIError, RateLimitError, InternalServerError } from '@anthr
 import { getAIClient }     from '../client.js';
 import { AIProviderError } from '../../errors/AIProviderError.js';
 import { logger }          from '../../utils/logger.js';
-import { AI_MODEL, AI_BUDGET_ALERT_USD, AI_BUDGET_USD } from '../../config/index.js';
+import { AI_MODEL, AI_BUDGET_ALERT_USD, AI_BUDGET_USD, AI_TIMEOUT, AI_SEARCH_TIMEOUT } from '../../config/index.js';
 import { pgUsageStore }     from '../../domain/ai-budget/store.js';
 import type { AIProvider, AIGenerateOpts } from '../interface.js';
 
@@ -14,6 +14,10 @@ function retryDelay(attempt: number): number {
 }
 
 function isRetryable(err: unknown): boolean {
+  // Our own errors (malformed JSON, schema mismatch, truncated response, timeout
+  // budget spent) are deterministic for the same prompt — retrying just burns
+  // another web search and another minute. Never retry them.
+  if (err instanceof AIProviderError)     return false;
   if (err instanceof RateLimitError)      return true;
   if (err instanceof InternalServerError) return true;
   if (err instanceof APIError && [502, 503, 529].includes(err.status)) return true;
@@ -48,13 +52,14 @@ export class AnthropicProvider implements AIProvider {
     const maxRetries = opts.retries   ?? 2;
     const max_tokens = opts.maxTokens ?? 1200;
     const model      = opts.model     ?? AI_MODEL;
+    const timeoutMs  = opts.timeoutMs ?? (opts.webSearch ? AI_SEARCH_TIMEOUT : AI_TIMEOUT);
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       const t0 = Date.now();
       try {
         return opts.webSearch
-          ? await this.runWithWebSearch(client, model, max_tokens, prompt, opts.webSearch.maxUses ?? 5, t0)
-          : await this.runPlain(client, model, max_tokens, prompt, t0);
+          ? await this.runWithWebSearch(client, model, max_tokens, prompt, opts.webSearch.maxUses ?? 5, t0, timeoutMs)
+          : await this.runPlain(client, model, max_tokens, prompt, t0, timeoutMs);
       } catch (err: unknown) {
         const errMsg = err instanceof Error ? err.message : String(err);
         logger.warn({ event: 'ai.failure', model, attempt, error: errMsg });
@@ -68,13 +73,19 @@ export class AnthropicProvider implements AIProvider {
   }
 
   private async runPlain(
-    client: Anthropic, model: string, max_tokens: number, prompt: string, t0: number,
+    client: Anthropic, model: string, max_tokens: number, prompt: string, t0: number, timeoutMs: number,
   ): Promise<string> {
     const msg = await client.messages.create({
       model, max_tokens,
       messages: [{ role: 'user', content: prompt }],
-    });
+    }, { timeout: timeoutMs });
     this.logCost(model, msg, t0);
+    // Truncated output is usually broken JSON. Don't fail here — parseRaw's repair
+    // pass often salvages it — but say so in the log, because the alternative is a
+    // generic "malformed JSON" 502 with no hint that max_tokens was the cause.
+    if (msg.stop_reason === 'max_tokens') {
+      logger.warn({ event: 'ai.truncated', model, max_tokens }, 'AI response hit max_tokens — raise maxTokens for this call');
+    }
     const block = msg.content[0];
     if (!block || block.type !== 'text') throw new AIProviderError('Unexpected AI response type');
     return block.text;
@@ -87,6 +98,7 @@ export class AnthropicProvider implements AIProvider {
   // text once the turn ends.
   private async runWithWebSearch(
     client: Anthropic, model: string, max_tokens: number, prompt: string, maxUses: number, t0: number,
+    timeoutMs: number,
   ): Promise<string> {
     const tools: Anthropic.Messages.ToolUnion[] = [
       { type: 'web_search_20260209', name: 'web_search', max_uses: maxUses },
@@ -94,8 +106,22 @@ export class AnthropicProvider implements AIProvider {
     const messages: Anthropic.MessageParam[] = [{ role: 'user', content: prompt }];
 
     for (let round = 0; round < WEB_SEARCH_MAX_ROUNDS; round++) {
-      const msg = await client.messages.create({ model, max_tokens, messages, tools });
+      // The budget spans the whole pause_turn loop, not each round — otherwise
+      // N rounds × timeout could still hang the request for minutes.
+      const remaining = timeoutMs - (Date.now() - t0);
+      if (remaining <= 0) throw new AIProviderError('Web search exceeded its time budget');
+      // maxRetries: 0 — the SDK's own retries would multiply a 30–60s search call
+      // (and its per-search fee); the outer loop owns retry policy.
+      const msg = await client.messages.create(
+        { model, max_tokens, messages, tools },
+        { timeout: remaining, maxRetries: 0 },
+      );
       this.logCost(model, msg, t0);
+
+      // Same as runPlain: flag truncation loudly, let the parser's repair pass try.
+      if (msg.stop_reason === 'max_tokens') {
+        logger.warn({ event: 'ai.truncated', model, max_tokens }, 'Web-search response hit max_tokens — raise maxTokens for this call');
+      }
 
       if (msg.stop_reason === 'pause_turn') {
         // Echo the assistant turn back verbatim to resume the paused search loop.

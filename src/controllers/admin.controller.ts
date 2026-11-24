@@ -2,7 +2,7 @@ import type { Pool } from 'pg';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { listUsers, getUser, updateUser, deleteUser } from '../use-cases/AdminUsers.js';
 import { type AdminListQueryInput, type AdminUpdateUserInput } from '../validation/admin.schema.js';
-import { FEATURES, FEATURE_PRESETS } from '../config/features.js';
+import { FEATURES, FEATURE_PRESETS, LIMITS, PLAN_LIMITS } from '../config/features.js';
 
 interface Deps { db: Pool }
 
@@ -13,7 +13,14 @@ export function createAdminController({ db }: Deps) {
     meta: asyncHandler(async (_req, res) => {
       // presets let the UI show each user's EFFECTIVE feature state (plan ⊕ override)
       // and, on save, store only real overrides (values differing from the plan).
-      res.json({ features: FEATURES, plans: Object.keys(FEATURE_PRESETS), presets: FEATURE_PRESETS });
+      res.json({
+        features: FEATURES,
+        plans:    Object.keys(FEATURE_PRESETS),
+        presets:  FEATURE_PRESETS,
+        // Numeric quotas — same preset ⊕ override model as features (PLAN_LIMITS).
+        limits:       LIMITS,
+        limitPresets: PLAN_LIMITS,
+      });
     }),
 
     list: asyncHandler(async (req, res) => {

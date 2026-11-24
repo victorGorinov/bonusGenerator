@@ -1,4 +1,9 @@
-import { GEO_CFG } from '../campaign/scenarios.js';
+import { GEO_CFG }      from '../campaign/scenarios.js';
+import { USD_TO_LOCAL } from '../shared/fx.js';
+
+// Financial FX rates live in domain/shared/fx.ts — the bonus payout model needs the same
+// table as a numerical scale, so it must not be duplicated here.
+const STABLE_USD_TO_LOCAL = USD_TO_LOCAL;
 
 // Returns local-currency units per 1 USD for a given geo + sitecur.
 // Priority: GEO_CFG.avgdepUSD (derived from real deposit benchmarks) → STABLE_USD_TO_LOCAL.
@@ -15,31 +20,7 @@ export function deriveLocalFxRate(sitecur: string, geo?: string): number {
 }
 
 export const ARPU_BY_REGION: Record<string, number> = {
-  eu: 65, cis: 22, mn: 12, sweep: 30, crypto: 80, latam: 18,
-};
-
-// Financial FX rates for currencies without GEO_CFG.avgdepUSD.
-// Only USD-pegged and major Western currencies — these are stable enough to hardcode.
-// All others derive their rate from GEO_CFG.avgdep / avgdepUSD (see deriveLocalFxRate).
-const STABLE_USD_TO_LOCAL: Record<string, number> = {
-  USD:  1.00,
-  USDT: 1.00,
-  SC:   1.00,
-  EUR:  0.92,
-  GBP:  0.79,
-  DKK:  7.37,
-  RUB:  90.9,
-  KZT:  500,
-  MNT:  3448,
-  // LatAm local currencies (per geo-data.js RATES — keep in sync).
-  BRL:  5.5,
-  MXN:  18.5,
-  COP:  4100,
-  ARS:  1050,
-  PEN:  3.75,
-  CLP:  950,
-  BTC:  0.000015,
-  ETH:  0.00042,
+  eu: 65, cis: 22, mn: 12, sweep: 30, crypto: 80, latam: 18, mena: 14, gcc: 55,
 };
 
 const SEGMENT_RATIO: Record<string, number> = {

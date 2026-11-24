@@ -2,7 +2,7 @@ import type { Pool } from 'pg';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { AppError } from '../errors/AppError.js';
 import { registerUser, loginUser, getUserAccessById } from '../use-cases/Auth.js';
-import { resolveFeatureAccess } from '../domain/auth/access.js';
+import { resolveFeatureAccess, resolveLimits, limitsForWire } from '../domain/auth/access.js';
 import { signAuthToken, JWT_EXPIRY_MS } from '../domain/auth/jwt.js';
 import { AUTH_COOKIE } from '../middleware/requireAuth.js';
 import { ENV, COOKIE_DOMAIN } from '../config/index.js';
@@ -56,8 +56,9 @@ export function createAuthController({ db }: Deps) {
       if (!row) throw new AppError('User not found', 404, 'NOT_FOUND');
       if (row.status === 'disabled') throw new AppError('Account disabled', 403, 'ACCOUNT_DISABLED');
       res.json({
-        user:     { id: row.id, name: row.name, email: row.email, role: row.role },
+        user:     { id: row.id, name: row.name, email: row.email, role: row.role, plan: row.plan },
         features: resolveFeatureAccess(row),
+        limits:   limitsForWire(resolveLimits(row)),
       });
     }),
   };
